@@ -38,6 +38,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--training-dir", required=True)
     parser.add_argument("--regime-scorecard", default=None)
     parser.add_argument("--requires-regime-scorecard", action="store_true")
+    parser.add_argument("--market-state-scorecard", default=None)
+    parser.add_argument("--requires-market-state-scorecard", action="store_true")
+    parser.add_argument("--strategy-suitability-matrix", default=None)
+    parser.add_argument("--requires-strategy-suitability-matrix", action="store_true")
     parser.add_argument("--output-root", default="data/paper_readiness")
     parser.add_argument("--run-id", default=None)
     parser.add_argument(
@@ -74,6 +78,14 @@ def main() -> int:
         training_dir=Path(args.training_dir),
         regime_scorecard_path=Path(args.regime_scorecard) if args.regime_scorecard else None,
         requires_regime_scorecard=args.requires_regime_scorecard,
+        market_state_scorecard_path=Path(args.market_state_scorecard)
+        if args.market_state_scorecard
+        else None,
+        requires_market_state_scorecard=args.requires_market_state_scorecard,
+        strategy_suitability_matrix_path=Path(args.strategy_suitability_matrix)
+        if args.strategy_suitability_matrix
+        else None,
+        requires_strategy_suitability_matrix=args.requires_strategy_suitability_matrix,
         output_root=Path(args.output_root),
         reviewer_notes=list(args.reviewer_note or []),
         command=[sys.executable, *sys.argv],

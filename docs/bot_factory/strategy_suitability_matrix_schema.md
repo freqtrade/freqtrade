@@ -1,11 +1,12 @@
 # Bot Factory Strategy Suitability Matrix Schema
 
-Status: draft schema for Increment 0.
+Status: implemented local artifact schema.
 
-Implementation status: documentation contract only. This file defines the
-artifact shape for future strategy-state suitability and offline matching
-review. It does not implement matching, start a bot, switch a bot, run paper or
-dry-run trading, run live trading, or authorize order placement.
+Implementation status: implemented by
+`freqtrade_ext/bot_factory/strategy_suitability.py` and
+`scripts/bot_factory_build_strategy_suitability.py`. This artifact supports
+offline selector simulation only. It does not start a bot, switch a bot, run
+paper or dry-run trading, run live trading, or authorize order placement.
 
 ## Purpose
 
@@ -22,7 +23,7 @@ selector candidates.
 
 ## Artifacts
 
-Future producers should write:
+The implemented producer writes:
 
 ```text
 data/strategy_suitability/<run_id>/strategy_state_suitability_matrix.json
@@ -66,22 +67,18 @@ Required top-level fields:
 
 | Field | Type | Notes |
 | --- | --- | --- |
-| `factory` | string | Must be `bot_factory`. |
+| `factory` | string | Must be `strategy_suitability_matrix`. |
 | `schema_version` | string | Must be `strategy_suitability_matrix_v1`. |
 | `run_id` | string | Stable local matrix run id. |
 | `generated_at` | timestamp | Artifact creation time. |
-| `source_scorecards` | array[object] | State-conditioned scorecard paths and hashes. |
+| `source_artifacts` | object | State-conditioned scorecard paths and optional source paths. |
 | `source_market_state_schema_version` | string | Expected `market_state_snapshot_v1`. |
-| `source_scorecard_schema_version` | string | Expected `state_conditioned_scorecard_v1`. |
-| `state_encoder_version` | string | Market-state encoder version. |
-| `cost_model_id` | string | Cost model id. |
-| `pair_groups` | array[string] | Pair groups covered by the matrix. |
-| `timeframes` | array[string] | Timeframes covered by the matrix. |
-| `horizon_profile_ids` | array[string] | Horizon profiles covered by the matrix. |
+| `source_state_scorecard_count` | integer | Number of source scorecards. |
+| `scorecard_validations` | array[object] | Full validation results for source scorecards. |
+| `selector_row_count` | integer | Count of selector-eligible strategy rows. |
+| `state_count` | integer | Count of state/horizon scopes represented. |
 | `rows` | array[object] | Suitability rows, including a first-class no-trade row. |
-| `missing_state_rows` | array[object] | States with no supported strategy. |
-| `matrix_summary` | object | Counts by decision and blocker. |
-| `diff_against_matrix` | object or null | Optional previous matrix comparison. |
+| `summary` | object | Counts by decision and row type. |
 | `reason_codes` | array[string] | Stable audit reasons. |
 | `safety_scope` | object | Required no-startup, no-live, no-secret flags. |
 
@@ -91,44 +88,46 @@ Required row fields:
 
 | Field | Type | Notes |
 | --- | --- | --- |
-| `row_id` | string | Stable row identifier. |
 | `row_type` | string | `strategy`, `no_trade`, or `missing_state`. |
 | `strategy_identity_unit` | object or null | Required for strategy rows. |
+| `candidate_id` | string | Candidate id or policy id. |
+| `strategy_id` | string | Strategy id or policy id. |
 | `state_id` | string | Market-state id. |
+| `state_label` | string | Deterministic state label where available. |
 | `horizon_profile_id` | string | Horizon profile id. |
 | `pair_group` | string | Pair group. |
+| `pair` | string | Pair where evidence applies. |
 | `timeframe` | string | Timeframe. |
 | `cost_model_id` | string | Cost model id. |
-| `activation_state_scope` | array[string] | States where this row may activate. |
+| `state_encoder_version` | string | Market-state encoder version. |
 | `decision` | string | Matrix decision enum. |
 | `matching_action` | string | Future matching action. |
-| `evidence_quality` | string | `strict`, `weak`, `diagnostic_only`, `missing`, or `failed`. |
+| `selector_eligible` | boolean | True only for checked selector rows. |
+| `evidence_quality` | string | `checked`, `weak`, `policy`, `missing`, or diagnostic. |
 | `expected_utility_after_cost` | number or null | Conservative utility after costs. |
 | `risk_adjusted_score` | number or null | Predeclared scoring output. |
+| `stress_cost_utility` | number or null | Stress-cost utility used for ranking. |
+| `rank_score` | number or null | Deterministic local rank score. |
 | `uncertainty` | number | Uncertainty in `[0.0, 1.0]`. |
-| `state_confidence_min` | number | Minimum state confidence required. |
 | `no_trade_delta` | number or null | Delta versus no-trade baseline. |
 | `hold_delta` | number or null | Delta versus hold baseline. |
 | `incumbent_delta` | number or null | Delta versus incumbent when present. |
 | `lower_confidence_bound` | number or null | Conservative edge estimate. |
-| `stress_cost_utility` | number or null | Stress-cost utility. |
+| `identity_mismatch` | boolean | True when row identity differs from source candidate identity. |
 | `blockers` | array[string] | Hard blockers. |
 | `reason_codes` | array[string] | Stable audit reasons. |
-| `source_scorecard_row_ids` | array[string] | Lineage to scorecard rows. |
-| `selector_candidate_creation_allowed` | boolean | False for diagnostic, missing, or unsafe rows. |
-| `paper_readiness_input_allowed` | boolean | False unless strict downstream schema passes. |
 
 ## Decisions
 
 Allowed matrix decisions:
 
 ```text
-STATE_SELECTOR_ELIGIBLE
-STATE_SHADOW_ONLY
-STATE_INSUFFICIENT_EVIDENCE
-STATE_UNSAFE
-STATE_NO_TRADE_POLICY
-STATE_DIAGNOSTIC_ONLY
+SELECTOR_ELIGIBLE
+SHADOW_ONLY
+DIAGNOSTIC_ONLY
+IDENTITY_MISMATCH
+UNSAFE_NO_TRADE
+NO_TRADE_POLICY
 NO_SUPPORTED_STRATEGY
 UNKNOWN_NO_TRADE
 OUT_OF_DISTRIBUTION_NO_TRADE
@@ -158,9 +157,8 @@ Required no-trade row behavior:
 
 - `row_type=no_trade`;
 - `matching_action=no_trade`;
-- `strategy_identity_unit=null`;
-- `selector_candidate_creation_allowed=false`;
-- `paper_readiness_input_allowed=false`;
+- `strategy_identity_unit={"policy_id": "no_trade"}`;
+- `selector_eligible=false`;
 - reason codes distinguish uncertainty safety value from hindsight loss
   avoidance.
 
@@ -235,115 +233,112 @@ Required safety flags:
 
 ```json
 {
-  "factory": "bot_factory",
+  "factory": "strategy_suitability_matrix",
   "schema_version": "strategy_suitability_matrix_v1",
   "run_id": "20260528T002000Z_strategy_suitability",
   "generated_at": "2026-05-28T00:20:00+09:00",
-  "source_scorecards": [
+  "source_artifacts": {
+    "state_scorecard_1": "data/state_scorecards/trend/example/state_conditioned_scorecard.json"
+  },
+  "source_state_scorecard_count": 1,
+  "source_market_state_schema_version": "market_state_snapshot_v1",
+  "scorecard_validations": [
     {
-      "path": "data/state_scorecards/strong-uptrend-historical-ohlcv-candidate/example/state_conditioned_scorecard.json",
-      "sha256": "example"
+      "candidate_id": "trend-candidate",
+      "run_id": "trend_state_scorecard",
+      "ok": true,
+      "reason_codes": ["state_conditioned_scorecard_selector_valid"]
     }
   ],
-  "source_market_state_schema_version": "market_state_snapshot_v1",
-  "source_scorecard_schema_version": "state_conditioned_scorecard_v1",
-  "state_encoder_version": "deterministic_market_state_encoder_v1",
-  "cost_model_id": "calibrated_cost_model_v1",
-  "pair_groups": ["btc_major"],
-  "timeframes": ["5m"],
-  "horizon_profile_ids": [
-    "deterministic_market_state_encoder_v1:micro=mixed:intraday=trend_up:swing=unknown"
-  ],
+  "selector_row_count": 1,
+  "state_count": 2,
   "rows": [
     {
-      "row_id": "strategy:strong-uptrend-historical-ohlcv-candidate:trend_up",
       "row_type": "strategy",
       "strategy_identity_unit": {
-        "candidate_id": "strong-uptrend-historical-ohlcv-candidate",
-        "strategy_version": "DonchianTrendBullStrategy:v1",
-        "signal_version": "strong_uptrend_momentum_v1",
-        "risk_policy_version": "long_only_static_risk_v1",
-        "cost_model_id": "calibrated_cost_model_v1",
-        "state_encoder_version": "deterministic_market_state_encoder_v1",
-        "horizon_profile_id": "deterministic_market_state_encoder_v1:micro=mixed:intraday=trend_up:swing=unknown",
-        "activation_state_scope": ["trend_up"]
+        "candidate_id": "trend-candidate",
+        "strategy_id": "trend-strategy",
+        "strategy_version": "strategy_v1",
+        "signal_version": "signal_v1",
+        "risk_policy_version": "risk_v1",
+        "cost_model_id": "cost_model_v1",
+        "allowed_pairs": ["BTC/USDT:USDT"],
+        "allowed_timeframes": ["5m"]
       },
-      "state_id": "deterministic_market_state_encoder_v1:1h:trend_up:medium:ohlcv_state_features_v1",
-      "horizon_profile_id": "deterministic_market_state_encoder_v1:micro=mixed:intraday=trend_up:swing=unknown",
+      "candidate_id": "trend-candidate",
+      "strategy_id": "trend-strategy",
+      "state_id": "deterministic_market_state_encoder_v1:5m:trend_up:high:ohlcv_state_features_v1",
+      "state_label": "trend_up",
+      "horizon_profile_id": "deterministic_market_state_encoder_v1:micro=trend_up:intraday=missing:swing=missing",
       "pair_group": "btc_major",
+      "pair": "BTC/USDT:USDT",
       "timeframe": "5m",
-      "cost_model_id": "calibrated_cost_model_v1",
-      "activation_state_scope": ["trend_up"],
-      "decision": "STATE_SELECTOR_ELIGIBLE",
+      "cost_model_id": "cost_model_v1",
+      "state_encoder_version": "deterministic_market_state_encoder_v1",
+      "decision": "SELECTOR_ELIGIBLE",
       "matching_action": "select_strategy",
-      "evidence_quality": "strict",
-      "expected_utility_after_cost": 0.05,
-      "risk_adjusted_score": 0.72,
-      "uncertainty": 0.28,
-      "state_confidence_min": 0.65,
-      "no_trade_delta": 0.05,
-      "hold_delta": 0.01,
+      "selector_eligible": true,
+      "evidence_quality": "checked",
+      "expected_utility_after_cost": 3.2,
+      "risk_adjusted_score": 0.2,
+      "stress_cost_utility": 3.5,
+      "rank_score": 3.5,
+      "uncertainty": 0.1,
+      "no_trade_delta": 5.0,
+      "hold_delta": 3.0,
       "incumbent_delta": null,
-      "lower_confidence_bound": 0.01,
-      "stress_cost_utility": 0.04,
+      "lower_confidence_bound": 0.4,
+      "identity_mismatch": false,
       "blockers": [],
-      "reason_codes": ["strict_state_scorecard_passed", "positive_stress_cost_utility"],
-      "source_scorecard_row_ids": ["scorecard-row:trend_up:btc_major:5m"],
-      "selector_candidate_creation_allowed": true,
-      "paper_readiness_input_allowed": false
+      "reason_codes": ["selector_eligible_checked_state_evidence"]
     },
     {
-      "row_id": "no_trade:trend_up",
       "row_type": "no_trade",
-      "strategy_identity_unit": null,
-      "state_id": "deterministic_market_state_encoder_v1:1h:trend_up:medium:ohlcv_state_features_v1",
-      "horizon_profile_id": "deterministic_market_state_encoder_v1:micro=mixed:intraday=trend_up:swing=unknown",
+      "strategy_identity_unit": {"policy_id": "no_trade"},
+      "candidate_id": "no_trade",
+      "strategy_id": "no_trade",
+      "state_id": "deterministic_market_state_encoder_v1:5m:trend_up:high:ohlcv_state_features_v1",
+      "state_label": "trend_up",
+      "horizon_profile_id": "deterministic_market_state_encoder_v1:micro=trend_up:intraday=missing:swing=missing",
       "pair_group": "btc_major",
+      "pair": "BTC/USDT:USDT",
       "timeframe": "5m",
-      "cost_model_id": "calibrated_cost_model_v1",
-      "activation_state_scope": ["trend_up"],
-      "decision": "STATE_NO_TRADE_POLICY",
+      "cost_model_id": "cost_model_v1",
+      "state_encoder_version": "deterministic_market_state_encoder_v1",
+      "decision": "NO_TRADE_POLICY",
       "matching_action": "no_trade",
-      "evidence_quality": "strict",
+      "selector_eligible": false,
+      "evidence_quality": "policy",
       "expected_utility_after_cost": 0.0,
       "risk_adjusted_score": 0.0,
-      "uncertainty": 0.28,
-      "state_confidence_min": 0.0,
-      "no_trade_delta": 0.0,
-      "hold_delta": -0.04,
-      "incumbent_delta": null,
-      "lower_confidence_bound": 0.0,
       "stress_cost_utility": 0.0,
+      "rank_score": 0.0,
+      "uncertainty": 0.0,
       "blockers": [],
-      "reason_codes": ["first_class_no_trade_baseline", "opportunity_cost_recorded"],
-      "source_scorecard_row_ids": ["scorecard-row:trend_up:btc_major:5m"],
-      "selector_candidate_creation_allowed": false,
-      "paper_readiness_input_allowed": false
-    }
-  ],
-  "missing_state_rows": [
+      "reason_codes": ["first_class_no_trade_policy"]
+    },
     {
-      "state_id": "deterministic_market_state_encoder_v1:4h:out_of_distribution:low:ohlcv_state_features_v1",
-      "horizon_profile_id": "deterministic_market_state_encoder_v1:micro=mixed:intraday=out_of_distribution:swing=unknown",
+      "row_type": "missing_state",
+      "candidate_id": "missing_state",
+      "strategy_id": "missing_state",
+      "state_id": "deterministic_market_state_encoder_v1:15m:out_of_distribution:low:ohlcv_state_features_v1",
+      "state_label": "out_of_distribution",
+      "horizon_profile_id": "deterministic_market_state_encoder_v1:micro=trend_up:intraday=missing:swing=missing",
       "decision": "OUT_OF_DISTRIBUTION_NO_TRADE",
       "matching_action": "no_trade",
-      "evidence_gap": "No strict checked strategy scorecard covers this OOD state.",
-      "minimum_required_evidence": {
-        "independent_window_count": 6,
-        "trade_count": 20,
-        "walk_forward_gate_passed": true
-      },
-      "reason_codes": ["out_of_distribution_state", "no_supported_strategy"]
+      "selector_eligible": false,
+      "evidence_quality": "missing",
+      "blockers": ["no_selector_eligible_strategy_for_state"],
+      "reason_codes": ["out_of_distribution_no_trade"]
     }
   ],
-  "matrix_summary": {
+  "summary": {
     "selector_eligible_rows": 1,
     "no_trade_rows": 1,
     "missing_state_rows": 1,
-    "diagnostic_only_rows": 0
+    "diagnostic_rows": 0
   },
-  "diff_against_matrix": null,
-  "reason_codes": ["matrix_built_from_state_conditioned_scorecards"],
+  "reason_codes": ["strategy_suitability_matrix_built_from_state_scorecards"],
   "safety_scope": {
     "local_artifacts_source_of_truth": true,
     "historical_evaluation_only": true,
@@ -355,10 +350,9 @@ Required safety flags:
     "uses_api_keys_or_secrets": false,
     "metadata_contains_secrets": false,
     "process_control": false,
-    "strategy_switch_started": false,
     "leverage_above_one": false,
     "shorting": false,
-    "paper_or_live_authorized_by_this_artifact": false
+    "promotion_authorized_by_this_artifact": false
   }
 }
 ```

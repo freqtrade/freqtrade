@@ -8,6 +8,17 @@ from typing import Any, Mapping, Sequence
 
 STATE_CONDITIONED_SCORECARD_SCHEMA_VERSION = "state_conditioned_scorecard_v1"
 STATE_CONDITIONED_SCORECARD_REPORT_SCHEMA_VERSION = "state_conditioned_scorecard_report_v1"
+REQUIRED_SELECTOR_ROW_FIELDS = (
+    "state_id",
+    "horizon_profile_id",
+    "state_encoder_version",
+    "strategy_version",
+    "signal_version",
+    "risk_policy_version",
+    "cost_model_id",
+    "pair",
+    "timeframe",
+)
 
 
 def build_state_conditioned_scorecard(
@@ -115,6 +126,11 @@ def build_state_conditioned_scorecard(
 def validate_state_conditioned_scorecard_for_selector(
     scorecard: Mapping[str, Any],
 ) -> dict[str, Any]:
+    selector_rows = [
+        row
+        for row in scorecard.get("rows", [])
+        if isinstance(row, Mapping) and row.get("decision") == "STATE_SELECTOR_ELIGIBLE"
+    ]
     checks = [
         _check(
             "state_conditioned_scorecard_schema",
@@ -153,6 +169,51 @@ def validate_state_conditioned_scorecard_for_selector(
             "state_conditioned_scorecard_walk_forward_gate_passed",
             scorecard.get("walk_forward_gate_passed") is True,
             {"walk_forward_gate_passed": scorecard.get("walk_forward_gate_passed")},
+        ),
+        _check(
+            "state_conditioned_scorecard_identity_present",
+            isinstance(scorecard.get("candidate_identity"), Mapping)
+            and bool((scorecard.get("candidate_identity") or {}).get("candidate_id")),
+            {
+                "candidate_identity_type": type(scorecard.get("candidate_identity")).__name__,
+                "candidate_id": (scorecard.get("candidate_identity") or {}).get("candidate_id")
+                if isinstance(scorecard.get("candidate_identity"), Mapping)
+                else None,
+            },
+        ),
+        _check(
+            "state_conditioned_scorecard_rows_present",
+            isinstance(scorecard.get("rows"), list) and bool(scorecard.get("rows")),
+            {
+                "rows_type": type(scorecard.get("rows")).__name__,
+                "row_count": len(scorecard.get("rows", []))
+                if isinstance(scorecard.get("rows"), list)
+                else 0,
+            },
+        ),
+        _check(
+            "state_conditioned_scorecard_selector_rows_present",
+            bool(selector_rows),
+            {"selector_row_count": len(selector_rows)},
+        ),
+        _check(
+            "state_conditioned_scorecard_selector_rows_complete",
+            not _selector_row_missing_fields(selector_rows),
+            {"missing_by_row": _selector_row_missing_fields(selector_rows)},
+        ),
+        _check(
+            "state_conditioned_scorecard_baselines_present",
+            not _missing_baseline_scopes(scorecard, selector_rows),
+            {"missing_baselines": _missing_baseline_scopes(scorecard, selector_rows)},
+        ),
+        _check(
+            "state_conditioned_scorecard_paper_readiness_allowed",
+            scorecard.get("paper_readiness_input_allowed") is True,
+            {
+                "paper_readiness_input_allowed": scorecard.get(
+                    "paper_readiness_input_allowed"
+                )
+            },
         ),
     ]
     ok = all(check["passed"] for check in checks)
@@ -246,7 +307,12 @@ def _scorecard_row(
     blockers = _row_blockers(row, state_row=state_row)
     if blockers and decision == "STATE_SELECTOR_ELIGIBLE":
         decision = "STATE_SHADOW_ONLY"
+    net_stress = _number(row.get("net_pnl_stress_cost"), 0.0)
+    lcb = _number(row.get("lower_confidence_bound"), 0.0)
+    max_drawdown = _number(row.get("max_drawdown"), 0.0)
     return {
+        "candidate_id": candidate_identity.get("candidate_id"),
+        "strategy_id": candidate_identity.get("strategy_id"),
         "strategy_version": candidate_identity.get("strategy_version"),
         "signal_version": candidate_identity.get("signal_version"),
         "risk_policy_version": candidate_identity.get("risk_policy_version"),
@@ -255,6 +321,7 @@ def _scorecard_row(
         "state_label": state_row.get("label") or row.get("market_regime"),
         "horizon_profile_id": state_row.get("horizon_profile_id")
         or fallback_horizon_profile_id,
+        "state_encoder_version": state_encoder_version,
         "pair": _first_or_unknown(candidate_identity.get("allowed_pairs")),
         "timeframe": _first_or_unknown(candidate_identity.get("allowed_timeframes")),
         "cost_model_id": cost_model_id,
@@ -266,24 +333,29 @@ def _scorecard_row(
         "average_holding_time": None,
         "gross_return": _number(row.get("gross_return"), 0.0),
         "net_return_normal_cost": _number(row.get("net_pnl_normal_cost"), 0.0),
-        "net_return_stress_cost": _number(row.get("net_pnl_stress_cost"), 0.0),
+        "net_return_stress_cost": net_stress,
+        "expected_utility_after_cost": net_stress,
+        "risk_adjusted_score": round(lcb - (max_drawdown * 0.1), 6),
+        "stress_cost_utility": round(net_stress + lcb - (max_drawdown * 0.05), 6),
+        "uncertainty": _number(state_row.get("uncertainty"), 1.0),
         "expectancy": _number(row.get("expectancy"), 0.0),
         "profit_factor": row.get("profit_factor"),
         "win_rate": _number(row.get("win_rate"), 0.0),
-        "max_drawdown": _number(row.get("max_drawdown"), 0.0),
+        "max_drawdown": max_drawdown,
         "downside_deviation": _number(row.get("downside_deviation"), 0.0),
         "turnover": None,
         "cost_burden": None,
         "no_trade_delta": _number(row.get("no_trade_baseline_delta"), 0.0),
         "hold_delta": _number(row.get("hold_baseline_delta"), 0.0),
         "incumbent_delta": row.get("incumbent_delta"),
-        "lower_confidence_bound": _number(row.get("lower_confidence_bound"), 0.0),
+        "lower_confidence_bound": lcb,
         "pair_concentration": _number(row.get("pair_concentration"), 0.0),
         "calendar_concentration": _number(row.get("calendar_concentration"), 0.0),
         "state_sample_count": int(_number(row.get("window_count"), 0.0)),
         "state_cluster_stability": None,
         "data_quality_pass": bool(row.get("data_quality_pass")),
         "feature_quality_pass": True,
+        "evidence_quality": "checked" if decision == "STATE_SELECTOR_ELIGIBLE" else "weak",
         "decision": decision,
         "blockers": blockers,
         "reason_codes": list(row.get("reason_codes", [])),
@@ -314,20 +386,75 @@ def _state_decision(regime_decision: str) -> str:
 
 def _row_blockers(row: Mapping[str, Any], *, state_row: Mapping[str, Any]) -> list[str]:
     blockers: list[str] = []
+    source_eligible = row.get("decision") in {
+        "REGIME_SCOPED_SELECTOR_ELIGIBLE",
+        "GLOBAL_SELECTOR_ELIGIBLE",
+    }
     if not state_row and row.get("decision") in {
         "REGIME_SCOPED_SELECTOR_ELIGIBLE",
         "GLOBAL_SELECTOR_ELIGIBLE",
     }:
         blockers.append("state_id_missing_for_regime")
-    if int(_number(row.get("window_count"), 0.0)) <= 0:
+    if int(_number(row.get("window_count"), 0.0)) < 2 and source_eligible:
         blockers.append("insufficient_windows")
-    if _number(row.get("net_pnl_stress_cost"), 0.0) <= 0 and row.get("decision") == "REGIME_SCOPED_SELECTOR_ELIGIBLE":
+    if int(_number(row.get("trade_count"), 0.0)) <= 0 and source_eligible:
+        blockers.append("insufficient_trades")
+    if _number(row.get("net_pnl_stress_cost"), 0.0) <= 0 and source_eligible:
         blockers.append("negative_stress_cost_edge")
-    if _number(row.get("lower_confidence_bound"), 0.0) <= 0 and row.get("decision") == "REGIME_SCOPED_SELECTOR_ELIGIBLE":
+    if _number(row.get("lower_confidence_bound"), 0.0) <= 0 and source_eligible:
         blockers.append("lower_confidence_bound_not_positive")
+    if _number(row.get("pair_concentration"), 0.0) > 0.8 and source_eligible:
+        blockers.append("pair_concentration_too_high")
+    if _number(row.get("calendar_concentration"), 0.0) > 0.8 and source_eligible:
+        blockers.append("calendar_concentration_too_high")
     if row.get("data_quality_pass") is False:
         blockers.append("data_quality_failed")
     return blockers
+
+
+def _selector_row_missing_fields(rows: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    missing: list[dict[str, Any]] = []
+    for index, row in enumerate(rows):
+        row_missing = [
+            field
+            for field in REQUIRED_SELECTOR_ROW_FIELDS
+            if row.get(field) in (None, "")
+        ]
+        if row_missing:
+            missing.append({"row_index": index, "missing_fields": row_missing})
+    return missing
+
+
+def _missing_baseline_scopes(
+    scorecard: Mapping[str, Any], rows: Sequence[Mapping[str, Any]]
+) -> list[dict[str, Any]]:
+    baseline_keys = {
+        (
+            str(item.get("state_id") or ""),
+            str(item.get("horizon_profile_id") or ""),
+            str(item.get("baseline_id") or ""),
+        )
+        for item in scorecard.get("baseline_comparisons", [])
+        if isinstance(item, Mapping)
+    }
+    missing: list[dict[str, Any]] = []
+    for row in rows:
+        state_id = str(row.get("state_id") or "")
+        horizon_profile_id = str(row.get("horizon_profile_id") or "")
+        missing_baselines = [
+            baseline_id
+            for baseline_id in ("no_trade", "hold")
+            if (state_id, horizon_profile_id, baseline_id) not in baseline_keys
+        ]
+        if missing_baselines:
+            missing.append(
+                {
+                    "state_id": state_id,
+                    "horizon_profile_id": horizon_profile_id,
+                    "missing_baseline_ids": missing_baselines,
+                }
+            )
+    return missing
 
 
 def _baseline_comparisons(

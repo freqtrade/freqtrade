@@ -12,6 +12,12 @@ from typing import Any, Iterable, Sequence
 
 from freqtrade_ext.bot_factory.backtest_results import BacktestMetrics, evaluate_initial_gate
 from freqtrade_ext.bot_factory.safety import SafetyReport
+from freqtrade_ext.bot_factory.state_conditioning import (
+    validate_state_conditioned_scorecard_for_selector,
+)
+from freqtrade_ext.bot_factory.strategy_suitability import (
+    validate_strategy_suitability_matrix_for_selector,
+)
 
 
 READINESS_NOTICE = (
@@ -42,6 +48,10 @@ class PaperReadinessInputs:
     training_dir: Path
     regime_scorecard_path: Path | None = None
     requires_regime_scorecard: bool = False
+    market_state_scorecard_path: Path | None = None
+    requires_market_state_scorecard: bool = False
+    strategy_suitability_matrix_path: Path | None = None
+    requires_strategy_suitability_matrix: bool = False
     output_root: Path = Path("data/paper_readiness")
     reviewer_notes: Sequence[str] = field(default_factory=list)
     command: Sequence[str] = field(default_factory=list)
@@ -112,6 +122,10 @@ def build_candidate_artifacts(inputs: PaperReadinessInputs) -> dict[str, Any]:
     }
     if inputs.regime_scorecard_path is not None:
         files["regime_scorecard"] = inputs.regime_scorecard_path
+    if inputs.market_state_scorecard_path is not None:
+        files["market_state_scorecard"] = inputs.market_state_scorecard_path
+    if inputs.strategy_suitability_matrix_path is not None:
+        files["strategy_suitability_matrix"] = inputs.strategy_suitability_matrix_path
     return {
         "generated_at": datetime.now(UTC).isoformat(),
         "strategy": inputs.strategy,
@@ -484,6 +498,16 @@ def evaluate_paper_readiness(
         "regime_scorecard_path": _safe_relative_path(inputs.regime_scorecard_path, inputs.root_dir)
         if inputs.regime_scorecard_path is not None
         else None,
+        "market_state_scorecard_path": _safe_relative_path(
+            inputs.market_state_scorecard_path, inputs.root_dir
+        )
+        if inputs.market_state_scorecard_path is not None
+        else None,
+        "strategy_suitability_matrix_path": _safe_relative_path(
+            inputs.strategy_suitability_matrix_path, inputs.root_dir
+        )
+        if inputs.strategy_suitability_matrix_path is not None
+        else None,
         "checks": [check.to_dict() for check in checks],
         "blockers": [check.to_dict() for check in checks if check.status == "blocked"],
         "failures": [check.to_dict() for check in checks if check.status == "fail"],
@@ -560,6 +584,8 @@ def write_paper_readiness_report(readiness: dict[str, Any], path: Path) -> None:
         f"- Walk-forward artifacts: `{readiness['walk_forward_dir']}`",
         f"- Training artifacts: `{readiness['training_dir']}`",
         f"- Regime scorecard: `{readiness.get('regime_scorecard_path') or 'not supplied'}`",
+        f"- Market-state scorecard: `{readiness.get('market_state_scorecard_path') or 'not supplied'}`",
+        f"- Strategy suitability matrix: `{readiness.get('strategy_suitability_matrix_path') or 'not supplied'}`",
         "",
         "## Checks",
         "",
@@ -596,6 +622,8 @@ def _phase2_evidence_checks(inputs: PaperReadinessInputs) -> list[ReadinessCheck
     walk_forward_metrics_path = inputs.walk_forward_dir / "walk_forward_metrics.json"
     training_manifest_path = inputs.training_dir / "training_manifest.json"
     checks.extend(_regime_scorecard_evidence_checks(inputs))
+    checks.extend(_market_state_scorecard_evidence_checks(inputs))
+    checks.extend(_strategy_suitability_matrix_evidence_checks(inputs))
 
     if historical_metrics_path.is_file():
         metrics_payload = load_json_file(historical_metrics_path)
@@ -758,6 +786,168 @@ def _regime_scorecard_evidence_checks(inputs: PaperReadinessInputs) -> list[Read
                 "promotion_authorized_by_this_command": payload.get("promotion_authorized_by_this_command"),
                 "raw_aggregate_pnl_promotion_allowed": payload.get("raw_aggregate_pnl_promotion_allowed"),
                 "phase3_readiness_required_after_scorecard": payload.get("phase3_readiness_required_after_scorecard"),
+            },
+        ),
+    ]
+
+
+def _market_state_scorecard_evidence_checks(inputs: PaperReadinessInputs) -> list[ReadinessCheck]:
+    if not inputs.requires_market_state_scorecard and inputs.market_state_scorecard_path is None:
+        return [
+            _check(
+                "market_state_scorecard_not_required",
+                True,
+                "blocker",
+                "No market-state scorecard was supplied for this readiness request.",
+                {},
+            )
+        ]
+    path = inputs.market_state_scorecard_path
+    if path is None:
+        return [
+            ReadinessCheck(
+                name="market_state_scorecard_required",
+                status="blocked",
+                severity="blocker",
+                message="Market-state scorecard is required when state-conditioned eligibility is claimed.",
+                details={"path": None},
+            )
+        ]
+    resolved = path if path.is_absolute() else inputs.root_dir / path
+    if not resolved.is_file():
+        return [
+            ReadinessCheck(
+                name="market_state_scorecard_required",
+                status="blocked",
+                severity="blocker",
+                message="Market-state scorecard artifact is missing.",
+                details={"path": _safe_relative_path(resolved, inputs.root_dir)},
+            )
+        ]
+    payload = load_json_file(resolved)
+    validation = validate_state_conditioned_scorecard_for_selector(payload)
+    safety = payload.get("safety_scope") or {}
+    return [
+        _check(
+            "market_state_scorecard_required",
+            True,
+            "blocker",
+            "Market-state scorecard artifact is present.",
+            {"path": _safe_relative_path(resolved, inputs.root_dir)},
+        ),
+        _check(
+            "market_state_scorecard_full_schema",
+            validation["ok"],
+            "failure",
+            "Market-state scorecard must pass the full state-conditioned schema, not only top-level flags.",
+            {"reason_codes": validation["reason_codes"], "checks": validation["checks"]},
+        ),
+        _check(
+            "market_state_scorecard_paper_readiness_allowed",
+            payload.get("paper_readiness_input_allowed") is True,
+            "failure",
+            "Market-state scorecard must explicitly allow paper-readiness input after strict validation.",
+            {
+                "paper_readiness_input_allowed": payload.get(
+                    "paper_readiness_input_allowed"
+                )
+            },
+        ),
+        _check(
+            "market_state_scorecard_no_startup_scope",
+            safety.get("freqtrade_trade_started") is False
+            and safety.get("paper_trading_started") is False
+            and safety.get("dry_run_trading_started") is False
+            and safety.get("live_trading_started") is False
+            and safety.get("exchange_order_placement") is False
+            and safety.get("process_control") is False,
+            "blocker",
+            "Market-state scorecard must preserve no-startup safety scope.",
+            {
+                "freqtrade_trade_started": safety.get("freqtrade_trade_started"),
+                "paper_trading_started": safety.get("paper_trading_started"),
+                "dry_run_trading_started": safety.get("dry_run_trading_started"),
+                "live_trading_started": safety.get("live_trading_started"),
+                "exchange_order_placement": safety.get("exchange_order_placement"),
+                "process_control": safety.get("process_control"),
+            },
+        ),
+    ]
+
+
+def _strategy_suitability_matrix_evidence_checks(
+    inputs: PaperReadinessInputs,
+) -> list[ReadinessCheck]:
+    if (
+        not inputs.requires_strategy_suitability_matrix
+        and inputs.strategy_suitability_matrix_path is None
+    ):
+        return [
+            _check(
+                "strategy_suitability_matrix_not_required",
+                True,
+                "blocker",
+                "No strategy suitability matrix was supplied for this readiness request.",
+                {},
+            )
+        ]
+    path = inputs.strategy_suitability_matrix_path
+    if path is None:
+        return [
+            ReadinessCheck(
+                name="strategy_suitability_matrix_required",
+                status="blocked",
+                severity="blocker",
+                message="Strategy suitability matrix is required when state matching is claimed.",
+                details={"path": None},
+            )
+        ]
+    resolved = path if path.is_absolute() else inputs.root_dir / path
+    if not resolved.is_file():
+        return [
+            ReadinessCheck(
+                name="strategy_suitability_matrix_required",
+                status="blocked",
+                severity="blocker",
+                message="Strategy suitability matrix artifact is missing.",
+                details={"path": _safe_relative_path(resolved, inputs.root_dir)},
+            )
+        ]
+    payload = load_json_file(resolved)
+    validation = validate_strategy_suitability_matrix_for_selector(payload)
+    safety = payload.get("safety_scope") or {}
+    return [
+        _check(
+            "strategy_suitability_matrix_required",
+            True,
+            "blocker",
+            "Strategy suitability matrix artifact is present.",
+            {"path": _safe_relative_path(resolved, inputs.root_dir)},
+        ),
+        _check(
+            "strategy_suitability_matrix_full_schema",
+            validation["ok"],
+            "failure",
+            "Strategy suitability matrix must pass full schema validation.",
+            {"reason_codes": validation["reason_codes"], "checks": validation["checks"]},
+        ),
+        _check(
+            "strategy_suitability_matrix_no_startup_scope",
+            safety.get("freqtrade_trade_started") is False
+            and safety.get("paper_trading_started") is False
+            and safety.get("dry_run_trading_started") is False
+            and safety.get("live_trading_started") is False
+            and safety.get("exchange_order_placement") is False
+            and safety.get("process_control") is False,
+            "blocker",
+            "Strategy suitability matrix must preserve no-startup safety scope.",
+            {
+                "freqtrade_trade_started": safety.get("freqtrade_trade_started"),
+                "paper_trading_started": safety.get("paper_trading_started"),
+                "dry_run_trading_started": safety.get("dry_run_trading_started"),
+                "live_trading_started": safety.get("live_trading_started"),
+                "exchange_order_placement": safety.get("exchange_order_placement"),
+                "process_control": safety.get("process_control"),
             },
         ),
     ]

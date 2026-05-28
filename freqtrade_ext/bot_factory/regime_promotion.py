@@ -80,6 +80,11 @@ REQUIRED_OBSERVATION_FIELDS = (
     "data_quality_flags",
     "reason_codes",
 )
+OPTIONAL_STATE_OBSERVATION_FIELDS = (
+    "state_id",
+    "horizon_profile_id",
+    "state_encoder_version",
+)
 EVIDENCE_VERSION_FIELDS = (
     "strategy_version",
     "signal_version",
@@ -180,6 +185,7 @@ def observation_ledger_schema() -> dict[str, Any]:
         "factory": "regime_observation_ledger_schema",
         "schema_version": "regime_observation_ledger_v1",
         "required_fields": list(REQUIRED_OBSERVATION_FIELDS),
+        "optional_state_fields": list(OPTIONAL_STATE_OBSERVATION_FIELDS),
         "candidate_identity_schema_version": "strategy_candidate_identity_v1",
         "current_source_types": sorted(CURRENT_OBSERVATION_SOURCE_TYPES),
         "future_source_types_blocked_by_default": sorted(FUTURE_OBSERVATION_SOURCE_TYPES),
@@ -507,6 +513,42 @@ def validate_observation_record(
             },
         )
     )
+    state_fields_present = [
+        field
+        for field in OPTIONAL_STATE_OBSERVATION_FIELDS
+        if observation.get(field) not in (None, "")
+    ]
+    if state_fields_present:
+        missing_state_fields = [
+            field
+            for field in OPTIONAL_STATE_OBSERVATION_FIELDS
+            if observation.get(field) in (None, "")
+        ]
+        checks.append(
+            _check(
+                "state_observation_fields_complete",
+                not missing_state_fields,
+                {
+                    "present_fields": state_fields_present,
+                    "missing_fields": missing_state_fields,
+                },
+            )
+        )
+        checks.append(
+            _check(
+                "state_observation_no_future_data",
+                observation.get("future_data_used") is False,
+                {"future_data_used": observation.get("future_data_used")},
+            )
+        )
+    else:
+        checks.append(
+            _check(
+                "state_observation_fields_not_supplied",
+                True,
+                {"optional_state_fields": list(OPTIONAL_STATE_OBSERVATION_FIELDS)},
+            )
+        )
     identity_validation = validate_candidate_identity(observation)
     checks.append(
         _check(

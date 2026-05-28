@@ -99,6 +99,60 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-28 JST for market-state / strategy-matching local
+suitability, selector/no-trade matching, and paper-readiness schema validation.
+
+- [x] Added `freqtrade_ext/bot_factory/strategy_suitability.py` with
+  `strategy_suitability_matrix_v1` built only from
+  `state_conditioned_scorecard_v1` artifacts. The matrix preserves strategy
+  identity unit, state ID, horizon profile, cost model, stress-cost utility,
+  baseline deltas, blockers, reason codes, first-class `no_trade` rows,
+  missing-state rows, weak/OOD no-trade decisions, and identity-mismatch
+  rejection.
+- [x] Added `freqtrade_ext/bot_factory/selector_matching.py` with
+  `selector_matching_decision_v1` and `no_trade_scorecard_v1`. Matching is
+  local-only and defaults to `no_trade` for stale, low-confidence, OOD,
+  mixed/unknown/transition, horizon-conflict, feature-quality-failed,
+  cost-model-stale, weak/no-eligible, identity-mismatched, and cooldown-blocked
+  states.
+- [x] Added CLIs:
+  - `scripts\bot_factory_build_strategy_suitability.py`
+  - `scripts\bot_factory_match_strategy_to_market_state.py`
+- [x] Added `docs\bot_factory\selector_matching_schema.md` and updated the
+  strategy suitability schema doc from draft-only to implemented local artifact
+  semantics.
+- [x] Extended `scripts\bot_factory_check_paper_readiness.py` and
+  `PaperReadinessInputs` with optional `--market-state-scorecard` and
+  `--strategy-suitability-matrix` inputs. Paper readiness now rejects minimal
+  state-scorecard JSON that only sets top-level flags and still preserves
+  no-startup semantics.
+- [x] Extended observation-ledger validation so optional state fields require a
+  complete `state_id`, `horizon_profile_id`, `state_encoder_version`, and
+  `future_data_used=false`.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\regime_promotion.py freqtrade_ext\bot_factory\market_regime.py freqtrade_ext\bot_factory\state_conditioning.py freqtrade_ext\bot_factory\strategy_suitability.py freqtrade_ext\bot_factory\selector_matching.py freqtrade_ext\bot_factory\paper.py scripts\bot_factory_build_strategy_suitability.py scripts\bot_factory_match_strategy_to_market_state.py scripts\bot_factory_check_paper_readiness.py tests\test_bot_factory.py`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "state_conditioned or strategy_suitability or selector_matching or no_trade_scorecard or market_state_scorecard or state_observation"`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "market_state or state_conditioned or strategy_suitability or selector_matching or no_trade_scorecard or diagnostic_scorecard or deterministic_regime_classifier or backtest_evidence_pipeline or manual_scorecard or rejected_scorecard or state_observation"`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_build_strategy_suitability.py --help`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_match_strategy_to_market_state.py --help`
+  - `.\.venv\Scripts\python.exe scripts\bot_factory_check_paper_readiness.py --help`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q`
+- [x] Results: compile passed; focused state/matching/paper-readiness slice
+  passed `7 passed`; broader market-state/state-conditioned/suitability/
+  selector regression slice passed `15 passed`; all three CLI help commands
+  exited `0`; full `tests\test_bot_factory.py` passed and reached `[100%]`.
+  Pytest still emitted the known Windows `.pytest_cache` and
+  `AppData\Local\Temp\pytest-of-yoro4\pytest-current` ACL cleanup warnings.
+- [x] Safety result: no `freqtrade trade`, paper trading, dry-run trading,
+  live trading, canary process, exchange order endpoint, API key, secret,
+  leverage, shorting, historical backtest, strategy generation, live strategy
+  matching, or process-control action was performed.
+- [ ] Remaining limitation: this is an offline artifact and selector-simulation
+  foundation only. Historical as-of selector replay, diagnostic clustering/ML,
+  externalized state/horizon scoring weights, incumbent/style baselines, and a
+  full readiness identity proof across generated strategy/config/backtest/
+  walk-forward/scorecard/matrix remain future work.
+
 Checked on 2026-05-28 JST for market-state / strategy-matching P0
 state-conditioned scorecard and diagnostic-boundary foundation.
 

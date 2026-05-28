@@ -11063,11 +11063,25 @@ def test_market_state_snapshot_stale_local_candles_force_unknown_no_trade():
     assert current["stale_data"] is True
 
 
-def _state_snapshot_for_regime(regime: str = "trend_up"):
+def _state_snapshot_for_regime(regime: str = "trend_up", *, confidence: float = 0.9):
     return {
         "factory": "bot_factory",
         "schema_version": "market_state_snapshot_v1",
         "run_id": "state_snapshot",
+        "generated_at": "2026-01-01T08:00:00+00:00",
+        "data_asof": "2026-01-01T07:55:00+00:00",
+        "latest_local_candle_at": "2026-01-01T07:55:00+00:00",
+        "pair": "BTC/USDT:USDT",
+        "pair_group": "btc_major",
+        "base_timeframe": "5m",
+        "aggregate_label": regime,
+        "state_confidence": confidence,
+        "uncertainty": round(1.0 - confidence, 6),
+        "out_of_distribution_score": round(1.0 - confidence, 6),
+        "no_trade_default": False,
+        "horizon_conflict": {"conflict_detected": False, "reason_codes": []},
+        "feature_quality_summary": {"feature_quality_pass": True, "flags": []},
+        "data_quality_summary": {"stale_data": False, "flags": []},
         "state_encoder_version": "deterministic_market_state_encoder_v1",
         "horizon_profile_id": (
             "deterministic_market_state_encoder_v1:"
@@ -11082,17 +11096,35 @@ def _state_snapshot_for_regime(regime: str = "trend_up"):
                 "label": regime,
                 "state_id": (
                     "deterministic_market_state_encoder_v1:"
-                    f"5m:{regime}:high:ohlcv_state_features_v1"
+                    f"5m:{regime}:{'high' if confidence >= 0.7 else 'low'}:ohlcv_state_features_v1"
                 ),
-                "confidence": 0.9,
-                "uncertainty": 0.1,
+                "confidence": confidence,
+                "uncertainty": round(1.0 - confidence, 6),
+                "out_of_distribution_score": round(1.0 - confidence, 6),
                 "reason_codes": [f"label_{regime}"],
             }
         ],
+        "reason_codes": [f"{regime}_state"],
+        "safety_scope": {
+            "freqtrade_trade_started": False,
+            "paper_trading_started": False,
+            "dry_run_trading_started": False,
+            "live_trading_started": False,
+            "exchange_order_placement": False,
+            "process_control": False,
+        },
     }
 
 
-def _strict_regime_scorecard_for_state_tests():
+def _strict_regime_scorecard_for_state_tests(
+    *,
+    regime: str = "trend_up",
+    candidate_id: str = "candidate",
+    strategy_id: str = "strategy",
+    normal_returns: tuple[float, float] = (3.0, 2.0),
+    stress_returns: tuple[float, float] = (2.0, 1.2),
+    lower_confidence_bounds: tuple[float, float] = (0.5, 0.4),
+):
     from freqtrade_ext.bot_factory.regime_promotion import (
         RegimePromotionThresholds,
         build_regime_fitness_scorecard,
@@ -11101,30 +11133,38 @@ def _strict_regime_scorecard_for_state_tests():
     observations = [
         _regime_observation(
             "state-btc",
+            candidate_id=candidate_id,
+            strategy_id=strategy_id,
             source_type="walk_forward",
-            regime="trend_up",
+            regime=regime,
             pair="BTC/USDT:USDT",
             window_start="2026-01-01T00:00:00+00:00",
             window_end="2026-02-01T00:00:00+00:00",
-            net_return_normal_cost=3.0,
-            net_return_stress_cost=2.0,
-            lower_confidence_bound=0.5,
+            net_return_normal_cost=normal_returns[0],
+            net_return_stress_cost=stress_returns[0],
+            lower_confidence_bound=lower_confidence_bounds[0],
         ),
         _regime_observation(
             "state-eth",
+            candidate_id=candidate_id,
+            strategy_id=strategy_id,
             source_type="walk_forward",
-            regime="trend_up",
+            regime=regime,
             pair="ETH/USDT:USDT",
             window_start="2026-02-01T00:00:00+00:00",
             window_end="2026-03-01T00:00:00+00:00",
-            net_return_normal_cost=2.0,
-            net_return_stress_cost=1.2,
-            lower_confidence_bound=0.4,
+            net_return_normal_cost=normal_returns[1],
+            net_return_stress_cost=stress_returns[1],
+            lower_confidence_bound=lower_confidence_bounds[1],
         ),
     ]
     scorecard = build_regime_fitness_scorecard(
         observations,
-        contract=_regime_contract(),
+        contract=_regime_contract(
+            intended_regimes=[regime],
+            excluded_regimes=["unknown"],
+            maximum_drawdown_by_regime={regime: 8.0},
+        ),
         baseline_observations=[],
         thresholds=RegimePromotionThresholds(
             min_sample_days=0.0,
@@ -11139,12 +11179,12 @@ def _strict_regime_scorecard_for_state_tests():
     scorecard["baseline_comparison"] = {
         "by_regime": [
             {
-                "market_regime": "trend_up",
-                "candidate_return": 5.0,
+                "market_regime": regime,
+                "candidate_return": sum(normal_returns),
                 "hold_return": 2.0,
                 "no_trade_return": 0.0,
-                "hold_delta": 3.0,
-                "no_trade_delta": 5.0,
+                "hold_delta": sum(normal_returns) - 2.0,
+                "no_trade_delta": sum(normal_returns),
             }
         ]
     }
@@ -11235,6 +11275,387 @@ def test_diagnostic_scorecard_cannot_become_selector_candidate():
             scorecard=scorecard,
             candidate_id="candidate",
         )
+
+
+def _state_conditioned_scorecard_for_selector_test(
+    *,
+    regime: str = "trend_up",
+    candidate_id: str = "candidate",
+    strategy_id: str = "strategy",
+    normal_returns: tuple[float, float] = (3.0, 2.0),
+    stress_returns: tuple[float, float] = (2.0, 1.2),
+    lower_confidence_bounds: tuple[float, float] = (0.5, 0.4),
+):
+    from freqtrade_ext.bot_factory.state_conditioning import build_state_conditioned_scorecard
+
+    return build_state_conditioned_scorecard(
+        regime_scorecard=_strict_regime_scorecard_for_state_tests(
+            regime=regime,
+            candidate_id=candidate_id,
+            strategy_id=strategy_id,
+            normal_returns=normal_returns,
+            stress_returns=stress_returns,
+            lower_confidence_bounds=lower_confidence_bounds,
+        ),
+        market_state_snapshot=_state_snapshot_for_regime(regime),
+        run_id=f"{candidate_id}_{regime}_state_scorecard",
+        require_walk_forward_evidence=True,
+    )
+
+
+def test_regime_observation_state_fields_require_complete_no_future_scope():
+    from freqtrade_ext.bot_factory.regime_promotion import validate_observation_record
+
+    observation = _regime_observation("state-observation")
+    observation.update(
+        {
+            "state_id": "deterministic_market_state_encoder_v1:5m:trend_up:high:ohlcv_state_features_v1",
+            "horizon_profile_id": "deterministic_market_state_encoder_v1:micro=trend_up:intraday=missing:swing=missing",
+            "state_encoder_version": "deterministic_market_state_encoder_v1",
+            "future_data_used": False,
+        }
+    )
+    valid = validate_observation_record(observation)
+
+    partial = dict(observation)
+    partial["horizon_profile_id"] = ""
+    partial_validation = validate_observation_record(partial)
+
+    future = dict(observation)
+    future["future_data_used"] = True
+    future_validation = validate_observation_record(future)
+
+    assert valid["ok"] is True
+    assert partial_validation["ok"] is False
+    assert "state_observation_fields_complete" in {
+        check["name"] for check in partial_validation["checks"] if not check["passed"]
+    }
+    assert future_validation["ok"] is False
+    assert "state_observation_no_future_data" in {
+        check["name"] for check in future_validation["checks"] if not check["passed"]
+    }
+
+
+def test_strategy_suitability_matrix_is_state_scoped_and_blocks_identity_inheritance():
+    from freqtrade_ext.bot_factory.strategy_suitability import (
+        build_strategy_suitability_matrix,
+        validate_strategy_suitability_matrix_for_selector,
+    )
+
+    trend_scorecard = _state_conditioned_scorecard_for_selector_test(
+        regime="trend_up",
+        candidate_id="trend-candidate",
+        strategy_id="trend-strategy",
+    )
+    range_scorecard = _state_conditioned_scorecard_for_selector_test(
+        regime="range",
+        candidate_id="range-candidate",
+        strategy_id="range-strategy",
+    )
+    snapshot_with_missing_state = _state_snapshot_for_regime("trend_up")
+    snapshot_with_missing_state["horizons"].append(
+        {
+            "schema_version": "market_state_window_v1",
+            "horizon": "15m",
+            "horizon_group": "micro",
+            "label": "high_volatility",
+            "state_id": (
+                "deterministic_market_state_encoder_v1:"
+                "15m:high_volatility:high:ohlcv_state_features_v1"
+            ),
+            "confidence": 0.85,
+            "uncertainty": 0.15,
+            "out_of_distribution_score": 0.15,
+            "reason_codes": ["label_high_volatility"],
+        }
+    )
+    matrix = build_strategy_suitability_matrix(
+        state_scorecards=[trend_scorecard, range_scorecard],
+        market_state_snapshot=snapshot_with_missing_state,
+        run_id="suitability_scope_test",
+    )
+    validation = validate_strategy_suitability_matrix_for_selector(matrix)
+    trend_state_id = trend_scorecard["rows"][0]["state_id"]
+
+    range_rows_for_trend_state = [
+        row
+        for row in matrix["rows"]
+        if row.get("candidate_id") == "range-candidate"
+        and row.get("state_id") == trend_state_id
+        and row.get("decision") == "SELECTOR_ELIGIBLE"
+    ]
+
+    tampered = json.loads(json.dumps(trend_scorecard))
+    tampered["rows"][0]["candidate_id"] = "other-candidate"
+    tampered_matrix = build_strategy_suitability_matrix(
+        state_scorecards=[tampered],
+        market_state_snapshot=_state_snapshot_for_regime("trend_up"),
+        run_id="suitability_identity_test",
+    )
+    tampered_strategy_rows = [
+        row for row in tampered_matrix["rows"] if row.get("row_type") == "strategy"
+    ]
+
+    assert validation["ok"] is True
+    assert range_rows_for_trend_state == []
+    assert any(row["row_type"] == "no_trade" for row in matrix["rows"])
+    assert any(row["row_type"] == "missing_state" for row in matrix["rows"])
+    assert tampered_strategy_rows[0]["decision"] == "IDENTITY_MISMATCH"
+    assert tampered_strategy_rows[0]["selector_eligible"] is False
+
+
+def test_selector_matching_selects_current_state_and_ranks_by_stress_utility():
+    from freqtrade_ext.bot_factory.selector_matching import build_selector_matching_decision
+    from freqtrade_ext.bot_factory.strategy_suitability import build_strategy_suitability_matrix
+
+    trend_scorecard = _state_conditioned_scorecard_for_selector_test(
+        regime="trend_up",
+        candidate_id="trend-candidate",
+        strategy_id="trend-strategy",
+    )
+    range_scorecard = _state_conditioned_scorecard_for_selector_test(
+        regime="range",
+        candidate_id="range-candidate",
+        strategy_id="range-strategy",
+    )
+    matrix = build_strategy_suitability_matrix(
+        state_scorecards=[trend_scorecard, range_scorecard],
+        market_state_snapshot=_state_snapshot_for_regime("trend_up"),
+        run_id="selector_state_test",
+    )
+    trend_decision = build_selector_matching_decision(
+        current_market_state=_state_snapshot_for_regime("trend_up"),
+        strategy_suitability_matrix=matrix,
+        decision_id="selector_trend",
+    )
+    range_decision = build_selector_matching_decision(
+        current_market_state=_state_snapshot_for_regime("range"),
+        strategy_suitability_matrix=matrix,
+        decision_id="selector_range",
+    )
+
+    raw_high_scorecard = _state_conditioned_scorecard_for_selector_test(
+        regime="trend_up",
+        candidate_id="raw-high",
+        strategy_id="raw-high-strategy",
+        normal_returns=(10.0, 8.0),
+        stress_returns=(0.3, 0.3),
+        lower_confidence_bounds=(0.1, 0.1),
+    )
+    robust_scorecard = _state_conditioned_scorecard_for_selector_test(
+        regime="trend_up",
+        candidate_id="robust",
+        strategy_id="robust-strategy",
+        normal_returns=(4.0, 4.0),
+        stress_returns=(2.0, 1.8),
+        lower_confidence_bounds=(0.6, 0.5),
+    )
+    ranking_matrix = build_strategy_suitability_matrix(
+        state_scorecards=[raw_high_scorecard, robust_scorecard],
+        market_state_snapshot=_state_snapshot_for_regime("trend_up"),
+        run_id="selector_ranking_test",
+    )
+    ranking_decision = build_selector_matching_decision(
+        current_market_state=_state_snapshot_for_regime("trend_up"),
+        strategy_suitability_matrix=ranking_matrix,
+        decision_id="selector_ranking",
+    )
+
+    assert trend_decision["selected_action"] == "select_strategy"
+    assert trend_decision["selected_candidate_id"] == "trend-candidate"
+    assert range_decision["selected_action"] == "select_strategy"
+    assert range_decision["selected_candidate_id"] == "range-candidate"
+    assert ranking_decision["selected_candidate_id"] == "robust"
+    assert "selected_by_stress_cost_utility" in ranking_decision["reason_codes"]
+
+
+def test_selector_matching_defaults_no_trade_for_unsafe_current_states_and_cooldown():
+    from freqtrade_ext.bot_factory.selector_matching import build_selector_matching_decision
+    from freqtrade_ext.bot_factory.strategy_suitability import build_strategy_suitability_matrix
+
+    scorecard = _state_conditioned_scorecard_for_selector_test(
+        regime="trend_up",
+        candidate_id="trend-candidate",
+        strategy_id="trend-strategy",
+    )
+    matrix = build_strategy_suitability_matrix(
+        state_scorecards=[scorecard],
+        market_state_snapshot=_state_snapshot_for_regime("trend_up"),
+        run_id="selector_no_trade_test",
+    )
+    mixed = _state_snapshot_for_regime("trend_up")
+    mixed["aggregate_label"] = "mixed"
+    mixed["no_trade_default"] = True
+    mixed["horizon_conflict"] = {"conflict_detected": True, "reason_codes": ["test_conflict"]}
+    mixed["reason_codes"] = ["horizon_conflict"]
+    stale = _state_snapshot_for_regime("trend_up")
+    stale["data_quality_summary"]["stale_data"] = True
+    stale["no_trade_default"] = True
+    stale["reason_codes"] = ["stale_local_data"]
+    ood = _state_snapshot_for_regime("trend_up")
+    ood["aggregate_label"] = "out_of_distribution"
+    ood["out_of_distribution_score"] = 0.95
+    ood["no_trade_default"] = True
+    ood["reason_codes"] = ["out_of_distribution_state"]
+
+    for snapshot, reason in (
+        (mixed, "horizon_conflict"),
+        (stale, "stale_local_data"),
+        (ood, "out_of_distribution_state"),
+    ):
+        decision = build_selector_matching_decision(
+            current_market_state=snapshot,
+            strategy_suitability_matrix=matrix,
+            decision_id=f"selector_{reason}",
+        )
+        assert decision["selected_action"] == "no_trade"
+        assert reason in decision["reason_codes"]
+
+    previous = _state_conditioned_scorecard_for_selector_test(
+        regime="trend_up",
+        candidate_id="previous",
+        strategy_id="previous-strategy",
+        stress_returns=(1.0, 1.0),
+    )
+    challenger = _state_conditioned_scorecard_for_selector_test(
+        regime="trend_up",
+        candidate_id="challenger",
+        strategy_id="challenger-strategy",
+        stress_returns=(2.0, 2.0),
+    )
+    cooldown_matrix = build_strategy_suitability_matrix(
+        state_scorecards=[previous, challenger],
+        market_state_snapshot=_state_snapshot_for_regime("trend_up"),
+        run_id="selector_cooldown_test",
+    )
+    cooldown_decision = build_selector_matching_decision(
+        current_market_state=_state_snapshot_for_regime("trend_up"),
+        strategy_suitability_matrix=cooldown_matrix,
+        selector_state={
+            "last_selected_candidate_id": "previous",
+            "observations_since_switch": 1,
+        },
+        cooldown_observations=3,
+        decision_id="selector_cooldown",
+    )
+    hysteresis_decision = build_selector_matching_decision(
+        current_market_state=_state_snapshot_for_regime("trend_up"),
+        strategy_suitability_matrix=cooldown_matrix,
+        selector_state={
+            "last_selected_candidate_id": "previous",
+            "observations_since_switch": 4,
+        },
+        hysteresis_margin=10.0,
+        decision_id="selector_hysteresis",
+    )
+
+    assert cooldown_decision["selected_action"] == "no_trade"
+    assert cooldown_decision["no_trade_reason"] == "selector_cooldown_blocks_switching"
+    assert hysteresis_decision["selected_action"] == "select_strategy"
+    assert hysteresis_decision["selected_candidate_id"] == "previous"
+    assert "selector_hysteresis_kept_previous_candidate" in hysteresis_decision["reason_codes"]
+
+
+def test_no_trade_scorecard_records_opportunity_cost_without_hindsight_reward():
+    from freqtrade_ext.bot_factory.selector_matching import build_no_trade_scorecard
+    from freqtrade_ext.bot_factory.strategy_suitability import build_strategy_suitability_matrix
+
+    scorecard = _state_conditioned_scorecard_for_selector_test(
+        regime="trend_up",
+        candidate_id="trend-candidate",
+        strategy_id="trend-strategy",
+    )
+    matrix = build_strategy_suitability_matrix(
+        state_scorecards=[scorecard],
+        market_state_snapshot=_state_snapshot_for_regime("trend_up"),
+        run_id="no_trade_scorecard_test",
+    )
+    clear_trend = build_no_trade_scorecard(
+        current_market_state=_state_snapshot_for_regime("trend_up"),
+        strategy_suitability_matrix=matrix,
+        run_id="clear_trend_no_trade",
+    )
+    unknown = _state_snapshot_for_regime("trend_up")
+    unknown["aggregate_label"] = "unknown"
+    unknown["no_trade_default"] = True
+    unknown["state_confidence"] = 0.2
+    unknown["uncertainty"] = 0.8
+    unknown_scorecard = build_no_trade_scorecard(
+        current_market_state=unknown,
+        strategy_suitability_matrix=matrix,
+        run_id="unknown_no_trade",
+    )
+    high_volatility = _state_snapshot_for_regime("high_volatility")
+    high_volatility["no_trade_default"] = True
+    high_volatility_scorecard = build_no_trade_scorecard(
+        current_market_state=high_volatility,
+        strategy_suitability_matrix=matrix,
+        run_id="high_volatility_no_trade",
+    )
+
+    current_clear = next(row for row in clear_trend["rows"] if row["current_state"])
+    current_unknown = next(row for row in unknown_scorecard["rows"] if row["current_state"])
+    current_high_volatility = next(
+        row for row in high_volatility_scorecard["rows"] if row["current_state"]
+    )
+    assert current_clear["assessment"] == "costly_supported_state"
+    assert current_clear["opportunity_cost_vs_best_selector_eligible_strategy"] > 0
+    assert "no_hindsight_profit_credit" in current_clear["reason_codes"]
+    assert current_unknown["assessment"] == "acceptable_uncertain_or_ood_state"
+    assert current_unknown["uncertainty_reduction_value"] > 0
+    assert current_high_volatility["assessment"] == "acceptable_uncertain_or_ood_state"
+    assert "high_volatility_safety_value" in current_high_volatility["reason_codes"]
+
+
+def test_paper_readiness_rejects_minimal_market_state_scorecard_json(tmp_path):
+    strategy_path = _write_paper_strategy(tmp_path, "PaperStrategy")
+    historical_dir, walk_forward_dir, training_dir = _write_paper_evidence(
+        tmp_path,
+        historical_gate_pass=True,
+        walk_forward_recommendation="pass",
+        training_recommendation="pass",
+    )
+    minimal_scorecard = tmp_path / "minimal_state_scorecard.json"
+    minimal_scorecard.write_text(
+        json.dumps(
+            {
+                "factory": "state_conditioned_scorecard",
+                "schema_version": "state_conditioned_scorecard_v1",
+                "diagnostic_only": False,
+                "selector_candidate_creation_allowed": True,
+                "paper_readiness_input_allowed": True,
+                "proxy_evidence": False,
+                "relaxed_thresholds_used": False,
+                "walk_forward_gate_passed": True,
+            }
+        ),
+        encoding="utf-8",
+    )
+    inputs = PaperReadinessInputs(
+        root_dir=tmp_path,
+        strategy="PaperStrategy",
+        run_id="paper_state_scorecard_check",
+        config_path=tmp_path / "config.json",
+        strategy_path=strategy_path,
+        historical_dir=historical_dir,
+        walk_forward_dir=walk_forward_dir,
+        training_dir=training_dir,
+        market_state_scorecard_path=minimal_scorecard,
+        requires_market_state_scorecard=True,
+        reviewer_notes=["Reviewed for no-startup paper readiness."],
+    )
+
+    readiness, _, _ = evaluate_paper_readiness(
+        inputs,
+        static_report=scan_paths([strategy_path]),
+        config=_paper_config("PaperStrategy"),
+        strategy_file=strategy_path,
+    )
+
+    assert readiness["readiness"] in {"blocked", "fail"}
+    assert "market_state_scorecard_full_schema" in {
+        check["name"] for check in readiness["failures"]
+    }
 
 
 def test_backtest_evidence_pipeline_writes_observation_scorecard_and_selector_artifacts(tmp_path):

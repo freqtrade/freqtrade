@@ -344,18 +344,25 @@ def build_current_market_state(snapshot: Mapping[str, Any]) -> dict[str, Any]:
         "pair_group": snapshot.get("pair_group"),
         "base_timeframe": snapshot.get("base_timeframe"),
         "aggregate_label": snapshot.get("aggregate_label"),
+        "horizon_profile_id": snapshot.get("horizon_profile_id"),
+        "state_encoder_version": snapshot.get("state_encoder_version"),
         "state_confidence": snapshot.get("state_confidence"),
         "uncertainty": snapshot.get("uncertainty"),
         "out_of_distribution_score": snapshot.get("out_of_distribution_score"),
         "stale_data": bool((snapshot.get("data_quality_summary") or {}).get("stale_data")),
         "no_trade_default": bool(snapshot.get("no_trade_default")),
         "horizon_conflict": snapshot.get("horizon_conflict"),
+        "feature_quality_summary": snapshot.get("feature_quality_summary"),
         "horizons": [
             {
                 "horizon": row.get("horizon"),
+                "horizon_group": row.get("horizon_group"),
+                "state_id": row.get("state_id"),
                 "label": row.get("label"),
                 "confidence": row.get("confidence"),
                 "uncertainty": row.get("uncertainty"),
+                "out_of_distribution_score": row.get("out_of_distribution_score"),
+                "unknown_reason": row.get("unknown_reason"),
                 "reason_codes": row.get("reason_codes", []),
             }
             for row in snapshot.get("horizons", [])

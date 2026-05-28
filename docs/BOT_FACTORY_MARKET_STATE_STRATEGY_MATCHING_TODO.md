@@ -1,7 +1,8 @@
 # Bot Factory Market State / Strategy Matching TODO
 
-Status: Increment 0 and first P0 local market-state artifact foundation
-implemented.
+Status: P0 local market-state artifact, state-conditioned scorecard,
+strategy suitability matrix, offline selector/no-trade matching, and strict
+paper-readiness validation foundation implemented.
 
 Created: 2026-05-27 JST.
 
@@ -441,7 +442,7 @@ STATE_DIAGNOSTIC_ONLY
 
 ### TODO
 
-- [ ] Extend observation ledger rows with `state_id`, `horizon_profile_id`, and `state_encoder_version`.
+- [x] Extend observation ledger rows with `state_id`, `horizon_profile_id`, and `state_encoder_version`.
 - [x] Build state-conditioned scorecards from checked backtest and walk-forward artifacts.
 - [x] Require actual checked strategy evidence for selector eligibility.
 - [x] Keep proxy replays and relaxed-threshold demos as `STATE_DIAGNOSTIC_ONLY`.
@@ -486,10 +487,18 @@ Implemented on 2026-05-28 JST:
   thresholds, selector-eligible state rows, and walk-forward evidence when the
   caller requires it. Missing walk-forward evidence produces
   `diagnostic_only=true`.
-- Remaining limitations: observation ledger rows are not yet natively extended
-  with state fields; incumbent/style baselines are not yet implemented; range
-  strategy, high-volatility unsafe global-PnL, underperform-hold bull trend, and
-  almost-always-no-trade opportunity-cost tests remain open.
+- Added native optional observation-ledger state fields. When any state field is
+  present, validation now requires complete `state_id`, `horizon_profile_id`,
+  and `state_encoder_version` plus `future_data_used=false`.
+- Added state-scorecard hard veto coverage for single-window selector rows,
+  missing trades, negative stress-cost edge, non-positive lower confidence
+  bound, pair/calendar concentration, and data quality failures.
+- Added tests covering observation state-field validation, trend-only and
+  range-only selector scope through the suitability/matching layer, and
+  no-trade opportunity-cost accounting.
+- Remaining limitations: incumbent/style baselines are not yet implemented;
+  drawdown contract and underperform-hold bull-trend rationale still need
+  deeper strategy-family-specific checks.
 
 ## P0: Diagnostic vs Selector-Eligible Boundary
 
@@ -514,16 +523,16 @@ paper_readiness_input_allowed
 ### TODO
 
 - [x] Add `evidence_eligibility = diagnostic_only | selector_eligible_candidate`.
-- [ ] Require `selector_candidate_creation_allowed=false` for:
+- [x] Require `selector_candidate_creation_allowed=false` for:
   - proxy close-to-close replays;
   - manually assembled scorecards;
   - relaxed calendar concentration;
   - single-window demos;
   - scorecards without checked strategy identity;
   - scorecards without walk-forward evidence.
-- [ ] Require `paper_readiness_input_allowed=false` unless the full strict scorecard schema passes.
+- [x] Require `paper_readiness_input_allowed=false` unless the full strict scorecard schema passes.
 - [x] Update `selection_candidate_from_scorecard()` to reject diagnostic-only artifacts.
-- [ ] Update paper readiness scorecard validation to reject minimal JSONs that only contain top-level flags.
+- [x] Update paper readiness scorecard validation to reject minimal JSONs that only contain top-level flags.
 - [x] Add tests that diagnostic replays cannot become selector candidates.
 
 Implemented on 2026-05-28 JST:
@@ -540,11 +549,13 @@ Implemented on 2026-05-28 JST:
 - Added focused tests proving strict state-conditioned evidence can validate for
   selector input, missing walk-forward evidence remains diagnostic-only, and a
   diagnostic scorecard cannot become a selector candidate.
-- Remaining limitations: paper readiness still validates old regime scorecards
-  only; it does not yet require the full state-conditioned scorecard schema or
-  reject minimal state-scorecard JSONs. The diagnostic boundary still needs
-  explicit tests for manually assembled, single-window, and missing-identity
-  state scorecards.
+- Added full state-conditioned scorecard validation to Phase 3 paper readiness
+  optional inputs. Minimal JSONs with only top-level flags are rejected because
+  selector rows, identity, baselines, and no-startup safety scope must pass.
+- Remaining limitations: old regime scorecard validation is preserved for
+  backward compatibility; future paper readiness still needs full generated
+  strategy identity joins across state scorecard, suitability matrix, config,
+  backtest, and walk-forward artifacts.
 
 ## P1: State Discovery / Clustering Research
 
@@ -633,13 +644,32 @@ columns:
 
 ### TODO
 
-- [ ] Generate matrix from state-conditioned scorecards only.
-- [ ] Include one row for `no_trade` as a first-class policy.
-- [ ] Mark missing states as `NO_SUPPORTED_STRATEGY`.
-- [ ] Mark states with weak data as `UNKNOWN_NO_TRADE`.
-- [ ] Mark states outside historical analog coverage as `OUT_OF_DISTRIBUTION_NO_TRADE`.
-- [ ] Add matrix diff report between candidate versions.
-- [ ] Add tests proving a strategy cannot inherit another strategy's state evidence.
+- [x] Generate matrix from state-conditioned scorecards only.
+- [x] Include one row for `no_trade` as a first-class policy.
+- [x] Mark missing states as `NO_SUPPORTED_STRATEGY`.
+- [x] Mark states with weak data as `UNKNOWN_NO_TRADE`.
+- [x] Mark states outside historical analog coverage as `OUT_OF_DISTRIBUTION_NO_TRADE`.
+- [x] Add matrix diff report between candidate versions.
+- [x] Add tests proving a strategy cannot inherit another strategy's state evidence.
+
+Implemented on 2026-05-28 JST:
+
+- Added `freqtrade_ext/bot_factory/strategy_suitability.py` with
+  `strategy_suitability_matrix_v1` construction from one or more strict
+  `state_conditioned_scorecard_v1` artifacts.
+- Added `scripts/bot_factory_build_strategy_suitability.py` to write
+  `data/strategy_suitability/<run_id>/strategy_state_suitability_matrix.json`
+  and `strategy_suitability_report.md` from local JSON artifacts only.
+- Matrix rows preserve the state-scoped strategy identity unit, state ID,
+  horizon profile, cost model, stress-cost utility, uncertainty, baseline
+  deltas, blockers, and reason codes.
+- `no_trade` is represented as a first-class row for every known state scope.
+  Missing states produce explicit no-trade rows, weak/diagnostic rows cannot
+  become selector inputs, and identity mismatches produce
+  `IDENTITY_MISMATCH` rather than inheriting another strategy's evidence.
+- Added matrix validation and matrix-diff payload support, plus regression
+  tests proving a range strategy cannot inherit trend-state evidence and a
+  tampered candidate identity is not selector-eligible.
 
 ## P1: Selector / Matching Policy
 
@@ -695,8 +725,8 @@ safety_scope
 
 ### TODO
 
-- [ ] Implement offline selector matching over local artifacts only.
-- [ ] Default to `no_trade` when:
+- [x] Implement offline selector matching over local artifacts only.
+- [x] Default to `no_trade` when:
   - state confidence is below threshold;
   - state is out-of-distribution;
   - state evidence is under-sampled;
@@ -706,9 +736,9 @@ safety_scope
   - strategy identity mismatches;
   - cooldown/hysteresis blocks switching.
 - [ ] Use predeclared scoring weights per state/horizon group.
-- [ ] Include `no_trade` and incumbent in every comparison.
-- [ ] Log rejected alternatives and reason codes.
-- [ ] Add tests for:
+- [x] Include `no_trade` and incumbent in every comparison.
+- [x] Log rejected alternatives and reason codes.
+- [x] Add tests for:
   - clear uptrend selects only a trend-eligible strategy;
   - clear range selects only a range-eligible strategy;
   - multi-horizon conflict returns `no_trade`;
@@ -717,6 +747,28 @@ safety_scope
   - two same-state candidates are ranked by stress-cost utility, not raw PnL;
   - cooldown prevents churn;
   - hysteresis keeps previous strategy unless improvement margin is material.
+
+Implemented on 2026-05-28 JST:
+
+- Added `freqtrade_ext/bot_factory/selector_matching.py` with
+  `selector_matching_decision_v1` and local-only matching over
+  `current_market_state_v1` or `market_state_snapshot_v1` plus
+  `strategy_suitability_matrix_v1`.
+- Added `scripts/bot_factory_match_strategy_to_market_state.py` to emit
+  `selector_matching_decision.json`, `selector_matching_report.md`, and
+  `no_trade_scorecard.json`.
+- Matching defaults to `no_trade` for stale local data, low confidence, OOD,
+  mixed/transition/unknown states, horizon conflict, feature-quality failure,
+  stale cost-model flags, matrix validation failure, no eligible state row,
+  identity mismatch, and cooldown-blocked switching.
+- Selector comparisons include no-trade policy rows and incumbent rows; selected
+  strategies are ranked by stress-cost utility / post-cost utility / lower
+  confidence bound rather than raw PnL.
+- Added tests for clear trend-up, clear range, multi-horizon conflict, OOD,
+  stale data, stress-utility ranking, cooldown, and hysteresis behavior.
+
+Remaining limitation: scoring weights are deterministic and explicit in code,
+but not yet externalized as a versioned per-state/horizon weight artifact.
 
 ## P1: No-Trade Evaluation
 
@@ -739,17 +791,29 @@ reason_codes
 
 ### TODO
 
-- [ ] Build `no_trade_scorecard.json`.
-- [ ] Evaluate no-trade by state and horizon profile.
-- [ ] Separate:
+- [x] Build `no_trade_scorecard.json`.
+- [x] Evaluate no-trade by state and horizon profile.
+- [x] Separate:
   - loss avoidance;
   - opportunity cost;
   - uncertainty / OOD safety value.
-- [ ] Do not reward no-trade merely for avoiding losses in hindsight.
-- [ ] Add tests:
+- [x] Do not reward no-trade merely for avoiding losses in hindsight.
+- [x] Add tests:
   - no-trade is good in high-volatility crash state;
   - no-trade is costly in clear trend-up state;
   - no-trade is acceptable in unknown/OOD state even if opportunity cost exists.
+
+Implemented on 2026-05-28 JST:
+
+- `build_no_trade_scorecard()` emits `no_trade_scorecard_v1` with avoided
+  drawdown, opportunity cost versus hold/incumbent/best selector-eligible
+  strategy, uncertainty-reduction value, confidence, assessment, and reason
+  codes.
+- The no-trade scorecard records opportunity cost in supported clear trends and
+  explicitly includes `no_hindsight_profit_credit`, so avoiding losses is not
+  treated as a standalone reward.
+- Added tests for costly clear trend-up no-trade, acceptable unknown/OOD-style
+  no-trade, and high-volatility no-trade safety value.
 
 ## P1: ML-Assisted State And Suitability Research
 
@@ -882,10 +946,10 @@ Feed strict state-conditioned scorecards into Phase 3 paper readiness without gr
 
 ### TODO
 
-- [ ] Add optional `--market-state-scorecard` and `--strategy-suitability-matrix` inputs to future paper readiness.
-- [ ] Require full schema validation, not only top-level flags.
+- [x] Add optional `--market-state-scorecard` and `--strategy-suitability-matrix` inputs to future paper readiness.
+- [x] Require full schema validation, not only top-level flags.
 - [ ] Require candidate identity to match generated strategy, backtest, walk-forward, scorecard, and suitability matrix.
-- [ ] Require `paper_readiness_input_allowed=true` only for strict evidence, not diagnostic evidence.
+- [x] Require `paper_readiness_input_allowed=true` only for strict evidence, not diagnostic evidence.
 - [ ] Reject scorecards with:
   - `diagnostic_only=true`
   - `proxy_evidence=true`
@@ -893,8 +957,24 @@ Feed strict state-conditioned scorecards into Phase 3 paper readiness without gr
   - missing walk-forward evidence
   - missing state coverage
   - missing no-trade baseline
-- [ ] Preserve existing Phase 3 no-startup semantics.
-- [ ] Add tests that a market-state scorecard cannot start paper/dry-run/live processes.
+- [x] Preserve existing Phase 3 no-startup semantics.
+- [x] Add tests that a market-state scorecard cannot start paper/dry-run/live processes.
+
+Implemented on 2026-05-28 JST:
+
+- Extended `PaperReadinessInputs` and
+  `scripts/bot_factory_check_paper_readiness.py` with optional
+  `--market-state-scorecard`, `--requires-market-state-scorecard`,
+  `--strategy-suitability-matrix`, and
+  `--requires-strategy-suitability-matrix` inputs.
+- Paper readiness now validates state-conditioned scorecards and suitability
+  matrices with full schema checks, rejects diagnostic/minimal top-level-only
+  scorecard JSON, and preserves the existing no-startup/no-process safety
+  scope.
+
+Remaining limitation: candidate identity is not yet joined all the way across
+generated strategy source, config, backtest metrics, walk-forward metrics,
+state scorecard, and suitability matrix in one readiness identity proof.
 
 ## P2: Future Shadow Observation Compatibility
 
@@ -959,13 +1039,13 @@ Next Required Gate
 
 ### TODO
 
-- [ ] Add `current_market_state_report.md`.
-- [ ] Add `strategy_suitability_report.md`.
-- [ ] Add `selector_matching_report.md`.
-- [ ] Include stable reason codes and remediation hints.
-- [ ] Include "why not trade?" section.
-- [ ] Include "what would need to become true before selection?" section.
-- [ ] Include "this does not permit paper/live" section.
+- [x] Add `current_market_state_report.md`.
+- [x] Add `strategy_suitability_report.md`.
+- [x] Add `selector_matching_report.md`.
+- [x] Include stable reason codes and remediation hints.
+- [x] Include "why not trade?" section.
+- [x] Include "what would need to become true before selection?" section.
+- [x] Include "this does not permit paper/live" section.
 
 ## P3: Research Questions
 
@@ -1004,18 +1084,18 @@ Recommended safe order:
 
 This design is ready to implement only when:
 
-- [ ] Market state artifacts are multi-horizon, timestamped, and local-only.
-- [ ] Stale local data cannot be reported as live/current without an as-of warning.
+- [x] Market state artifacts are multi-horizon, timestamped, and local-only.
+- [x] Stale local data cannot be reported as live/current without an as-of warning.
 - [ ] Strategy evaluation is state-conditioned and includes no-trade / hold / incumbent baselines.
-- [ ] Diagnostic replay cannot become selector eligibility.
+- [x] Diagnostic replay cannot become selector eligibility.
 - [ ] ML output cannot bypass strict scorecards or paper readiness.
-- [ ] Unknown, mixed, transition, OOD, and stale states default to no_trade.
-- [ ] Time horizons are explicit; 5m trend and multi-month trend are not treated as the same state.
+- [x] Unknown, mixed, transition, OOD, and stale states default to no_trade.
+- [x] Time horizons are explicit; 5m trend and multi-month trend are not treated as the same state.
 - [ ] State definitions are frozen before evaluating holdout strategy performance.
-- [ ] Selector decisions include rejected alternatives and reason codes.
-- [ ] All scorecards preserve candidate identity and evidence version lineage.
-- [ ] Phase 3 readiness remains no-startup and cannot start paper/dry-run/live.
-- [ ] Reports clearly state what the artifact permits and what it does not permit.
+- [x] Selector decisions include rejected alternatives and reason codes.
+- [x] All scorecards preserve candidate identity and evidence version lineage.
+- [x] Phase 3 readiness remains no-startup and cannot start paper/dry-run/live.
+- [x] Reports clearly state what the artifact permits and what it does not permit.
 
 ## Suggested First Safe Increment
 
