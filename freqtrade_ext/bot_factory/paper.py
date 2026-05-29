@@ -8,9 +8,14 @@ import re
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Iterable, Sequence
+from typing import Any, Iterable, Mapping, Sequence
 
 from freqtrade_ext.bot_factory.backtest_results import BacktestMetrics, evaluate_initial_gate
+from freqtrade_ext.bot_factory.candidate_identity import (
+    compare_candidate_identities,
+    extract_candidate_identity,
+    load_candidate_identity_from_strategy_source,
+)
 from freqtrade_ext.bot_factory.safety import SafetyReport
 from freqtrade_ext.bot_factory.state_conditioning import (
     validate_state_conditioned_scorecard_for_selector,
@@ -872,7 +877,165 @@ def _market_state_scorecard_evidence_checks(inputs: PaperReadinessInputs) -> lis
                 "process_control": safety.get("process_control"),
             },
         ),
+        *_market_state_scorecard_identity_checks(payload, inputs),
     ]
+
+
+def _market_state_scorecard_identity_checks(
+    payload: Mapping[str, Any],
+    inputs: PaperReadinessInputs,
+) -> list[ReadinessCheck]:
+    scorecard_identity = extract_candidate_identity(payload)
+    return [
+        _check(
+            "market_state_scorecard_matches_strategy",
+            _scorecard_identity_matches_strategy(scorecard_identity, inputs.strategy),
+            "failure",
+            "Market-state scorecard candidate identity must match the readiness strategy.",
+            {
+                "strategy": inputs.strategy,
+                "scorecard_strategy_tokens": _identity_strategy_tokens(
+                    scorecard_identity
+                ),
+            },
+        ),
+        _market_state_scorecard_artifact_identity_check(
+            name="market_state_scorecard_matches_historical_metrics",
+            expected_identity=scorecard_identity,
+            path=inputs.historical_dir / "metrics.json",
+            root_dir=inputs.root_dir,
+            artifact_label="historical_metrics",
+        ),
+        _market_state_scorecard_artifact_identity_check(
+            name="market_state_scorecard_matches_walk_forward_metrics",
+            expected_identity=scorecard_identity,
+            path=inputs.walk_forward_dir / "walk_forward_metrics.json",
+            root_dir=inputs.root_dir,
+            artifact_label="walk_forward_metrics",
+        ),
+        _market_state_scorecard_strategy_source_identity_check(
+            scorecard_identity=scorecard_identity,
+            inputs=inputs,
+        ),
+        _market_state_scorecard_matrix_identity_check(
+            scorecard_identity=scorecard_identity,
+            inputs=inputs,
+        ),
+    ]
+
+
+def _market_state_scorecard_artifact_identity_check(
+    *,
+    name: str,
+    expected_identity: Mapping[str, Any] | None,
+    path: Path,
+    root_dir: Path,
+    artifact_label: str,
+) -> ReadinessCheck:
+    if not path.is_file():
+        return ReadinessCheck(
+            name=name,
+            status="blocked",
+            severity="blocker",
+            message="Candidate identity could not be compared because the artifact is missing.",
+            details={"path": _safe_relative_path(path, root_dir)},
+        )
+    artifact = load_json_file(path)
+    comparison = compare_candidate_identities(
+        expected_identity,
+        artifact,
+        observed_label=artifact_label,
+    )
+    return _check(
+        name,
+        comparison["ok"],
+        "failure",
+        "Market-state scorecard candidate identity must match the evidence artifact.",
+        {
+            "path": _safe_relative_path(path, root_dir),
+            "comparison": comparison,
+        },
+    )
+
+
+def _market_state_scorecard_strategy_source_identity_check(
+    *,
+    scorecard_identity: Mapping[str, Any] | None,
+    inputs: PaperReadinessInputs,
+) -> ReadinessCheck:
+    strategy_path = (
+        inputs.strategy_path
+        if inputs.strategy_path.is_absolute()
+        else inputs.root_dir / inputs.strategy_path
+    )
+    source_identity = load_candidate_identity_from_strategy_source(
+        strategy_path,
+        strategy_class_name=inputs.strategy,
+        root_dir=inputs.root_dir,
+    )
+    comparison = (
+        compare_candidate_identities(
+            scorecard_identity,
+            source_identity,
+            observed_label="strategy_source",
+        )
+        if source_identity is not None
+        else None
+    )
+    return _check(
+        "market_state_scorecard_matches_strategy_source",
+        source_identity is None or bool(comparison and comparison["ok"]),
+        "failure",
+        "Market-state scorecard candidate identity must match embedded strategy source identity when present.",
+        {
+            "path": _safe_relative_path(strategy_path, inputs.root_dir),
+            "strategy_source_identity_present": source_identity is not None,
+            "comparison": comparison,
+        },
+    )
+
+
+def _market_state_scorecard_matrix_identity_check(
+    *,
+    scorecard_identity: Mapping[str, Any] | None,
+    inputs: PaperReadinessInputs,
+) -> ReadinessCheck:
+    path = inputs.strategy_suitability_matrix_path
+    if path is None:
+        return _check(
+            "market_state_scorecard_matches_strategy_suitability_matrix",
+            True,
+            "failure",
+            "No strategy suitability matrix was supplied for market-state identity join.",
+            {"matrix_supplied": False},
+        )
+    resolved = path if path.is_absolute() else inputs.root_dir / path
+    if not resolved.is_file():
+        return ReadinessCheck(
+            name="market_state_scorecard_matches_strategy_suitability_matrix",
+            status="blocked",
+            severity="blocker",
+            message="Strategy suitability matrix identity could not be compared because the artifact is missing.",
+            details={"path": _safe_relative_path(resolved, inputs.root_dir)},
+        )
+    matrix = load_json_file(resolved)
+    selector_rows = _selector_eligible_matrix_rows(matrix)
+    matching_rows = [
+        row
+        for row in selector_rows
+        if _matrix_selector_row_matches_identity(row, scorecard_identity)
+    ]
+    return _check(
+        "market_state_scorecard_matches_strategy_suitability_matrix",
+        bool(matching_rows),
+        "failure",
+        "Market-state scorecard candidate identity must match a selector-eligible matrix row when supplied.",
+        {
+            "path": _safe_relative_path(resolved, inputs.root_dir),
+            "selector_row_count": len(selector_rows),
+            "matching_selector_row_count": len(matching_rows),
+        },
+    )
 
 
 def _strategy_suitability_matrix_evidence_checks(
@@ -986,6 +1149,43 @@ def _selector_eligible_matrix_rows(payload: dict[str, Any]) -> list[dict[str, An
 
 def _matrix_row_matches_strategy(row: dict[str, Any], strategy: str) -> bool:
     return strategy in _matrix_row_strategy_tokens(row)
+
+
+def _scorecard_identity_matches_strategy(
+    identity: Mapping[str, Any] | None, strategy: str
+) -> bool:
+    return strategy in _identity_strategy_tokens(identity)
+
+
+def _identity_strategy_tokens(identity: Mapping[str, Any] | None) -> list[str]:
+    if not isinstance(identity, Mapping):
+        return []
+    return sorted(
+        {
+            str(value)
+            for value in (
+                identity.get("strategy_id"),
+                identity.get("strategy_class_name"),
+            )
+            if value not in (None, "")
+        }
+    )
+
+
+def _matrix_selector_row_matches_identity(
+    row: Mapping[str, Any], identity: Mapping[str, Any] | None
+) -> bool:
+    if not isinstance(identity, Mapping):
+        return False
+    identity_unit = row.get("strategy_identity_unit") or {}
+    if not isinstance(identity_unit, Mapping):
+        return False
+    comparison = compare_candidate_identities(
+        identity,
+        identity_unit,
+        observed_label="strategy_suitability_matrix_row",
+    )
+    return bool(comparison["ok"])
 
 
 def _matrix_row_strategy_tokens(row: dict[str, Any]) -> list[str]:

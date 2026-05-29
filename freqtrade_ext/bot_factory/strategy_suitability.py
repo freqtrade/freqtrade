@@ -477,12 +477,16 @@ def _strategy_identity_unit(identity: Mapping[str, Any]) -> dict[str, Any]:
         "candidate_id": identity.get("candidate_id"),
         "strategy_id": identity.get("strategy_id"),
         "strategy_class_name": identity.get("strategy_class_name"),
+        "strategy_source_path": identity.get("strategy_source_path"),
         "strategy_version": identity.get("strategy_version"),
         "signal_version": identity.get("signal_version"),
         "risk_policy_version": identity.get("risk_policy_version"),
+        "regime_classifier_version": identity.get("regime_classifier_version"),
         "cost_model_id": identity.get("cost_model_id"),
         "allowed_pairs": list(identity.get("allowed_pairs") or []),
         "allowed_timeframes": list(identity.get("allowed_timeframes") or []),
+        "created_at": identity.get("created_at"),
+        "source_artifacts": dict(identity.get("source_artifacts") or {}),
     }
 
 

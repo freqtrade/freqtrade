@@ -497,9 +497,22 @@ Implemented on 2026-05-28 JST:
   allows artifact creation. Missing walk-forward evidence still records
   `walk_forward_gate_passed=false`, keeps the artifact diagnostic-only, and
   cannot set selector or paper-readiness input flags.
+- Review follow-up on 2026-05-29 JST: derived `1w` horizons now use
+  Monday-anchored weekly resampling to match Freqtrade candle boundaries.
+- Review follow-up on 2026-05-29 JST: state-conditioned selector eligibility
+  now requires complete source observation state scope and `future_data_used=false`;
+  snapshot label matching is retained only as diagnostic/report context.
+- Review follow-up on 2026-05-29 JST: Phase 3 paper readiness now joins
+  market-state scorecard candidate identity to the readiness strategy,
+  historical metrics, walk-forward metrics, embedded strategy source identity
+  when present, and supplied suitability-matrix selector rows.
+- Review follow-up on 2026-05-29 JST: suitability-matrix strategy rows now
+  retain the full candidate identity unit needed for paper-readiness identity
+  joins.
 - Added native optional observation-ledger state fields. When any state field is
   present, validation now requires complete `state_id`, `horizon_profile_id`,
-  and `state_encoder_version` plus `future_data_used=false`.
+  `state_encoder_version`, `state_window_id`, feature/label cutoff timestamps,
+  decision-window start/end, plus `future_data_used=false`.
 - Added state-scorecard hard veto coverage for single-window selector rows,
   missing trades, negative stress-cost edge, non-positive lower confidence
   bound, pair/calendar concentration, and data quality failures.

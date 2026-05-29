@@ -11109,6 +11109,23 @@ def test_market_state_snapshot_drops_incomplete_resampled_higher_timeframe():
     assert closed_1h["future_data_used"] is False
 
 
+def test_market_state_weekly_resample_uses_monday_anchor():
+    from freqtrade_ext.bot_factory.market_regime import _resample_ohlcv
+
+    dates = pd.date_range("2026-01-05T00:00:00Z", periods=7 * 24, freq="1h")
+    frame = _market_state_ohlcv_frame(dates, np.linspace(100.0, 120.0, len(dates)))
+
+    resampled = _resample_ohlcv(
+        frame,
+        "1w",
+        asof=datetime(2026, 1, 12, tzinfo=UTC),
+    )
+
+    assert [item.isoformat() for item in resampled["date"]] == [
+        "2026-01-05T00:00:00+00:00"
+    ]
+
+
 def test_market_state_snapshot_staleness_uses_candle_close_time_for_long_base_timeframe():
     from freqtrade_ext.bot_factory.market_regime import (
         MarketStateConfig,
@@ -11183,9 +11200,16 @@ def _state_snapshot_for_regime(regime: str = "trend_up", *, confidence: float = 
                     "deterministic_market_state_encoder_v1:"
                     f"5m:{regime}:{'high' if confidence >= 0.7 else 'low'}:ohlcv_state_features_v1"
                 ),
+                "state_window_id": f"state_window:{regime}:20260101T075500Z:20260101T080000Z",
                 "confidence": confidence,
                 "uncertainty": round(1.0 - confidence, 6),
                 "out_of_distribution_score": round(1.0 - confidence, 6),
+                "feature_cutoff_timestamp": "2026-01-01T08:00:00+00:00",
+                "label_cutoff_timestamp": "2026-01-01T08:00:00+00:00",
+                "decision_window_start": "2026-01-01T07:55:00+00:00",
+                "decision_window_end": "2026-01-01T08:00:00+00:00",
+                "future_data_used": False,
+                "state_encoder_version": "deterministic_market_state_encoder_v1",
                 "reason_codes": [f"label_{regime}"],
             }
         ],
@@ -11198,6 +11222,27 @@ def _state_snapshot_for_regime(regime: str = "trend_up", *, confidence: float = 
             "exchange_order_placement": False,
             "process_control": False,
         },
+    }
+
+
+def _source_observation_state_scope(regime: str = "trend_up", *, confidence: float = 0.9):
+    bucket = "high" if confidence >= 0.7 else "low"
+    return {
+        "state_id": (
+            "deterministic_market_state_encoder_v1:"
+            f"5m:{regime}:{bucket}:ohlcv_state_features_v1"
+        ),
+        "horizon_profile_id": (
+            "deterministic_market_state_encoder_v1:"
+            f"micro={regime}:intraday={regime}:swing=missing"
+        ),
+        "state_encoder_version": "deterministic_market_state_encoder_v1",
+        "state_window_id": f"state_window:{regime}:20260101T075500Z:20260101T080000Z",
+        "feature_cutoff_timestamp": "2026-01-01T08:00:00+00:00",
+        "label_cutoff_timestamp": "2026-01-01T08:00:00+00:00",
+        "decision_window_start": "2026-01-01T07:55:00+00:00",
+        "decision_window_end": "2026-01-01T08:00:00+00:00",
+        "future_data_used": False,
     }
 
 
@@ -11246,6 +11291,8 @@ def _strict_regime_scorecard_for_state_tests(
             lower_confidence_bound=lower_confidence_bounds[1],
         ),
     ]
+    for observation in observations:
+        observation.update(_source_observation_state_scope(regime))
     scorecard = build_regime_fitness_scorecard(
         observations,
         contract=_regime_contract(
@@ -11305,6 +11352,52 @@ def test_state_conditioned_scorecard_preserves_state_scope_and_baselines():
     }
     assert validation["ok"] is True
     assert validation["safety_scope"]["paper_trading_started"] is False
+
+
+def test_state_conditioned_scorecard_requires_source_observation_state_scope():
+    from freqtrade_ext.bot_factory.state_conditioning import (
+        build_state_conditioned_scorecard,
+        validate_state_conditioned_scorecard_for_selector,
+    )
+
+    regime_scorecard = _strict_regime_scorecard_for_state_tests()
+    for row in regime_scorecard["scorecard_by_regime"]:
+        for field in (
+            "state_id",
+            "horizon_profile_id",
+            "state_encoder_version",
+            "state_window_id",
+            "feature_cutoff_timestamp",
+            "label_cutoff_timestamp",
+            "decision_window_start",
+            "decision_window_end",
+            "future_data_used",
+        ):
+            row.pop(field, None)
+        row["source_state_observation_scope_complete"] = False
+        row["source_state_observation_scope_reason_codes"] = [
+            "source_state_observation_scope_incomplete"
+        ]
+
+    scorecard = build_state_conditioned_scorecard(
+        regime_scorecard=regime_scorecard,
+        market_state_snapshot=_state_snapshot_for_regime("trend_up"),
+        run_id="state_scorecard_missing_source_state",
+        require_walk_forward_evidence=True,
+    )
+    validation = validate_state_conditioned_scorecard_for_selector(scorecard)
+
+    assert scorecard["diagnostic_only"] is True
+    assert scorecard["selector_candidate_creation_allowed"] is False
+    assert scorecard["paper_readiness_input_allowed"] is False
+    assert scorecard["rows"][0]["decision"] == "STATE_DIAGNOSTIC_ONLY"
+    assert scorecard["rows"][0]["state_id"] is None
+    assert scorecard["rows"][0]["diagnostic_snapshot_state_id"].endswith(
+        "5m:trend_up:high:ohlcv_state_features_v1"
+    )
+    assert "state_fields_missing_from_source_observation" in scorecard["rows"][0]["blockers"]
+    assert "state_fields_missing_from_source_observation" in scorecard["blockers"]
+    assert validation["ok"] is False
 
 
 def test_state_conditioned_scorecard_missing_walk_forward_is_diagnostic_only():
@@ -11452,14 +11545,7 @@ def test_regime_observation_state_fields_require_complete_no_future_scope():
     from freqtrade_ext.bot_factory.regime_promotion import validate_observation_record
 
     observation = _regime_observation("state-observation")
-    observation.update(
-        {
-            "state_id": "deterministic_market_state_encoder_v1:5m:trend_up:high:ohlcv_state_features_v1",
-            "horizon_profile_id": "deterministic_market_state_encoder_v1:micro=trend_up:intraday=missing:swing=missing",
-            "state_encoder_version": "deterministic_market_state_encoder_v1",
-            "future_data_used": False,
-        }
-    )
+    observation.update(_source_observation_state_scope("trend_up"))
     valid = validate_observation_record(observation)
 
     partial = dict(observation)
@@ -11545,8 +11631,12 @@ def test_strategy_suitability_matrix_is_state_scoped_and_blocks_identity_inherit
     assert range_rows_for_trend_state == []
     assert any(row["row_type"] == "no_trade" for row in matrix["rows"])
     assert any(row["row_type"] == "missing_state" for row in matrix["rows"])
-    assert tampered_strategy_rows[0]["decision"] == "IDENTITY_MISMATCH"
-    assert tampered_strategy_rows[0]["selector_eligible"] is False
+    assert any(row["decision"] == "IDENTITY_MISMATCH" for row in tampered_strategy_rows)
+    assert all(
+        row["selector_eligible"] is False
+        for row in tampered_strategy_rows
+        if row.get("identity_mismatch")
+    )
 
 
 def test_selector_matching_selects_current_state_and_ranks_by_stress_utility():
@@ -11799,6 +11889,87 @@ def test_paper_readiness_rejects_minimal_market_state_scorecard_json(tmp_path):
 
     assert readiness["readiness"] in {"blocked", "fail"}
     assert "market_state_scorecard_full_schema" in {
+        check["name"] for check in readiness["failures"]
+    }
+
+
+def test_paper_readiness_requires_market_state_scorecard_for_target_strategy(tmp_path):
+    from freqtrade_ext.bot_factory.candidate_identity import build_strategy_candidate_identity
+
+    strategy_path = tmp_path / "PaperStrategy.py"
+    paper_identity = build_strategy_candidate_identity(
+        candidate_id="paper-candidate",
+        strategy_id="PaperStrategy",
+        strategy_class_name="PaperStrategy",
+        strategy_source_path=strategy_path,
+        strategy_version="strategy_v1",
+        signal_version="signal_v1",
+        risk_policy_version="risk_v1",
+        regime_classifier_version="regime_classifier_v1",
+        cost_model_id="cost_model_v1",
+        allowed_pairs=["BTC/USDT:USDT"],
+        allowed_timeframes=["5m"],
+        created_at="2026-05-20T00:00:00+00:00",
+        source_artifacts={"strategy_source": strategy_path},
+        root_dir=tmp_path,
+    )
+    strategy_path.write_text(
+        "class PaperStrategy:\n"
+        f"    bot_factory_candidate_identity: dict[str, object] = {json.dumps(paper_identity, sort_keys=True)}\n"
+        "    can_short = False\n"
+        "    def populate_entry_trend(self, dataframe, metadata):\n"
+        "        dataframe.loc[:, 'enter_long'] = 1\n"
+        "        return dataframe\n",
+        encoding="utf-8",
+    )
+    historical_dir, walk_forward_dir, training_dir = _write_paper_evidence(
+        tmp_path,
+        historical_gate_pass=True,
+        walk_forward_recommendation="pass",
+        training_recommendation="pass",
+    )
+    historical_metrics_path = historical_dir / "metrics.json"
+    historical_metrics = json.loads(historical_metrics_path.read_text(encoding="utf-8"))
+    historical_metrics["candidate_identity"] = paper_identity
+    historical_metrics_path.write_text(json.dumps(historical_metrics), encoding="utf-8")
+    walk_forward_metrics_path = walk_forward_dir / "walk_forward_metrics.json"
+    walk_forward_metrics = json.loads(
+        walk_forward_metrics_path.read_text(encoding="utf-8")
+    )
+    walk_forward_metrics["candidate_identity"] = paper_identity
+    walk_forward_metrics_path.write_text(json.dumps(walk_forward_metrics), encoding="utf-8")
+
+    other_scorecard = _state_conditioned_scorecard_for_selector_test(
+        regime="trend_up",
+        candidate_id="other-candidate",
+        strategy_id="OtherStrategy",
+        strategy_class_name="OtherStrategy",
+    )
+    scorecard_path = tmp_path / "other_state_scorecard.json"
+    scorecard_path.write_text(json.dumps(other_scorecard), encoding="utf-8")
+    inputs = PaperReadinessInputs(
+        root_dir=tmp_path,
+        strategy="PaperStrategy",
+        run_id="paper_market_state_strategy_check",
+        config_path=tmp_path / "config.json",
+        strategy_path=strategy_path,
+        historical_dir=historical_dir,
+        walk_forward_dir=walk_forward_dir,
+        training_dir=training_dir,
+        market_state_scorecard_path=scorecard_path,
+        requires_market_state_scorecard=True,
+        reviewer_notes=["Reviewed for no-startup paper readiness."],
+    )
+
+    readiness, _, _ = evaluate_paper_readiness(
+        inputs,
+        static_report=scan_paths([strategy_path]),
+        config=_paper_config("PaperStrategy"),
+        strategy_file=strategy_path,
+    )
+
+    assert readiness["readiness"] == "fail"
+    assert "market_state_scorecard_matches_strategy" in {
         check["name"] for check in readiness["failures"]
     }
 

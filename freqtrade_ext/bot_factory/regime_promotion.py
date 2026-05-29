@@ -84,6 +84,15 @@ OPTIONAL_STATE_OBSERVATION_FIELDS = (
     "state_id",
     "horizon_profile_id",
     "state_encoder_version",
+    "state_window_id",
+    "feature_cutoff_timestamp",
+    "label_cutoff_timestamp",
+    "decision_window_start",
+    "decision_window_end",
+)
+REQUIRED_STATE_OBSERVATION_SCOPE_FIELDS = (
+    *OPTIONAL_STATE_OBSERVATION_FIELDS,
+    "future_data_used",
 )
 EVIDENCE_VERSION_FIELDS = (
     "strategy_version",
@@ -521,7 +530,7 @@ def validate_observation_record(
     if state_fields_present:
         missing_state_fields = [
             field
-            for field in OPTIONAL_STATE_OBSERVATION_FIELDS
+            for field in REQUIRED_STATE_OBSERVATION_SCOPE_FIELDS
             if observation.get(field) in (None, "")
         ]
         checks.append(
@@ -546,7 +555,7 @@ def validate_observation_record(
             _check(
                 "state_observation_fields_not_supplied",
                 True,
-                {"optional_state_fields": list(OPTIONAL_STATE_OBSERVATION_FIELDS)},
+                {"optional_state_fields": list(REQUIRED_STATE_OBSERVATION_SCOPE_FIELDS)},
             )
         )
     identity_validation = validate_candidate_identity(observation)
@@ -1300,6 +1309,7 @@ def _regime_row(
     no_trade_opportunity_cost = sum(
         float(_number(item.get("no_trade_opportunity_cost")) or 0.0) for item in rows
     )
+    state_observation_scope = _state_observation_scope(rows)
     reason_codes: list[str] = []
     regime_max_drawdown = contract.maximum_drawdown_by_regime.get(regime, thresholds.max_drawdown)
 
@@ -1378,6 +1388,70 @@ def _regime_row(
         "pair_concentration": pair_concentration,
         "calendar_concentration": calendar_concentration,
         "data_quality_pass": data_quality_pass,
+        **state_observation_scope,
+    }
+
+
+def _state_observation_scope(rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
+    if not rows:
+        return {
+            "source_state_observation_scope_complete": False,
+            "source_state_observation_scope_reason_codes": [
+                "source_state_observation_scope_empty"
+            ],
+        }
+
+    missing_rows = [
+        {
+            "observation_id": row.get("observation_id"),
+            "missing_fields": [
+                field
+                for field in REQUIRED_STATE_OBSERVATION_SCOPE_FIELDS
+                if row.get(field) in (None, "")
+            ],
+        }
+        for row in rows
+        if any(
+            row.get(field) in (None, "")
+            for field in REQUIRED_STATE_OBSERVATION_SCOPE_FIELDS
+        )
+    ]
+    future_rows = [
+        row.get("observation_id")
+        for row in rows
+        if row.get("future_data_used") is not False
+    ]
+    inconsistent_fields = [
+        field
+        for field in OPTIONAL_STATE_OBSERVATION_FIELDS
+        if len({str(row.get(field) or "") for row in rows}) > 1
+    ]
+    reason_codes: list[str] = []
+    if missing_rows:
+        reason_codes.append("source_state_observation_scope_incomplete")
+    if future_rows:
+        reason_codes.append("source_state_observation_future_data_used")
+    if inconsistent_fields:
+        reason_codes.append("source_state_observation_scope_inconsistent")
+    if reason_codes:
+        return {
+            "source_state_observation_scope_complete": False,
+            "source_state_observation_scope_reason_codes": reason_codes,
+            "source_state_observation_scope_diagnostics": {
+                "missing_rows": missing_rows,
+                "future_data_used_rows": future_rows,
+                "inconsistent_fields": inconsistent_fields,
+            },
+        }
+
+    first = rows[0]
+    return {
+        "source_state_observation_scope_complete": True,
+        "source_state_observation_scope_reason_codes": [],
+        **{
+            field: first.get(field)
+            for field in REQUIRED_STATE_OBSERVATION_SCOPE_FIELDS
+        },
     }
 
 

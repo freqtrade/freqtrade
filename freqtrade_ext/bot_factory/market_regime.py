@@ -1017,7 +1017,7 @@ def _pandas_resample_rule(timeframe: str) -> str | None:
     if unit == "d":
         return f"{amount}D"
     if unit == "w":
-        return f"{amount}W"
+        return f"{amount}W-MON"
     return None
 
 

@@ -99,6 +99,43 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-29 JST for PR #11 review follow-up on state-scope and
+paper-readiness identity boundaries.
+
+- [x] Addressed review comment `3323659634`: derived `1w` market-state
+  horizons now resample with a Monday-anchored `W-MON` rule, matching
+  Freqtrade weekly candle boundaries instead of pandas Sunday-anchored `W`.
+- [x] Addressed issue comment `4574970985` P1 state-scope boundary:
+  state-conditioned selector eligibility now requires complete source
+  observation state scope (`state_id`, `horizon_profile_id`,
+  `state_encoder_version`, `state_window_id`, feature/label cutoffs,
+  decision-window start/end, and `future_data_used=false`). Snapshot label
+  matching remains diagnostic/report support and cannot grant selector or
+  paper-readiness flags.
+- [x] Addressed issue comment `4574970985` P1 paper-readiness identity join:
+  market-state scorecard evidence now checks candidate identity against the
+  readiness strategy, historical metrics, walk-forward metrics, embedded
+  strategy source identity when present, and supplied strategy suitability
+  matrix selector rows.
+- [x] Added regression coverage for Monday weekly resampling, missing source
+  observation state scope, and mismatched market-state scorecard strategy
+  identity.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "weekly_resample or source_observation_state_scope or market_state_scorecard_for_target_strategy"`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "market_state or state_conditioned or strategy_suitability or selector_matching or paper_readiness"`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q`
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\market_regime.py freqtrade_ext\bot_factory\regime_promotion.py freqtrade_ext\bot_factory\state_conditioning.py freqtrade_ext\bot_factory\strategy_suitability.py freqtrade_ext\bot_factory\paper.py tests\test_bot_factory.py`
+- [x] Results: focused review-regression slice passed `3 passed`; broader
+  market-state/state-conditioned/suitability/selector/paper-readiness slice
+  passed `23 passed`; full `tests\test_bot_factory.py` passed and reached
+  `[100%]`; compile passed. Pytest still emitted the known Windows
+  `.pytest_cache` and `AppData\Local\Temp\pytest-of-yoro4\pytest-current`
+  ACL cleanup warnings.
+- [x] Safety result: no `freqtrade trade`, paper trading, dry-run trading,
+  live trading, canary process, exchange order endpoint, API key, secret,
+  leverage, shorting, historical backtest, strategy generation, live strategy
+  matching, or process-control action was performed.
+
 Checked on 2026-05-29 JST for PR #11 review follow-up on missing
 walk-forward evidence.
 

@@ -19,6 +19,17 @@ REQUIRED_SELECTOR_ROW_FIELDS = (
     "pair",
     "timeframe",
 )
+SOURCE_OBSERVATION_STATE_FIELDS = (
+    "state_id",
+    "horizon_profile_id",
+    "state_encoder_version",
+    "state_window_id",
+    "feature_cutoff_timestamp",
+    "label_cutoff_timestamp",
+    "decision_window_start",
+    "decision_window_end",
+    "future_data_used",
+)
 
 
 def build_state_conditioned_scorecard(
@@ -49,14 +60,12 @@ def build_state_conditioned_scorecard(
             row,
             candidate_identity=candidate_identity,
             state_row=state_by_label.get(str(row.get("market_regime") or "")),
-            fallback_horizon_profile_id=str(market_state_snapshot.get("horizon_profile_id") or ""),
             cost_model_id=str(
                 regime_scorecard.get("cost_model_id")
                 or candidate_identity.get("cost_model_id")
                 or market_state_snapshot.get("cost_model_id")
                 or ""
             ),
-            state_encoder_version=str(market_state_snapshot.get("state_encoder_version") or ""),
         )
         for row in regime_scorecard.get("scorecard_by_regime", [])
     ]
@@ -203,6 +212,21 @@ def validate_state_conditioned_scorecard_for_selector(
             {"missing_by_row": _selector_row_missing_fields(selector_rows)},
         ),
         _check(
+            "state_conditioned_scorecard_selector_rows_source_scope_complete",
+            not _selector_row_missing_source_state_fields(selector_rows)
+            and all(row.get("future_data_used") is False for row in selector_rows),
+            {
+                "missing_by_row": _selector_row_missing_source_state_fields(
+                    selector_rows
+                ),
+                "future_data_used_rows": [
+                    row.get("candidate_id")
+                    for row in selector_rows
+                    if row.get("future_data_used") is not False
+                ],
+            },
+        ),
+        _check(
             "state_conditioned_scorecard_baselines_present",
             not _missing_baseline_scopes(scorecard, selector_rows),
             {"missing_baselines": _missing_baseline_scopes(scorecard, selector_rows)},
@@ -299,14 +323,17 @@ def _scorecard_row(
     *,
     candidate_identity: Mapping[str, Any],
     state_row: Mapping[str, Any] | None,
-    fallback_horizon_profile_id: str,
     cost_model_id: str,
-    state_encoder_version: str,
 ) -> dict[str, Any]:
     state_row = state_row or {}
     decision = _state_decision(str(row.get("decision") or ""))
     blockers = _row_blockers(row, state_row=state_row)
-    if blockers and decision == "STATE_SELECTOR_ELIGIBLE":
+    if (
+        "state_fields_missing_from_source_observation" in blockers
+        and decision == "STATE_SELECTOR_ELIGIBLE"
+    ):
+        decision = "STATE_DIAGNOSTIC_ONLY"
+    elif blockers and decision == "STATE_SELECTOR_ELIGIBLE":
         decision = "STATE_SHADOW_ONLY"
     net_stress = _number(row.get("net_pnl_stress_cost"), 0.0)
     lcb = _number(row.get("lower_confidence_bound"), 0.0)
@@ -317,12 +344,25 @@ def _scorecard_row(
         "strategy_version": candidate_identity.get("strategy_version"),
         "signal_version": candidate_identity.get("signal_version"),
         "risk_policy_version": candidate_identity.get("risk_policy_version"),
-        "state_id": state_row.get("state_id")
-        or f"{state_encoder_version}:missing:{row.get('market_regime')}:low",
-        "state_label": state_row.get("label") or row.get("market_regime"),
-        "horizon_profile_id": state_row.get("horizon_profile_id")
-        or fallback_horizon_profile_id,
-        "state_encoder_version": state_encoder_version,
+        "source_regime_decision": row.get("decision"),
+        "source_state_observation_scope_complete": row.get(
+            "source_state_observation_scope_complete"
+        ),
+        "source_state_observation_scope_reason_codes": list(
+            row.get("source_state_observation_scope_reason_codes") or []
+        ),
+        "state_id": row.get("state_id"),
+        "state_label": row.get("market_regime"),
+        "horizon_profile_id": row.get("horizon_profile_id"),
+        "state_encoder_version": row.get("state_encoder_version"),
+        "state_window_id": row.get("state_window_id"),
+        "feature_cutoff_timestamp": row.get("feature_cutoff_timestamp"),
+        "label_cutoff_timestamp": row.get("label_cutoff_timestamp"),
+        "decision_window_start": row.get("decision_window_start"),
+        "decision_window_end": row.get("decision_window_end"),
+        "future_data_used": row.get("future_data_used"),
+        "diagnostic_snapshot_state_id": state_row.get("state_id"),
+        "diagnostic_snapshot_horizon_profile_id": state_row.get("horizon_profile_id"),
         "pair": _first_or_unknown(candidate_identity.get("allowed_pairs")),
         "timeframe": _first_or_unknown(candidate_identity.get("allowed_timeframes")),
         "cost_model_id": cost_model_id,
@@ -391,11 +431,10 @@ def _row_blockers(row: Mapping[str, Any], *, state_row: Mapping[str, Any]) -> li
         "REGIME_SCOPED_SELECTOR_ELIGIBLE",
         "GLOBAL_SELECTOR_ELIGIBLE",
     }
-    if not state_row and row.get("decision") in {
-        "REGIME_SCOPED_SELECTOR_ELIGIBLE",
-        "GLOBAL_SELECTOR_ELIGIBLE",
-    }:
-        blockers.append("state_id_missing_for_regime")
+    if source_eligible and (
+        _source_state_missing_fields(row) or row.get("future_data_used") is not False
+    ):
+        blockers.append("state_fields_missing_from_source_observation")
     if int(_number(row.get("window_count"), 0.0)) < 2 and source_eligible:
         blockers.append("insufficient_windows")
     if int(_number(row.get("trade_count"), 0.0)) <= 0 and source_eligible:
@@ -424,6 +463,25 @@ def _selector_row_missing_fields(rows: Sequence[Mapping[str, Any]]) -> list[dict
         if row_missing:
             missing.append({"row_index": index, "missing_fields": row_missing})
     return missing
+
+
+def _selector_row_missing_source_state_fields(
+    rows: Sequence[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    missing: list[dict[str, Any]] = []
+    for index, row in enumerate(rows):
+        row_missing = _source_state_missing_fields(row)
+        if row_missing:
+            missing.append({"row_index": index, "missing_fields": row_missing})
+    return missing
+
+
+def _source_state_missing_fields(row: Mapping[str, Any]) -> list[str]:
+    return [
+        field
+        for field in SOURCE_OBSERVATION_STATE_FIELDS
+        if row.get(field) in (None, "")
+    ]
 
 
 def _missing_baseline_scopes(
@@ -465,9 +523,15 @@ def _baseline_comparisons(
     state_by_label: Mapping[str, Mapping[str, Any]],
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
+    source_state_by_regime = {
+        str(row.get("market_regime") or ""): row
+        for row in regime_scorecard.get("scorecard_by_regime", [])
+        if isinstance(row, Mapping) and not _source_state_missing_fields(row)
+    }
     for item in (regime_scorecard.get("baseline_comparison") or {}).get("by_regime", []):
         regime = str(item.get("market_regime") or "")
-        state_row = state_by_label.get(regime, {})
+        source_state_row = source_state_by_regime.get(regime, {})
+        state_row = source_state_row or state_by_label.get(regime, {})
         common = {
             "state_id": state_row.get("state_id") or f"missing:{regime}",
             "horizon_profile_id": state_row.get("horizon_profile_id")
@@ -550,7 +614,8 @@ def _blockers(
         {
             item
             for row in rows
-            if row.get("decision") == "STATE_SELECTOR_ELIGIBLE"
+            if row.get("source_regime_decision")
+            in {"REGIME_SCOPED_SELECTOR_ELIGIBLE", "GLOBAL_SELECTOR_ELIGIBLE"}
             for item in row.get("blockers", [])
         }
     )
