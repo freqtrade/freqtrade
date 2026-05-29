@@ -50,11 +50,13 @@ def build_selector_matching_decision(
 
     eligible_rows = _eligible_rows_for_current_state(
         strategy_suitability_matrix.get("rows", []),
+        current=current,
         current_scopes=current_scopes,
         current_horizon_profile_id=str(current.get("horizon_profile_id") or ""),
     )
     comparison_rows = _comparison_rows(
         strategy_suitability_matrix.get("rows", []),
+        current=current,
         current_scopes=current_scopes,
         current_horizon_profile_id=str(current.get("horizon_profile_id") or ""),
         selector_state=selector_state,
@@ -353,6 +355,7 @@ def _current_market_state(current: Mapping[str, Any]) -> Mapping[str, Any]:
             "pair": current.get("pair"),
             "pair_group": current.get("pair_group"),
             "base_timeframe": current.get("base_timeframe"),
+            "cost_model_id": current.get("cost_model_id"),
             "aggregate_label": current.get("aggregate_label"),
             "horizon_profile_id": current.get("horizon_profile_id"),
             "state_encoder_version": current.get("state_encoder_version"),
@@ -438,6 +441,7 @@ def _current_state_scopes(current: Mapping[str, Any]) -> list[dict[str, Any]]:
 def _eligible_rows_for_current_state(
     rows: Any,
     *,
+    current: Mapping[str, Any],
     current_scopes: Sequence[Mapping[str, Any]],
     current_horizon_profile_id: str,
 ) -> list[Mapping[str, Any]]:
@@ -456,6 +460,8 @@ def _eligible_rows_for_current_state(
             continue
         if str(row.get("horizon_profile_id") or "") != current_horizon_profile_id:
             continue
+        if not _row_matches_current_market_identity(row, current):
+            continue
         if row.get("identity_mismatch") is True:
             continue
         if row.get("data_quality_pass") is False or row.get("feature_quality_pass") is False:
@@ -467,6 +473,7 @@ def _eligible_rows_for_current_state(
 def _comparison_rows(
     rows: Any,
     *,
+    current: Mapping[str, Any],
     current_scopes: Sequence[Mapping[str, Any]],
     current_horizon_profile_id: str,
     selector_state: Mapping[str, Any],
@@ -482,11 +489,44 @@ def _comparison_rows(
         same_state = (
             row.get("state_id") in state_ids
             and str(row.get("horizon_profile_id") or "") == current_horizon_profile_id
+            and _row_matches_current_market_identity(row, current)
         )
         incumbent = previous_candidate_id and row.get("candidate_id") == previous_candidate_id
         if same_state or incumbent:
             comparison.append(row)
     return comparison
+
+
+def _row_matches_current_market_identity(
+    row: Mapping[str, Any], current: Mapping[str, Any]
+) -> bool:
+    row_pair = _identity_value(row.get("pair"))
+    current_pair = _identity_value(current.get("pair"))
+    row_timeframe = _identity_value(row.get("timeframe"))
+    current_timeframe = _current_timeframe(current)
+    row_cost_model = _identity_value(row.get("cost_model_id"))
+    current_cost_model = _identity_value(current.get("cost_model_id"))
+    return (
+        bool(
+            row_pair
+            and current_pair
+            and row_timeframe
+            and current_timeframe
+            and row_cost_model
+            and current_cost_model
+        )
+        and row_pair == current_pair
+        and row_timeframe == current_timeframe
+        and row_cost_model == current_cost_model
+    )
+
+
+def _current_timeframe(current: Mapping[str, Any]) -> str:
+    return _identity_value(current.get("base_timeframe") or current.get("timeframe"))
+
+
+def _identity_value(value: Any) -> str:
+    return str(value or "")
 
 
 def _previous_row(

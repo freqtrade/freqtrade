@@ -655,6 +655,7 @@ rows:
   state_id
   horizon_profile_id
   pair_group
+  pair
   timeframe
   cost_model_id
 
@@ -699,6 +700,10 @@ Implemented on 2026-05-28 JST:
 - Added matrix validation and matrix-diff payload support, plus regression
   tests proving a range strategy cannot inherit trend-state evidence and a
   tampered candidate identity is not selector-eligible.
+- Review follow-up on 2026-05-29 JST: selector validation now requires the
+  matrix top-level `safety_scope` to prove local-artifacts-only,
+  historical-evaluation-only use and no trading, order placement, process
+  control, secrets, leverage above one, shorting, or promotion authority.
 
 ## P1: Selector / Matching Policy
 
@@ -795,6 +800,11 @@ Implemented on 2026-05-28 JST:
   confidence bound rather than raw PnL.
 - Added tests for clear trend-up, clear range, multi-horizon conflict, OOD,
   stale data, stress-utility ranking, cooldown, and hysteresis behavior.
+- Review follow-up on 2026-05-29 JST: selector row matching now requires the
+  strategy suitability row to match the current market identity (`pair`,
+  `base_timeframe`, and `cost_model_id`) in addition to `state_id` and
+  `horizon_profile_id`. Label-derived state IDs cannot cross pair, timeframe,
+  or cost-model evidence boundaries.
 
 Remaining limitation: scoring weights are deterministic and explicit in code,
 but not yet externalized as a versioned per-state/horizon weight artifact.

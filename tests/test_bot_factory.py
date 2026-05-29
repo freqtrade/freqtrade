@@ -11639,6 +11639,43 @@ def test_strategy_suitability_matrix_is_state_scoped_and_blocks_identity_inherit
     )
 
 
+def test_strategy_suitability_matrix_selector_validation_requires_safe_scope():
+    from freqtrade_ext.bot_factory.strategy_suitability import (
+        build_strategy_suitability_matrix,
+        validate_strategy_suitability_matrix_for_selector,
+    )
+
+    scorecard = _state_conditioned_scorecard_for_selector_test(
+        regime="trend_up",
+        candidate_id="trend-candidate",
+        strategy_id="trend-strategy",
+    )
+    matrix = build_strategy_suitability_matrix(
+        state_scorecards=[scorecard],
+        market_state_snapshot=_state_snapshot_for_regime("trend_up"),
+        run_id="suitability_safety_scope_test",
+    )
+    unsafe_matrix = json.loads(json.dumps(matrix))
+    unsafe_matrix["safety_scope"]["live_trading_started"] = True
+    unsafe_matrix["safety_scope"]["exchange_order_placement"] = True
+    unsafe_matrix["safety_scope"]["process_control"] = True
+
+    validation = validate_strategy_suitability_matrix_for_selector(unsafe_matrix)
+    safety_check = _check_by_name(
+        validation["checks"],
+        "strategy_suitability_matrix_safety_scope",
+    )
+
+    assert validation["ok"] is False
+    assert safety_check["passed"] is False
+    assert "strategy_suitability_matrix_safety_scope" in validation["reason_codes"]
+    assert {
+        "exchange_order_placement",
+        "live_trading_started",
+        "process_control",
+    }.issubset(set(safety_check["details"]["missing_or_true_required_false_flags"]))
+
+
 def test_selector_matching_selects_current_state_and_ranks_by_stress_utility():
     from freqtrade_ext.bot_factory.selector_matching import build_selector_matching_decision
     from freqtrade_ext.bot_factory.strategy_suitability import build_strategy_suitability_matrix
@@ -11702,6 +11739,50 @@ def test_selector_matching_selects_current_state_and_ranks_by_stress_utility():
     assert range_decision["selected_candidate_id"] == "range-candidate"
     assert ranking_decision["selected_candidate_id"] == "robust"
     assert "selected_by_stress_cost_utility" in ranking_decision["reason_codes"]
+
+
+def test_selector_matching_requires_current_market_identity_for_state_match():
+    from freqtrade_ext.bot_factory.selector_matching import build_selector_matching_decision
+    from freqtrade_ext.bot_factory.strategy_suitability import build_strategy_suitability_matrix
+
+    scorecard = _state_conditioned_scorecard_for_selector_test(
+        regime="trend_up",
+        candidate_id="trend-candidate",
+        strategy_id="trend-strategy",
+    )
+    matrix = build_strategy_suitability_matrix(
+        state_scorecards=[scorecard],
+        market_state_snapshot=_state_snapshot_for_regime("trend_up"),
+        run_id="selector_market_identity_test",
+    )
+    valid_decision = build_selector_matching_decision(
+        current_market_state=_state_snapshot_for_regime("trend_up"),
+        strategy_suitability_matrix=matrix,
+        decision_id="selector_market_identity_valid",
+    )
+
+    assert valid_decision["selected_action"] == "select_strategy"
+    assert valid_decision["selected_candidate_id"] == "trend-candidate"
+
+    for field, value in (
+        ("pair", "ETH/USDT:USDT"),
+        ("base_timeframe", "15m"),
+        ("cost_model_id", "cost_model_v2"),
+    ):
+        current = _state_snapshot_for_regime("trend_up")
+        current[field] = value
+
+        decision = build_selector_matching_decision(
+            current_market_state=current,
+            strategy_suitability_matrix=matrix,
+            decision_id=f"selector_market_identity_{field}",
+        )
+
+        assert decision["selected_action"] == "no_trade"
+        assert decision["selected_candidate_id"] is None
+        assert (
+            decision["no_trade_reason"] == "no_selector_eligible_strategy_for_current_state"
+        )
 
 
 def test_selector_matching_defaults_no_trade_for_unsafe_current_states_and_cooldown():

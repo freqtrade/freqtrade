@@ -20,6 +20,23 @@ NO_TRADE_DECISIONS = {
     "OUT_OF_DISTRIBUTION_NO_TRADE",
     "UNSAFE_NO_TRADE",
 }
+MATRIX_REQUIRED_TRUE_SAFETY_FLAGS = {
+    "local_artifacts_source_of_truth",
+    "historical_evaluation_only",
+}
+MATRIX_REQUIRED_FALSE_SAFETY_FLAGS = {
+    "freqtrade_trade_started",
+    "paper_trading_started",
+    "dry_run_trading_started",
+    "live_trading_started",
+    "exchange_order_placement",
+    "uses_api_keys_or_secrets",
+    "metadata_contains_secrets",
+    "process_control",
+    "leverage_above_one",
+    "shorting",
+    "promotion_authorized_by_this_artifact",
+}
 
 
 def build_strategy_suitability_matrix(
@@ -112,11 +129,14 @@ def validate_strategy_suitability_matrix_for_selector(
     matrix: Mapping[str, Any],
 ) -> dict[str, Any]:
     rows = matrix.get("rows", [])
-    strategy_rows = [row for row in rows if isinstance(row, Mapping) and row.get("row_type") == "strategy"]
+    strategy_rows = [
+        row for row in rows if isinstance(row, Mapping) and row.get("row_type") == "strategy"
+    ]
     selector_rows = [
         row for row in strategy_rows if row.get("decision") == SELECTOR_ELIGIBLE_DECISION
     ]
     no_trade_rows = [row for row in rows if isinstance(row, Mapping) and row.get("row_type") == "no_trade"]
+    safety_scope = matrix.get("safety_scope")
     checks = [
         _check(
             "strategy_suitability_matrix_schema",
@@ -164,6 +184,11 @@ def validate_strategy_suitability_matrix_for_selector(
                     if row.get("identity_mismatch")
                 ]
             },
+        ),
+        _check(
+            "strategy_suitability_matrix_safety_scope",
+            _matrix_safety_scope_valid(safety_scope),
+            _matrix_safety_scope_details(safety_scope),
         ),
     ]
     ok = all(check["passed"] for check in checks)
@@ -541,6 +566,33 @@ def _decision_reason(decision: str) -> str:
 
 def _check(name: str, passed: bool, details: dict[str, Any]) -> dict[str, Any]:
     return {"name": name, "passed": bool(passed), "details": details}
+
+
+def _matrix_safety_scope_valid(scope: Any) -> bool:
+    if not isinstance(scope, Mapping):
+        return False
+    return (
+        all(scope.get(flag) is True for flag in MATRIX_REQUIRED_TRUE_SAFETY_FLAGS)
+        and all(scope.get(flag) is False for flag in MATRIX_REQUIRED_FALSE_SAFETY_FLAGS)
+    )
+
+
+def _matrix_safety_scope_details(scope: Any) -> dict[str, Any]:
+    if not isinstance(scope, Mapping):
+        return {"safety_scope_present": False}
+    return {
+        "safety_scope_present": True,
+        "missing_or_false_required_true_flags": sorted(
+            flag
+            for flag in MATRIX_REQUIRED_TRUE_SAFETY_FLAGS
+            if scope.get(flag) is not True
+        ),
+        "missing_or_true_required_false_flags": sorted(
+            flag
+            for flag in MATRIX_REQUIRED_FALSE_SAFETY_FLAGS
+            if scope.get(flag) is not False
+        ),
+    }
 
 
 def _number(value: Any, default: float = 0.0) -> float:

@@ -99,6 +99,42 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-29 JST for PR #11 review follow-up on selector market
+identity and strategy-suitability matrix safety validation.
+
+- [x] Addressed review comment `3324857607`: selector matching now requires
+  selector-eligible strategy rows to match the current market identity
+  (`pair`, `base_timeframe`, and `cost_model_id`) in addition to `state_id`
+  and `horizon_profile_id`, preventing label-derived states from crossing
+  pair, timeframe, or cost-model evidence boundaries.
+- [x] Addressed review comment `3324857614`: direct selector validation of a
+  strategy suitability matrix now requires a valid top-level `safety_scope`
+  proving local-artifacts-only, historical-evaluation-only use and no trading,
+  order placement, process control, secrets, leverage above one, shorting, or
+  promotion authority.
+- [x] Added regression coverage for mismatched current-market identity and
+  unsafe matrix `safety_scope` rejection.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\selector_matching.py freqtrade_ext\bot_factory\strategy_suitability.py tests\test_bot_factory.py`
+  - `git diff --check`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -p no:cacheprovider -k "strategy_suitability_matrix_selector_validation_requires_safe_scope or selector_matching_requires_current_market_identity"`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -p no:cacheprovider -k "market_state or state_conditioned or strategy_suitability or selector_matching or paper_readiness"`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -p no:cacheprovider`
+- [x] Results: compile passed; diff check passed with the existing
+  LF-to-CRLF warning for
+  `docs\BOT_FACTORY_MARKET_STATE_STRATEGY_MATCHING_TODO.md`; focused
+  regression slice passed `2 passed`; broader
+  market-state/state-conditioned/suitability/selector/paper-readiness slice
+  passed `25 passed`; full `tests\test_bot_factory.py` passed and reached
+  `[100%]`. A direct pytest attempt before setting workspace-local temp failed
+  during fixture setup with the known Windows AppData Temp ACL error, so the
+  passing pytest commands used `.tmp\pytest` for `TEMP`/`TMP` and disabled the
+  cacheprovider.
+- [x] Safety result: no `freqtrade trade`, paper trading, dry-run trading,
+  live trading, canary process, exchange order endpoint, API key, secret,
+  leverage, shorting, historical backtest, strategy generation, live strategy
+  matching, or process-control action was performed.
+
 Checked on 2026-05-29 JST for PR #11 approve-with-followups doc sync.
 
 - [x] Addressed issue comment `4576002760` P3: updated
