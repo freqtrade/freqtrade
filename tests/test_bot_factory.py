@@ -10970,8 +10970,10 @@ def test_market_state_snapshot_writes_multi_horizon_artifacts_and_current_report
         assert row["feature_cutoff_timestamp"] <= row["decision_window_end"]
         assert "rolling_return_bps" in row["state_vector"]
     assert current["schema_version"] == "current_market_state_v1"
+    assert current["cost_model_id"] == "cost_v1"
     assert current["stale_data"] is False
     assert current["not_allowed_confirmation"]["paper_trading_started"] is True
+    assert "Cost model: `cost_v1`" in current_report
     assert "Current means current as of local data timestamp" in current_report
     for path in paths.values():
         assert path.exists()
@@ -11742,6 +11744,7 @@ def test_selector_matching_selects_current_state_and_ranks_by_stress_utility():
 
 
 def test_selector_matching_requires_current_market_identity_for_state_match():
+    from freqtrade_ext.bot_factory.market_regime import build_current_market_state
     from freqtrade_ext.bot_factory.selector_matching import build_selector_matching_decision
     from freqtrade_ext.bot_factory.strategy_suitability import build_strategy_suitability_matrix
 
@@ -11763,6 +11766,15 @@ def test_selector_matching_requires_current_market_identity_for_state_match():
 
     assert valid_decision["selected_action"] == "select_strategy"
     assert valid_decision["selected_candidate_id"] == "trend-candidate"
+
+    current_artifact_decision = build_selector_matching_decision(
+        current_market_state=build_current_market_state(_state_snapshot_for_regime("trend_up")),
+        strategy_suitability_matrix=matrix,
+        decision_id="selector_market_identity_current_artifact",
+    )
+
+    assert current_artifact_decision["selected_action"] == "select_strategy"
+    assert current_artifact_decision["selected_candidate_id"] == "trend-candidate"
 
     for field, value in (
         ("pair", "ETH/USDT:USDT"),

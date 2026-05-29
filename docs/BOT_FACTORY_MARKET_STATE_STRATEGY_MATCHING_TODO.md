@@ -365,6 +365,10 @@ Implemented on 2026-05-28 JST:
 - Added stale-data and conflicting-horizon tests. Dedicated
   out-of-distribution analog-distance tests remain open until the OOD model is
   more than a deterministic confidence proxy.
+- Review follow-up on 2026-05-29 JST: `current_market_state_v1` now preserves
+  the source snapshot `cost_model_id`, so `current_market_state.json` can be
+  passed directly into selector matching without losing the market-identity
+  boundary required by strategy suitability rows.
 
 ## P0: State-Conditioned Strategy Evaluation
 
