@@ -506,6 +506,10 @@ Implemented on 2026-05-28 JST:
 - Review follow-up on 2026-05-29 JST: state-conditioned selector eligibility
   now requires complete source observation state scope and `future_data_used=false`;
   snapshot label matching is retained only as diagnostic/report context.
+- Review follow-up on 2026-05-29 JST: state-conditioned rows now preserve the
+  matched snapshot `pair` and `base_timeframe` scope before falling back to
+  candidate identity allowed lists, so selector identity checks do not reject
+  valid later allowed pairs or timeframes.
 - Review follow-up on 2026-05-29 JST: Phase 3 paper readiness now joins
   market-state scorecard candidate identity to the readiness strategy,
   historical metrics, walk-forward metrics, embedded strategy source identity

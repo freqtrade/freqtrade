@@ -100,6 +100,36 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 ## Latest Verification
 
 Checked on 2026-05-29 JST for PR #11 review follow-up on
+state-conditioned pair/timeframe scope preservation.
+
+- [x] Addressed review comment `3325020593`: state-conditioned scorecard rows
+  now preserve the matched snapshot `pair` and `base_timeframe` scope before
+  falling back to candidate identity allowed lists. This prevents selector
+  market-identity checks from rejecting valid later allowed pairs or
+  timeframes such as `allowed_timeframes=["15m", "5m"]` with a current `5m`
+  state.
+- [x] Added regression coverage proving a multi-scope candidate identity still
+  emits selector rows for the current snapshot pair/timeframe and can be
+  selected by the strategy suitability matrix / selector matching path.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\state_conditioning.py freqtrade_ext\bot_factory\strategy_suitability.py freqtrade_ext\bot_factory\selector_matching.py tests\test_bot_factory.py`
+  - `git diff --check`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -p no:cacheprovider -k "snapshot_pair_timeframe_scope or selector_matching_requires_current_market_identity"`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -p no:cacheprovider -k "market_state or state_conditioned or strategy_suitability or selector_matching or paper_readiness"`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -p no:cacheprovider`
+- [x] Results: compile passed; diff check passed; focused scope/selector
+  regression slice passed `2 passed`; broader
+  market-state/state-conditioned/suitability/selector/paper-readiness slice
+  passed `26 passed`; full `tests\test_bot_factory.py` passed and reached
+  `[100%]`. Pytest used workspace-local `.tmp\pytest` for `TEMP`/`TMP` and
+  disabled the cacheprovider to avoid the known Windows AppData Temp and
+  `.pytest_cache` ACL issue.
+- [x] Safety result: no `freqtrade trade`, paper trading, dry-run trading,
+  live trading, canary process, exchange order endpoint, API key, secret,
+  leverage, shorting, historical backtest, strategy generation, live strategy
+  matching, or process-control action was performed.
+
+Checked on 2026-05-29 JST for PR #11 review follow-up on
 `current_market_state_v1` cost-model lineage.
 
 - [x] Addressed review comment `3324967779`: `current_market_state.json`

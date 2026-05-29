@@ -11356,6 +11356,47 @@ def test_state_conditioned_scorecard_preserves_state_scope_and_baselines():
     assert validation["safety_scope"]["paper_trading_started"] is False
 
 
+def test_state_conditioned_scorecard_preserves_snapshot_pair_timeframe_scope():
+    from freqtrade_ext.bot_factory.selector_matching import build_selector_matching_decision
+    from freqtrade_ext.bot_factory.state_conditioning import build_state_conditioned_scorecard
+    from freqtrade_ext.bot_factory.strategy_suitability import build_strategy_suitability_matrix
+
+    regime_scorecard = _strict_regime_scorecard_for_state_tests()
+    regime_scorecard["candidate_identity"]["allowed_pairs"] = [
+        "ETH/USDT:USDT",
+        "BTC/USDT:USDT",
+    ]
+    regime_scorecard["candidate_identity"]["allowed_timeframes"] = ["15m", "5m"]
+    snapshot = _state_snapshot_for_regime("trend_up")
+
+    scorecard = build_state_conditioned_scorecard(
+        regime_scorecard=regime_scorecard,
+        market_state_snapshot=snapshot,
+        run_id="state_scorecard_snapshot_scope",
+        require_walk_forward_evidence=True,
+    )
+    matrix = build_strategy_suitability_matrix(
+        state_scorecards=[scorecard],
+        market_state_snapshot=snapshot,
+        run_id="matrix_snapshot_scope",
+    )
+    decision = build_selector_matching_decision(
+        current_market_state=snapshot,
+        strategy_suitability_matrix=matrix,
+        decision_id="selector_snapshot_scope",
+    )
+    selector_row = next(
+        row for row in matrix["rows"] if row.get("decision") == "SELECTOR_ELIGIBLE"
+    )
+
+    assert scorecard["rows"][0]["pair"] == "BTC/USDT:USDT"
+    assert scorecard["rows"][0]["timeframe"] == "5m"
+    assert selector_row["pair"] == "BTC/USDT:USDT"
+    assert selector_row["timeframe"] == "5m"
+    assert decision["selected_action"] == "select_strategy"
+    assert decision["selected_candidate_id"] == "candidate"
+
+
 def test_state_conditioned_scorecard_requires_source_observation_state_scope():
     from freqtrade_ext.bot_factory.state_conditioning import (
         build_state_conditioned_scorecard,

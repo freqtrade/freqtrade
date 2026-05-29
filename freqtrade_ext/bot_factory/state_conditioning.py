@@ -363,8 +363,16 @@ def _scorecard_row(
         "future_data_used": row.get("future_data_used"),
         "diagnostic_snapshot_state_id": state_row.get("state_id"),
         "diagnostic_snapshot_horizon_profile_id": state_row.get("horizon_profile_id"),
-        "pair": _first_or_unknown(candidate_identity.get("allowed_pairs")),
-        "timeframe": _first_or_unknown(candidate_identity.get("allowed_timeframes")),
+        "pair": _first_present(
+            row.get("pair"),
+            state_row.get("pair"),
+            _first_or_unknown(candidate_identity.get("allowed_pairs")),
+        ),
+        "timeframe": _first_present(
+            row.get("timeframe"),
+            state_row.get("timeframe"),
+            _first_or_unknown(candidate_identity.get("allowed_timeframes")),
+        ),
         "cost_model_id": cost_model_id,
         "sample_days": _number(row.get("sample_days"), 0.0),
         "independent_window_count": int(_number(row.get("window_count"), 0.0)),
@@ -410,6 +418,9 @@ def _state_rows_by_label(snapshot: Mapping[str, Any]) -> dict[str, Mapping[str, 
         if label and label not in result:
             enriched = dict(row)
             enriched["horizon_profile_id"] = snapshot.get("horizon_profile_id")
+            enriched["pair"] = snapshot.get("pair")
+            enriched["timeframe"] = snapshot.get("base_timeframe")
+            enriched["cost_model_id"] = snapshot.get("cost_model_id")
             result[label] = enriched
     return result
 
@@ -659,6 +670,13 @@ def _check(name: str, passed: bool, details: dict[str, Any]) -> dict[str, Any]:
 def _first_or_unknown(values: Any) -> str:
     if isinstance(values, Sequence) and not isinstance(values, (str, bytes)) and values:
         return str(values[0])
+    return "unknown"
+
+
+def _first_present(*values: Any) -> str:
+    for value in values:
+        if value not in (None, ""):
+            return str(value)
     return "unknown"
 
 
