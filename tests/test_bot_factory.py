@@ -11334,6 +11334,33 @@ def test_state_conditioned_scorecard_missing_walk_forward_is_diagnostic_only():
     assert "state_conditioned_scorecard_selector_creation_allowed" in validation["reason_codes"]
 
 
+def test_state_conditioned_scorecard_allow_missing_walk_forward_remains_diagnostic_only():
+    from freqtrade_ext.bot_factory.state_conditioning import (
+        build_state_conditioned_scorecard,
+        validate_state_conditioned_scorecard_for_selector,
+    )
+
+    regime_scorecard = _strict_regime_scorecard_for_state_tests()
+    for row in regime_scorecard["scorecard_by_regime"]:
+        row.pop("walk_forward_pass_rate", None)
+
+    scorecard = build_state_conditioned_scorecard(
+        regime_scorecard=regime_scorecard,
+        market_state_snapshot=_state_snapshot_for_regime("trend_up"),
+        run_id="state_scorecard_allow_missing_wf",
+        require_walk_forward_evidence=False,
+    )
+    validation = validate_state_conditioned_scorecard_for_selector(scorecard)
+
+    assert scorecard["walk_forward_gate_required"] is False
+    assert scorecard["walk_forward_gate_passed"] is False
+    assert scorecard["diagnostic_only"] is True
+    assert scorecard["selector_candidate_creation_allowed"] is False
+    assert scorecard["paper_readiness_input_allowed"] is False
+    assert "missing_walk_forward_evidence" in scorecard["blockers"]
+    assert validation["ok"] is False
+
+
 def test_state_conditioned_scorecard_requires_source_historical_gate_pass():
     from freqtrade_ext.bot_factory.state_conditioning import (
         build_state_conditioned_scorecard,

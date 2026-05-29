@@ -493,6 +493,10 @@ Implemented on 2026-05-28 JST:
   `decision` must pass the historical selector gate before
   `selector_candidate_creation_allowed` or `paper_readiness_input_allowed` can
   be true.
+- Review follow-up on 2026-05-29 JST: `--allow-missing-walk-forward` only
+  allows artifact creation. Missing walk-forward evidence still records
+  `walk_forward_gate_passed=false`, keeps the artifact diagnostic-only, and
+  cannot set selector or paper-readiness input flags.
 - Added native optional observation-ledger state fields. When any state field is
   present, validation now requires complete `state_id`, `horizon_profile_id`,
   and `state_encoder_version` plus `future_data_used=false`.

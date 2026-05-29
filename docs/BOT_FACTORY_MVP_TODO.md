@@ -99,6 +99,31 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-29 JST for PR #11 review follow-up on missing
+walk-forward evidence.
+
+- [x] Addressed review comment `3318756179`: `--allow-missing-walk-forward`
+  now only allows the state-conditioned scorecard artifact to be produced.
+  `walk_forward_gate_passed` is still computed from actual scorecard evidence;
+  when evidence is missing, the artifact remains `diagnostic_only=true` and
+  both selector and paper-readiness input flags remain false.
+- [x] Added regression coverage in
+  `test_state_conditioned_scorecard_allow_missing_walk_forward_remains_diagnostic_only`.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\state_conditioning.py tests\test_bot_factory.py`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "allow_missing_walk_forward or missing_walk_forward or state_conditioned"`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "state_conditioned or strategy_suitability or paper_readiness"`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q`
+- [x] Results: compile passed; focused state-conditioned review-regression
+  slice passed; broader state-conditioned/suitability/paper-readiness slice
+  passed; full `tests\test_bot_factory.py` passed and reached `[100%]`.
+  Pytest still emitted the known Windows `.pytest_cache` and
+  `AppData\Local\Temp\pytest-of-yoro4\pytest-current` ACL cleanup warnings.
+- [x] Safety result: no `freqtrade trade`, paper trading, dry-run trading,
+  live trading, canary process, exchange order endpoint, API key, secret,
+  leverage, shorting, historical backtest, strategy generation, live strategy
+  matching, or process-control action was performed.
+
 Checked on 2026-05-28 JST for PR #11 review follow-up on market-state
 matching safety boundaries.
 

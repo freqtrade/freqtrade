@@ -43,11 +43,7 @@ def build_state_conditioned_scorecard(
         "GLOBAL_SELECTOR_ELIGIBLE",
         "REGIME_SCOPED_SELECTOR_ELIGIBLE",
     }
-    walk_forward_gate_passed = (
-        _walk_forward_gate_passed(regime_scorecard)
-        if require_walk_forward_evidence
-        else True
-    )
+    walk_forward_gate_passed = _walk_forward_gate_passed(regime_scorecard)
     rows = [
         _scorecard_row(
             row,
@@ -114,6 +110,7 @@ def build_state_conditioned_scorecard(
         "relaxed_thresholds_used": bool(relaxed_thresholds_used),
         "actual_strategy_backtest_required": True,
         "historical_gate_passed": historical_gate_passed,
+        "walk_forward_gate_required": bool(require_walk_forward_evidence),
         "walk_forward_gate_passed": walk_forward_gate_passed,
         "selector_candidate_creation_allowed": selector_allowed,
         "paper_readiness_input_allowed": selector_allowed,
