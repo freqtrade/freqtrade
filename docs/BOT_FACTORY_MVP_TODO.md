@@ -99,6 +99,28 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 
 ## Latest Verification
 
+Checked on 2026-05-29 JST for PR #11 approve-with-followups doc sync.
+
+- [x] Addressed issue comment `4576002760` P3: updated
+  `docs/BOT_FACTORY_MARKET_STATE_STRATEGY_MATCHING_TODO.md` so the Paper
+  Readiness Integration checklist reflects the implemented market-state
+  scorecard identity joins against readiness strategy, historical metrics,
+  walk-forward metrics, embedded strategy source identity when present, and
+  supplied strategy suitability matrix selector rows.
+- [x] Captured the non-blocking P2 follow-up: multi-window state-conditioned
+  evidence should later group by state scope and preserve source window/cutoff
+  arrays or ranges instead of requiring every source row in a regime to share
+  identical `state_window_id` and cutoff timestamps.
+- [x] Verification commands:
+  - `git diff --check`
+  - `rg -n "[ \t]+$" docs\BOT_FACTORY_MVP_TODO.md docs\BOT_FACTORY_MARKET_STATE_STRATEGY_MATCHING_TODO.md`
+- [x] Results: diff check passed; trailing whitespace check returned no
+  matches.
+- [x] Safety result: documentation-only change; no `freqtrade trade`, paper
+  trading, dry-run trading, live trading, canary process, exchange order
+  endpoint, API key, secret, leverage, shorting, historical backtest, strategy
+  generation, live strategy matching, or process-control action was performed.
+
 Checked on 2026-05-29 JST for PR #11 review follow-up on state-scope and
 paper-readiness identity boundaries.
 

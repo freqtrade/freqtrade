@@ -522,6 +522,12 @@ Implemented on 2026-05-28 JST:
 - Remaining limitations: incumbent/style baselines are not yet implemented;
   drawdown contract and underperform-hold bull-trend rationale still need
   deeper strategy-family-specific checks.
+- Follow-up from PR #11 review on 2026-05-29 JST: multi-window source
+  observations should be grouped by state scope instead of requiring all
+  rows in a regime to share the same `state_window_id` and cutoff timestamps.
+  Preserve `state_window_ids[]`, `decision_windows[]`,
+  `feature_cutoff_range`, and `label_cutoff_range`, while still requiring
+  `future_data_used=false` for every source row.
 
 ## P0: Diagnostic vs Selector-Eligible Boundary
 
@@ -971,7 +977,7 @@ Feed strict state-conditioned scorecards into Phase 3 paper readiness without gr
 
 - [x] Add optional `--market-state-scorecard` and `--strategy-suitability-matrix` inputs to future paper readiness.
 - [x] Require full schema validation, not only top-level flags.
-- [ ] Require candidate identity to match generated strategy, backtest, walk-forward, scorecard, and suitability matrix.
+- [x] Require candidate identity to match generated strategy, backtest, walk-forward, scorecard, and suitability matrix.
 - [x] Require `paper_readiness_input_allowed=true` only for strict evidence, not diagnostic evidence.
 - [ ] Reject scorecards with:
   - `diagnostic_only=true`
@@ -997,10 +1003,14 @@ Implemented on 2026-05-28 JST:
 - Review follow-up on 2026-05-28 JST: a supplied strategy suitability matrix
   must contain a selector-eligible row matching the readiness target strategy
   class or strategy id.
+- Review follow-up on 2026-05-29 JST: market-state scorecard identity is
+  compared against the readiness strategy, historical metrics, walk-forward
+  metrics, embedded strategy source identity when present, and supplied
+  strategy suitability matrix selector rows.
 
-Remaining limitation: candidate identity is not yet joined all the way across
-generated strategy source, config, backtest metrics, walk-forward metrics,
-state scorecard, and suitability matrix in one readiness identity proof.
+Remaining limitation: generated strategy metadata and config-level identity
+joins may need a later consolidated readiness identity proof if those
+artifacts are supplied separately.
 
 ## P2: Future Shadow Observation Compatibility
 
