@@ -6,12 +6,13 @@ paper-readiness validation foundation implemented.
 
 Created: 2026-05-27 JST.
 
-Updated: 2026-05-28 JST.
+Updated: 2026-05-30 JST after Product Vision Phase 6 paper observation design.
 
 Scope: local-only market-state diagnosis, state-conditioned strategy evaluation, and safe strategy/no-trade matching.
 
 This TODO extends, but does not replace:
 
+- `docs/BOT_FACTORY_PRODUCT_VISION_TODO.md`
 - `docs/BOT_FACTORY_REGIME_AWARE_PROMOTION_TODO.md`
 - `docs/BOT_FACTORY_ARCHITECTURE_RISK_TODO.md`
 - `docs/BOT_FACTORY_GATE_GLOSSARY.md`
@@ -452,7 +453,7 @@ STATE_DIAGNOSTIC_ONLY
 - [x] Build state-conditioned scorecards from checked backtest and walk-forward artifacts.
 - [x] Require actual checked strategy evidence for selector eligibility.
 - [x] Keep proxy replays and relaxed-threshold demos as `STATE_DIAGNOSTIC_ONLY`.
-- [ ] Require baseline deltas against:
+- [x] Require baseline deltas against:
   - `no_trade`
   - hold baseline
   - incumbent strategy when present
@@ -510,6 +511,16 @@ Implemented on 2026-05-28 JST:
   matched snapshot `pair` and `base_timeframe` scope before falling back to
   candidate identity allowed lists, so selector identity checks do not reject
   valid later allowed pairs or timeframes.
+- Product Vision Phase 1 follow-up on 2026-05-30 JST: state-conditioned rows
+  now aggregate by strategy identity unit, `state_id`, `horizon_profile_id`,
+  `state_encoder_version`, `cost_model_id`, `pair_group`, and `timeframe`,
+  while preserving `state_window_ids[]`, `decision_windows[]`,
+  `feature_cutoff_range`, `label_cutoff_range`, and
+  `source_observation_count`.
+- Product Vision Phase 1 follow-up on 2026-05-30 JST: state-conditioned
+  selector eligibility now fails closed on `future_data_used=true`, strategy
+  identity mismatches, cost-model mismatches, state-encoder mismatches, and
+  pair/timeframe scope outside the candidate identity.
 - Review follow-up on 2026-05-29 JST: Phase 3 paper readiness now joins
   market-state scorecard candidate identity to the readiness strategy,
   historical metrics, walk-forward metrics, embedded strategy source identity
@@ -530,11 +541,11 @@ Implemented on 2026-05-28 JST:
 - Remaining limitations: incumbent/style baselines are not yet implemented;
   drawdown contract and underperform-hold bull-trend rationale still need
   deeper strategy-family-specific checks.
-- Follow-up from PR #11 review on 2026-05-29 JST: multi-window source
-  observations should be grouped by state scope instead of requiring all
-  rows in a regime to share the same `state_window_id` and cutoff timestamps.
-  Preserve `state_window_ids[]`, `decision_windows[]`,
-  `feature_cutoff_range`, and `label_cutoff_range`, while still requiring
+- Completed follow-up on 2026-05-30 JST: multi-window source observations are
+  grouped by state scope instead of requiring all rows in a regime to share the
+  same `state_window_id` and cutoff timestamps. The scorecard preserves
+  `state_window_ids[]`, `decision_windows[]`, `feature_cutoff_range`,
+  `label_cutoff_range`, and `source_observation_count`, while still requiring
   `future_data_used=false` for every source row.
 
 ## P0: Diagnostic vs Selector-Eligible Boundary
@@ -612,8 +623,8 @@ data/state_discovery/<run_id>/representative_windows.jsonl
 
 ### TODO
 
-- [ ] Build offline state discovery using only local historical windows.
-- [ ] Cluster windows using predeclared features:
+- [x] Build offline state discovery using only local historical windows.
+- [x] Cluster windows using predeclared features:
   - returns
   - realized volatility
   - range efficiency
@@ -621,7 +632,7 @@ data/state_discovery/<run_id>/representative_windows.jsonl
   - volume/liquidity proxy
   - cost pressure
   - data quality flags
-- [ ] Persist:
+- [x] Persist:
   - `cluster_id`
   - cluster centroid / summary
   - representative windows
@@ -630,11 +641,22 @@ data/state_discovery/<run_id>/representative_windows.jsonl
   - out-of-distribution threshold
   - feature version
   - clustering version
-- [ ] Compare discovered clusters against deterministic labels.
-- [ ] Mark clusters as `diagnostic_only` until reviewed.
-- [ ] Add temporal stability checks.
-- [ ] Add tests that tiny feature perturbations do not completely reshuffle clusters.
-- [ ] Add tests that clusters with too few analog windows produce `INSUFFICIENT_EVIDENCE`.
+- [x] Compare discovered clusters against deterministic labels.
+- [x] Mark clusters as `diagnostic_only` until reviewed.
+- [x] Add temporal stability checks.
+- [x] Add tests that tiny feature perturbations do not completely reshuffle clusters.
+- [x] Add tests that clusters with too few analog windows produce `INSUFFICIENT_EVIDENCE`.
+
+Implemented on 2026-05-30 JST:
+
+- Added `freqtrade_ext/bot_factory/diagnostic_state_discovery.py` with
+  `diagnostic_state_discovery_v1`, diagnostic-only state embeddings, clustered
+  historical windows, as-of nearest analog search, OOD/uncertainty calibration,
+  deterministic-label comparison, and no-bypass diagnostic gates.
+- Added `scripts/bot_factory_build_diagnostic_state_discovery.py` and
+  `docs/bot_factory/diagnostic_state_discovery_schema.md`.
+- Added tests for clustering/analog/dataset output, perturbation stability, and
+  `INSUFFICIENT_EVIDENCE` when analog support is too small.
 
 ## P1: Strategy Suitability Matrix
 
@@ -862,6 +884,19 @@ Implemented on 2026-05-28 JST:
 - Added tests for costly clear trend-up no-trade, acceptable unknown/OOD-style
   no-trade, and high-volatility no-trade safety value.
 
+Extended on 2026-05-30 JST:
+
+- Added `freqtrade_ext/bot_factory/no_trade_evaluation.py` with
+  `no_trade_policy_evaluation_v1`, state-specific no-trade quality rows,
+  avoided drawdown, opportunity cost versus hold and best selector-eligible
+  strategy, uncertainty/OOD safety value, state-type thresholds, and
+  `good` / `acceptable` / `costly` / `overused` judgments.
+- Added `scripts/bot_factory_evaluate_no_trade_policy.py` and
+  `docs/bot_factory/no_trade_policy_evaluation_schema.md`.
+- Added regression coverage proving one selector replay can classify good,
+  acceptable, and overused no-trade decisions while preserving no-startup safety
+  scope.
+
 ## P1: ML-Assisted State And Suitability Research
 
 ### Goal
@@ -889,9 +924,9 @@ reinforcement learning over order placement
 
 ### TODO
 
-- [ ] Define `state_encoder_model_v1` artifact schema.
-- [ ] Define `strategy_suitability_model_v1` artifact schema.
-- [ ] Define training dataset rows:
+- [x] Define `state_encoder_model_v1` artifact schema.
+- [x] Define `strategy_suitability_model_v1` artifact schema.
+- [x] Define training dataset rows:
   - state vector
   - horizon profile
   - strategy identity
@@ -904,18 +939,18 @@ reinforcement learning over order placement
 - [ ] Use pair-held-out or pair-group-held-out tests where data permits.
 - [ ] Use purged/embargoed split logic where labels overlap future windows.
 - [ ] Optimize risk-adjusted utility after costs, not raw return.
-- [ ] Calibrate uncertainty.
-- [ ] Require model explanations:
+- [x] Calibrate uncertainty.
+- [x] Require model explanations:
   - nearest historical analog windows;
   - feature contribution summary;
   - reason code mapping;
   - OOD score.
-- [ ] Require abstention:
+- [x] Require abstention:
   - high uncertainty -> no_trade;
   - low analog count -> no_trade;
   - state drift -> no_trade or quarantine.
-- [ ] Keep ML outputs as `diagnostic_only` until offline replay beats deterministic baselines out-of-sample.
-- [ ] Add tests that high ML score cannot bypass missing scorecard, failed walk-forward, stale data, or identity mismatch.
+- [x] Keep ML outputs as `diagnostic_only` until offline replay beats deterministic baselines out-of-sample.
+- [x] Add tests that high ML score cannot bypass missing scorecard, failed walk-forward, stale data, or identity mismatch.
 
 ## P1: Backtest And Walk-Forward Evaluation By State
 
@@ -925,16 +960,16 @@ Make backtest evaluation answer "where does this strategy work?" rather than "di
 
 ### TODO
 
-- [ ] Add state-sliced backtest report sections:
+- [x] Add state-sliced backtest report sections:
   - by state label
   - by state cluster
   - by horizon profile
   - by pair
   - by timeframe
   - by cost regime
-- [ ] Add walk-forward state coverage table.
-- [ ] Add per-state pass/fail/insufficient decisions.
-- [ ] Add style-aware gates per strategy family:
+- [x] Add walk-forward state coverage table.
+- [x] Add per-state pass/fail/insufficient decisions.
+- [x] Add style-aware gates per strategy family:
   - micro / short-horizon
   - intraday trend
   - swing trend
@@ -942,9 +977,20 @@ Make backtest evaluation answer "where does this strategy work?" rather than "di
   - defensive no-trade
   - ML-assisted state suitability
 - [ ] Add state-balanced holdout evaluation when possible.
-- [ ] Reject strategy eligibility when positive evidence is concentrated in one easy or hand-picked state.
-- [ ] Add "state missingness" report showing which states have no evidence.
-- [ ] Add tests that global positive backtest cannot hide a state-specific crash.
+- [x] Reject strategy eligibility when positive evidence is concentrated in one easy or hand-picked state.
+- [x] Add "state missingness" report showing which states have no evidence.
+- [x] Add tests that global positive backtest cannot hide a state-specific crash.
+
+Implemented on 2026-05-30 JST:
+
+- Added `freqtrade_ext/bot_factory/state_sliced_reporting.py` with
+  `state_sliced_strategy_evaluation_v1`, backtest state slices,
+  walk-forward state slices, state coverage/missingness, per-state baseline
+  deltas, style-specific gates, and global-positive/state-crash rejection.
+- Added `scripts/bot_factory_build_state_sliced_report.py` and
+  `docs/bot_factory/state_sliced_strategy_evaluation_schema.md`.
+- The report emits `STATE_SLICED_FAIL` when positive global historical metrics
+  hide a negative state stress edge or drawdown beyond the state threshold.
 
 ## P2: Current-State To Strategy-Matching Replay
 
@@ -955,27 +1001,28 @@ Simulate historical "as-of" decision points to prove the matcher behaves without
 ### Future Files
 
 ```text
-data/selector_replays/<run_id>/market_state_decisions.jsonl
-data/selector_replays/<run_id>/selector_replay_report.md
+data/selector_replay/<run_id>/selector_replay.json
+data/selector_replay/<run_id>/selector_decisions.jsonl
+data/selector_replay/<run_id>/selector_replay_report.md
 ```
 
 ### TODO
 
-- [ ] For each historical decision timestamp, build a market-state snapshot using only data available before that timestamp.
-- [ ] Join only strategies whose state-conditioned evidence was available before that timestamp.
-- [ ] Emit selector decision:
+- [x] For each historical decision timestamp, build a market-state snapshot using only data available before that timestamp.
+- [x] Join only strategies whose state-conditioned evidence was available before that timestamp.
+- [x] Emit selector decision:
   - selected strategy
   - no_trade
   - shadow_only
   - rejected alternatives
   - reason codes
-- [ ] Compare replay against baselines:
+- [x] Compare replay against baselines:
   - always no_trade
   - always hold
   - best single eligible strategy
   - equal rotation
   - incumbent selector
-- [ ] Report:
+- [x] Report:
   - net return after cost
   - drawdown
   - exposure
@@ -983,7 +1030,23 @@ data/selector_replays/<run_id>/selector_replay_report.md
   - missed opportunity
   - no_trade quality
   - selector churn
-- [ ] Add tests that intentionally leaked future state labels are rejected.
+- [x] Add tests that intentionally leaked future state labels are rejected.
+
+Implemented on 2026-05-30 JST:
+
+- Added `freqtrade_ext/bot_factory/selector_replay.py` with
+  `historical_selector_replay_v1`, local input validation, selector decision
+  JSONL rows, baseline comparisons, no-trade quality metrics, and no-startup
+  safety scope.
+- Added `scripts/bot_factory_run_selector_replay.py` to run replay from local
+  `market_state_snapshot.json`, `strategy_state_suitability_matrix.json`, and
+  optional realized-return JSON inputs.
+- Added `docs/bot_factory/historical_selector_replay_schema.md`.
+- Suitability matrices generated after a historical decision timestamp are
+  ignored for that decision; if no as-of evidence exists, the decision is
+  `no_trade` with `no_strategy_evidence_available_asof`.
+- Replay input validation rejects future state labels/cutoffs and suitability
+  rows with future evidence availability.
 
 ## P2: Paper Readiness Integration
 
@@ -1038,24 +1101,38 @@ Ensure future paper/dry-run observations are only additional evidence and cannot
 
 ### TODO
 
-- [ ] Future paper/dry-run observation rows must use the same observation ledger schema.
-- [ ] Future observation must include state snapshot ID and horizon profile ID.
-- [ ] Recent observation evidence must be separated from:
+- [x] Future paper/dry-run observation rows must use the same observation ledger schema.
+- [x] Future observation must include state snapshot ID and horizon profile ID.
+- [x] Recent observation evidence must be separated from:
   - historical evidence
   - walk-forward evidence
   - training evidence
   - readiness evidence
   - runtime validation
   - drift evidence
-- [ ] Recent observation may influence ranking only when the strategy already has strict state-conditioned evidence.
-- [ ] Add drift detection:
+- [x] Recent observation may influence ranking only when the strategy already has strict state-conditioned evidence.
+- [x] Add drift detection:
   - state distribution drift
   - feature distribution drift
   - cost/turnover drift
   - drawdown envelope breach
   - selector churn increase
-- [ ] Add quarantine rules when live-like observations contradict historical state evidence.
-- [ ] Keep current phase local-only until later explicit approval.
+- [x] Add quarantine rules when live-like observations contradict historical state evidence.
+- [x] Keep current phase local-only until later explicit approval.
+
+Implemented on 2026-05-30 JST:
+
+- Added `freqtrade_ext/bot_factory/paper_observation_design.py` with
+  `paper_observation_design_v1`, future observation schema compatibility with
+  `regime_observation_ledger_v1`, state snapshot and horizon profile
+  requirements, separated evidence buckets, ranking policy constraints, drift
+  report schema, quarantine rules, retirement review triggers, and explicit
+  future-approval startup boundary.
+- Added `scripts/bot_factory_build_paper_observation_design.py` and
+  `docs/bot_factory/paper_observation_design_schema.md`.
+- Added tests proving future observation rows validate against the shared
+  ledger/state-scope schema, drift can trigger quarantine/retirement review, and
+  the design artifact cannot authorize startup, process control, or promotion.
 
 ## P2: Reporting And Review UX
 
@@ -1140,9 +1217,9 @@ This design is ready to implement only when:
 
 - [x] Market state artifacts are multi-horizon, timestamped, and local-only.
 - [x] Stale local data cannot be reported as live/current without an as-of warning.
-- [ ] Strategy evaluation is state-conditioned and includes no-trade / hold / incumbent baselines.
+- [x] Strategy evaluation is state-conditioned and includes no-trade / hold / incumbent baselines.
 - [x] Diagnostic replay cannot become selector eligibility.
-- [ ] ML output cannot bypass strict scorecards or paper readiness.
+- [x] ML output cannot bypass strict scorecards or paper readiness.
 - [x] Unknown, mixed, transition, OOD, and stale states default to no_trade.
 - [x] Time horizons are explicit; 5m trend and multi-month trend are not treated as the same state.
 - [ ] State definitions are frozen before evaluating holdout strategy performance.

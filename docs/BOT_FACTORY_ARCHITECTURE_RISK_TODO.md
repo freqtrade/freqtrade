@@ -4,6 +4,10 @@ Status: architecture follow-up TODO for regime-aware strategy selection.
 
 Created: 2026-05-21 JST.
 
+Product direction: `docs/BOT_FACTORY_PRODUCT_VISION_TODO.md` is the current
+product-level North Star. This document is an architecture follow-up under the
+Suitability / Matching and Audit / Lineage contracts.
+
 ## Goal
 
 Close the structural gaps between:

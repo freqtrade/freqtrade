@@ -30,6 +30,26 @@ SOURCE_OBSERVATION_STATE_FIELDS = (
     "decision_window_end",
     "future_data_used",
 )
+STATE_CONDITIONED_AGGREGATION_KEYS = (
+    "strategy_version",
+    "signal_version",
+    "risk_policy_version",
+    "state_id",
+    "horizon_profile_id",
+    "state_encoder_version",
+    "cost_model_id",
+    "pair_group",
+    "timeframe",
+)
+HARD_ROW_BLOCKERS = {
+    "state_fields_missing_from_source_observation",
+    "future_data_used",
+    "strategy_identity_mismatch",
+    "cost_model_mismatch",
+    "state_encoder_mismatch",
+    "pair_outside_candidate_identity",
+    "timeframe_outside_candidate_identity",
+}
 
 
 def build_state_conditioned_scorecard(
@@ -55,7 +75,7 @@ def build_state_conditioned_scorecard(
         "REGIME_SCOPED_SELECTOR_ELIGIBLE",
     }
     walk_forward_gate_passed = _walk_forward_gate_passed(regime_scorecard)
-    rows = [
+    raw_rows = [
         _scorecard_row(
             row,
             candidate_identity=candidate_identity,
@@ -69,6 +89,7 @@ def build_state_conditioned_scorecard(
         )
         for row in regime_scorecard.get("scorecard_by_regime", [])
     ]
+    rows = _aggregate_state_conditioned_rows(raw_rows)
     baseline_comparisons = _baseline_comparisons(
         regime_scorecard,
         market_state_snapshot=market_state_snapshot,
@@ -327,10 +348,27 @@ def _scorecard_row(
 ) -> dict[str, Any]:
     state_row = state_row or {}
     decision = _state_decision(str(row.get("decision") or ""))
-    blockers = _row_blockers(row, state_row=state_row)
-    if (
-        "state_fields_missing_from_source_observation" in blockers
-        and decision == "STATE_SELECTOR_ELIGIBLE"
+    pair = _first_present(
+        row.get("pair"),
+        state_row.get("pair"),
+        _first_or_unknown(candidate_identity.get("allowed_pairs")),
+    )
+    timeframe = _first_present(
+        row.get("timeframe"),
+        state_row.get("timeframe"),
+        _first_or_unknown(candidate_identity.get("allowed_timeframes")),
+    )
+    row_cost_model_id = _first_present(row.get("cost_model_id"), cost_model_id)
+    blockers = _row_blockers(
+        row,
+        state_row=state_row,
+        candidate_identity=candidate_identity,
+        row_pair=pair,
+        row_timeframe=timeframe,
+        row_cost_model_id=row_cost_model_id,
+    )
+    if decision == "STATE_SELECTOR_ELIGIBLE" and any(
+        blocker in HARD_ROW_BLOCKERS for blocker in blockers
     ):
         decision = "STATE_DIAGNOSTIC_ONLY"
     elif blockers and decision == "STATE_SELECTOR_ELIGIBLE":
@@ -356,24 +394,30 @@ def _scorecard_row(
         "horizon_profile_id": row.get("horizon_profile_id"),
         "state_encoder_version": row.get("state_encoder_version"),
         "state_window_id": row.get("state_window_id"),
+        "state_window_ids": _state_window_ids(row),
         "feature_cutoff_timestamp": row.get("feature_cutoff_timestamp"),
         "label_cutoff_timestamp": row.get("label_cutoff_timestamp"),
+        "feature_cutoff_range": _range_from_row(
+            row,
+            "feature_cutoff_range",
+            "feature_cutoff_timestamp",
+        ),
+        "label_cutoff_range": _range_from_row(
+            row,
+            "label_cutoff_range",
+            "label_cutoff_timestamp",
+        ),
         "decision_window_start": row.get("decision_window_start"),
         "decision_window_end": row.get("decision_window_end"),
+        "decision_windows": _decision_windows(row),
+        "source_observation_count": _source_observation_count(row),
         "future_data_used": row.get("future_data_used"),
         "diagnostic_snapshot_state_id": state_row.get("state_id"),
         "diagnostic_snapshot_horizon_profile_id": state_row.get("horizon_profile_id"),
-        "pair": _first_present(
-            row.get("pair"),
-            state_row.get("pair"),
-            _first_or_unknown(candidate_identity.get("allowed_pairs")),
-        ),
-        "timeframe": _first_present(
-            row.get("timeframe"),
-            state_row.get("timeframe"),
-            _first_or_unknown(candidate_identity.get("allowed_timeframes")),
-        ),
-        "cost_model_id": cost_model_id,
+        "pair": pair,
+        "pair_group": _first_present(row.get("pair_group"), row.get("pair_group_id"), pair),
+        "timeframe": timeframe,
+        "cost_model_id": row_cost_model_id,
         "sample_days": _number(row.get("sample_days"), 0.0),
         "independent_window_count": int(_number(row.get("window_count"), 0.0)),
         "non_overlapping_window_count": int(_number(row.get("window_count"), 0.0)),
@@ -411,6 +455,303 @@ def _scorecard_row(
     }
 
 
+def _aggregate_state_conditioned_rows(
+    rows: Sequence[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    grouped: dict[tuple[str, ...], list[Mapping[str, Any]]] = {}
+    order: list[tuple[str, ...]] = []
+    for row in rows:
+        key = tuple(str(row.get(field) or "") for field in STATE_CONDITIONED_AGGREGATION_KEYS)
+        if key not in grouped:
+            grouped[key] = []
+            order.append(key)
+        grouped[key].append(row)
+    return [_aggregate_state_conditioned_row(grouped[key]) for key in order]
+
+
+def _aggregate_state_conditioned_row(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    first = dict(rows[0])
+    source_count = sum(_source_observation_count(row) for row in rows)
+    state_window_ids = _unique_strings(
+        item
+        for row in rows
+        for item in _state_window_ids(row)
+    )
+    decision_windows = _unique_decision_windows(
+        item
+        for row in rows
+        for item in _decision_windows(row)
+    )
+    feature_cutoffs = [
+        value
+        for row in rows
+        for value in _range_values(
+            _range_from_row(row, "feature_cutoff_range", "feature_cutoff_timestamp")
+        )
+    ]
+    label_cutoffs = [
+        value
+        for row in rows
+        for value in _range_values(
+            _range_from_row(row, "label_cutoff_range", "label_cutoff_timestamp")
+        )
+    ]
+    decision_starts = [item["start"] for item in decision_windows if item.get("start")]
+    decision_ends = [item["end"] for item in decision_windows if item.get("end")]
+    blockers = sorted(
+        {
+            str(blocker)
+            for row in rows
+            for blocker in row.get("blockers", [])
+            if blocker not in (None, "")
+        }
+    )
+    reason_codes = sorted(
+        {
+            str(code)
+            for row in rows
+            for code in row.get("reason_codes", [])
+            if code not in (None, "")
+        }
+    )
+    first.update(
+        {
+            "state_window_id": state_window_ids[0] if state_window_ids else first.get("state_window_id"),
+            "state_window_ids": state_window_ids,
+            "feature_cutoff_timestamp": max(feature_cutoffs)
+            if feature_cutoffs
+            else first.get("feature_cutoff_timestamp"),
+            "label_cutoff_timestamp": max(label_cutoffs)
+            if label_cutoffs
+            else first.get("label_cutoff_timestamp"),
+            "feature_cutoff_range": _value_range(feature_cutoffs),
+            "label_cutoff_range": _value_range(label_cutoffs),
+            "decision_window_start": min(decision_starts)
+            if decision_starts
+            else first.get("decision_window_start"),
+            "decision_window_end": max(decision_ends)
+            if decision_ends
+            else first.get("decision_window_end"),
+            "decision_windows": decision_windows,
+            "source_observation_count": source_count,
+            "sample_days": round(sum(_number(row.get("sample_days"), 0.0) for row in rows), 6),
+            "independent_window_count": int(
+                sum(_number(row.get("independent_window_count"), 0.0) for row in rows)
+            ),
+            "non_overlapping_window_count": int(
+                sum(_number(row.get("non_overlapping_window_count"), 0.0) for row in rows)
+            ),
+            "trade_count": int(sum(_number(row.get("trade_count"), 0.0) for row in rows)),
+            "gross_return": round(sum(_number(row.get("gross_return"), 0.0) for row in rows), 6),
+            "net_return_normal_cost": round(
+                sum(_number(row.get("net_return_normal_cost"), 0.0) for row in rows),
+                6,
+            ),
+            "net_return_stress_cost": round(
+                sum(_number(row.get("net_return_stress_cost"), 0.0) for row in rows),
+                6,
+            ),
+            "expected_utility_after_cost": round(
+                sum(_number(row.get("expected_utility_after_cost"), 0.0) for row in rows),
+                6,
+            ),
+            "no_trade_delta": round(
+                sum(_number(row.get("no_trade_delta"), 0.0) for row in rows),
+                6,
+            ),
+            "hold_delta": round(
+                sum(_number(row.get("hold_delta"), 0.0) for row in rows),
+                6,
+            ),
+            "lower_confidence_bound": min(
+                (_number(row.get("lower_confidence_bound"), 0.0) for row in rows),
+                default=0.0,
+            ),
+            "max_drawdown": max(
+                (_number(row.get("max_drawdown"), 0.0) for row in rows),
+                default=0.0,
+            ),
+            "downside_deviation": max(
+                (_number(row.get("downside_deviation"), 0.0) for row in rows),
+                default=0.0,
+            ),
+            "exposure_ratio": _weighted_mean(rows, "exposure_ratio"),
+            "profit_factor": _weighted_mean(rows, "profit_factor"),
+            "win_rate": _weighted_mean(rows, "win_rate"),
+            "pair_concentration": max(
+                (_number(row.get("pair_concentration"), 0.0) for row in rows),
+                default=0.0,
+            ),
+            "calendar_concentration": max(
+                (_number(row.get("calendar_concentration"), 0.0) for row in rows),
+                default=0.0,
+            ),
+            "state_sample_count": int(
+                sum(_number(row.get("state_sample_count"), 0.0) for row in rows)
+            ),
+            "blockers": blockers,
+            "reason_codes": reason_codes,
+        }
+    )
+    first["risk_adjusted_score"] = round(
+        _number(first.get("lower_confidence_bound"), 0.0)
+        - (_number(first.get("max_drawdown"), 0.0) * 0.1),
+        6,
+    )
+    first["stress_cost_utility"] = round(
+        _number(first.get("net_return_stress_cost"), 0.0)
+        + _number(first.get("lower_confidence_bound"), 0.0)
+        - (_number(first.get("max_drawdown"), 0.0) * 0.05),
+        6,
+    )
+    first["decision"] = _aggregate_row_decision(rows, blockers)
+    return first
+
+
+def _aggregate_row_decision(
+    rows: Sequence[Mapping[str, Any]],
+    blockers: Sequence[str],
+) -> str:
+    decisions = {str(row.get("decision") or "") for row in rows}
+    if any(blocker in HARD_ROW_BLOCKERS for blocker in blockers):
+        return "STATE_DIAGNOSTIC_ONLY"
+    if blockers:
+        return "STATE_SHADOW_ONLY"
+    if decisions == {"STATE_SELECTOR_ELIGIBLE"}:
+        return "STATE_SELECTOR_ELIGIBLE"
+    if "STATE_UNSAFE" in decisions:
+        return "STATE_UNSAFE"
+    if "STATE_NO_TRADE_POLICY" in decisions:
+        return "STATE_NO_TRADE_POLICY"
+    if "STATE_DIAGNOSTIC_ONLY" in decisions:
+        return "STATE_DIAGNOSTIC_ONLY"
+    return "STATE_INSUFFICIENT_EVIDENCE"
+
+
+def _weighted_mean(rows: Sequence[Mapping[str, Any]], field: str) -> float:
+    numerator = 0.0
+    denominator = 0
+    for row in rows:
+        weight = max(_source_observation_count(row), 1)
+        numerator += _number(row.get(field), 0.0) * weight
+        denominator += weight
+    return round(numerator / denominator, 6) if denominator else 0.0
+
+
+def _row_identity_mismatches_candidate(
+    row: Mapping[str, Any],
+    candidate_identity: Mapping[str, Any],
+) -> bool:
+    fields = (
+        "candidate_id",
+        "strategy_id",
+        "strategy_version",
+        "signal_version",
+        "risk_policy_version",
+    )
+    return any(
+        row.get(field) not in (None, "")
+        and candidate_identity.get(field) not in (None, "")
+        and str(row.get(field)) != str(candidate_identity.get(field))
+        for field in fields
+    )
+
+
+def _state_window_ids(row: Mapping[str, Any]) -> list[str]:
+    values = row.get("state_window_ids")
+    if isinstance(values, Sequence) and not isinstance(values, (str, bytes)):
+        return _unique_strings(values)
+    return _unique_strings([row.get("state_window_id")])
+
+
+def _decision_windows(row: Mapping[str, Any]) -> list[dict[str, str]]:
+    windows = row.get("decision_windows")
+    if isinstance(windows, Sequence) and not isinstance(windows, (str, bytes)):
+        result: list[dict[str, str]] = []
+        for item in windows:
+            if not isinstance(item, Mapping):
+                continue
+            start = item.get("start")
+            end = item.get("end")
+            if start in (None, "") or end in (None, ""):
+                continue
+            result.append({"start": str(start), "end": str(end)})
+        return _unique_decision_windows(result)
+    start = row.get("decision_window_start")
+    end = row.get("decision_window_end")
+    if start in (None, "") or end in (None, ""):
+        return []
+    return [{"start": str(start), "end": str(end)}]
+
+
+def _range_from_row(
+    row: Mapping[str, Any],
+    range_field: str,
+    value_field: str,
+) -> dict[str, str | None]:
+    value_range = row.get(range_field)
+    if isinstance(value_range, Mapping):
+        return {
+            "start": str(value_range.get("start"))
+            if value_range.get("start") not in (None, "")
+            else None,
+            "end": str(value_range.get("end"))
+            if value_range.get("end") not in (None, "")
+            else None,
+        }
+    value = row.get(value_field)
+    text = str(value) if value not in (None, "") else None
+    return {"start": text, "end": text}
+
+
+def _range_values(value_range: Mapping[str, Any]) -> list[str]:
+    return _unique_strings([value_range.get("start"), value_range.get("end")])
+
+
+def _value_range(values: Sequence[str]) -> dict[str, str | None]:
+    clean = [str(value) for value in values if value not in (None, "")]
+    return {
+        "start": min(clean) if clean else None,
+        "end": max(clean) if clean else None,
+    }
+
+
+def _unique_strings(values: Sequence[Any]) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for value in values:
+        if value in (None, ""):
+            continue
+        text = str(value)
+        if text in seen:
+            continue
+        seen.add(text)
+        result.append(text)
+    return result
+
+
+def _unique_decision_windows(
+    windows: Sequence[Mapping[str, Any]],
+) -> list[dict[str, str]]:
+    seen: set[tuple[str, str]] = set()
+    result: list[dict[str, str]] = []
+    for item in windows:
+        start = item.get("start")
+        end = item.get("end")
+        if start in (None, "") or end in (None, ""):
+            continue
+        key = (str(start), str(end))
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append({"start": key[0], "end": key[1]})
+    return result
+
+
+def _source_observation_count(row: Mapping[str, Any]) -> int:
+    return max(int(_number(row.get("source_observation_count"), 1.0)), 1)
+
+
 def _state_rows_by_label(snapshot: Mapping[str, Any]) -> dict[str, Mapping[str, Any]]:
     result: dict[str, Mapping[str, Any]] = {}
     for row in snapshot.get("horizons", []):
@@ -436,16 +777,51 @@ def _state_decision(regime_decision: str) -> str:
     }.get(regime_decision, "STATE_DIAGNOSTIC_ONLY")
 
 
-def _row_blockers(row: Mapping[str, Any], *, state_row: Mapping[str, Any]) -> list[str]:
+def _row_blockers(
+    row: Mapping[str, Any],
+    *,
+    state_row: Mapping[str, Any],
+    candidate_identity: Mapping[str, Any],
+    row_pair: str,
+    row_timeframe: str,
+    row_cost_model_id: str,
+) -> list[str]:
     blockers: list[str] = []
     source_eligible = row.get("decision") in {
         "REGIME_SCOPED_SELECTOR_ELIGIBLE",
         "GLOBAL_SELECTOR_ELIGIBLE",
     }
-    if source_eligible and (
-        _source_state_missing_fields(row) or row.get("future_data_used") is not False
-    ):
+    if source_eligible and _source_state_missing_fields(row):
         blockers.append("state_fields_missing_from_source_observation")
+    if source_eligible and row.get("future_data_used") is not False:
+        blockers.append("future_data_used")
+    if source_eligible and _row_identity_mismatches_candidate(row, candidate_identity):
+        blockers.append("strategy_identity_mismatch")
+    identity_cost_model_id = str(candidate_identity.get("cost_model_id") or "")
+    if (
+        source_eligible
+        and identity_cost_model_id
+        and row_cost_model_id
+        and row_cost_model_id != identity_cost_model_id
+    ):
+        blockers.append("cost_model_mismatch")
+    snapshot_state_encoder = str(state_row.get("state_encoder_version") or "")
+    row_state_encoder = str(row.get("state_encoder_version") or "")
+    if (
+        source_eligible
+        and snapshot_state_encoder
+        and row_state_encoder
+        and row_state_encoder != snapshot_state_encoder
+    ):
+        blockers.append("state_encoder_mismatch")
+    allowed_pairs = {str(item) for item in candidate_identity.get("allowed_pairs") or []}
+    if source_eligible and allowed_pairs and row_pair not in allowed_pairs:
+        blockers.append("pair_outside_candidate_identity")
+    allowed_timeframes = {
+        str(item) for item in candidate_identity.get("allowed_timeframes") or []
+    }
+    if source_eligible and allowed_timeframes and row_timeframe not in allowed_timeframes:
+        blockers.append("timeframe_outside_candidate_identity")
     if int(_number(row.get("window_count"), 0.0)) < 2 and source_eligible:
         blockers.append("insufficient_windows")
     if int(_number(row.get("trade_count"), 0.0)) <= 0 and source_eligible:

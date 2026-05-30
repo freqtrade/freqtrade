@@ -2,8 +2,9 @@
 
 Status: draft schema for Increment 0.
 
-Implementation status: documentation contract only. This file defines the
-artifact shape for future state-conditioned strategy evaluation. It does not run
+Implementation status: state-conditioned scorecard construction and selector
+validation are implemented for local checked artifacts. Multi-window state
+scope aggregation is implemented as of 2026-05-30 JST. This file does not run
 backtests, generate strategies, start paper trading, start dry-run trading,
 start live trading, or authorize selector use by itself.
 
@@ -59,6 +60,14 @@ existing local observation ledger contract:
 | `feature_cutoff_timestamp` | timestamp | Must not exceed the decision window end. |
 | `label_cutoff_timestamp` | timestamp | Must not exceed the decision window end. |
 | `future_data_used` | boolean | Must be `false`. |
+
+When multiple source observations share the same state scope, producers may
+aggregate them into one state-conditioned evidence row. Aggregation groups by
+strategy identity unit, `state_id`, `horizon_profile_id`,
+`state_encoder_version`, `cost_model_id`, `pair_group`, and `timeframe`, while
+preserving `state_window_ids[]`, `decision_windows[]`,
+`feature_cutoff_range`, `label_cutoff_range`, and
+`source_observation_count`.
 
 Observation sources remain limited to checked local evidence paths permitted by
 the active phase documentation. Future paper or dry-run observations remain
@@ -139,9 +148,16 @@ Required fields:
 | `risk_policy_version` | string | Risk policy version from candidate identity. |
 | `state_id` | string | Market-state id. |
 | `horizon_profile_id` | string | Multi-horizon profile id. |
+| `state_encoder_version` | string | Market-state encoder version. |
 | `pair` | string | Pair under evaluation. |
+| `pair_group` | string | Pair group used for state-scope aggregation; current implementation defaults to the pair when no broader group is supplied. |
 | `timeframe` | string | Strategy timeframe. |
 | `cost_model_id` | string | Cost model id. |
+| `state_window_ids` | array[string] | Source state windows represented by this row. |
+| `decision_windows` | array[object] | Source decision windows with `start` and `end`. |
+| `feature_cutoff_range` | object | Earliest and latest feature cutoff represented by the row. |
+| `label_cutoff_range` | object | Earliest and latest label cutoff represented by the row. |
+| `source_observation_count` | integer | Count of source observations represented by this row. |
 | `sample_days` | number | Total covered days. |
 | `independent_window_count` | integer | Independent evaluation windows. |
 | `non_overlapping_window_count` | integer | Non-overlapping windows. |

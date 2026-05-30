@@ -90,6 +90,11 @@ OPTIONAL_STATE_OBSERVATION_FIELDS = (
     "decision_window_start",
     "decision_window_end",
 )
+STATE_OBSERVATION_GROUP_FIELDS = (
+    "state_id",
+    "horizon_profile_id",
+    "state_encoder_version",
+)
 REQUIRED_STATE_OBSERVATION_SCOPE_FIELDS = (
     *OPTIONAL_STATE_OBSERVATION_FIELDS,
     "future_data_used",
@@ -1423,7 +1428,7 @@ def _state_observation_scope(rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
     ]
     inconsistent_fields = [
         field
-        for field in OPTIONAL_STATE_OBSERVATION_FIELDS
+        for field in STATE_OBSERVATION_GROUP_FIELDS
         if len({str(row.get(field) or "") for row in rows}) > 1
     ]
     reason_codes: list[str] = []
@@ -1445,13 +1450,45 @@ def _state_observation_scope(rows: Sequence[dict[str, Any]]) -> dict[str, Any]:
         }
 
     first = rows[0]
+    state_window_ids = _unique_strings(row.get("state_window_id") for row in rows)
+    decision_windows = _unique_windows(rows)
+    feature_cutoffs = [
+        str(row.get("feature_cutoff_timestamp") or "")
+        for row in rows
+        if row.get("feature_cutoff_timestamp") not in (None, "")
+    ]
+    label_cutoffs = [
+        str(row.get("label_cutoff_timestamp") or "")
+        for row in rows
+        if row.get("label_cutoff_timestamp") not in (None, "")
+    ]
+    decision_starts = [
+        str(row.get("decision_window_start") or "")
+        for row in rows
+        if row.get("decision_window_start") not in (None, "")
+    ]
+    decision_ends = [
+        str(row.get("decision_window_end") or "")
+        for row in rows
+        if row.get("decision_window_end") not in (None, "")
+    ]
     return {
         "source_state_observation_scope_complete": True,
         "source_state_observation_scope_reason_codes": [],
-        **{
-            field: first.get(field)
-            for field in REQUIRED_STATE_OBSERVATION_SCOPE_FIELDS
-        },
+        "state_id": first.get("state_id"),
+        "horizon_profile_id": first.get("horizon_profile_id"),
+        "state_encoder_version": first.get("state_encoder_version"),
+        "state_window_id": state_window_ids[0] if state_window_ids else first.get("state_window_id"),
+        "state_window_ids": state_window_ids,
+        "feature_cutoff_timestamp": max(feature_cutoffs) if feature_cutoffs else first.get("feature_cutoff_timestamp"),
+        "label_cutoff_timestamp": max(label_cutoffs) if label_cutoffs else first.get("label_cutoff_timestamp"),
+        "feature_cutoff_range": _value_range(feature_cutoffs),
+        "label_cutoff_range": _value_range(label_cutoffs),
+        "decision_window_start": min(decision_starts) if decision_starts else first.get("decision_window_start"),
+        "decision_window_end": max(decision_ends) if decision_ends else first.get("decision_window_end"),
+        "decision_windows": decision_windows,
+        "source_observation_count": len(rows),
+        "future_data_used": False,
     }
 
 
@@ -1669,6 +1706,44 @@ def _max_share(values: Sequence[str]) -> float:
         return 0.0
     counts = {value: clean.count(value) for value in set(clean)}
     return max(counts.values()) / len(clean)
+
+
+def _unique_strings(values: Sequence[Any]) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for value in values:
+        if value in (None, ""):
+            continue
+        text = str(value)
+        if text in seen:
+            continue
+        seen.add(text)
+        result.append(text)
+    return result
+
+
+def _unique_windows(rows: Sequence[dict[str, Any]]) -> list[dict[str, str]]:
+    seen: set[tuple[str, str]] = set()
+    windows: list[dict[str, str]] = []
+    for row in rows:
+        start = row.get("decision_window_start")
+        end = row.get("decision_window_end")
+        if start in (None, "") or end in (None, ""):
+            continue
+        key = (str(start), str(end))
+        if key in seen:
+            continue
+        seen.add(key)
+        windows.append({"start": key[0], "end": key[1]})
+    return windows
+
+
+def _value_range(values: Sequence[str]) -> dict[str, str | None]:
+    clean = [str(value) for value in values if value not in (None, "")]
+    return {
+        "start": min(clean) if clean else None,
+        "end": max(clean) if clean else None,
+    }
 
 
 def _parse_datetime(value: Any) -> datetime | None:

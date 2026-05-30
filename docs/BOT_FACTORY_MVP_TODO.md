@@ -3,6 +3,47 @@
 This TODO is derived from `crypto_bot_factory_agent_instructions.md` and scoped to
 Phase 1: Backtest Factory. The first milestone must not start live trading.
 
+## Product Vision / North Star
+
+Product-level source of truth:
+`docs/BOT_FACTORY_PRODUCT_VISION_TODO.md`.
+
+Bot Factory's North Star is a historical as-of selector replay that can choose
+`select_strategy` or `no_trade` using only information available at each
+decision timestamp, then beat or justify itself against simple baselines after
+cost, drawdown, exposure, opportunity cost, and selector churn are considered.
+
+Every Bot Factory increment must name one core contract or remain diagnostic
+research only:
+
+- Market State
+- Strategy Evidence
+- Suitability / Matching
+- Readiness / Runtime Governance
+- Audit / Lineage
+- Diagnostic Research only
+
+Features outside the five core contracts default to `diagnostic_only=true`,
+`manual_review_only=true`, `selector_candidate_creation_allowed=false`,
+`paper_readiness_input_allowed=false`, and
+`promotion_authorized_by_this_artifact=false`.
+
+## Bot Factory PR Contribution Checklist
+
+Every future Bot Factory PR must answer:
+
+- Which contract does this PR improve?
+- How does this PR move Bot Factory toward the North Star?
+- What does this PR explicitly not permit?
+- Does this PR preserve `no_trade` as a first-class output?
+- Does this PR prevent future leakage?
+- Does this PR preserve candidate identity and evidence lineage?
+- Does this PR avoid paper/dry-run/live/process-control startup?
+- What baselines or reports become more informative because of this PR?
+
+PRs that cannot answer these questions must remain diagnostic-only or stay out
+of the core Bot Factory path.
+
 ## Scope
 
 - Goal: generate, check, backtest, save metrics, and report on strategy candidates.
@@ -98,6 +139,234 @@ Phase 1: Backtest Factory. The first milestone must not start live trading.
 - [x] Add reviewer notes and promotion recommendations.
 
 ## Latest Verification
+
+Checked on 2026-05-30 JST for Product Vision roadmap closeout across Phases
+0-6.
+
+- [x] Confirmed `docs\BOT_FACTORY_PRODUCT_VISION_TODO.md` has no remaining
+  unchecked checklist items.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\regime_promotion.py freqtrade_ext\bot_factory\state_conditioning.py freqtrade_ext\bot_factory\selector_replay.py freqtrade_ext\bot_factory\state_sliced_reporting.py freqtrade_ext\bot_factory\no_trade_evaluation.py freqtrade_ext\bot_factory\diagnostic_state_discovery.py freqtrade_ext\bot_factory\paper_observation_design.py scripts\bot_factory_run_selector_replay.py scripts\bot_factory_build_state_sliced_report.py scripts\bot_factory_evaluate_no_trade_policy.py scripts\bot_factory_build_diagnostic_state_discovery.py scripts\bot_factory_build_paper_observation_design.py tests\test_bot_factory.py`
+  - `$env:TEMP=(Resolve-Path .\.tmp\pytest).Path; $env:TMP=$env:TEMP; .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "market_state or state_conditioned or state_sliced or no_trade_policy or diagnostic_state_discovery or paper_observation_design or strategy_suitability or selector_matching or selector_replay or paper_readiness" -p no:cacheprovider`
+  - `$env:TEMP=(Resolve-Path .\.tmp\pytest).Path; $env:TMP=$env:TEMP; .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -p no:cacheprovider`
+  - `git diff --check`
+  - `rg -n "\[ \]" docs\BOT_FACTORY_PRODUCT_VISION_TODO.md`
+- [x] Results: compile passed; broader Bot Factory Product Vision slice passed
+  `40 passed`; full `tests\test_bot_factory.py` passed and reached `[100%]`;
+  `git diff --check` reported only existing LF-to-CRLF warnings; Product Vision
+  unchecked-item search returned no matches.
+- [x] Safety result: no `freqtrade trade`, paper trading, dry-run trading,
+  live trading, canary process, exchange order endpoint, API key, secret,
+  leverage, shorting, historical backtest, strategy generation, live strategy
+  matching, startup, monitoring, stopping, cleanup, or process-control action
+  was performed.
+
+Checked on 2026-05-30 JST for Product Vision Phase 6 paper observation design.
+
+- [x] Implemented `paper_observation_design_v1` in
+  `freqtrade_ext\bot_factory\paper_observation_design.py`, with future
+  observation schema compatibility against `regime_observation_ledger_v1`, state
+  snapshot and horizon profile requirements, evidence separation, drift report
+  schema, quarantine rules, retirement review triggers, and explicit
+  future-approval startup boundary.
+- [x] Added `scripts\bot_factory_build_paper_observation_design.py` and
+  `docs\bot_factory\paper_observation_design_schema.md`.
+- [x] Added regression coverage proving future observation rows validate against
+  the shared ledger/state-scope schema, drift can trigger quarantine/retirement
+  review, and the artifact cannot authorize paper/dry-run/live startup,
+  process control, or promotion.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\paper_observation_design.py scripts\bot_factory_build_paper_observation_design.py tests\test_bot_factory.py`
+  - `$env:TEMP=(Resolve-Path .\.tmp\pytest).Path; $env:TMP=$env:TEMP; .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "paper_observation_design or diagnostic_state_discovery" -p no:cacheprovider`
+- [x] Results: compile passed; focused paper-observation/diagnostic slice passed
+  `5 passed`.
+- [x] Safety result: no `freqtrade trade`, paper trading, dry-run trading,
+  live trading, canary process, exchange order endpoint, API key, secret,
+  leverage, shorting, historical backtest, strategy generation, live strategy
+  matching, startup, monitoring, stopping, cleanup, or process-control action
+  was performed.
+
+Checked on 2026-05-30 JST for Product Vision Phase 5 diagnostic state discovery
+and ML boundary.
+
+- [x] Implemented `diagnostic_state_discovery_v1` in
+  `freqtrade_ext\bot_factory\diagnostic_state_discovery.py`, with
+  diagnostic-only state embeddings, predeclared-feature clusters, as-of nearest
+  analog windows, OOD/uncertainty calibration, suitability scoring dataset rows,
+  deterministic-label comparison, and no-bypass diagnostic gates.
+- [x] Added `scripts\bot_factory_build_diagnostic_state_discovery.py` and
+  `docs\bot_factory\diagnostic_state_discovery_schema.md`.
+- [x] Added regression coverage for clustering/analog/dataset output, tiny
+  feature perturbation stability, insufficient analog evidence, and the rule
+  that high diagnostic scores cannot bypass strict evidence gates.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\diagnostic_state_discovery.py scripts\bot_factory_build_diagnostic_state_discovery.py tests\test_bot_factory.py`
+  - `$env:TEMP=(Resolve-Path .\.tmp\pytest).Path; $env:TMP=$env:TEMP; .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "diagnostic_state_discovery or no_trade_policy" -p no:cacheprovider`
+- [x] Results: compile passed; focused diagnostic/no-trade slice passed
+  `4 passed`.
+- [x] Safety result: no `freqtrade trade`, paper trading, dry-run trading,
+  live trading, canary process, exchange order endpoint, API key, secret,
+  leverage, shorting, historical backtest, strategy generation, live strategy
+  matching, or process-control action was performed.
+
+Checked on 2026-05-30 JST for Product Vision Phase 4 no-trade policy
+evaluation.
+
+- [x] Implemented `no_trade_policy_evaluation_v1` in
+  `freqtrade_ext\bot_factory\no_trade_evaluation.py`, with avoided drawdown,
+  opportunity cost versus hold, opportunity cost versus best selector-eligible
+  strategy, uncertainty/OOD safety value, state-specific no-trade quality, and
+  configurable state-type opportunity-cost thresholds.
+- [x] Added `scripts\bot_factory_evaluate_no_trade_policy.py` and
+  `docs\bot_factory\no_trade_policy_evaluation_schema.md`.
+- [x] Added regression coverage for `good`, `acceptable`, and `overused`
+  no-trade judgments from selector replay decisions.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\no_trade_evaluation.py scripts\bot_factory_evaluate_no_trade_policy.py tests\test_bot_factory.py`
+  - `$env:TEMP=(Resolve-Path .\.tmp\pytest).Path; $env:TMP=$env:TEMP; .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -k "no_trade_policy or historical_selector_replay or state_sliced" -p no:cacheprovider`
+- [x] Results: compile passed; focused no-trade/replay/state-sliced slice passed
+  `6 passed`.
+- [x] Safety result: no `freqtrade trade`, paper trading, dry-run trading,
+  live trading, canary process, exchange order endpoint, API key, secret,
+  leverage, shorting, historical backtest, strategy generation, live strategy
+  matching, or process-control action was performed.
+
+Checked on 2026-05-30 JST for Product Vision Phase 3 state-sliced strategy
+evaluation reports.
+
+- [x] Implemented `state_sliced_strategy_evaluation_v1` in
+  `freqtrade_ext\bot_factory\state_sliced_reporting.py`, with backtest state
+  slices, walk-forward state slices, coverage/missingness, per-state baseline
+  deltas, style-specific state gates, and global-positive/state-crash
+  rejection.
+- [x] Added `scripts\bot_factory_build_state_sliced_report.py` and
+  `docs\bot_factory\state_sliced_strategy_evaluation_schema.md`.
+- [x] State-sliced reports include no-trade, hold, incumbent, and
+  style-specific baseline deltas by state when supplied.
+- [x] Positive global historical metrics fail with
+  `positive_global_result_hides_state_crash` when a state has negative stress
+  edge or drawdown beyond threshold.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\state_sliced_reporting.py scripts\bot_factory_build_state_sliced_report.py tests\test_bot_factory.py`
+  - `$env:TEMP=(Resolve-Path .\.tmp\pytest).Path; $env:TMP=$env:TEMP; .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -p no:cacheprovider -k "state_sliced or historical_selector_replay or state_conditioned"`
+  - `$env:TEMP=(Resolve-Path .\.tmp\pytest).Path; $env:TMP=$env:TEMP; .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -p no:cacheprovider -k "market_state or state_conditioned or state_sliced or strategy_suitability or selector_matching or selector_replay or paper_readiness"`
+  - `$env:TEMP=(Resolve-Path .\.tmp\pytest).Path; $env:TMP=$env:TEMP; .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -p no:cacheprovider`
+- [x] Results: compile passed; focused state-sliced/replay/state-conditioned
+  slice passed `14 passed`; broader market-state/state-conditioned/state-sliced/
+  suitability/selector replay/paper-readiness slice passed `34 passed`; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`.
+- [x] Safety result: no `freqtrade trade`, paper trading, dry-run trading,
+  live trading, canary process, exchange order endpoint, API key, secret,
+  leverage, shorting, historical backtest, strategy generation, live strategy
+  matching, or process-control action was performed.
+
+Checked on 2026-05-30 JST for Product Vision Phase 2 historical as-of selector
+replay.
+
+- [x] Implemented `historical_selector_replay_v1` in
+  `freqtrade_ext\bot_factory\selector_replay.py`, with local historical
+  decision rows, selector/no-trade JSONL output, baseline comparisons, metrics,
+  and no-startup safety scope.
+- [x] Added `scripts\bot_factory_run_selector_replay.py` to run replay from
+  local market-state snapshots, local strategy suitability matrices, and
+  optional local realized-return JSON.
+- [x] Added `docs\bot_factory\historical_selector_replay_schema.md`.
+- [x] Replay uses only suitability matrices whose `generated_at` is less than
+  or equal to each decision `data_asof`. Later evidence is ignored for that
+  decision and produces `no_strategy_evidence_available_asof` when no as-of
+  evidence exists.
+- [x] Replay validation rejects market-state horizon rows with
+  `future_data_used=true`, feature/label cutoffs after the decision timestamp,
+  suitability rows with `future_data_used=true`, and suitability rows whose
+  `evidence_available_at` is after the matrix `generated_at`.
+- [x] Replay metrics compare the selector against `always_no_trade`,
+  `always_hold`, `best_single_eligible_strategy`, `equal_rotation`, and
+  `incumbent:<candidate_id|none>`, and report net return, drawdown, downside
+  deviation, exposure, turnover/churn, missed opportunity, no-trade loss
+  avoidance, no-trade count, unsupported-state rate, and leakage/identity
+  checks.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\selector_replay.py scripts\bot_factory_run_selector_replay.py tests\test_bot_factory.py`
+  - `$env:TEMP=(Resolve-Path .\.tmp\pytest).Path; $env:TMP=$env:TEMP; .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -p no:cacheprovider -k "historical_selector_replay or selector_matching or strategy_suitability or state_conditioned"`
+  - `$env:TEMP=(Resolve-Path .\.tmp\pytest).Path; $env:TMP=$env:TEMP; .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -p no:cacheprovider -k "market_state or state_conditioned or strategy_suitability or selector_matching or selector_replay or paper_readiness"`
+  - `$env:TEMP=(Resolve-Path .\.tmp\pytest).Path; $env:TMP=$env:TEMP; .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -p no:cacheprovider`
+- [x] Results: compile passed; focused historical replay / selector slice passed
+  `17 passed`; broader market-state/state-conditioned/suitability/selector
+  replay/paper-readiness slice passed `32 passed`; full
+  `tests\test_bot_factory.py` passed and reached `[100%]`.
+- [x] Safety result: no `freqtrade trade`, paper trading, dry-run trading,
+  live trading, canary process, exchange order endpoint, API key, secret,
+  leverage, shorting, historical backtest, strategy generation, live strategy
+  matching, or process-control action was performed.
+
+Checked on 2026-05-30 JST for Product Vision Phase 1 multi-window
+state-conditioned evidence aggregation.
+
+- [x] Implemented Strategy Evidence contract Phase 1: state-conditioned rows
+  now aggregate by strategy identity unit, `state_id`, `horizon_profile_id`,
+  `state_encoder_version`, `cost_model_id`, `pair_group`, and `timeframe`.
+- [x] Regime scorecard state-observation scope no longer requires all source
+  rows in the same state scope to share one `state_window_id`, feature cutoff,
+  label cutoff, or decision window. It preserves `state_window_ids[]`,
+  `decision_windows[]`, `feature_cutoff_range`, `label_cutoff_range`, and
+  `source_observation_count`.
+- [x] Selector eligibility now fails closed when any selector-eligible row has
+  `future_data_used=true`, strategy identity mismatch, cost-model mismatch,
+  state-encoder mismatch, or pair/timeframe outside the candidate identity.
+- [x] Added regression coverage for multi-window aggregation, scope mismatch
+  failure, and market pair/timeframe identity failure.
+- [x] Verification commands:
+  - `.\.venv\Scripts\python.exe -m py_compile freqtrade_ext\bot_factory\regime_promotion.py freqtrade_ext\bot_factory\state_conditioning.py tests\test_bot_factory.py`
+  - `$env:TEMP=(Resolve-Path .\.tmp\pytest).Path; $env:TMP=$env:TEMP; .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -p no:cacheprovider -k "state_conditioned_scorecard"`
+  - `New-Item -ItemType Directory -Force -Path .tmp\pytest | Out-Null; $env:TEMP=(Resolve-Path .\.tmp\pytest).Path; $env:TMP=$env:TEMP; .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -p no:cacheprovider -k "state_conditioned_scorecard"`
+  - `$env:TEMP=(Resolve-Path .\.tmp\pytest).Path; $env:TMP=$env:TEMP; .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -p no:cacheprovider -k "market_state or state_conditioned or strategy_suitability or selector_matching or paper_readiness"`
+  - `$env:TEMP=(Resolve-Path .\.tmp\pytest).Path; $env:TMP=$env:TEMP; .\.venv\Scripts\python.exe -m pytest tests\test_bot_factory.py -q -p no:cacheprovider`
+  - `git diff --check`
+  - `$workspace=(Resolve-Path .).Path; $target=(Resolve-Path .\.tmp\pytest).Path; if (-not $target.StartsWith($workspace, [System.StringComparison]::OrdinalIgnoreCase)) { throw "Refusing to remove outside workspace: $target" }; Remove-Item -LiteralPath $target -Recurse -Force`
+  - `$workspace=(Resolve-Path .).Path; $target=(Resolve-Path .\.tmp\pytest\pytest-of-yoro4).Path; if (-not $target.StartsWith($workspace, [System.StringComparison]::OrdinalIgnoreCase)) { throw "Refusing to remove outside workspace: $target" }; Get-ChildItem -LiteralPath $target -Force | ForEach-Object { Remove-Item -LiteralPath $_.FullName -Recurse -Force }; Remove-Item -LiteralPath $target -Force`
+- [x] Results: compile passed; the first focused pytest attempt failed before
+  tests executed because `.tmp\pytest` did not exist and pytest fell back to the
+  known Windows AppData Temp path with ACL errors; after creating `.tmp\pytest`,
+  focused state-conditioned tests passed `9 passed`; broader
+  market-state/state-conditioned/suitability/selector/paper-readiness slice
+  passed `29 passed`; full `tests\test_bot_factory.py` passed and reached
+  `[100%]`; diff check passed with existing LF-to-CRLF working-copy warnings
+  for updated docs only. Recursive cleanup of `.tmp\pytest` was attempted after
+  verifying the target stayed inside the workspace, but Windows ACLs denied
+  access to `pytest-of-yoro4`; `.tmp/` was added to `.gitignore` so local pytest
+  artifacts remain non-source, untracked runtime output.
+- [x] Safety result: no `freqtrade trade`, paper trading, dry-run trading,
+  live trading, canary process, exchange order endpoint, API key, secret,
+  leverage, shorting, historical backtest, strategy generation, live strategy
+  matching, or process-control action was performed.
+
+Checked on 2026-05-30 JST for Product Vision / North Star docs-only
+integration.
+
+- [x] Moved the Product Vision TODO into its intended path:
+  `docs/BOT_FACTORY_PRODUCT_VISION_TODO.md`.
+- [x] Linked the product vision from the MVP TODO and related Bot Factory TODO
+  docs, and added the MVP-level contribution checklist requiring each future
+  Bot Factory PR to name its contract and North Star contribution.
+- [x] Marked features outside the five core contracts as diagnostic research by
+  default with closed selector/readiness/promotion flags.
+- [x] Marked the Product Vision Phase 0 checklist and exit criteria complete;
+  later roadmap phases remain TODO.
+- [x] Verification commands:
+  - `git status --short --untracked-files=all`
+  - `git diff --check`
+  - `rg -n "BOT_FACTORY_PRODUCT_VISION_TODO|Product Vision / North Star|Bot Factory PR Contribution Checklist|Which contract does this PR improve|diagnostic_only=true" docs`
+  - `Test-Path docs\BOT_FACTORY_PRODUCT_VISION_TODO.md`
+  - `rg -n "docs/BOT_FACTORY_PRODUCT_VISION_TODO.md" docs`
+- [x] Results: status showed four modified tracked Bot Factory docs and new
+  `docs\BOT_FACTORY_PRODUCT_VISION_TODO.md`; diff check passed with existing
+  LF-to-CRLF working-copy warnings only; checklist/link checks found the product
+  vision path from the MVP, architecture risk, market-state matching,
+  regime-aware promotion, and product vision docs; `Test-Path` returned `True`.
+- [x] Safety result: documentation-only change; no `freqtrade trade`, paper
+  trading, dry-run trading, live trading, canary process, exchange order
+  endpoint, API key, secret, leverage, shorting, historical backtest, strategy
+  generation, live strategy matching, or process-control action was performed.
 
 Checked on 2026-05-29 JST for PR #11 review follow-up on
 state-conditioned pair/timeframe scope preservation.

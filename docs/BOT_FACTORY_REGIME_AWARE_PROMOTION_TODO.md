@@ -6,6 +6,10 @@ Strategy Observation direction.
 Created: 2026-05-19 JST.
 Updated: 2026-05-21 JST after multi-regime local selector simulation.
 
+Product direction: `docs/BOT_FACTORY_PRODUCT_VISION_TODO.md` is the current
+product-level North Star. This document is a local selector-eligibility follow-up
+under the Strategy Evidence and Suitability / Matching contracts.
+
 ## Goal
 
 Prevent the existing long-window promotion gate and future parallel dry-run /

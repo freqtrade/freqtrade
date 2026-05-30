@@ -11356,6 +11356,183 @@ def test_state_conditioned_scorecard_preserves_state_scope_and_baselines():
     assert validation["safety_scope"]["paper_trading_started"] is False
 
 
+def test_state_conditioned_scorecard_preserves_multi_window_state_scope():
+    from freqtrade_ext.bot_factory.regime_promotion import (
+        RegimePromotionThresholds,
+        build_regime_fitness_scorecard,
+    )
+    from freqtrade_ext.bot_factory.state_conditioning import (
+        build_state_conditioned_scorecard,
+        validate_state_conditioned_scorecard_for_selector,
+    )
+
+    first_scope = {
+        **_source_observation_state_scope("trend_up"),
+        "state_window_id": "state_window:trend_up:20260101T075500Z:20260101T080000Z",
+        "feature_cutoff_timestamp": "2026-01-01T08:00:00+00:00",
+        "label_cutoff_timestamp": "2026-01-01T08:00:00+00:00",
+        "decision_window_start": "2026-01-01T07:55:00+00:00",
+        "decision_window_end": "2026-01-01T08:00:00+00:00",
+    }
+    second_scope = {
+        **_source_observation_state_scope("trend_up"),
+        "state_window_id": "state_window:trend_up:20260201T075500Z:20260201T080000Z",
+        "feature_cutoff_timestamp": "2026-02-01T08:00:00+00:00",
+        "label_cutoff_timestamp": "2026-02-01T08:00:00+00:00",
+        "decision_window_start": "2026-02-01T07:55:00+00:00",
+        "decision_window_end": "2026-02-01T08:00:00+00:00",
+    }
+    observations = [
+        {
+            **_regime_observation(
+                "state-btc-window-1",
+                source_type="walk_forward",
+                regime="trend_up",
+                pair="BTC/USDT:USDT",
+                window_start="2026-01-01T00:00:00+00:00",
+                window_end="2026-02-01T00:00:00+00:00",
+                net_return_normal_cost=3.0,
+                net_return_stress_cost=2.0,
+                lower_confidence_bound=0.5,
+            ),
+            **first_scope,
+        },
+        {
+            **_regime_observation(
+                "state-eth-window-2",
+                source_type="walk_forward",
+                regime="trend_up",
+                pair="ETH/USDT:USDT",
+                window_start="2026-02-01T00:00:00+00:00",
+                window_end="2026-03-01T00:00:00+00:00",
+                net_return_normal_cost=2.0,
+                net_return_stress_cost=1.2,
+                lower_confidence_bound=0.4,
+            ),
+            **second_scope,
+        },
+    ]
+    regime_scorecard = build_regime_fitness_scorecard(
+        observations,
+        contract=_regime_contract(
+            intended_regimes=["trend_up"],
+            excluded_regimes=["unknown"],
+            maximum_drawdown_by_regime={"trend_up": 8.0},
+        ),
+        baseline_observations=[],
+        thresholds=RegimePromotionThresholds(
+            min_sample_days=0.0,
+            min_window_count=1,
+            min_trade_count=0,
+            min_global_regime_count=1,
+            max_calendar_concentration=0.6,
+        ),
+        candidate_identity=observations[0]["candidate_identity"],
+    )
+    regime_scorecard["baseline_comparison"] = {
+        "by_regime": [
+            {
+                "market_regime": "trend_up",
+                "candidate_return": 5.0,
+                "hold_return": 2.0,
+                "no_trade_return": 0.0,
+                "hold_delta": 3.0,
+                "no_trade_delta": 5.0,
+            }
+        ]
+    }
+
+    scorecard = build_state_conditioned_scorecard(
+        regime_scorecard=regime_scorecard,
+        market_state_snapshot=_state_snapshot_for_regime("trend_up"),
+        run_id="state_scorecard_multi_window_scope",
+        require_walk_forward_evidence=True,
+    )
+    validation = validate_state_conditioned_scorecard_for_selector(scorecard)
+    row = scorecard["rows"][0]
+
+    assert regime_scorecard["scorecard_by_regime"][0]["source_state_observation_scope_complete"] is True
+    assert row["decision"] == "STATE_SELECTOR_ELIGIBLE"
+    assert row["source_observation_count"] == 2
+    assert row["state_window_ids"] == [
+        "state_window:trend_up:20260101T075500Z:20260101T080000Z",
+        "state_window:trend_up:20260201T075500Z:20260201T080000Z",
+    ]
+    assert row["decision_windows"] == [
+        {
+            "start": "2026-01-01T07:55:00+00:00",
+            "end": "2026-01-01T08:00:00+00:00",
+        },
+        {
+            "start": "2026-02-01T07:55:00+00:00",
+            "end": "2026-02-01T08:00:00+00:00",
+        },
+    ]
+    assert row["feature_cutoff_range"] == {
+        "start": "2026-01-01T08:00:00+00:00",
+        "end": "2026-02-01T08:00:00+00:00",
+    }
+    assert row["label_cutoff_range"] == {
+        "start": "2026-01-01T08:00:00+00:00",
+        "end": "2026-02-01T08:00:00+00:00",
+    }
+    assert validation["ok"] is True
+
+
+def test_state_conditioned_scorecard_fails_closed_on_scope_mismatch():
+    from freqtrade_ext.bot_factory.state_conditioning import (
+        build_state_conditioned_scorecard,
+        validate_state_conditioned_scorecard_for_selector,
+    )
+
+    regime_scorecard = _strict_regime_scorecard_for_state_tests()
+    row = regime_scorecard["scorecard_by_regime"][0]
+    row["cost_model_id"] = "cost_model_v2"
+    row["state_encoder_version"] = "state_encoder_v2"
+    row["future_data_used"] = True
+
+    scorecard = build_state_conditioned_scorecard(
+        regime_scorecard=regime_scorecard,
+        market_state_snapshot=_state_snapshot_for_regime("trend_up"),
+        run_id="state_scorecard_scope_mismatch",
+        require_walk_forward_evidence=True,
+    )
+    validation = validate_state_conditioned_scorecard_for_selector(scorecard)
+
+    assert scorecard["diagnostic_only"] is True
+    assert scorecard["selector_candidate_creation_allowed"] is False
+    assert scorecard["rows"][0]["decision"] == "STATE_DIAGNOSTIC_ONLY"
+    assert {
+        "cost_model_mismatch",
+        "state_encoder_mismatch",
+        "future_data_used",
+    }.issubset(set(scorecard["blockers"]))
+    assert validation["ok"] is False
+
+
+def test_state_conditioned_scorecard_fails_closed_when_market_scope_outside_identity():
+    from freqtrade_ext.bot_factory.state_conditioning import build_state_conditioned_scorecard
+
+    regime_scorecard = _strict_regime_scorecard_for_state_tests()
+    regime_scorecard["candidate_identity"]["allowed_pairs"] = ["ETH/USDT:USDT"]
+    regime_scorecard["candidate_identity"]["allowed_timeframes"] = ["15m"]
+
+    scorecard = build_state_conditioned_scorecard(
+        regime_scorecard=regime_scorecard,
+        market_state_snapshot=_state_snapshot_for_regime("trend_up"),
+        run_id="state_scorecard_market_scope_outside_identity",
+        require_walk_forward_evidence=True,
+    )
+
+    assert scorecard["diagnostic_only"] is True
+    assert scorecard["selector_candidate_creation_allowed"] is False
+    assert scorecard["rows"][0]["decision"] == "STATE_DIAGNOSTIC_ONLY"
+    assert {
+        "pair_outside_candidate_identity",
+        "timeframe_outside_candidate_identity",
+    }.issubset(set(scorecard["blockers"]))
+
+
 def test_state_conditioned_scorecard_preserves_snapshot_pair_timeframe_scope():
     from freqtrade_ext.bot_factory.selector_matching import build_selector_matching_decision
     from freqtrade_ext.bot_factory.state_conditioning import build_state_conditioned_scorecard
@@ -11974,6 +12151,586 @@ def test_no_trade_scorecard_records_opportunity_cost_without_hindsight_reward():
     assert current_unknown["uncertainty_reduction_value"] > 0
     assert current_high_volatility["assessment"] == "acceptable_uncertain_or_ood_state"
     assert "high_volatility_safety_value" in current_high_volatility["reason_codes"]
+
+
+def test_historical_selector_replay_uses_only_asof_evidence_and_writes_jsonl(tmp_path):
+    from freqtrade_ext.bot_factory.selector_replay import (
+        build_historical_selector_replay,
+        write_historical_selector_replay_artifacts,
+    )
+    from freqtrade_ext.bot_factory.strategy_suitability import build_strategy_suitability_matrix
+
+    trend_scorecard = _state_conditioned_scorecard_for_selector_test(
+        regime="trend_up",
+        candidate_id="trend-candidate",
+        strategy_id="trend-strategy",
+    )
+    range_scorecard = _state_conditioned_scorecard_for_selector_test(
+        regime="range",
+        candidate_id="range-candidate",
+        strategy_id="range-strategy",
+    )
+    matrix = build_strategy_suitability_matrix(
+        state_scorecards=[trend_scorecard, range_scorecard],
+        market_state_snapshot=_state_snapshot_for_regime("trend_up"),
+        run_id="replay_matrix",
+        generated_at="2026-01-01T07:00:00+00:00",
+    )
+    trend_snapshot = _state_snapshot_for_regime("trend_up")
+    range_snapshot = _state_snapshot_for_regime("range")
+    range_snapshot["data_asof"] = "2026-01-02T08:00:00+00:00"
+    range_snapshot["generated_at"] = "2026-01-02T08:00:00+00:00"
+    replay = build_historical_selector_replay(
+        market_state_snapshots=[range_snapshot, trend_snapshot],
+        strategy_suitability_matrices=[matrix],
+        realized_returns_by_timestamp={
+            "2026-01-01T08:00:00+00:00": {
+                "trend-candidate": 0.03,
+                "range-candidate": -0.01,
+                "hold": 0.01,
+            },
+            "2026-01-02T08:00:00+00:00": {
+                "trend-candidate": -0.02,
+                "range-candidate": 0.04,
+                "hold": 0.02,
+            },
+        },
+        run_id="selector_replay_test",
+        generated_at="2026-01-03T00:00:00+00:00",
+        incumbent_candidate_id="trend-candidate",
+    )
+    paths = write_historical_selector_replay_artifacts(replay, output_root=tmp_path)
+    jsonl_lines = paths["selector_decisions"].read_text(encoding="utf-8").strip().splitlines()
+
+    assert replay["status"] == "completed"
+    assert replay["input_validation"]["ok"] is True
+    assert [row["selected_candidate_id"] for row in replay["decisions"]] == [
+        "trend-candidate",
+        "range-candidate",
+    ]
+    assert replay["metrics_summary"]["selector_net_return_normal_cost"] == 0.07
+    assert replay["metrics_summary"]["selector_churn"] == 1
+    assert replay["metrics_summary"]["selector_exposure_ratio"] == 1.0
+    assert {
+        "always_no_trade",
+        "always_hold",
+        "best_single_eligible_strategy",
+        "equal_rotation",
+        "incumbent:trend-candidate",
+    } == {row["baseline_id"] for row in replay["baseline_comparisons"]}
+    assert len(jsonl_lines) == 2
+    assert json.loads(jsonl_lines[0])["selected_candidate_id"] == "trend-candidate"
+    assert paths["selector_replay_report"].exists()
+    assert replay["safety_scope"]["paper_trading_started"] is False
+    assert replay["safety_scope"]["process_control"] is False
+
+
+def test_historical_selector_replay_rejects_future_state_labels():
+    from freqtrade_ext.bot_factory.selector_replay import build_historical_selector_replay
+    from freqtrade_ext.bot_factory.strategy_suitability import build_strategy_suitability_matrix
+
+    scorecard = _state_conditioned_scorecard_for_selector_test(
+        regime="trend_up",
+        candidate_id="trend-candidate",
+        strategy_id="trend-strategy",
+    )
+    matrix = build_strategy_suitability_matrix(
+        state_scorecards=[scorecard],
+        market_state_snapshot=_state_snapshot_for_regime("trend_up"),
+        run_id="future_state_replay_matrix",
+        generated_at="2026-01-01T07:00:00+00:00",
+    )
+    leaked_snapshot = _state_snapshot_for_regime("trend_up")
+    leaked_snapshot["horizons"][0]["label_cutoff_timestamp"] = "2026-01-01T09:00:00+00:00"
+
+    replay = build_historical_selector_replay(
+        market_state_snapshots=[leaked_snapshot],
+        strategy_suitability_matrices=[matrix],
+        run_id="future_state_replay",
+    )
+
+    assert replay["status"] == "invalid"
+    assert replay["decision_count"] == 0
+    assert "historical_market_state_snapshots_no_future_labels" in replay["reason_codes"]
+    assert replay["input_validation"]["checks"][2]["passed"] is False
+
+
+def test_historical_selector_replay_filters_future_evidence_and_rejects_leaked_rows():
+    from freqtrade_ext.bot_factory.selector_replay import build_historical_selector_replay
+    from freqtrade_ext.bot_factory.strategy_suitability import build_strategy_suitability_matrix
+
+    scorecard = _state_conditioned_scorecard_for_selector_test(
+        regime="trend_up",
+        candidate_id="trend-candidate",
+        strategy_id="trend-strategy",
+    )
+    future_matrix = build_strategy_suitability_matrix(
+        state_scorecards=[scorecard],
+        market_state_snapshot=_state_snapshot_for_regime("trend_up"),
+        run_id="future_matrix",
+        generated_at="2026-01-02T09:00:00+00:00",
+    )
+    asof_snapshot = _state_snapshot_for_regime("trend_up")
+    replay = build_historical_selector_replay(
+        market_state_snapshots=[asof_snapshot],
+        strategy_suitability_matrices=[future_matrix],
+        run_id="future_matrix_replay",
+    )
+
+    assert replay["status"] == "completed"
+    assert replay["decisions"][0]["selected_action"] == "no_trade"
+    assert replay["decisions"][0]["no_trade_reason"] == "no_strategy_evidence_available_asof"
+    assert replay["future_evidence_rejected_count"] == 1
+
+    leaked_matrix = json.loads(json.dumps(future_matrix))
+    leaked_matrix["generated_at"] = "2026-01-01T07:00:00+00:00"
+    leaked_matrix["rows"][0]["evidence_available_at"] = "2026-01-01T09:00:00+00:00"
+    invalid_replay = build_historical_selector_replay(
+        market_state_snapshots=[asof_snapshot],
+        strategy_suitability_matrices=[leaked_matrix],
+        run_id="leaked_matrix_replay",
+    )
+
+    assert invalid_replay["status"] == "invalid"
+    assert "historical_strategy_suitability_matrices_no_future_rows" in invalid_replay["reason_codes"]
+
+
+def test_state_sliced_evaluation_reports_coverage_gates_and_baselines(tmp_path):
+    from freqtrade_ext.bot_factory.state_sliced_reporting import (
+        build_state_sliced_evaluation_report,
+        write_state_sliced_evaluation_artifacts,
+    )
+
+    scorecard = _state_conditioned_scorecard_for_selector_test(
+        regime="trend_up",
+        candidate_id="trend-candidate",
+        strategy_id="trend-strategy",
+    )
+    state_id = scorecard["rows"][0]["state_id"]
+    missing_state_id = "deterministic_market_state_encoder_v1:5m:range:high:ohlcv_state_features_v1"
+    evaluation = build_state_sliced_evaluation_report(
+        state_scorecard=scorecard,
+        historical_metrics={"total_return_pct": 8.0},
+        walk_forward_metrics={"summary": {"pass_rate": 1.0}},
+        expected_state_ids=[state_id, missing_state_id],
+        candidate_style="intraday_trend_following",
+        incumbent_baseline_by_state={state_id: 1.0},
+        style_baseline_by_state={state_id: 1.5},
+        run_id="state_sliced_test",
+    )
+    paths = write_state_sliced_evaluation_artifacts(evaluation, output_root=tmp_path)
+
+    assert evaluation["summary_decision"] == "STATE_SLICED_REVIEW"
+    assert evaluation["state_coverage"]["covered_state_ids"] == [state_id]
+    assert evaluation["state_coverage"]["missing_state_ids"] == [missing_state_id]
+    assert evaluation["state_coverage"]["coverage_ratio"] == 0.5
+    assert evaluation["backtest_state_slices"][0]["baseline_deltas"]["incumbent"] == 4.0
+    assert evaluation["backtest_state_slices"][0]["baseline_deltas"]["style_specific"] == 3.5
+    assert evaluation["walk_forward_state_slices"][0]["walk_forward_state_decision"] == "STATE_WALK_FORWARD_PASS"
+    assert evaluation["style_specific_state_gates"][0]["recommendation"] == "pass"
+    assert {"no_trade", "hold", "incumbent", "style_specific"}.issubset(
+        {row["baseline_id"] for row in evaluation["baseline_deltas_by_state"]}
+    )
+    assert paths["state_sliced_evaluation"].exists()
+    assert "State-Sliced Strategy Evaluation" in paths[
+        "state_sliced_evaluation_report"
+    ].read_text(encoding="utf-8")
+    assert evaluation["safety_scope"]["dry_run_trading_started"] is False
+
+
+def test_state_sliced_evaluation_rejects_positive_global_result_hiding_state_crash():
+    from freqtrade_ext.bot_factory.state_sliced_reporting import (
+        build_state_sliced_evaluation_report,
+    )
+
+    scorecard = _state_conditioned_scorecard_for_selector_test(
+        regime="trend_up",
+        candidate_id="trend-candidate",
+        strategy_id="trend-strategy",
+    )
+    scorecard["rows"][0]["net_return_stress_cost"] = -0.25
+    scorecard["rows"][0]["max_drawdown"] = 30.0
+
+    evaluation = build_state_sliced_evaluation_report(
+        state_scorecard=scorecard,
+        historical_metrics={"total_return_pct": 12.0},
+        candidate_style="intraday_trend_following",
+        max_state_drawdown_pct=15.0,
+        run_id="state_sliced_crash_test",
+    )
+
+    assert evaluation["summary_decision"] == "STATE_SLICED_FAIL"
+    assert evaluation["state_specific_crashes"][0]["state_id"] == scorecard["rows"][0]["state_id"]
+    assert "positive_global_result_hides_state_crash" in evaluation["reason_codes"]
+    assert "style_specific_state_gate_failed" in evaluation["reason_codes"]
+
+
+def test_no_trade_policy_evaluation_judges_good_costly_and_overused(tmp_path):
+    from freqtrade_ext.bot_factory.no_trade_evaluation import (
+        build_no_trade_policy_evaluation,
+        write_no_trade_policy_evaluation_artifacts,
+    )
+
+    replay = {
+        "run_id": "selector_replay_no_trade_quality",
+        "decisions": [
+            {
+                "decision_at": "2026-01-01T08:00:00+00:00",
+                "selected_action": "no_trade",
+                "selected_state_id": "state:unknown",
+                "no_trade_reason": "unknown_state_no_trade",
+                "hold_return": -0.03,
+                "best_eligible_return": -0.02,
+                "missed_opportunity": 0.0,
+                "no_trade_loss_avoidance": 0.03,
+                "reason_codes": ["unknown_state_no_trade"],
+            },
+            {
+                "decision_at": "2026-01-02T08:00:00+00:00",
+                "selected_action": "no_trade",
+                "selected_state_id": "state:unsupported",
+                "no_trade_reason": "no_selector_eligible_strategy_for_current_state",
+                "hold_return": 0.015,
+                "best_eligible_return": 0.018,
+                "missed_opportunity": 0.018,
+                "no_trade_loss_avoidance": 0.0,
+                "reason_codes": ["no_selector_eligible_strategy_for_current_state"],
+            },
+            {
+                "decision_at": "2026-01-03T08:00:00+00:00",
+                "selected_action": "no_trade",
+                "selected_state_id": "state:supported",
+                "no_trade_reason": "selector_cooldown_blocks_switching",
+                "hold_return": 0.08,
+                "best_eligible_return": 0.09,
+                "missed_opportunity": 0.09,
+                "no_trade_loss_avoidance": 0.0,
+                "reason_codes": ["selector_cooldown_blocks_switching"],
+            },
+        ],
+    }
+    evaluation = build_no_trade_policy_evaluation(
+        selector_replay=replay,
+        opportunity_cost_thresholds={
+            "uncertain_or_ood": 0.03,
+            "unsupported": 0.02,
+            "cooldown": 0.02,
+        },
+        run_id="no_trade_quality_test",
+    )
+    paths = write_no_trade_policy_evaluation_artifacts(evaluation, output_root=tmp_path)
+    assessments = {
+        row["state_id"]: row["assessment"]
+        for row in evaluation["state_no_trade_quality"]
+    }
+
+    assert assessments["state:unknown"] == "good"
+    assert assessments["state:unsupported"] == "acceptable"
+    assert assessments["state:supported"] == "overused"
+    assert evaluation["summary_decision"] == "NO_TRADE_OVERUSED"
+    assert evaluation["summary"]["avoided_drawdown"] == 0.03
+    assert evaluation["summary"]["opportunity_cost_vs_hold"] == 0.095
+    assert evaluation["summary"]["opportunity_cost_vs_best"] == 0.108
+    assert evaluation["summary"]["uncertainty_ood_safety_value"] == 0.03
+    assert paths["no_trade_policy_evaluation"].exists()
+    assert "No-Trade Policy Evaluation" in paths[
+        "no_trade_policy_evaluation_report"
+    ].read_text(encoding="utf-8")
+    assert evaluation["safety_scope"]["live_trading_started"] is False
+
+
+def _diagnostic_state_snapshot(
+    regime: str,
+    *,
+    data_asof: str,
+    rolling_return_bps: float,
+    realized_volatility_bps: float,
+    confidence: float = 0.9,
+):
+    snapshot = json.loads(json.dumps(_state_snapshot_for_regime(regime, confidence=confidence)))
+    snapshot["run_id"] = f"diagnostic_snapshot_{regime}_{data_asof}"
+    snapshot["generated_at"] = data_asof
+    snapshot["data_asof"] = data_asof
+    snapshot["latest_local_candle_close_at"] = data_asof
+    snapshot["horizons"][0]["feature_cutoff_timestamp"] = data_asof
+    snapshot["horizons"][0]["label_cutoff_timestamp"] = data_asof
+    snapshot["horizons"][0]["decision_window_end"] = data_asof
+    snapshot["horizons"][0]["state_window_id"] = (
+        f"state_window:{regime}:{data_asof.replace(':', '').replace('-', '')}"
+    )
+    snapshot["horizons"][0]["state_vector"] = {
+        "rolling_return_bps": rolling_return_bps,
+        "realized_volatility_bps": realized_volatility_bps,
+        "range_efficiency": 0.8 if regime == "trend_up" else 0.2,
+    }
+    return snapshot
+
+
+def _diagnostic_cluster_signature(report):
+    signature = {}
+    for cluster in report["diagnostic_state_clusters"]:
+        for data_asof in cluster["member_data_asof"]:
+            signature[data_asof] = cluster["dominant_deterministic_label"]
+    return signature
+
+
+def test_diagnostic_state_discovery_builds_clustering_analogs_and_datasets(tmp_path):
+    from freqtrade_ext.bot_factory.diagnostic_state_discovery import (
+        build_diagnostic_state_discovery_report,
+        write_diagnostic_state_discovery_artifacts,
+    )
+
+    snapshots = [
+        _diagnostic_state_snapshot(
+            "trend_up",
+            data_asof="2026-01-01T08:00:00+00:00",
+            rolling_return_bps=120.0,
+            realized_volatility_bps=32.0,
+        ),
+        _diagnostic_state_snapshot(
+            "trend_up",
+            data_asof="2026-01-01T09:00:00+00:00",
+            rolling_return_bps=122.0,
+            realized_volatility_bps=31.0,
+        ),
+        _diagnostic_state_snapshot(
+            "range",
+            data_asof="2026-01-01T10:00:00+00:00",
+            rolling_return_bps=3.0,
+            realized_volatility_bps=18.0,
+        ),
+        _diagnostic_state_snapshot(
+            "range",
+            data_asof="2026-01-01T11:00:00+00:00",
+            rolling_return_bps=4.0,
+            realized_volatility_bps=17.0,
+        ),
+    ]
+    scorecard = _state_conditioned_scorecard_for_selector_test(
+        regime="trend_up",
+        candidate_id="trend-candidate",
+        strategy_id="trend-strategy",
+    )
+
+    report = build_diagnostic_state_discovery_report(
+        market_state_snapshots=snapshots,
+        state_scorecards=[scorecard],
+        run_id="diagnostic_state_test",
+        analog_k=2,
+        min_cluster_size=2,
+    )
+    paths = write_diagnostic_state_discovery_artifacts(report, output_root=tmp_path)
+
+    assert report["status"] == "completed"
+    assert report["diagnostic_only"] is True
+    assert report["selector_candidate_creation_allowed"] is False
+    assert len(report["state_embedding_dataset"]) == 4
+    assert report["diagnostic_model_schemas"]["state_encoder_model_v1"][
+        "diagnostic_only"
+    ] is True
+    assert report["diagnostic_model_schemas"]["strategy_suitability_model_v1"][
+        "selector_candidate_creation_allowed"
+    ] is False
+    assert {"trend_up", "range"} == {
+        row["dominant_deterministic_label"]
+        for row in report["diagnostic_state_clusters"]
+    }
+    assert report["analog_window_search"][0]["reason_codes"] == ["INSUFFICIENT_EVIDENCE"]
+    assert any(row["analog_count"] >= 2 for row in report["analog_window_search"])
+    assert any(
+        row["calibration_status"] == "insufficient_analogs"
+        for row in report["ood_uncertainty_calibration"]["rows"]
+    )
+    assert report["suitability_scoring_dataset"][0]["diagnostic_only"] is True
+    assert (
+        report["out_of_sample_selector_replay_evidence"]["beats_deterministic_baselines"]
+        is False
+    )
+    assert paths["diagnostic_state_discovery"].exists()
+    assert "Diagnostic State Discovery" in paths[
+        "diagnostic_state_discovery_report"
+    ].read_text(encoding="utf-8")
+    assert report["safety_scope"]["paper_trading_started"] is False
+
+
+def test_diagnostic_state_discovery_resists_tiny_feature_reshuffle():
+    from freqtrade_ext.bot_factory.diagnostic_state_discovery import (
+        build_diagnostic_state_discovery_report,
+    )
+
+    snapshots = [
+        _diagnostic_state_snapshot(
+            "trend_up",
+            data_asof="2026-01-01T08:00:00+00:00",
+            rolling_return_bps=120.0,
+            realized_volatility_bps=32.0,
+        ),
+        _diagnostic_state_snapshot(
+            "trend_up",
+            data_asof="2026-01-01T09:00:00+00:00",
+            rolling_return_bps=122.0,
+            realized_volatility_bps=31.0,
+        ),
+        _diagnostic_state_snapshot(
+            "range",
+            data_asof="2026-01-01T10:00:00+00:00",
+            rolling_return_bps=3.0,
+            realized_volatility_bps=18.0,
+        ),
+        _diagnostic_state_snapshot(
+            "range",
+            data_asof="2026-01-01T11:00:00+00:00",
+            rolling_return_bps=4.0,
+            realized_volatility_bps=17.0,
+        ),
+    ]
+    perturbed = json.loads(json.dumps(snapshots))
+    perturbed[1]["horizons"][0]["state_vector"]["rolling_return_bps"] += 0.001
+
+    baseline = build_diagnostic_state_discovery_report(
+        market_state_snapshots=snapshots,
+        run_id="diagnostic_stability_base",
+    )
+    changed = build_diagnostic_state_discovery_report(
+        market_state_snapshots=perturbed,
+        run_id="diagnostic_stability_perturbed",
+    )
+
+    assert _diagnostic_cluster_signature(baseline) == _diagnostic_cluster_signature(changed)
+    assert baseline["diagnostic_gate"]["high_diagnostic_score_can_bypass_strict_evidence"] is False
+
+
+def test_diagnostic_state_discovery_blocks_tiny_analog_sets():
+    from freqtrade_ext.bot_factory.diagnostic_state_discovery import (
+        build_diagnostic_state_discovery_report,
+    )
+
+    report = build_diagnostic_state_discovery_report(
+        market_state_snapshots=[
+            _diagnostic_state_snapshot(
+                "trend_up",
+                data_asof="2026-01-01T08:00:00+00:00",
+                rolling_return_bps=120.0,
+                realized_volatility_bps=32.0,
+            )
+        ],
+        run_id="diagnostic_single_window",
+        analog_k=2,
+        min_cluster_size=2,
+    )
+
+    assert report["diagnostic_state_clusters"][0]["insufficient_evidence"] is True
+    assert report["analog_window_search"][0]["reason_codes"] == ["INSUFFICIENT_EVIDENCE"]
+    assert report["ood_uncertainty_calibration"]["rows"][0]["calibration_status"] == (
+        "insufficient_analogs"
+    )
+    assert report["paper_readiness_input_allowed"] is False
+
+
+def _future_paper_observation(observation_id: str = "future-paper-observation"):
+    observation = _regime_observation(
+        observation_id,
+        source_type="future_paper_observation",
+        regime="trend_up",
+        window_start="2026-01-01T08:00:00+00:00",
+        window_end="2026-01-01T09:00:00+00:00",
+    )
+    observation.update(
+        {
+            "state_snapshot_id": "state_snapshot:20260101T090000Z",
+            "state_id": (
+                "deterministic_market_state_encoder_v1:"
+                "5m:trend_up:high:ohlcv_state_features_v1"
+            ),
+            "horizon_profile_id": (
+                "deterministic_market_state_encoder_v1:"
+                "micro=trend_up:intraday=trend_up:swing=missing"
+            ),
+            "state_encoder_version": "deterministic_market_state_encoder_v1",
+            "state_window_id": (
+                "state_window:trend_up:20260101T080000Z:20260101T090000Z"
+            ),
+            "feature_cutoff_timestamp": "2026-01-01T09:00:00+00:00",
+            "label_cutoff_timestamp": "2026-01-01T09:00:00+00:00",
+            "decision_window_start": "2026-01-01T08:00:00+00:00",
+            "decision_window_end": "2026-01-01T09:00:00+00:00",
+            "future_data_used": False,
+        }
+    )
+    return observation
+
+
+def test_paper_observation_design_requires_same_ledger_schema_and_blocks_startup(tmp_path):
+    from freqtrade_ext.bot_factory.paper_observation_design import (
+        build_paper_observation_design,
+        write_paper_observation_design_artifacts,
+    )
+
+    design = build_paper_observation_design(run_id="paper_observation_design_test")
+    paths = write_paper_observation_design_artifacts(design, output_root=tmp_path)
+
+    assert design["paper_observation_schema"]["base_schema_version"] == (
+        "regime_observation_ledger_v1"
+    )
+    assert design["paper_observation_schema"]["uses_same_observation_ledger_schema"] is True
+    assert "state_snapshot_id" in design["paper_observation_schema"][
+        "required_future_fields"
+    ]
+    assert design["evidence_separation"]["buckets"]["recent_observation"][
+        "can_override_historical_evidence"
+    ] is False
+    assert design["ranking_policy"]["strict_state_conditioned_evidence_required_first"] is True
+    assert design["startup_boundary"]["requires_explicit_future_approval"] is True
+    assert design["startup_boundary"]["startup_eligible_by_this_artifact"] is False
+    assert design["summary_decision"] == "PAPER_OBSERVATION_DESIGN_READY"
+    assert paths["paper_observation_design"].exists()
+    assert "Paper Observation Design" in paths[
+        "paper_observation_design_report"
+    ].read_text(encoding="utf-8")
+    assert design["safety_scope"]["freqtrade_trade_started"] is False
+
+
+def test_paper_observation_design_validates_future_rows_and_quarantines_drift():
+    from freqtrade_ext.bot_factory.paper_observation_design import (
+        build_paper_observation_design,
+    )
+
+    metrics = {
+        "reference_state_distribution": {"trend_up": 10},
+        "observed_state_distribution": {"trend_down": 10},
+        "feature_drift_score": 0.9,
+        "cost_turnover_drift_score": 0.6,
+        "drawdown_envelope_breach": True,
+        "selector_churn_ratio": 0.8,
+        "state_evidence_contradictions": [
+            "paper observation contradicted strict trend_up state evidence"
+        ],
+    }
+    design = build_paper_observation_design(
+        future_observations=[_future_paper_observation()],
+        paper_observation_metrics=metrics,
+        run_id="paper_observation_quarantine_test",
+        persistent_quarantine_count=3,
+    )
+
+    assert design["future_observation_validations"][0]["ok"] is True
+    assert design["drift_report"]["decision"] == "DRIFT_FAIL"
+    assert design["quarantine_report"]["decision"] == "QUARANTINE"
+    assert design["retirement_report"]["decision"] == "RETIRE_REVIEW"
+    assert design["summary_decision"] == "PAPER_OBSERVATION_RETIRE_REVIEW"
+    assert design["startup_boundary"]["promotion_authorized_by_this_artifact"] is False
+    assert design["safety_scope"]["process_control"] is False
+
+    invalid = _future_paper_observation("future-paper-missing-state-snapshot")
+    invalid.pop("state_snapshot_id")
+    blocked = build_paper_observation_design(
+        future_observations=[invalid],
+        run_id="paper_observation_invalid_test",
+    )
+
+    assert blocked["future_observation_validations"][0]["ok"] is False
+    assert "future_state_snapshot_scope_present" in blocked["reason_codes"]
+    assert blocked["summary_decision"] == "PAPER_OBSERVATION_DESIGN_BLOCKED"
 
 
 def test_paper_readiness_rejects_minimal_market_state_scorecard_json(tmp_path):

@@ -125,6 +125,10 @@ target/
 
 .pytest_cache/
 .mypy_cache/
+.codex_tmp/
+.tmp/
+bot_factory_pytest_tmp/
+codex_tmp/
 
 #exceptions
 !*.gitkeep
