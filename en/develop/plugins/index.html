@@ -757,6 +757,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#pairinformationfilter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PairInformationFilter
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#performancefilter" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2375,6 +2386,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#pairinformationfilter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        PairInformationFilter
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#performancefilter" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2622,6 +2644,7 @@ You may also use something like <code>.*DOWN/BTC</code> or <code>.*UP/BTC</code>
 <li><a href="#delistfilter"><code>DelistFilter</code></a></li>
 <li><a href="#fulltradesfilter"><code>FullTradesFilter</code></a></li>
 <li><a href="#offsetfilter"><code>OffsetFilter</code></a></li>
+<li><a href="#pairinformationfilter"><code>PairInformationFilter</code></a></li>
 <li><a href="#performancefilter"><code>PerformanceFilter</code></a></li>
 <li><a href="#precisionfilter"><code>PrecisionFilter</code></a></li>
 <li><a href="#pricefilter"><code>PriceFilter</code></a></li>
@@ -2978,6 +3001,53 @@ it can not be guaranteed that pairs won't overlap due to slightly different refr
 <p class="admonition-title">Note</p>
 <p>An offset larger than the total length of the incoming pairlist will result in an empty pairlist.</p>
 </div>
+<h4 id="pairinformationfilter">PairInformationFilter<a class="headerlink" href="#pairinformationfilter" title="Permanent link">&para;</a></h4>
+<p>Filters pairs based on the presence of certain information in the ccxt markets argument.</p>
+<p>To get the correct field - you can use the following code snippet to print the market information for a given pair, and find the correct field and value to filter for:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">ccxt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pprint</span><span class="w"> </span><span class="kn">import</span> <span class="n">pprint</span>
+<span class="n">exchange</span> <span class="o">=</span> <span class="n">ccxt</span><span class="o">.</span><span class="n">binance</span><span class="p">({</span>
+    <span class="s1">&#39;options&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;defaultType&#39;</span><span class="p">:</span> <span class="s1">&#39;swap&#39;</span><span class="p">}</span> 
+    <span class="p">})</span>
+<span class="n">lm</span> <span class="o">=</span> <span class="n">exchange</span><span class="o">.</span><span class="n">load_markets</span><span class="p">()</span>
+<span class="n">pprint</span><span class="p">(</span><span class="n">lm</span><span class="p">[</span><span class="s1">&#39;XAU/USDT:USDT&#39;</span><span class="p">])</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;XAUUSDT&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;lowercaseId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;xauusdt&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;symbol&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;XAU/USDT:USDT&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;base&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;XAU&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;quote&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;USDT&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;settle&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;USDT&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;baseId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;XAU&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;quoteId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;USDT&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;settleId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;USDT&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;swap&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="c1">// ...</span>
+<span class="hll"><span class="w">    </span><span class="nt">&quot;info&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span class="w">        </span><span class="nt">&quot;symbol&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;XAUUSDT&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;pair&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;XAUUSDT&quot;</span><span class="p">,</span>
+<span class="hll"><span class="w">        </span><span class="nt">&quot;contractType&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TRADIFI_PERPETUAL&quot;</span><span class="p">,</span>
+</span><span class="w">        </span><span class="nt">&quot;deliveryDate&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">4133404800000</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;onboardDate&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1765440300000</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TRADING&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="c1">// ...</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>As the highlighted lines show, the <code>contractType</code> field in the <code>info</code> section of the market data contains the value <code>TRADIFI_PERPETUAL</code>, which can be used to filter for TradeFi perpetual contracts.
+Nested dictionaries can be accessed by using dot notation in the <code>info_key</code> - so the <code>contractType</code> field can be accessed with <code>info.contractType</code>.</p>
+<p>In this example, the resulting <code>PairInformationFilter</code> configuration will include pairs that have <code>TRADIFI_PERPETUAL</code> as their <code>contractType</code> in the <code>info</code> section of the market data.</p>
+<div class="highlight"><pre><span></span><code><span class="p">[</span>
+<span class="w">    </span><span class="c1">// ...</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;PairInformationFilter&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;selection_mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;whitelist&quot;</span><span class="p">,</span><span class="w">  </span><span class="c1">// can be whitelist or blacklist</span>
+<span class="w">        </span><span class="nt">&quot;info_key&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;info.contractType&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// can be any key in market data</span>
+<span class="w">        </span><span class="nt">&quot;info_compare_value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TRADIFI_PERPETUAL&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// can be any matching value</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">]</span>
+</code></pre></div>
 <h4 id="performancefilter">PerformanceFilter<a class="headerlink" href="#performancefilter" title="Permanent link">&para;</a></h4>
 <p>Sorts pairs by past trade performance, as follows:</p>
 <ol>
