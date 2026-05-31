@@ -222,6 +222,7 @@ exclude-newer = "1 week"
 
 [tool.uv.exclude-newer-package]
 ccxt = false
+pymdown-extensions = "6 days"
 
 [tool.ruff]
 line-length = 100

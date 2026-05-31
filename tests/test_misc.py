@@ -230,7 +230,7 @@ def test_deep_merge_dicts():
 def test_dataframe_json(ohlcv_history):
     from pandas.testing import assert_frame_equal
 
-    json = dataframe_to_json(ohlcv_history)
+    json = dataframe_to_json(ohlcv_history.copy())
     dataframe = json_to_dataframe(json)
 
     assert list(ohlcv_history.columns) == list(dataframe.columns)
@@ -238,6 +238,6 @@ def test_dataframe_json(ohlcv_history):
 
     assert_frame_equal(ohlcv_history, dataframe)
     ohlcv_history.at[1, "date"] = pd.NaT
-    json = dataframe_to_json(ohlcv_history)
+    json = dataframe_to_json(ohlcv_history.copy())
 
     dataframe = json_to_dataframe(json)

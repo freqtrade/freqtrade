@@ -910,6 +910,8 @@ if self.dp.runmode.value in ('live', 'dry_run'):
 
 ### *check_delisting(pair)*
 
+Return Datetime of the pair delisting schedule if any, otherwise return None
+
 ```python
 def custom_exit(self, pair: str, trade: Trade, current_time: datetime, current_rate: float, current_profit: float, **kwargs):
     if self.dp.runmode.value in ('live', 'dry_run'):

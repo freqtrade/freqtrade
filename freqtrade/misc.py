@@ -214,6 +214,12 @@ def dataframe_to_json(dataframe: pd.DataFrame) -> str:
     :param dataframe: A pandas DataFrame
     :returns: A JSON string of the pandas DataFrame
     """
+    date_columns = dataframe.select_dtypes(include=["datetime", "datetime64", "datetimetz"])
+    # Explicit conversion to ms
+    # This used to be part of to_json, but was deprecated in pandas 3
+    for date_column in date_columns:
+        dataframe[date_column] = date_columns[date_column].dt.as_unit("ms").astype("int64")
+
     return dataframe.to_json(orient="split")
 
 

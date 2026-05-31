@@ -36,7 +36,7 @@ jobs:
       uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
       with:
         activate-environment: true
-        enable-cache: true
+        enable-cache: true # zizmor: ignore[cache-poisoning] - this job is not used for release builds
         python-version: ${{ matrix.python-version }}
         cache-dependency-glob: "requirements**.txt"
         cache-suffix: "${{ matrix.python-version }}"
@@ -68,7 +68,7 @@ jobs:
       run: |
         pytest --random-order --cov=freqtrade --cov=freqtrade_client --cov-config=.coveragerc
 
-    - uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+    - uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
       if: (runner.os == 'Linux' && matrix.python-version == '3.12' && matrix.os == 'ubuntu-24.04')
       with:
         fail_ci_if_error: true
@@ -150,7 +150,10 @@ jobs:
       run: |
         $PSVersionTable
         Get-PSRepository | Format-List *
-        Set-PSRepository psgallery -InstallationPolicy trusted
+        if (-not (Get-PSRepository -Name PSGallery -ErrorAction SilentlyContinue)) {
+          Register-PSRepository -Default
+        }
+        Set-PSRepository PSGallery -InstallationPolicy Trusted
         Install-Module -Name Pester -RequiredVersion 5.7.1 -Confirm:$false -Force -SkipPublisherCheck
         $Error.clear()
         Invoke-Pester -Path "tests" -CI
@@ -177,6 +180,7 @@ jobs:
       with:
         activate-environment: true
         python-version: "3.13"
+        enable-cache: false
 
     - name: pre-commit dependencies
       run: |
@@ -215,6 +219,7 @@ jobs:
       with:
         activate-environment: true
         python-version: "3.13"
+        enable-cache: false
 
     - name: Documentation build
       run: |
@@ -246,7 +251,7 @@ jobs:
       uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
       with:
         activate-environment: true
-        enable-cache: true
+        enable-cache: true # zizmor: ignore[cache-poisoning] - this job is not used for release builds
         python-version: "${{ matrix.python-version }}"
         cache-dependency-glob: "requirements**.txt"
         cache-suffix: "3.12"
@@ -314,6 +319,8 @@ jobs:
       with:
         activate-environment: true
         python-version: "${{ matrix.python-version }}"
+        # Don't cache to avoid cache poisoning
+        enable-cache: false
 
     - name: Build distribution
       run: |

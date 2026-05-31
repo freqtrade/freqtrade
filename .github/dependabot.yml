@@ -49,7 +49,11 @@ updates:
       patterns:
         - "scipy"
         - "scipy-stubs"
-
+    gymnasium:
+      patterns:
+        - "gymnasium"
+        - "stable-baselines3"
+        - "sb3-contrib"
 - package-ecosystem: "github-actions"
   directory: "/"
   cooldown:

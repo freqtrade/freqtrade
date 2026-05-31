@@ -66,14 +66,17 @@ async def _process_consumer_request(request: dict[str, Any], channel: WebSocketC
     Validate and handle a request from a websocket consumer
     """
     # Validate the request, makes sure it matches the schema
+    response: WSMessageSchema
     try:
         websocket_request = WSRequestSchema.model_validate(request)
     except ValidationError as e:
         logger.error(f"Invalid request from {channel}: {e}")
+        response = WSErrorMessage(data=f"Invalid request type: {request.get('type')}")
+
+        await channel.send(response.dict(exclude_none=True))
         return
 
     type_, data = websocket_request.type, websocket_request.data
-    response: WSMessageSchema
 
     logger.debug(f"Request of type {type_} from {channel}")
 

@@ -66,6 +66,7 @@ AVAILABLE_PAIRLISTS = [
     "DelistFilter",
     "FullTradesFilter",
     "OffsetFilter",
+    "PairInformationFilter",
     "PerformanceFilter",
     "PrecisionFilter",
     "PriceFilter",

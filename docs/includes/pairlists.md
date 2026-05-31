@@ -31,6 +31,7 @@ You may also use something like `.*DOWN/BTC` or `.*UP/BTC` to exclude leveraged 
 * [`DelistFilter`](#delistfilter)
 * [`FullTradesFilter`](#fulltradesfilter)
 * [`OffsetFilter`](#offsetfilter)
+* [`PairInformationFilter`](#pairinformationfilter)
 * [`PerformanceFilter`](#performancefilter)
 * [`PrecisionFilter`](#precisionfilter)
 * [`PriceFilter`](#pricefilter)
@@ -468,6 +469,65 @@ Example to remove the first 10 pairs from the pairlist, and takes the next 20 (t
 
 !!! Note
     An offset larger than the total length of the incoming pairlist will result in an empty pairlist.
+
+#### PairInformationFilter
+
+Filters pairs based on the presence of certain information in the ccxt markets argument.
+
+To get the correct field - you can use the following code snippet to print the market information for a given pair, and find the correct field and value to filter for:
+
+``` python
+import ccxt
+from pprint import pprint
+exchange = ccxt.binance({
+    'options': {'defaultType': 'swap'} 
+    })
+lm = exchange.load_markets()
+pprint(lm['XAU/USDT:USDT'])
+```
+
+``` json hl_lines="13 16"
+{
+    "id": "XAUUSDT",
+    "lowercaseId": "xauusdt",
+    "symbol": "XAU/USDT:USDT",
+    "base": "XAU",
+    "quote": "USDT",
+    "settle": "USDT",
+    "baseId": "XAU",
+    "quoteId": "USDT",
+    "settleId": "USDT",
+    "type": "swap",
+    // ...
+    "info": {
+        "symbol": "XAUUSDT",
+        "pair": "XAUUSDT",
+        "contractType": "TRADIFI_PERPETUAL",
+        "deliveryDate": 4133404800000,
+        "onboardDate": 1765440300000,
+        "status": "TRADING",
+        // ...
+    }
+}
+
+```
+
+As the highlighted lines show, the `contractType` field in the `info` section of the market data contains the value `TRADIFI_PERPETUAL`, which can be used to filter for TradeFi perpetual contracts.
+Nested dictionaries can be accessed by using dot notation in the `info_key` - so the `contractType` field can be accessed with `info.contractType`.
+
+In this example, the resulting `PairInformationFilter` configuration will include pairs that have `TRADIFI_PERPETUAL` as their `contractType` in the `info` section of the market data.
+
+``` json
+[
+    // ...
+    {
+        "method": "PairInformationFilter",
+        "selection_mode": "whitelist",  // can be whitelist or blacklist
+        "info_key" : "info.contractType", // can be any key in market data
+        "info_compare_value": "TRADIFI_PERPETUAL", // can be any matching value
+    }
+]
+```
 
 #### PerformanceFilter
 

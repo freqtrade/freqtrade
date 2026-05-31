@@ -31,9 +31,11 @@ from tests.conftest import (
 )
 
 
-# Exclude RemotePairList from tests.
-# It has a mandatory parameter, and requires special handling, which happens in test_remotepairlist.
-TESTABLE_PAIRLISTS = [p for p in AVAILABLE_PAIRLISTS if p not in ["RemotePairList"]]
+# Exclude RemotePairList and PairInformationFilter from tests.
+# They have mandatory parameters, and require special handling, which happens in explicit tests.
+TESTABLE_PAIRLISTS = [
+    p for p in AVAILABLE_PAIRLISTS if p not in ["RemotePairList", "PairInformationFilter"]
+]
 
 
 @pytest.fixture(scope="function")

@@ -31,6 +31,7 @@ jobs:
         with:
           activate-environment: true
           python-version: '3.13'
+          enable-cache: false
 
       - name: Install dependencies
         run: |

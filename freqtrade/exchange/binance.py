@@ -559,7 +559,7 @@ class Binance(Exchange):
 
 
 class Binanceusdm(Binance):
-    """Binacne USDM Exchange
+    """Binance USDM Exchange
     Same as Binance - only futures trading is supported (via ccxt).
 
     Not actually necessary, binance should be preferred.

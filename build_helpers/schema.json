@@ -658,6 +658,7 @@
               "DelistFilter",
               "FullTradesFilter",
               "OffsetFilter",
+              "PairInformationFilter",
               "PerformanceFilter",
               "PrecisionFilter",
               "PriceFilter",
@@ -1063,7 +1064,8 @@
         "jwt_secret_key": {
           "description": "Secret key for JWT authentication.",
           "type": "string",
-          "default": "somethingRandomSomethingRandom123"
+          "default": "somethingRandomSomethingRandom123",
+          "minLength": 32
         },
         "CORS_origins": {
           "description": "List of allowed CORS origins.",

@@ -61,7 +61,7 @@ class HyperoptTools:
         return None
 
     @staticmethod
-    def export_params(params, strategy_name: str, filename: Path):
+    def export_params(params: dict[str, Any], strategy_name: str, filename: Path) -> None:
         """
         Generate files
         """
@@ -84,7 +84,7 @@ class HyperoptTools:
             )
 
     @staticmethod
-    def load_params(filename: Path) -> dict:
+    def load_params(filename: Path) -> dict[str, Any]:
         """
         Load parameters from file
         """

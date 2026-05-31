@@ -189,8 +189,8 @@ class Order(ModelBase):
     def __repr__(self):
         return (
             f"Order(id={self.id}, trade={self.ft_trade_id}, order_id={self.order_id}, "
-            f"side={self.side}, filled={self.safe_filled}, price={self.safe_price}, "
-            f"amount={self.amount}, "
+            f"side={self.side or self.ft_order_side}, filled={self.safe_filled}, "
+            f"price={self.safe_price}, amount={self.amount}, "
             f"status={self.status}, date={self.order_date_utc:{DATETIME_PRINT_FORMAT}})"
         )
 
@@ -1248,12 +1248,16 @@ class LocalTrade:
         close_profit_abs = 0.0
         # Reset funding fees
         self.funding_fees = 0.0
-        funding_fees = 0.0
-        ordercount = len(self.orders) - 1
+        # Total funding fees - cumulated over all orders
+        total_funding_fees = 0.0
+        # current funding fees - resetting on every exit to be aligned with profit calculation,
+        # as funding fees are part of the profit
+        current_funding_fee = 0.0
         for i, o in enumerate(self.orders):
             if o.ft_is_open or not o.filled:
                 continue
-            funding_fees += o.funding_fee or 0.0
+            current_funding_fee += o.funding_fee or 0.0
+            total_funding_fees += o.funding_fee or 0.0
             tmp_amount = FtPrecise(o.safe_amount_after_fee)
             tmp_price = FtPrecise(o.safe_price)
 
@@ -1268,11 +1272,8 @@ class LocalTrade:
                     avg_price = current_stake / current_amount
 
             if is_exit:
-                # Process exits
-                if i == ordercount and is_closing:
-                    # Apply funding fees only to the last closing order
-                    self.funding_fees = funding_fees
-
+                # Intermediate funding fees for profit calculation
+                self.funding_fees = current_funding_fee
                 exit_rate = o.safe_price
                 exit_amount = o.safe_amount_after_fee
                 prof = self.calculate_profit(exit_rate, exit_amount, float(avg_price))
@@ -1281,10 +1282,12 @@ class LocalTrade:
                     # This needs to be calculated based on the last occurring exit to be aligned
                     # with realized_profit.
                     close_profit = (close_profit_abs / total_stake) * self.leverage
+                current_funding_fee = 0.0
             else:
                 total_stake += self._calc_open_trade_value(tmp_amount, price)
                 max_stake_amount += tmp_amount * price
-        self.funding_fees = funding_fees
+        # Assign cumulated funding fees after all orders have been processed
+        self.funding_fees = total_funding_fees
         self.max_stake_amount = float(max_stake_amount) / (self.leverage or 1.0)
 
         if close_profit:

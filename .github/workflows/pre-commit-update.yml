@@ -2,7 +2,7 @@ name: Pre-commit auto-update
 
 on:
   schedule:
-    - cron: "0 3 * * 2"
+    - cron: "13 1 * * 2"
   # on demand
   workflow_dispatch:
 
