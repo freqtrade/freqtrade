@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+
+<!-- Navigation -->
+{% block site_nav %}
+
+  <!-- Main navigation -->
+  {% if nav %}
+  {% if page and page.meta and page.meta.hide %}
+  {% set hidden = "hidden" if "navigation" in page.meta.hide %}
+  {% endif %}
+  <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" {{ hidden }}>
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__inner">
+        {% include "partials/nav.html" %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Table of contents -->
+  {% if page.toc and not "toc.integrate" in features %}
+  {% if page and page.meta and page.meta.hide %}
+  {% set hidden = "hidden" if "toc" in page.meta.hide %}
+  {% endif %}
+  <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" {{ hidden }}>
+    <div class="md-sidebar__scrollwrap">
+      <div class="md-sidebar__inner">
+        {% include "partials/toc.html" %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+{% endblock %}
+
+{% block footer %}
+    {{ super() }}
+
+    <!-- Place this tag in your head or just before your close body tag. -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+      integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+
+{% endblock %}
