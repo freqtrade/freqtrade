@@ -811,6 +811,27 @@ def test_download_and_install_ui(mocker, tmp_path):
     assert read_ui_version(folder) == "22"
 
 
+def test_download_and_install_ui_rejects_zip_traversal(mocker, tmp_path):
+    requests_mock = MagicMock()
+    file_like_object = BytesIO()
+    with ZipFile(file_like_object, mode="w") as zipfile:
+        zipfile.writestr("../outside.txt", "outside")
+    file_like_object.seek(0)
+    requests_mock.content = file_like_object.read()
+
+    mocker.patch("freqtrade.commands.deploy_ui.requests.get", return_value=requests_mock)
+
+    folder = tmp_path / "uitests_dl"
+
+    with pytest.raises(
+        OperationalException,
+        match=r"Refusing to extract UI file outside target directory: \.\./outside\.txt",
+    ):
+        download_and_install_ui(folder, "http://whatever.xxx/download/file.zip", "22")
+
+    assert not (tmp_path / "outside.txt").exists()
+
+
 def test_get_ui_download_url(mocker):
     response = MagicMock()
     responses = [

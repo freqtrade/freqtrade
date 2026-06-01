@@ -3,6 +3,8 @@ from pathlib import Path
 
 import requests
 
+from freqtrade.exceptions import OperationalException
+
 
 logger = logging.getLogger(__name__)
 
@@ -39,10 +41,15 @@ def download_and_install_ui(dest_folder: Path, dl_url: str, version: str):
     logger.info(f"Downloading {dl_url}")
     resp = requests.get(dl_url, timeout=req_timeout).content
     dest_folder.mkdir(parents=True, exist_ok=True)
+    dest_folder_resolved = dest_folder.resolve()
     with ZipFile(BytesIO(resp)) as zf:
         for fn in zf.filelist:
+            destfile = (dest_folder / fn.filename).resolve()
+            if not destfile.is_relative_to(dest_folder_resolved):
+                raise OperationalException(
+                    f"Refusing to extract UI file outside target directory: {fn.filename}"
+                )
             with zf.open(fn) as x:
-                destfile = dest_folder / fn.filename
                 if fn.is_dir():
                     destfile.mkdir(exist_ok=True)
                 else:
