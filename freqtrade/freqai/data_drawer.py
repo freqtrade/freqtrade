@@ -405,8 +405,9 @@ class FreqaiDataDrawer:
         :param dataframe: DataFrame = strategy dataframe
         :return: DataFrame = strat dataframe with return values attached
         """
-        df = self.model_return_values[pair]
+        df = self.model_return_values[pair].copy()
         to_keep = [col for col in dataframe.columns if not col.startswith("&")]
+        df.index = dataframe.index
         dataframe = pd.concat([dataframe[to_keep], df], axis=1)
         return dataframe
 

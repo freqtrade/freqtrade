@@ -8,6 +8,7 @@ import pytest
 from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exceptions import OperationalException
+from freqtrade.freqai.data_drawer import FreqaiDataDrawer
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from tests.conftest import get_patched_exchange
 from tests.freqai.conftest import get_patched_freqai_strategy
@@ -237,3 +238,31 @@ def test_set_initial_return_values_warning(mocker, freqai_conf):
 
     # Ensure logger error is not called
     mock_logger_warning.assert_called()
+
+
+def test_attach_return_values_uses_strategy_dataframe_index(tmp_path, freqai_conf):
+    data_drawer = FreqaiDataDrawer(tmp_path, freqai_conf)
+    pair = "BTC/USD"
+
+    dataframe = pd.DataFrame(
+        {
+            "date": pd.date_range("2023-09-01", periods=3),
+            "close": [100, 101, 102],
+            "&old-label": [0, 0, 0],
+        },
+        index=[10, 11, 12],
+    )
+    data_drawer.model_return_values[pair] = pd.DataFrame(
+        {
+            "&target": [1, 2, 3],
+            "do_predict": [1, 1, 0],
+        }
+    )
+
+    result = data_drawer.attach_return_values_to_return_dataframe(pair, dataframe)
+
+    assert result.index.tolist() == [10, 11, 12]
+    assert result["&target"].tolist() == [1, 2, 3]
+    assert result["do_predict"].tolist() == [1, 1, 0]
+    assert "&old-label" not in result.columns
+    assert not result[["&target", "do_predict"]].isna().any().any()
