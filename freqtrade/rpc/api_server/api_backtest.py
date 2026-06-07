@@ -135,6 +135,7 @@ def __run_backtest_bg(
                     strategy_files={
                         s.get_strategy_name(): s.__file__ for s in cachedBt.strategylist
                     },
+                    strategy_params=strategy_params,
                 )
                 cachedBt.results["metadata"][strategy_name]["filename"] = str(fn.stem)
                 cachedBt.results["metadata"][strategy_name]["strategy"] = strategy_name

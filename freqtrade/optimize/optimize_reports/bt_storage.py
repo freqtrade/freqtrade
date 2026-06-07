@@ -55,6 +55,7 @@ def store_backtest_results(
     wallet_summary: dict[str, DataFrame] | None = None,
     analysis_results: dict[str, dict[str, DataFrame]] | None = None,
     strategy_files: dict[str, str] | None = None,
+    strategy_params: list[dict[str, Any]] | None = None,
 ) -> Path:
     """
     Stores backtest results and analysis data in a zip file, with metadata stored separately
@@ -64,6 +65,9 @@ def store_backtest_results(
     :param dtappendix: Datetime to use for the filename
     :param market_change_data: Dataframe containing market change data
     :param analysis_results: Dictionary containing analysis results
+    :param strategy_files: Dictionary mapping strategy names to the corresponding file path
+    :param strategy_params: List of dictionaries containing strategy parameters
+             will be used to overwrite the default strategy parameters
     """
     recordfilename: Path = config["exportdirectory"]
     zip_filename = _generate_filename(recordfilename, dtappendix, ".zip")
@@ -106,8 +110,18 @@ def store_backtest_results(
             strategy_param_file = strategy_path.with_suffix(".json")
             if strategy_param_file.is_file():
                 strategy_params_buf = BytesIO()
-                with strategy_param_file.open("rb") as strategy_params_obj:
-                    strategy_params_buf.write(strategy_params_obj.read())
+                if strategy_params:
+                    from freqtrade.optimize.hyperopt_tools import HyperoptTools
+
+                    params = HyperoptTools.load_params(strategy_param_file)
+                    for sp in strategy_params or []:
+                        # Update parameters with provided values
+                        params["params"].get(sp["space"], {})[sp["name"]] = sp["value"]
+
+                    HyperoptTools.serialize_params(params, strategy_params_buf)
+                else:
+                    with strategy_param_file.open("rb") as strategy_params_obj:
+                        strategy_params_buf.write(strategy_params_obj.read())
                 strategy_params_buf.seek(0)
                 zipf.writestr(
                     f"{base_filename.stem}_{strategy_name}.json",
