@@ -103,10 +103,10 @@ def store_backtest_results(
                 strategy_buf.write(strategy_file_obj.read())
             strategy_buf.seek(0)
             zipf.writestr(f"{base_filename.stem}_{strategy_name}.py", strategy_buf.getvalue())
-            strategy_params = strategy_path.with_suffix(".json")
-            if strategy_params.is_file():
+            strategy_param_file = strategy_path.with_suffix(".json")
+            if strategy_param_file.is_file():
                 strategy_params_buf = BytesIO()
-                with strategy_params.open("rb") as strategy_params_obj:
+                with strategy_param_file.open("rb") as strategy_params_obj:
                     strategy_params_buf.write(strategy_params_obj.read())
                 strategy_params_buf.seek(0)
                 zipf.writestr(
