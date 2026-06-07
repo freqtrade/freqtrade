@@ -605,6 +605,7 @@ AllParameters = Annotated[
 
 class __StrategyParameterInput(BaseModel):
     name: str
+    space: str
 
 
 class IntParameterInput(__StrategyParameterInput):
