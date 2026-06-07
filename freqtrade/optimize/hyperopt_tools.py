@@ -3,7 +3,7 @@ from collections.abc import Iterator
 from copy import deepcopy
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, TextIO
 
 import numpy as np
 import rapidjson
@@ -61,10 +61,19 @@ class HyperoptTools:
         return None
 
     @staticmethod
+    def serialize_params(params: dict[str, Any], file_obj: TextIO) -> None:
+        """Serialize parameters to provided file object"""
+        rapidjson.dump(
+            params,
+            file_obj,
+            indent=2,
+            default=hyperopt_serializer,
+            number_mode=HYPER_PARAMS_FILE_FORMAT,
+        )
+
+    @staticmethod
     def export_params(params: dict[str, Any], strategy_name: str, filename: Path) -> None:
-        """
-        Generate files
-        """
+        """Generate files"""
         final_params = deepcopy(params["params_not_optimized"])
         final_params = deep_merge_dicts(params["params_details"], final_params)
         final_params = {
@@ -75,13 +84,7 @@ class HyperoptTools:
         }
         logger.info(f"Dumping parameters to {filename}")
         with filename.open("w") as f:
-            rapidjson.dump(
-                final_params,
-                f,
-                indent=2,
-                default=hyperopt_serializer,
-                number_mode=HYPER_PARAMS_FILE_FORMAT,
-            )
+            HyperoptTools.serialize_params(final_params, f)
 
     @staticmethod
     def load_params(data: bytes | str) -> dict[str, Any]:
