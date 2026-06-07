@@ -2612,9 +2612,14 @@ def test_api_pair_history(botclient, tmp_path, mocker):
             "timerange": "20180111-20180112",
             "strategy": CURRENT_TEST_STRATEGY,
             "strategy_params": [
-                {"name": "buy_rsi", "param_type": "IntParameter", "value": 21},
-                {"name": "buy_plusdi", "param_type": "IntParameter", "value": 99},
-                {"name": "sell_minusdi", "param_type": "DecimalParameter", "value": 0.7},
+                {"name": "buy_rsi", "space": "buy", "param_type": "IntParameter", "value": 21},
+                {"name": "buy_plusdi", "space": "buy", "param_type": "IntParameter", "value": 99},
+                {
+                    "name": "sell_minusdi",
+                    "space": "sell",
+                    "param_type": "DecimalParameter",
+                    "value": 0.7,
+                },
             ],
         },
     )
@@ -3355,9 +3360,14 @@ def test_api_backtesting(botclient, mocker, fee, caplog, tmp_path):
             "dry_run_wallet": 1000,
             "enable_protections": False,
             "strategy_params": [
-                {"name": "buy_rsi", "param_type": "IntParameter", "value": 22},
-                {"name": "buy_plusdi", "param_type": "IntParameter", "value": 99},
-                {"name": "sell_minusdi", "param_type": "DecimalParameter", "value": 0.7},
+                {"name": "buy_rsi", "space": "buy", "param_type": "IntParameter", "value": 22},
+                {"name": "buy_plusdi", "space": "buy", "param_type": "IntParameter", "value": 99},
+                {
+                    "name": "sell_minusdi",
+                    "space": "sell",
+                    "param_type": "DecimalParameter",
+                    "value": 0.7,
+                },
             ],
         }
         rc = client_post(client, f"{BASE_URI}/backtest", data=data)
