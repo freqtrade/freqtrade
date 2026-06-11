@@ -7,6 +7,7 @@ from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from functools import lru_cache
 from math import isclose
 from typing import Any, ClassVar, Optional, Self, cast
 
@@ -1020,6 +1021,11 @@ class LocalTrade:
             ]
         )
 
+    @staticmethod
+    @lru_cache(maxsize=128)
+    def to_precise_cache(value) -> FtPrecise:
+        return FtPrecise(value)
+
     def get_canceled_exit_order_count(self) -> int:
         """
         Get amount of failed exiting orders
@@ -1033,7 +1039,7 @@ class LocalTrade:
         :return: Price in of the open trade incl. Fees
         """
         open_value = FtPrecise(amount) * FtPrecise(open_rate)
-        fees = open_value * FtPrecise(self.fee_open)
+        fees = open_value * self.to_precise_cache(self.fee_open)
         if self.is_short:
             return float(open_value - fees)
         else:
@@ -1050,14 +1056,14 @@ class LocalTrade:
         """
         Calculate interest for this trade. Only applicable for Margin trading.
         """
-        zero = FtPrecise(0.0)
+        zero = self.to_precise_cache(0.0)
         # If nothing was borrowed
         if self.trading_mode != TradingMode.MARGIN or self.has_no_leverage:
             return zero
 
         open_date = self.open_date.replace(tzinfo=None)
         now = (self.close_date or datetime.now(UTC)).replace(tzinfo=None)
-        sec_per_hour = FtPrecise(3600)
+        sec_per_hour = self.to_precise_cache(3600)
         total_seconds = FtPrecise((now - open_date).total_seconds())
         hours = total_seconds / sec_per_hour or zero
 
@@ -1068,7 +1074,7 @@ class LocalTrade:
 
     def _calc_base_close(self, amount: FtPrecise, rate: float, fee: float | None) -> FtPrecise:
         close_value = amount * FtPrecise(rate)
-        fees = close_value * FtPrecise(fee or 0.0)
+        fees = close_value * self.to_precise_cache(fee or 0.0)
 
         if self.is_short:
             return close_value + fees
@@ -1084,7 +1090,7 @@ class LocalTrade:
         if rate is None and not self.close_rate:
             return 0.0
 
-        amount1 = FtPrecise(amount or self.amount)
+        amount1 = self.to_precise_cache(amount or self.amount)
         trading_mode = self.trading_mode or TradingMode.SPOT
 
         if trading_mode == TradingMode.SPOT:
@@ -1238,12 +1244,12 @@ class LocalTrade:
         return (adj * open_value - beta) / alpha
 
     def recalc_trade_from_orders(self, *, is_closing: bool = False):
-        ZERO = FtPrecise(0.0)
-        current_amount = FtPrecise(0.0)
-        current_stake = FtPrecise(0.0)
-        max_stake_amount = FtPrecise(0.0)
+        ZERO = self.to_precise_cache(0.0)
+        current_amount = self.to_precise_cache(0.0)
+        current_stake = self.to_precise_cache(0.0)
+        max_stake_amount = self.to_precise_cache(0.0)
         total_stake = 0.0  # Total stake after all buy orders (does not subtract!)
-        avg_price = FtPrecise(0.0)
+        avg_price = self.to_precise_cache(0.0)
         close_profit = 0.0
         close_profit_abs = 0.0
         # Reset funding fees
@@ -1258,11 +1264,11 @@ class LocalTrade:
                 continue
             current_funding_fee += o.funding_fee or 0.0
             total_funding_fees += o.funding_fee or 0.0
-            tmp_amount = FtPrecise(o.safe_amount_after_fee)
+            tmp_amount = self.to_precise_cache(o.safe_amount_after_fee)
             tmp_price = FtPrecise(o.safe_price)
 
             is_exit = o.ft_order_side != self.entry_side
-            side = FtPrecise(-1 if is_exit else 1)
+            side = self.to_precise_cache(-1 if is_exit else 1)
             if tmp_amount > ZERO and tmp_price is not None:
                 current_amount += tmp_amount * side
                 price = avg_price if is_exit else tmp_price

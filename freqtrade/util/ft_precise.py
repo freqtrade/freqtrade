@@ -11,3 +11,7 @@ class FtPrecise(Precise):
         if not isinstance(number, str):
             number = str(number)
         super().__init__(number, decimals)
+
+    def __hash__(self):
+        # Hash based on the string representation of the value
+        return hash((str(self), self.decimals))

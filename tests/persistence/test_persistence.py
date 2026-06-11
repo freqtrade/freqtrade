@@ -2151,6 +2151,7 @@ def test_Trade_object_idem():
         "bt_open_open_trade_count",
         "bt_total_profit",
         "from_json",
+        "to_precise_cache",
     )
 
     # Parent (LocalTrade) should have the same attributes
