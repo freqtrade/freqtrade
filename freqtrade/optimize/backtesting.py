@@ -148,6 +148,8 @@ class Backtesting:
 
         self.dataprovider = DataProvider(self.config, self.exchange)
 
+        self._capture_wallet_enabled = self.dataprovider.runmode == RunMode.BACKTEST
+
         if self.config.get("strategy_list"):
             if self.config.get("freqai", {}).get("enabled", False):
                 logger.warning(
@@ -1695,7 +1697,7 @@ class Backtesting:
         """
         Capture the current wallet state.
         """
-        if self.dataprovider.runmode != RunMode.BACKTEST:
+        if not self._capture_wallet_enabled:
             return
         if total := self.wallets.get_total(currency):
             self.wallet_captures.append((current_time, currency, price, total))
