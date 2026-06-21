@@ -66,6 +66,10 @@ SUPPORTED_EXCHANGES = [
     "myokx",
 ]
 
+NATIVE_EXCHANGES = [
+    "xcoin",
+]
+
 # either the main, or replacement methods (array) is required
 EXCHANGE_HAS_REQUIRED: dict[str, list[str]] = {
     # Required / private
