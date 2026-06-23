@@ -139,6 +139,7 @@ Invoke-Step -Title "Summarize matrix" -Python $Python -Arguments @(
     $stressReport
 )
 Invoke-Step -Title "Build scorecards" -Python $Python -Arguments @("user_data\strategy_research\analyze_strategy_research.py")
+Invoke-Step -Title "Analyze trade behavior" -Python $Python -Arguments @("user_data\strategy_research\analyze_trade_behavior.py")
 Invoke-Step -Title "Run promotion gate" -Python $Python -Arguments @("user_data\strategy_research\promotion_gate.py")
 Invoke-Step -Title "Build research agenda" -Python $Python -Arguments @("user_data\strategy_research\research_agenda.py")
 Invoke-Step -Title "Refresh dashboard" -Python $Python -Arguments @("user_data\strategy_research\run_research_agent.py", "--skip-backtests")
@@ -154,6 +155,7 @@ Write-Host "Iterations:    user_data\strategy_research\experiments\iterative_hyp
 Write-Host "Walk-Fwd:      user_data\strategy_research\walk_forward_summaries\latest_walk_forward_summary.md"
 Write-Host "Summary:       user_data\strategy_research\matrix_summaries\latest_matrix_summary.md"
 Write-Host "Assessment:    user_data\strategy_research\strategy_assessments\latest_strategy_assessment.md"
+Write-Host "Behavior:      user_data\strategy_research\trade_behavior\latest_trade_behavior.md"
 Write-Host "Promotion:     user_data\strategy_research\promotion_reports\latest_promotion_report.md"
 Write-Host "Agenda:        user_data\strategy_research\research_agendas\latest_research_agenda.md"
 Write-Host "Dashboard:     user_data\strategy_research\dashboard\index.html"

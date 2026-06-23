@@ -160,6 +160,7 @@ def check_outputs(checks: list[Check]) -> None:
         "promotion_report": AGENT_ROOT / "promotion_reports/latest_promotion_report.md",
         "research_agenda": AGENT_ROOT / "research_agendas/latest_research_agenda.md",
         "agenda_run": AGENT_ROOT / "agenda_runs/latest_agenda_run.md",
+        "trade_behavior": AGENT_ROOT / "trade_behavior/latest_trade_behavior.md",
     }
     for name, path in paths.items():
         if path.exists():

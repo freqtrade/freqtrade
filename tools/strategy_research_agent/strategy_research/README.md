@@ -349,6 +349,29 @@ user_data/strategy_research/agenda_runs/latest_agenda_run.md
 
 执行器只允许 allowlist 中的研究命令。walk-forward/full-cycle 等长任务需要额外传 `--allow-long`，默认不会执行。
 
+## 交易行为分析
+
+分析 Freqtrade 导出的交易明细，拆解策略为什么赚钱或亏钱：
+
+```bash
+user_data/strategy_research/start_manual_research.sh --trade-behavior
+```
+
+直接调用脚本：
+
+```bash
+./.venv/bin/python user_data/strategy_research/analyze_trade_behavior.py
+```
+
+默认读取 `cost_adjustments/latest_trade_cost_estimate.json` 中记录的 backtest zip。输出：
+
+```text
+user_data/strategy_research/trade_behavior/latest_trade_behavior.json
+user_data/strategy_research/trade_behavior/latest_trade_behavior.md
+```
+
+当前分析项包括：胜率、平均盈亏、payoff、profit factor、多空比例、多空盈亏、持仓时长、止损退出、最大连续亏损、MFE/MAE、pair/exit/tag 拆分和诊断备注。
+
 ## 市场状态与成本矩阵
 
 从本地 BTC futures 1m OHLCV 自动生成市场状态切片和成本场景：
@@ -480,6 +503,7 @@ user_data/strategy_research/automation/com.wangsen.freqtrade.strategy-research.w
 - 晋级闸门：`promotion_reports/`、`promotion_candidates/`、`promotion_blocks/`
 - 研究议程：`research_agendas/`
 - 议程执行回执：`agenda_runs/`
+- 交易行为分析：`trade_behavior/`
 - 合约成本数据审计：`cost_audits/`
 - 策略级成本校正：`cost_adjustments/`
 - 实验定义：`experiments/`
@@ -511,6 +535,7 @@ user_data/strategy_research/automation/com.wangsen.freqtrade.strategy-research.w
 - 已新增晋级闸门；最新状态见 `promotion_reports/latest_promotion_report.md`，并已接入 dashboard 与预检。
 - 已新增研究议程；最新状态见 `research_agendas/latest_research_agenda.md`，并已接入 dashboard 与预检。
 - 已新增议程执行回执；最新状态见 `agenda_runs/latest_agenda_run.md`，并已接入 dashboard 与预检。
+- 已新增交易行为分析；最新状态见 `trade_behavior/latest_trade_behavior.md`，并已接入 dashboard 与预检。
 - 完整研究循环入口 `run_full_research_cycle.sh --help` 已通过。
 - launchd 自动触发任务 plist 已通过 `plutil -lint`，安装/卸载/状态脚本已通过 shell 语法检查；当前已安装每日和每周两条用户级定时任务。
 - 定时巡检入口 `run_daily_research.sh --help` 已通过。

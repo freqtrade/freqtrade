@@ -20,6 +20,7 @@ rsync -a --delete \
   --exclude 'promotion_reports/' \
   --exclude 'research_agendas/' \
   --exclude 'agenda_runs/' \
+  --exclude 'trade_behavior/' \
   --exclude 'data_updates/' \
   --exclude 'strategy_assessments/' \
   --exclude 'candidates/*.json' \

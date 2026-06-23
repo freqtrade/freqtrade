@@ -85,6 +85,12 @@ Select the next agenda item without executing it:
 user_data/strategy_research/start_manual_research.sh --next-agenda
 ```
 
+Analyze exported trades for behavior-level diagnostics:
+
+```bash
+user_data/strategy_research/start_manual_research.sh --trade-behavior
+```
+
 Preflight only:
 
 ```bash
@@ -123,3 +129,4 @@ On Windows, use `README_WINDOWS.md` for the PowerShell cycle runner and Task Sch
 - Promotion gate only records readiness for manual dry-run review; it never starts dry-run/live trading.
 - Research agenda turns promotion blockers into auditable next experiments and commands.
 - Agenda execution is allowlisted; the default `--next-agenda` mode writes a receipt without running a command.
+- Trade behavior analysis explains wins, losses, long/short skew, stop-loss exits, and entry excursion quality.

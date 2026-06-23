@@ -497,6 +497,18 @@ def load_latest_agenda_run() -> dict[str, Any] | None:
     return payload
 
 
+def load_latest_trade_behavior() -> dict[str, Any] | None:
+    path = AGENT_ROOT / "trade_behavior/latest_trade_behavior.json"
+    if not path.exists():
+        return None
+    try:
+        payload = load_json(path)
+    except json.JSONDecodeError:
+        return None
+    payload["_path"] = str(path.relative_to(REPO_ROOT))
+    return payload
+
+
 def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
     dashboard_path = paths["dashboard_dir"] / "index.html"
     rows = []
@@ -737,6 +749,25 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
             f"<td>{agenda_run.get('returncode')}</td>"
             "</tr>"
         )
+    trade_behavior_rows = []
+    trade_behavior = payload.get("trade_behavior") or {}
+    for item in trade_behavior.get("summaries", []):
+        trade_behavior_rows.append(
+            "<tr>"
+            f"<td>{html.escape(item.get('strategy', ''))}</td>"
+            f"<td>{item.get('trades')}</td>"
+            f"<td>{item.get('win_rate_pct')}</td>"
+            f"<td>{item.get('total_profit_abs')}</td>"
+            f"<td>{item.get('profit_factor')}</td>"
+            f"<td>{item.get('payoff_ratio')}</td>"
+            f"<td>{item.get('avg_duration_min')}</td>"
+            f"<td>{item.get('long_trades')}/{item.get('short_trades')}</td>"
+            f"<td>{item.get('stop_loss_trades')}</td>"
+            f"<td>{item.get('avg_mfe_pct')}</td>"
+            f"<td>{item.get('avg_mae_pct')}</td>"
+            f"<td>{html.escape('; '.join(item.get('diagnostics', [])))}</td>"
+            "</tr>"
+        )
     page = f"""<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -821,6 +852,13 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
       <table>
         <thead><tr><th>Status</th><th>Mode</th><th>Strategy</th><th>Blocker</th><th>Command</th><th>Return Code</th></tr></thead>
         <tbody>{''.join(agenda_run_rows)}</tbody>
+      </table>
+    </section>
+    <section>
+      <h2>交易行为分析</h2>
+      <table>
+        <thead><tr><th>Strategy</th><th>Trades</th><th>Win %</th><th>Profit Abs</th><th>PF</th><th>Payoff</th><th>Avg Dur</th><th>Long/Short</th><th>Stop Losses</th><th>MFE %</th><th>MAE %</th><th>Diagnostics</th></tr></thead>
+        <tbody>{''.join(trade_behavior_rows)}</tbody>
       </table>
     </section>
     <section>
@@ -1091,6 +1129,25 @@ def write_report(paths: dict[str, Path], payload: dict[str, Any]) -> tuple[Path,
                 ),
             ]
         )
+    trade_behavior = payload.get("trade_behavior") or {}
+    if trade_behavior.get("summaries"):
+        lines.extend(
+            [
+                "",
+                "## Trade Behavior",
+                "",
+                "| Strategy | Trades | Win % | Profit Abs | PF | Payoff | Avg Dur | Long/Short | Stop Losses | MFE % | MAE % | Diagnostics |",
+                "|---|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|---|",
+            ]
+        )
+        for item in trade_behavior["summaries"]:
+            row = dict(item)
+            row["diagnostics"] = "; ".join(item.get("diagnostics", []))
+            lines.append(
+                "| {strategy} | {trades} | {win_rate_pct} | {total_profit_abs} | {profit_factor} | {payoff_ratio} | {avg_duration_min} | {long_trades}/{short_trades} | {stop_loss_trades} | {avg_mfe_pct} | {avg_mae_pct} | {diagnostics} |".format(
+                    **row
+                )
+            )
     lines.extend(["", "## Source Reviews", "", "| Source | Status | Family | Indicators |", "|---|---|---|---|"])
     for item in payload.get("source_reviews", []):
         lines.append(
@@ -1342,6 +1399,7 @@ def main() -> None:
         "promotion_report": load_latest_promotion_report(),
         "research_agenda": load_latest_research_agenda(),
         "agenda_run": load_latest_agenda_run(),
+        "trade_behavior": load_latest_trade_behavior(),
         "results": results,
     }
     json_path, md_path, dashboard_path = write_report(paths, payload)
