@@ -40,6 +40,24 @@ It does not copy local market data, reports, dashboards, API keys, Freqtrade con
 Manual research cycle:
 
 ```bash
+user_data/strategy_research/start_manual_research.sh --full
+```
+
+Quick manual refresh without rerunning backtests:
+
+```bash
+user_data/strategy_research/start_manual_research.sh --quick
+```
+
+Preflight only:
+
+```bash
+user_data/strategy_research/start_manual_research.sh --preflight-only
+```
+
+Lower-level full cycle:
+
+```bash
 user_data/strategy_research/run_full_research_cycle.sh --skip-aux-fetch
 ```
 

@@ -45,6 +45,32 @@ tools/strategy_research_agent/install_runtime.sh
 
 ## 手动触发
 
+推荐手动入口：
+
+```bash
+user_data/strategy_research/start_manual_research.sh --quick
+```
+
+这会先运行预检，再刷新报告和 dashboard，但不会重新跑大回测。
+
+只做启动前体检：
+
+```bash
+user_data/strategy_research/start_manual_research.sh --preflight-only
+```
+
+真正跑完整研究循环：
+
+```bash
+user_data/strategy_research/start_manual_research.sh --full
+```
+
+如果还要重新尝试拉取 funding/mark 辅助数据：
+
+```bash
+user_data/strategy_research/start_manual_research.sh --full-with-aux
+```
+
 完整研究循环：
 
 ```bash
