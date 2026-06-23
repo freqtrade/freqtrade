@@ -513,6 +513,31 @@ user_data/strategy_research/experiments/memory_guided_strategy_experiment.json
 
 该规划器把 research memory 里的 active roots、avoid patterns、next focus 和 knowledge gaps 转成明确的 hypothesis id、目标策略、阻断原因、拟议入场/退出/风控变化、成功闸门和下一步命令。它是策略代码生成前的研究设计层，不直接创建 live 代码，也不直接回测。
 
+## 记忆驱动策略变体
+
+从可行动的记忆驱动假设生成隔离策略子类：
+
+```bash
+user_data/strategy_research/start_manual_research.sh --memory-guided-strategies
+```
+
+直接调用脚本：
+
+```bash
+./.venv/bin/python user_data/strategy_research/generate_memory_guided_strategies.py
+```
+
+输出：
+
+```text
+user_data/strategies/research_generated/memory_guided_research_strategies.py
+user_data/strategy_research/experiments/memory_guided_strategy_registry.json
+user_data/strategy_research/experiments/memory_guided_strategy_experiment.json
+user_data/strategy_research/experiments/memory_guided_strategy_ledger.md
+```
+
+生成器会跳过 `bias_checks_missing` 这类验证型 blocker，只为 cost、matrix、walk-forward、exit quality 等可通过逻辑变体测试的问题生成策略。所有变体仍是 research-only，必须先通过 Freqtrade 识别、回测、评分卡、矩阵、walk-forward、成本和偏差检查。
+
 ## 市场状态与成本矩阵
 
 从本地 BTC futures 1m OHLCV 自动生成市场状态切片和成本场景：
@@ -651,6 +676,7 @@ user_data/strategy_research/automation/com.wangsen.freqtrade.strategy-research.w
 - 策略库与版本族谱：`strategy_library/`
 - 研究记忆：`research_memory/`
 - 记忆驱动假设：`experiments/memory_guided_*`
+- 记忆驱动策略变体：`experiments/memory_guided_strategy_*`、`../strategies/research_generated/memory_guided_research_strategies.py`
 - 合约成本数据审计：`cost_audits/`
 - 策略级成本校正：`cost_adjustments/`
 - 实验定义：`experiments/`
@@ -689,6 +715,7 @@ user_data/strategy_research/automation/com.wangsen.freqtrade.strategy-research.w
 - 已新增策略库与版本族谱；最新状态见 `strategy_library/latest_strategy_lineage.md`，并已接入 dashboard 与预检。
 - 已新增研究记忆；最新状态见 `research_memory/latest_research_memory.md`，并已接入 dashboard 与预检。
 - 已新增记忆驱动假设规划；最新状态见 `experiments/memory_guided_hypothesis_ledger.md`，并已接入 dashboard 与预检。
+- 已新增记忆驱动策略变体生成；最新状态见 `experiments/memory_guided_strategy_ledger.md`。
 - 完整研究循环入口 `run_full_research_cycle.sh --help` 已通过。
 - launchd 自动触发任务 plist 已通过 `plutil -lint`，安装/卸载/状态脚本已通过 shell 语法检查；当前已安装每日和每周两条用户级定时任务。
 - 定时巡检入口 `run_daily_research.sh --help` 已通过。

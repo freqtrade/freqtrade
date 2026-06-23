@@ -34,6 +34,7 @@ SOURCE_TRANSLATED_REGISTRY = AGENT_ROOT / "experiments/source_translated_registr
 AUTONOMOUS_STRATEGY_REGISTRY = AGENT_ROOT / "experiments/autonomous_strategy_registry.json"
 ITERATIVE_STRATEGY_REGISTRY = AGENT_ROOT / "experiments/iterative_strategy_registry.json"
 BEHAVIOR_EXPERIMENT_REGISTRY = AGENT_ROOT / "experiments/behavior_experiment_strategy_registry.json"
+MEMORY_GUIDED_REGISTRY = AGENT_ROOT / "experiments/memory_guided_strategy_registry.json"
 LOOKAHEAD_CONFIG_OVERRIDE = AGENT_ROOT / "config_lookahead_pricing_override.json"
 
 
@@ -288,6 +289,7 @@ def strategy_metadata(registry: dict[str, Any]) -> dict[str, dict[str, Any]]:
         AUTONOMOUS_STRATEGY_REGISTRY,
         ITERATIVE_STRATEGY_REGISTRY,
         BEHAVIOR_EXPERIMENT_REGISTRY,
+        MEMORY_GUIDED_REGISTRY,
     ]:
         if path.exists():
             generated = load_json(path)
@@ -561,6 +563,18 @@ def load_latest_research_memory() -> dict[str, Any] | None:
 
 def load_memory_guided_hypotheses() -> dict[str, Any] | None:
     path = AGENT_ROOT / "experiments/memory_guided_hypothesis_plan.json"
+    if not path.exists():
+        return None
+    try:
+        payload = load_json(path)
+    except json.JSONDecodeError:
+        return None
+    payload["_path"] = str(path.relative_to(REPO_ROOT))
+    return payload
+
+
+def load_memory_guided_strategy_registry() -> dict[str, Any] | None:
+    path = AGENT_ROOT / "experiments/memory_guided_strategy_registry.json"
     if not path.exists():
         return None
     try:
@@ -897,6 +911,18 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
             f"<td>{html.escape(item.get('success_gate') or '')}</td>"
             "</tr>"
         )
+    memory_strategy_rows = []
+    memory_strategy_registry = payload.get("memory_guided_strategy_registry") or {}
+    for item in memory_strategy_registry.get("strategies", []):
+        memory_strategy_rows.append(
+            "<tr>"
+            f"<td>{html.escape(item.get('name') or '')}</td>"
+            f"<td>{html.escape(item.get('base_strategy') or '')}</td>"
+            f"<td>{html.escape(item.get('blocker') or '')}</td>"
+            f"<td>{html.escape(item.get('hypothesis') or '')}</td>"
+            f"<td>{html.escape(item.get('success_gate') or '')}</td>"
+            "</tr>"
+        )
     page = f"""<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -1023,6 +1049,13 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
       <table>
         <thead><tr><th>ID</th><th>Strategy</th><th>Blocker</th><th>Objective</th><th>Entry Change</th><th>Success Gate</th></tr></thead>
         <tbody>{''.join(memory_hypothesis_rows)}</tbody>
+      </table>
+    </section>
+    <section>
+      <h2>记忆驱动策略变体</h2>
+      <table>
+        <thead><tr><th>Strategy</th><th>Base</th><th>Blocker</th><th>Hypothesis</th><th>Success Gate</th></tr></thead>
+        <tbody>{''.join(memory_strategy_rows)}</tbody>
       </table>
     </section>
     <section>
@@ -1421,6 +1454,23 @@ def write_report(paths: dict[str, Path], payload: dict[str, Any]) -> tuple[Path,
                     success_gate=item.get("success_gate") or "",
                 )
             )
+    memory_strategy_registry = payload.get("memory_guided_strategy_registry") or {}
+    if memory_strategy_registry.get("strategies"):
+        lines.extend(
+            [
+                "",
+                "## Memory-Guided Strategy Variants",
+                "",
+                "| Strategy | Base | Blocker | Hypothesis | Success Gate |",
+                "|---|---|---|---|---|",
+            ]
+        )
+        for item in memory_strategy_registry["strategies"]:
+            lines.append(
+                "| {name} | {base_strategy} | {blocker} | {hypothesis} | {success_gate} |".format(
+                    **item
+                )
+            )
     lines.extend(["", "## Source Reviews", "", "| Source | Status | Family | Indicators |", "|---|---|---|---|"])
     for item in payload.get("source_reviews", []):
         lines.append(
@@ -1678,6 +1728,7 @@ def main() -> None:
         "strategy_lineage": load_latest_strategy_lineage(),
         "research_memory": load_latest_research_memory(),
         "memory_guided_hypotheses": load_memory_guided_hypotheses(),
+        "memory_guided_strategy_registry": load_memory_guided_strategy_registry(),
         "results": results,
     }
     json_path, md_path, dashboard_path = write_report(paths, payload)

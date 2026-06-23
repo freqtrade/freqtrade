@@ -46,6 +46,12 @@ $ExcludedRuntimeExperimentFiles = @(
     "experiments/walk_forward_validation_experiment.json"
 )
 $ExcludedSourceStateDirs = @("sources/inbox", "sources/reviews", "sources/translation_drafts")
+$ExcludedGeneratedStrategyFiles = @(
+    "autonomous_research_strategies.py",
+    "iterative_research_strategies.py",
+    "behavior_experiment_strategies.py",
+    "memory_guided_research_strategies.py"
+)
 
 function Ensure-Directory {
     param([Parameter(Mandatory = $true)][string]$Path)
@@ -106,7 +112,7 @@ function Copy-GeneratedStrategies {
 
     Ensure-Directory -Path $Destination
     Get-ChildItem -LiteralPath $Source -Force | ForEach-Object {
-        if ($_.Name -eq "__pycache__" -or $_.Extension -eq ".pyc") {
+        if ($_.Name -eq "__pycache__" -or $_.Extension -eq ".pyc" -or $ExcludedGeneratedStrategyFiles -contains $_.Name) {
             return
         }
         $target = Join-Path $Destination $_.Name

@@ -7,7 +7,7 @@ PYTHON="${PYTHON:-./.venv/bin/python}"
 
 usage() {
   cat <<'EOF'
-Usage: user_data/strategy_research/start_manual_research.sh [--quick|--autonomous-smoke|--iterate-smoke|--walk-forward|--promotion-gate|--agenda|--next-agenda|--execute-next-agenda|--trade-behavior|--behavior-experiments|--behavior-variants|--failure-attribution|--strategy-lineage|--research-memory|--memory-guided-hypotheses|--full|--full-with-aux|--preflight-only] [--extra-agent-arg ARG ...]
+Usage: user_data/strategy_research/start_manual_research.sh [--quick|--autonomous-smoke|--iterate-smoke|--walk-forward|--promotion-gate|--agenda|--next-agenda|--execute-next-agenda|--trade-behavior|--behavior-experiments|--behavior-variants|--failure-attribution|--strategy-lineage|--research-memory|--memory-guided-hypotheses|--memory-guided-strategies|--full|--full-with-aux|--preflight-only] [--extra-agent-arg ARG ...]
 
 Manual entrypoint for the research-only strategy agent.
 
@@ -34,6 +34,8 @@ Modes:
                      Build durable research memory and refresh report/dashboard.
   --memory-guided-hypotheses
                      Plan next strategy hypotheses from research memory.
+  --memory-guided-strategies
+                     Generate isolated strategy variants from memory-guided hypotheses.
   --full            Run preflight, update 1m OHLCV, run matrix backtests, skip aux fetch.
   --full-with-aux   Same as --full, but also fetch funding/mark aux data.
   --preflight-only  Only check environment, data, outputs, and safety flags.
@@ -111,6 +113,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --memory-guided-hypotheses)
       mode="memory_guided_hypotheses"
+      shift
+      ;;
+    --memory-guided-strategies)
+      mode="memory_guided_strategies"
       shift
       ;;
     --full-with-aux)
@@ -246,6 +252,14 @@ PY
     "$PYTHON" user_data/strategy_research/plan_memory_guided_hypotheses.py
     "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
     ;;
+  memory_guided_strategies)
+    echo "== Strategy Research Agent: memory-guided strategies =="
+    "$PYTHON" user_data/strategy_research/build_strategy_lineage.py
+    "$PYTHON" user_data/strategy_research/build_research_memory.py
+    "$PYTHON" user_data/strategy_research/plan_memory_guided_hypotheses.py
+    "$PYTHON" user_data/strategy_research/generate_memory_guided_strategies.py
+    "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
+    ;;
   full)
     echo "== Strategy Research Agent: full research cycle, aux fetch skipped =="
     user_data/strategy_research/run_full_research_cycle.sh --skip-aux-fetch
@@ -274,5 +288,6 @@ Failures:   user_data/strategy_research/failure_attribution/latest_failure_attri
 Lineage:    user_data/strategy_research/strategy_library/latest_strategy_lineage.md
 Memory:     user_data/strategy_research/research_memory/latest_research_memory.md
 MemPlan:    user_data/strategy_research/experiments/memory_guided_hypothesis_ledger.md
+MemStrat:   user_data/strategy_research/experiments/memory_guided_strategy_ledger.md
 Reports:    user_data/strategy_research/reports/
 EOF

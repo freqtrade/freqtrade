@@ -127,6 +127,12 @@ Plan next strategy hypotheses from research memory:
 user_data/strategy_research/start_manual_research.sh --memory-guided-hypotheses
 ```
 
+Generate isolated strategy variants from those hypotheses:
+
+```bash
+user_data/strategy_research/start_manual_research.sh --memory-guided-strategies
+```
+
 Preflight only:
 
 ```bash
@@ -172,3 +178,4 @@ On Windows, use `README_WINDOWS.md` for the PowerShell cycle runner and Task Sch
 - Strategy lineage links base strategies, generated variants, behavior experiments, candidate pools, promotion blockers, and failure modes into a reusable research library.
 - Research memory turns current evidence into next-focus items, avoid patterns, knowledge gaps, and durable research rules.
 - Memory-guided hypotheses convert that memory into auditable next strategy-design plans with explicit blockers and success gates.
+- Memory-guided strategy variants turn actionable non-verification plans into isolated Freqtrade subclasses.
