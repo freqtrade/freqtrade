@@ -78,6 +78,21 @@ Invoke-Step -Title "Run autonomous strategy smoke" -Python $Python -Arguments @(
 $index = Get-Content -Raw -Encoding UTF8 -LiteralPath "user_data\strategy_research\reports\agent_report_index.json" | ConvertFrom-Json
 $autonomousReport = $index.latest_report.path
 
+Invoke-Step -Title "Generate failure-driven strategy iterations" -Python $Python -Arguments @(
+    "user_data\strategy_research\strategy_iteration_engine.py",
+    "--report",
+    $autonomousReport
+)
+Invoke-Step -Title "Run iterative strategy smoke" -Python $Python -Arguments @(
+    "user_data\strategy_research\run_research_agent.py",
+    "--experiment",
+    "user_data\strategy_research\experiments\iterative_strategy_experiment.json",
+    "--timerange",
+    "20260101-20260201"
+)
+$index = Get-Content -Raw -Encoding UTF8 -LiteralPath "user_data\strategy_research\reports\agent_report_index.json" | ConvertFrom-Json
+$iterativeReport = $index.latest_report.path
+
 Invoke-Step -Title "Run base-cost matrix" -Python $Python -Arguments @(
     "user_data\strategy_research\run_research_agent.py",
     "--experiment",
@@ -106,9 +121,11 @@ Invoke-Step -Title "Refresh dashboard" -Python $Python -Arguments @("user_data\s
 
 Write-Host "Research cycle complete."
 Write-Host "Autonomous:   $autonomousReport"
+Write-Host "Iterative:    $iterativeReport"
 Write-Host "Base report:   $baseReport"
 Write-Host "Stress report: $stressReport"
 Write-Host "Hypotheses:    user_data\strategy_research\experiments\autonomous_hypothesis_ledger.md"
+Write-Host "Iterations:    user_data\strategy_research\experiments\iterative_hypothesis_ledger.md"
 Write-Host "Summary:       user_data\strategy_research\matrix_summaries\latest_matrix_summary.md"
 Write-Host "Assessment:    user_data\strategy_research\strategy_assessments\latest_strategy_assessment.md"
 Write-Host "Dashboard:     user_data\strategy_research\dashboard\index.html"
