@@ -73,6 +73,12 @@ Promotion gate for manual dry-run review readiness:
 user_data/strategy_research/start_manual_research.sh --promotion-gate
 ```
 
+Build the next research agenda from promotion blockers:
+
+```bash
+user_data/strategy_research/start_manual_research.sh --agenda
+```
+
 Preflight only:
 
 ```bash
@@ -109,3 +115,4 @@ On Windows, use `README_WINDOWS.md` for the PowerShell cycle runner and Task Sch
 - Iterated strategies must record the failed parent strategy, previous metrics, and the reason for the change.
 - Walk-forward validation must reject strategies that only work in one favorable calendar window.
 - Promotion gate only records readiness for manual dry-run review; it never starts dry-run/live trading.
+- Research agenda turns promotion blockers into auditable next experiments and commands.

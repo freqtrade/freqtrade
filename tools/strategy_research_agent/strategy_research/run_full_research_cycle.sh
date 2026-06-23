@@ -23,7 +23,8 @@ Runs the research-only strategy cycle:
   10. Summarize matrix robustness.
   11. Build scorecards and failure diagnostics.
   12. Evaluate promotion readiness for manual dry-run review.
-  13. Refresh the dashboard/report without live trading.
+  13. Build the next research agenda from promotion blockers.
+  14. Refresh the dashboard/report without live trading.
 
 Safety:
   - Does not start live trading.
@@ -130,6 +131,7 @@ PY
 
 "$PYTHON" user_data/strategy_research/analyze_strategy_research.py
 "$PYTHON" user_data/strategy_research/promotion_gate.py
+"$PYTHON" user_data/strategy_research/research_agenda.py
 "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
 
 cat <<EOF
@@ -145,5 +147,6 @@ Walk-Fwd:      user_data/strategy_research/walk_forward_summaries/latest_walk_fo
 Summary:       user_data/strategy_research/matrix_summaries/latest_matrix_summary.md
 Assessment:    user_data/strategy_research/strategy_assessments/latest_strategy_assessment.md
 Promotion:     user_data/strategy_research/promotion_reports/latest_promotion_report.md
+Agenda:        user_data/strategy_research/research_agendas/latest_research_agenda.md
 Dashboard:     user_data/strategy_research/dashboard/index.html
 EOF

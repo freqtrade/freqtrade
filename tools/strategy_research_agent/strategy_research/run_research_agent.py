@@ -473,6 +473,18 @@ def load_latest_promotion_report() -> dict[str, Any] | None:
     return payload
 
 
+def load_latest_research_agenda() -> dict[str, Any] | None:
+    path = AGENT_ROOT / "research_agendas/latest_research_agenda.json"
+    if not path.exists():
+        return None
+    try:
+        payload = load_json(path)
+    except json.JSONDecodeError:
+        return None
+    payload["_path"] = str(path.relative_to(REPO_ROOT))
+    return payload
+
+
 def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
     dashboard_path = paths["dashboard_dir"] / "index.html"
     rows = []
@@ -686,6 +698,19 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
             f"<td>{html.escape('; '.join(item.get('next_actions', [])))}</td>"
             "</tr>"
         )
+    agenda_rows = []
+    research_agenda = payload.get("research_agenda") or {}
+    for item in research_agenda.get("top_priorities", []):
+        agenda_rows.append(
+            "<tr>"
+            f"<td>{item.get('priority')}</td>"
+            f"<td>{html.escape(item.get('strategy', ''))}</td>"
+            f"<td>{html.escape(item.get('blocker', ''))}</td>"
+            f"<td>{html.escape(item.get('objective', ''))}</td>"
+            f"<td><code>{html.escape(item.get('next_command', ''))}</code></td>"
+            f"<td>{html.escape(item.get('success_gate', ''))}</td>"
+            "</tr>"
+        )
     page = f"""<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -759,6 +784,13 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
       <table>
         <thead><tr><th>Strategy</th><th>Verdict</th><th>Ready</th><th>Blocks</th><th>Next Actions</th></tr></thead>
         <tbody>{''.join(promotion_rows)}</tbody>
+      </table>
+    </section>
+    <section>
+      <h2>研究议程</h2>
+      <table>
+        <thead><tr><th>Priority</th><th>Strategy</th><th>Blocker</th><th>Objective</th><th>Next Command</th><th>Success Gate</th></tr></thead>
+        <tbody>{''.join(agenda_rows)}</tbody>
       </table>
     </section>
     <section>
@@ -990,6 +1022,23 @@ def write_report(paths: dict[str, Path], payload: dict[str, Any]) -> tuple[Path,
             lines.append(
                 "| {strategy} | {verdict} | {ready_for_manual_dryrun_review} | {blocks} | {next_actions} |".format(
                     **row
+                )
+            )
+    research_agenda = payload.get("research_agenda") or {}
+    if research_agenda.get("top_priorities"):
+        lines.extend(
+            [
+                "",
+                "## Research Agenda",
+                "",
+                "| Priority | Strategy | Blocker | Objective | Next Command | Success Gate |",
+                "|---:|---|---|---|---|---|",
+            ]
+        )
+        for item in research_agenda["top_priorities"]:
+            lines.append(
+                "| {priority} | {strategy} | {blocker} | {objective} | `{next_command}` | {success_gate} |".format(
+                    **item
                 )
             )
     lines.extend(["", "## Source Reviews", "", "| Source | Status | Family | Indicators |", "|---|---|---|---|"])
@@ -1241,6 +1290,7 @@ def main() -> None:
         "strategy_assessment": load_latest_strategy_assessment(),
         "walk_forward_summary": load_latest_walk_forward_summary(),
         "promotion_report": load_latest_promotion_report(),
+        "research_agenda": load_latest_research_agenda(),
         "results": results,
     }
     json_path, md_path, dashboard_path = write_report(paths, payload)

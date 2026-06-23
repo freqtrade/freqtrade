@@ -7,7 +7,7 @@ PYTHON="${PYTHON:-./.venv/bin/python}"
 
 usage() {
   cat <<'EOF'
-Usage: user_data/strategy_research/start_manual_research.sh [--quick|--autonomous-smoke|--iterate-smoke|--walk-forward|--promotion-gate|--full|--full-with-aux|--preflight-only] [--extra-agent-arg ARG ...]
+Usage: user_data/strategy_research/start_manual_research.sh [--quick|--autonomous-smoke|--iterate-smoke|--walk-forward|--promotion-gate|--agenda|--full|--full-with-aux|--preflight-only] [--extra-agent-arg ARG ...]
 
 Manual entrypoint for the research-only strategy agent.
 
@@ -17,6 +17,7 @@ Modes:
   --iterate-smoke    Generate V2 hypotheses from the latest autonomous failures and smoke test them.
   --walk-forward     Run fixed-window validation for current iterative strategies.
   --promotion-gate   Evaluate promotion readiness and refresh report/dashboard.
+  --agenda           Build the next research agenda from promotion blockers.
   --full            Run preflight, update 1m OHLCV, run matrix backtests, skip aux fetch.
   --full-with-aux   Same as --full, but also fetch funding/mark aux data.
   --preflight-only  Only check environment, data, outputs, and safety flags.
@@ -54,6 +55,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --promotion-gate)
       mode="promotion_gate"
+      shift
+      ;;
+    --agenda)
+      mode="agenda"
       shift
       ;;
     --full-with-aux)
@@ -133,6 +138,12 @@ PY
   promotion_gate)
     echo "== Strategy Research Agent: promotion gate =="
     "$PYTHON" user_data/strategy_research/promotion_gate.py
+    "$PYTHON" user_data/strategy_research/research_agenda.py
+    "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
+    ;;
+  agenda)
+    echo "== Strategy Research Agent: research agenda =="
+    "$PYTHON" user_data/strategy_research/research_agenda.py
     "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
     ;;
   full)
@@ -154,5 +165,6 @@ Hypotheses: user_data/strategy_research/experiments/autonomous_hypothesis_ledger
 Iterations: user_data/strategy_research/experiments/iterative_hypothesis_ledger.md
 Walk-Fwd:   user_data/strategy_research/walk_forward_summaries/latest_walk_forward_summary.md
 Promotion:  user_data/strategy_research/promotion_reports/latest_promotion_report.md
+Agenda:     user_data/strategy_research/research_agendas/latest_research_agenda.md
 Reports:    user_data/strategy_research/reports/
 EOF
