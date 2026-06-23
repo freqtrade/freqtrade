@@ -49,6 +49,12 @@ Quick manual refresh without rerunning backtests:
 user_data/strategy_research/start_manual_research.sh --quick
 ```
 
+Autonomous hypothesis generation plus short smoke backtests:
+
+```bash
+user_data/strategy_research/start_manual_research.sh --autonomous-smoke
+```
+
 Preflight only:
 
 ```bash
@@ -81,3 +87,4 @@ On Windows, use `README_WINDOWS.md` for the PowerShell cycle runner and Task Sch
 - No live trading startup.
 - No live API key access.
 - No generated reports, market data, or local credentials should be committed.
+- Autonomous strategies are generated from auditable local blueprints, not opaque external code.

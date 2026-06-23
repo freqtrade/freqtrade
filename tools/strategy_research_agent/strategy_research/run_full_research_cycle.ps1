@@ -65,7 +65,18 @@ if (-not $SkipAuxFetch) {
 
 Invoke-Step -Title "Convert futures aux data" -Python $Python -Arguments @("user_data\strategy_research\convert_aux_to_freqtrade_futures.py")
 Invoke-Step -Title "Audit futures cost data" -Python $Python -Arguments @("user_data\strategy_research\audit_futures_cost_data.py")
+Invoke-Step -Title "Generate autonomous strategy hypotheses" -Python $Python -Arguments @("user_data\strategy_research\autonomous_strategy_lab.py")
 Invoke-Step -Title "Build experiment matrix" -Python $Python -Arguments @("user_data\strategy_research\build_experiment_matrix.py")
+
+Invoke-Step -Title "Run autonomous strategy smoke" -Python $Python -Arguments @(
+    "user_data\strategy_research\run_research_agent.py",
+    "--experiment",
+    "user_data\strategy_research\experiments\autonomous_strategy_experiment.json",
+    "--timerange",
+    "20260101-20260201"
+)
+$index = Get-Content -Raw -Encoding UTF8 -LiteralPath "user_data\strategy_research\reports\agent_report_index.json" | ConvertFrom-Json
+$autonomousReport = $index.latest_report.path
 
 Invoke-Step -Title "Run base-cost matrix" -Python $Python -Arguments @(
     "user_data\strategy_research\run_research_agent.py",
@@ -94,8 +105,10 @@ Invoke-Step -Title "Build scorecards" -Python $Python -Arguments @("user_data\st
 Invoke-Step -Title "Refresh dashboard" -Python $Python -Arguments @("user_data\strategy_research\run_research_agent.py", "--skip-backtests")
 
 Write-Host "Research cycle complete."
+Write-Host "Autonomous:   $autonomousReport"
 Write-Host "Base report:   $baseReport"
 Write-Host "Stress report: $stressReport"
+Write-Host "Hypotheses:    user_data\strategy_research\experiments\autonomous_hypothesis_ledger.md"
 Write-Host "Summary:       user_data\strategy_research\matrix_summaries\latest_matrix_summary.md"
 Write-Host "Assessment:    user_data\strategy_research\strategy_assessments\latest_strategy_assessment.md"
 Write-Host "Dashboard:     user_data\strategy_research\dashboard\index.html"

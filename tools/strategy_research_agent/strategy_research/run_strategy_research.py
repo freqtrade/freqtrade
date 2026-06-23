@@ -174,7 +174,8 @@ def run_backtest(
         stderr=subprocess.STDOUT,
         check=False,
     )
-    if completed.returncode != 0:
+    lowered = completed.stdout.lower()
+    if completed.returncode != 0 or "configuration error" in lowered or " - error -" in lowered:
         return BacktestMetrics(
             strategy=strategy,
             status="failed",

@@ -53,6 +53,14 @@ user_data/strategy_research/start_manual_research.sh --quick
 
 这会先运行预检，再刷新报告和 dashboard，但不会重新跑大回测。
 
+自主生成策略假设并跑短区间 smoke：
+
+```bash
+user_data/strategy_research/start_manual_research.sh --autonomous-smoke
+```
+
+它会调用 `autonomous_strategy_lab.py`，从本地可审计蓝图生成多家族策略候选、策略注册表、实验定义和假设台账，然后用 Freqtrade 官方回测系统跑短区间 smoke。
+
 只做启动前体检：
 
 ```bash
@@ -173,6 +181,25 @@ https://raw.githubusercontent.com/freqtrade/freqtrade/stable/freqtrade/templates
 ```
 
 该来源只被抓取为隔离快照、审查并转译为本地研究策略；没有安装依赖、没有 import 外部代码、没有运行外部源码。
+
+## 自主策略实验室
+
+生成本地自主策略假设：
+
+```bash
+./.venv/bin/python user_data/strategy_research/autonomous_strategy_lab.py
+```
+
+输出：
+
+```text
+user_data/strategies/research_generated/autonomous_research_strategies.py
+user_data/strategy_research/experiments/autonomous_strategy_registry.json
+user_data/strategy_research/experiments/autonomous_strategy_experiment.json
+user_data/strategy_research/experiments/autonomous_hypothesis_ledger.md
+```
+
+当前蓝图覆盖趋势回踩、震荡均值回归、波动压缩突破、失败反弹做空、微动量确认和防御型低杠杆基线。它的目标是让 Agent 主动提出可回测假设，而不是只复跑手工策略。
 
 ## 市场状态与成本矩阵
 
