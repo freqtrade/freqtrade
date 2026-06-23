@@ -535,6 +535,18 @@ def load_latest_failure_attribution() -> dict[str, Any] | None:
     return payload
 
 
+def load_latest_strategy_lineage() -> dict[str, Any] | None:
+    path = AGENT_ROOT / "strategy_library/latest_strategy_lineage.json"
+    if not path.exists():
+        return None
+    try:
+        payload = load_json(path)
+    except json.JSONDecodeError:
+        return None
+    payload["_path"] = str(path.relative_to(REPO_ROOT))
+    return payload
+
+
 def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
     dashboard_path = paths["dashboard_dir"] / "index.html"
     rows = []
@@ -819,6 +831,22 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
             f"<td>{html.escape(', '.join(top.get('linked_experiments', [])))}</td>"
             "</tr>"
         )
+    strategy_lineage_rows = []
+    strategy_lineage = payload.get("strategy_lineage") or {}
+    for item in strategy_lineage.get("nodes", []):
+        strategy_lineage_rows.append(
+            "<tr>"
+            f"<td>{html.escape(item.get('name', ''))}</td>"
+            f"<td>{html.escape(item.get('generation', ''))}</td>"
+            f"<td>{html.escape(item.get('root', ''))}</td>"
+            f"<td>{html.escape(item.get('parent') or '')}</td>"
+            f"<td>{len(item.get('children', []))}</td>"
+            f"<td>{html.escape(item.get('pool_status', ''))}</td>"
+            f"<td>{html.escape(item.get('recommended_state', ''))}</td>"
+            f"<td>{item.get('scorecard', {}).get('score') or ''}</td>"
+            f"<td>{html.escape(item.get('failure_attribution', {}).get('top_mode') or '')}</td>"
+            "</tr>"
+        )
     page = f"""<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -924,6 +952,13 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
       <table>
         <thead><tr><th>Strategy</th><th>Top Mode</th><th>Severity</th><th>Recommendation</th><th>Linked Experiments</th></tr></thead>
         <tbody>{''.join(failure_attribution_rows)}</tbody>
+      </table>
+    </section>
+    <section>
+      <h2>策略库与版本族谱</h2>
+      <table>
+        <thead><tr><th>Strategy</th><th>Generation</th><th>Root</th><th>Parent</th><th>Children</th><th>Pool</th><th>State</th><th>Score</th><th>Top Failure</th></tr></thead>
+        <tbody>{''.join(strategy_lineage_rows)}</tbody>
       </table>
     </section>
     <section>
@@ -1252,6 +1287,32 @@ def write_report(paths: dict[str, Path], payload: dict[str, Any]) -> tuple[Path,
                     linked=", ".join(top.get("linked_experiments", [])),
                 )
             )
+    strategy_lineage = payload.get("strategy_lineage") or {}
+    if strategy_lineage.get("nodes"):
+        lines.extend(
+            [
+                "",
+                "## Strategy Library Lineage",
+                "",
+                "| Strategy | Gen | Root | Parent | Children | Pool | State | Score | Top Failure |",
+                "|---|---|---|---|---:|---|---|---:|---|",
+            ]
+        )
+        for item in strategy_lineage["nodes"]:
+            score = item.get("scorecard", {}).get("score")
+            lines.append(
+                "| {name} | {generation} | {root} | {parent} | {children} | {pool} | {state} | {score} | {top_failure} |".format(
+                    name=item.get("name", ""),
+                    generation=item.get("generation", ""),
+                    root=item.get("root", ""),
+                    parent=item.get("parent") or "",
+                    children=len(item.get("children", [])),
+                    pool=item.get("pool_status", ""),
+                    state=item.get("recommended_state", ""),
+                    score="" if score is None else score,
+                    top_failure=item.get("failure_attribution", {}).get("top_mode") or "",
+                )
+            )
     lines.extend(["", "## Source Reviews", "", "| Source | Status | Family | Indicators |", "|---|---|---|---|"])
     for item in payload.get("source_reviews", []):
         lines.append(
@@ -1506,6 +1567,7 @@ def main() -> None:
         "trade_behavior": load_latest_trade_behavior(),
         "behavior_experiments": load_latest_behavior_experiment_plan(),
         "failure_attribution": load_latest_failure_attribution(),
+        "strategy_lineage": load_latest_strategy_lineage(),
         "results": results,
     }
     json_path, md_path, dashboard_path = write_report(paths, payload)
