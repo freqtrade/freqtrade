@@ -20,6 +20,7 @@ $ExcludedTopDirs = @(
     "promotion_blocks",
     "promotion_reports",
     "research_agendas",
+    "agenda_runs",
     "data_updates",
     "strategy_assessments"
 )
