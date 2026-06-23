@@ -16,10 +16,22 @@ $ExcludedTopDirs = @(
     "cost_audits",
     "matrix_summaries",
     "walk_forward_summaries",
+    "promotion_candidates",
+    "promotion_blocks",
+    "promotion_reports",
     "data_updates",
     "strategy_assessments"
 )
 $StateDirsWithJson = @("candidates", "rejected", "watchlist")
+$ExcludedRuntimeExperimentFiles = @(
+    "experiments/autonomous_hypothesis_ledger.md",
+    "experiments/autonomous_strategy_experiment.json",
+    "experiments/autonomous_strategy_registry.json",
+    "experiments/iterative_hypothesis_ledger.md",
+    "experiments/iterative_strategy_experiment.json",
+    "experiments/iterative_strategy_registry.json",
+    "experiments/walk_forward_validation_experiment.json"
+)
 $ExcludedSourceStateDirs = @("sources/inbox", "sources/reviews", "sources/translation_drafts")
 
 function Ensure-Directory {
@@ -54,6 +66,9 @@ function Copy-AgentTree {
             }
         }
         if ($parts.Count -gt 0 -and $StateDirsWithJson -contains $parts[0] -and $_.Extension -eq ".json") {
+            return
+        }
+        if ($ExcludedRuntimeExperimentFiles -contains $normalized) {
             return
         }
         if ($_.Extension -eq ".pyc") {

@@ -7,7 +7,7 @@ PYTHON="${PYTHON:-./.venv/bin/python}"
 
 usage() {
   cat <<'EOF'
-Usage: user_data/strategy_research/start_manual_research.sh [--quick|--autonomous-smoke|--iterate-smoke|--walk-forward|--full|--full-with-aux|--preflight-only] [--extra-agent-arg ARG ...]
+Usage: user_data/strategy_research/start_manual_research.sh [--quick|--autonomous-smoke|--iterate-smoke|--walk-forward|--promotion-gate|--full|--full-with-aux|--preflight-only] [--extra-agent-arg ARG ...]
 
 Manual entrypoint for the research-only strategy agent.
 
@@ -16,6 +16,7 @@ Modes:
   --autonomous-smoke Generate autonomous hypotheses and run a short smoke backtest.
   --iterate-smoke    Generate V2 hypotheses from the latest autonomous failures and smoke test them.
   --walk-forward     Run fixed-window validation for current iterative strategies.
+  --promotion-gate   Evaluate promotion readiness and refresh report/dashboard.
   --full            Run preflight, update 1m OHLCV, run matrix backtests, skip aux fetch.
   --full-with-aux   Same as --full, but also fetch funding/mark aux data.
   --preflight-only  Only check environment, data, outputs, and safety flags.
@@ -49,6 +50,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --walk-forward)
       mode="walk_forward"
+      shift
+      ;;
+    --promotion-gate)
+      mode="promotion_gate"
       shift
       ;;
     --full-with-aux)
@@ -125,6 +130,11 @@ PY
     "$PYTHON" user_data/strategy_research/walk_forward_validator.py summarize --report "$walk_forward_report"
     "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
     ;;
+  promotion_gate)
+    echo "== Strategy Research Agent: promotion gate =="
+    "$PYTHON" user_data/strategy_research/promotion_gate.py
+    "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
+    ;;
   full)
     echo "== Strategy Research Agent: full research cycle, aux fetch skipped =="
     user_data/strategy_research/run_full_research_cycle.sh --skip-aux-fetch
@@ -143,5 +153,6 @@ Matrix:     user_data/strategy_research/matrix_summaries/latest_matrix_summary.m
 Hypotheses: user_data/strategy_research/experiments/autonomous_hypothesis_ledger.md
 Iterations: user_data/strategy_research/experiments/iterative_hypothesis_ledger.md
 Walk-Fwd:   user_data/strategy_research/walk_forward_summaries/latest_walk_forward_summary.md
+Promotion:  user_data/strategy_research/promotion_reports/latest_promotion_report.md
 Reports:    user_data/strategy_research/reports/
 EOF

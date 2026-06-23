@@ -461,6 +461,18 @@ def load_latest_walk_forward_summary() -> dict[str, Any] | None:
     return payload
 
 
+def load_latest_promotion_report() -> dict[str, Any] | None:
+    path = AGENT_ROOT / "promotion_reports/latest_promotion_report.json"
+    if not path.exists():
+        return None
+    try:
+        payload = load_json(path)
+    except json.JSONDecodeError:
+        return None
+    payload["_path"] = str(path.relative_to(REPO_ROOT))
+    return payload
+
+
 def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
     dashboard_path = paths["dashboard_dir"] / "index.html"
     rows = []
@@ -662,6 +674,18 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
             f"<td>{html.escape(', '.join(item.get('reasons', [])))}</td>"
             "</tr>"
         )
+    promotion_rows = []
+    promotion_report = payload.get("promotion_report") or {}
+    for item in promotion_report.get("verdicts", []):
+        promotion_rows.append(
+            "<tr>"
+            f"<td>{html.escape(item.get('strategy', ''))}</td>"
+            f"<td>{html.escape(item.get('verdict', ''))}</td>"
+            f"<td>{item.get('ready_for_manual_dryrun_review')}</td>"
+            f"<td>{html.escape(', '.join(item.get('blocks', [])))}</td>"
+            f"<td>{html.escape('; '.join(item.get('next_actions', [])))}</td>"
+            "</tr>"
+        )
     page = f"""<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -728,6 +752,13 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
       <table>
         <thead><tr><th>Strategy</th><th>Verdict</th><th>Windows</th><th>Positive</th><th>Negative</th><th>Trades</th><th>Median %</th><th>Median PF</th><th>Worst DD %</th><th>Reasons</th></tr></thead>
         <tbody>{''.join(walk_forward_rows)}</tbody>
+      </table>
+    </section>
+    <section>
+      <h2>晋级闸门</h2>
+      <table>
+        <thead><tr><th>Strategy</th><th>Verdict</th><th>Ready</th><th>Blocks</th><th>Next Actions</th></tr></thead>
+        <tbody>{''.join(promotion_rows)}</tbody>
       </table>
     </section>
     <section>
@@ -939,6 +970,26 @@ def write_report(paths: dict[str, Path], payload: dict[str, Any]) -> tuple[Path,
             lines.append(
                 "| {strategy} | {verdict} | {windows} | {positive_windows} | {negative_windows} | {total_trades} | {median_return_pct}% | {median_profit_factor} | {worst_drawdown_pct}% | {reasons} |".format(
                     **row,
+                )
+            )
+    promotion_report = payload.get("promotion_report") or {}
+    if promotion_report.get("verdicts"):
+        lines.extend(
+            [
+                "",
+                "## Promotion Gate",
+                "",
+                "| Strategy | Verdict | Ready | Blocks | Next Actions |",
+                "|---|---|---:|---|---|",
+            ]
+        )
+        for item in promotion_report["verdicts"]:
+            row = dict(item)
+            row["blocks"] = ", ".join(item.get("blocks", []))
+            row["next_actions"] = "; ".join(item.get("next_actions", []))
+            lines.append(
+                "| {strategy} | {verdict} | {ready_for_manual_dryrun_review} | {blocks} | {next_actions} |".format(
+                    **row
                 )
             )
     lines.extend(["", "## Source Reviews", "", "| Source | Status | Family | Indicators |", "|---|---|---|---|"])
@@ -1189,6 +1240,7 @@ def main() -> None:
         "aux_conversion": load_latest_aux_conversion(),
         "strategy_assessment": load_latest_strategy_assessment(),
         "walk_forward_summary": load_latest_walk_forward_summary(),
+        "promotion_report": load_latest_promotion_report(),
         "results": results,
     }
     json_path, md_path, dashboard_path = write_report(paths, payload)
