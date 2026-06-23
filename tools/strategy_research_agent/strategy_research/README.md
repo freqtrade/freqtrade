@@ -297,6 +297,29 @@ user_data/strategy_research/promotion_blocks/
 
 通过闸门只代表“可进入人工 dry-run 复核”，不会自动改配置、不会读取私钥、不会启动实盘。
 
+## 研究议程
+
+基于晋级闸门的阻断原因，自动生成下一轮策略研究议程：
+
+```bash
+./.venv/bin/python user_data/strategy_research/research_agenda.py
+```
+
+或通过手动入口运行并刷新 dashboard：
+
+```bash
+user_data/strategy_research/start_manual_research.sh --agenda
+```
+
+输出：
+
+```text
+user_data/strategy_research/research_agendas/latest_research_agenda.json
+user_data/strategy_research/research_agendas/latest_research_agenda.md
+```
+
+议程会记录优先级、阻断原因、研究假设、下一步命令、成功闸门和风险备注。它只生成研究任务，不启动交易。
+
 ## 市场状态与成本矩阵
 
 从本地 BTC futures 1m OHLCV 自动生成市场状态切片和成本场景：
@@ -426,6 +449,7 @@ user_data/strategy_research/automation/com.wangsen.freqtrade.strategy-research.w
 - 矩阵韧性摘要：`matrix_summaries/`
 - 策略评分和失败归因：`strategy_assessments/`
 - 晋级闸门：`promotion_reports/`、`promotion_candidates/`、`promotion_blocks/`
+- 研究议程：`research_agendas/`
 - 合约成本数据审计：`cost_audits/`
 - 策略级成本校正：`cost_adjustments/`
 - 实验定义：`experiments/`
@@ -455,6 +479,7 @@ user_data/strategy_research/automation/com.wangsen.freqtrade.strategy-research.w
 - 主回测 BTC/ETH USDT-M `1m` K 线已接入增量补数；最新状态见 `data_updates/latest_ohlcv_1m_update.md`。
 - 已新增策略评分卡与失败归因报告；最新状态见 `strategy_assessments/latest_strategy_assessment.md`，并已接入 dashboard。
 - 已新增晋级闸门；最新状态见 `promotion_reports/latest_promotion_report.md`，并已接入 dashboard 与预检。
+- 已新增研究议程；最新状态见 `research_agendas/latest_research_agenda.md`，并已接入 dashboard 与预检。
 - 完整研究循环入口 `run_full_research_cycle.sh --help` 已通过。
 - launchd 自动触发任务 plist 已通过 `plutil -lint`，安装/卸载/状态脚本已通过 shell 语法检查；当前已安装每日和每周两条用户级定时任务。
 - 定时巡检入口 `run_daily_research.sh --help` 已通过。

@@ -18,6 +18,7 @@ rsync -a --delete \
   --exclude 'promotion_candidates/' \
   --exclude 'promotion_blocks/' \
   --exclude 'promotion_reports/' \
+  --exclude 'research_agendas/' \
   --exclude 'data_updates/' \
   --exclude 'strategy_assessments/' \
   --exclude 'candidates/*.json' \
