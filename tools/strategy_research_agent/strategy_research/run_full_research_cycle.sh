@@ -21,7 +21,7 @@ Runs the research-only strategy cycle:
   8. Run walk-forward validation across fixed calendar windows.
   9. Run base and stress matrices with Freqtrade backtesting.
   10. Summarize matrix robustness.
-  11. Build scorecards and failure diagnostics.
+  11. Build scorecards, failure diagnostics, and trade behavior diagnostics.
   12. Evaluate promotion readiness for manual dry-run review.
   13. Build the next research agenda from promotion blockers.
   14. Refresh the dashboard/report without live trading.
@@ -130,6 +130,7 @@ PY
   --report "$stress_report"
 
 "$PYTHON" user_data/strategy_research/analyze_strategy_research.py
+"$PYTHON" user_data/strategy_research/analyze_trade_behavior.py
 "$PYTHON" user_data/strategy_research/promotion_gate.py
 "$PYTHON" user_data/strategy_research/research_agenda.py
 "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
@@ -146,6 +147,7 @@ Iterations:    user_data/strategy_research/experiments/iterative_hypothesis_ledg
 Walk-Fwd:      user_data/strategy_research/walk_forward_summaries/latest_walk_forward_summary.md
 Summary:       user_data/strategy_research/matrix_summaries/latest_matrix_summary.md
 Assessment:    user_data/strategy_research/strategy_assessments/latest_strategy_assessment.md
+Behavior:      user_data/strategy_research/trade_behavior/latest_trade_behavior.md
 Promotion:     user_data/strategy_research/promotion_reports/latest_promotion_report.md
 Agenda:        user_data/strategy_research/research_agendas/latest_research_agenda.md
 Dashboard:     user_data/strategy_research/dashboard/index.html
