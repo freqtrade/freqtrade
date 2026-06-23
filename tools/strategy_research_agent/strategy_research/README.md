@@ -420,6 +420,29 @@ user_data/strategy_research/experiments/behavior_experiment_hypothesis_ledger.md
 
 这些变体继承现有候选策略，只覆盖受控的研究参数或过滤条件，例如更强入场确认、stoploss/ROI sweep、坏微观状态过滤、short-only regime 拆分、弱 pair 禁用。它们仍然是 research-only，不能直接晋级 dry-run 或实盘。
 
+## 失败归因
+
+合并评分卡、晋级阻断、交易行为和行为实验计划，生成策略级失败归因：
+
+```bash
+user_data/strategy_research/start_manual_research.sh --failure-attribution
+```
+
+直接调用脚本：
+
+```bash
+./.venv/bin/python user_data/strategy_research/attribute_strategy_failures.py
+```
+
+输出：
+
+```text
+user_data/strategy_research/failure_attribution/latest_failure_attribution.json
+user_data/strategy_research/failure_attribution/latest_failure_attribution.md
+```
+
+归因会给出每条策略的 top failure mode、严重度、证据、推荐动作和关联实验。它用于决定下一轮研究重点，而不是替代回测或晋级闸门。
+
 ## 市场状态与成本矩阵
 
 从本地 BTC futures 1m OHLCV 自动生成市场状态切片和成本场景：
@@ -554,6 +577,7 @@ user_data/strategy_research/automation/com.wangsen.freqtrade.strategy-research.w
 - 交易行为分析：`trade_behavior/`
 - 行为驱动实验计划：`behavior_experiments/`
 - 行为实验策略变体：`experiments/behavior_experiment_*`、`../strategies/research_generated/behavior_experiment_strategies.py`
+- 失败归因：`failure_attribution/`
 - 合约成本数据审计：`cost_audits/`
 - 策略级成本校正：`cost_adjustments/`
 - 实验定义：`experiments/`
@@ -588,6 +612,7 @@ user_data/strategy_research/automation/com.wangsen.freqtrade.strategy-research.w
 - 已新增交易行为分析；最新状态见 `trade_behavior/latest_trade_behavior.md`，并已接入 dashboard 与预检。
 - 已新增行为驱动实验计划；最新状态见 `behavior_experiments/latest_behavior_experiment_plan.md`，并已接入 dashboard 与预检。
 - 已新增行为实验策略变体生成；最新状态见 `experiments/behavior_experiment_hypothesis_ledger.md`。
+- 已新增失败归因；最新状态见 `failure_attribution/latest_failure_attribution.md`，并已接入 dashboard 与预检。
 - 完整研究循环入口 `run_full_research_cycle.sh --help` 已通过。
 - launchd 自动触发任务 plist 已通过 `plutil -lint`，安装/卸载/状态脚本已通过 shell 语法检查；当前已安装每日和每周两条用户级定时任务。
 - 定时巡检入口 `run_daily_research.sh --help` 已通过。

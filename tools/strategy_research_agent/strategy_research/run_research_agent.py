@@ -523,6 +523,18 @@ def load_latest_behavior_experiment_plan() -> dict[str, Any] | None:
     return payload
 
 
+def load_latest_failure_attribution() -> dict[str, Any] | None:
+    path = AGENT_ROOT / "failure_attribution/latest_failure_attribution.json"
+    if not path.exists():
+        return None
+    try:
+        payload = load_json(path)
+    except json.JSONDecodeError:
+        return None
+    payload["_path"] = str(path.relative_to(REPO_ROOT))
+    return payload
+
+
 def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
     dashboard_path = paths["dashboard_dir"] / "index.html"
     rows = []
@@ -794,6 +806,19 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
             f"<td>{html.escape(item.get('success_gate', ''))}</td>"
             "</tr>"
         )
+    failure_attribution_rows = []
+    failure_attribution = payload.get("failure_attribution") or {}
+    for item in failure_attribution.get("attributions", []):
+        top = item.get("failure_modes", [{}])[0] if item.get("failure_modes") else {}
+        failure_attribution_rows.append(
+            "<tr>"
+            f"<td>{html.escape(item.get('strategy', ''))}</td>"
+            f"<td>{html.escape(item.get('top_mode') or '')}</td>"
+            f"<td>{top.get('severity')}</td>"
+            f"<td>{html.escape(top.get('recommendation', ''))}</td>"
+            f"<td>{html.escape(', '.join(top.get('linked_experiments', [])))}</td>"
+            "</tr>"
+        )
     page = f"""<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -892,6 +917,13 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
       <table>
         <thead><tr><th>Priority</th><th>Strategy</th><th>Experiment</th><th>Hypothesis</th><th>Success Gate</th></tr></thead>
         <tbody>{''.join(behavior_experiment_rows)}</tbody>
+      </table>
+    </section>
+    <section>
+      <h2>失败归因</h2>
+      <table>
+        <thead><tr><th>Strategy</th><th>Top Mode</th><th>Severity</th><th>Recommendation</th><th>Linked Experiments</th></tr></thead>
+        <tbody>{''.join(failure_attribution_rows)}</tbody>
       </table>
     </section>
     <section>
@@ -1198,6 +1230,28 @@ def write_report(paths: dict[str, Path], payload: dict[str, Any]) -> tuple[Path,
                     **item
                 )
             )
+    failure_attribution = payload.get("failure_attribution") or {}
+    if failure_attribution.get("attributions"):
+        lines.extend(
+            [
+                "",
+                "## Failure Attribution",
+                "",
+                "| Strategy | Top Mode | Severity | Recommendation | Linked Experiments |",
+                "|---|---|---:|---|---|",
+            ]
+        )
+        for item in failure_attribution["attributions"]:
+            top = item.get("failure_modes", [{}])[0] if item.get("failure_modes") else {}
+            lines.append(
+                "| {strategy} | {top_mode} | {severity} | {recommendation} | {linked} |".format(
+                    strategy=item.get("strategy", ""),
+                    top_mode=item.get("top_mode") or "",
+                    severity=top.get("severity"),
+                    recommendation=top.get("recommendation", ""),
+                    linked=", ".join(top.get("linked_experiments", [])),
+                )
+            )
     lines.extend(["", "## Source Reviews", "", "| Source | Status | Family | Indicators |", "|---|---|---|---|"])
     for item in payload.get("source_reviews", []):
         lines.append(
@@ -1451,6 +1505,7 @@ def main() -> None:
         "agenda_run": load_latest_agenda_run(),
         "trade_behavior": load_latest_trade_behavior(),
         "behavior_experiments": load_latest_behavior_experiment_plan(),
+        "failure_attribution": load_latest_failure_attribution(),
         "results": results,
     }
     json_path, md_path, dashboard_path = write_report(paths, payload)

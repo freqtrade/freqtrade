@@ -103,6 +103,12 @@ Generate strategy variants from behavior experiment plans:
 user_data/strategy_research/start_manual_research.sh --behavior-variants
 ```
 
+Build cross-evidence failure attribution:
+
+```bash
+user_data/strategy_research/start_manual_research.sh --failure-attribution
+```
+
 Preflight only:
 
 ```bash
@@ -144,3 +150,4 @@ On Windows, use `README_WINDOWS.md` for the PowerShell cycle runner and Task Sch
 - Trade behavior analysis explains wins, losses, long/short skew, stop-loss exits, and entry excursion quality.
 - Behavior-driven experiment planning turns those diagnostics into concrete next variants to test.
 - Behavior variants turn experiment plans into isolated, auditable Freqtrade strategy subclasses.
+- Failure attribution combines scorecards, promotion blockers, trade behavior, and experiment plans into ranked root causes.

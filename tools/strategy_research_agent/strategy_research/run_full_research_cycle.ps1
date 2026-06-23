@@ -142,6 +142,7 @@ Invoke-Step -Title "Build scorecards" -Python $Python -Arguments @("user_data\st
 Invoke-Step -Title "Analyze trade behavior" -Python $Python -Arguments @("user_data\strategy_research\analyze_trade_behavior.py")
 Invoke-Step -Title "Plan behavior-driven experiments" -Python $Python -Arguments @("user_data\strategy_research\plan_behavior_experiments.py")
 Invoke-Step -Title "Generate behavior experiment strategies" -Python $Python -Arguments @("user_data\strategy_research\generate_behavior_experiment_strategies.py")
+Invoke-Step -Title "Attribute strategy failures" -Python $Python -Arguments @("user_data\strategy_research\attribute_strategy_failures.py")
 Invoke-Step -Title "Run promotion gate" -Python $Python -Arguments @("user_data\strategy_research\promotion_gate.py")
 Invoke-Step -Title "Build research agenda" -Python $Python -Arguments @("user_data\strategy_research\research_agenda.py")
 Invoke-Step -Title "Refresh dashboard" -Python $Python -Arguments @("user_data\strategy_research\run_research_agent.py", "--skip-backtests")
@@ -160,6 +161,7 @@ Write-Host "Assessment:    user_data\strategy_research\strategy_assessments\late
 Write-Host "Behavior:      user_data\strategy_research\trade_behavior\latest_trade_behavior.md"
 Write-Host "BehaviorEx:    user_data\strategy_research\behavior_experiments\latest_behavior_experiment_plan.md"
 Write-Host "BehaviorVar:   user_data\strategy_research\experiments\behavior_experiment_hypothesis_ledger.md"
+Write-Host "Failures:      user_data\strategy_research\failure_attribution\latest_failure_attribution.md"
 Write-Host "Promotion:     user_data\strategy_research\promotion_reports\latest_promotion_report.md"
 Write-Host "Agenda:        user_data\strategy_research\research_agendas\latest_research_agenda.md"
 Write-Host "Dashboard:     user_data\strategy_research\dashboard\index.html"
