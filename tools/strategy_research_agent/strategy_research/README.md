@@ -89,6 +89,14 @@ user_data/strategy_research/start_manual_research.sh --preflight-only
 user_data/strategy_research/start_manual_research.sh --full
 ```
 
+一键强研究员 smoke 循环：
+
+```bash
+user_data/strategy_research/start_manual_research.sh --strong-researcher-smoke
+```
+
+它会串联 source scout、strategy lineage、research memory、memory-guided hypothesis planning、memory-guided strategy generation、Freqtrade `list-strategies`、短区间 smoke backtesting、评分/失败归因刷新和 dashboard/report 刷新。这个模式仍然是 research-only，不读取私钥、不改 dry-run/live 配置、不启动交易。
+
 如果还要重新尝试拉取 funding/mark 辅助数据：
 
 ```bash
@@ -715,6 +723,7 @@ user_data/strategy_research/automation/com.wangsen.freqtrade.strategy-research.w
 - 生成策略隔离区：`../strategies/research_generated/`
 - 定时任务示例：`automation/`
 - 完整研究循环：`run_full_research_cycle.sh`
+- 强研究员 smoke 循环：`run_strong_researcher_smoke.sh`
 - 报告：`reports/`
 - 候选池：`candidates/`
 - 观察池：`watchlist/`
@@ -730,6 +739,7 @@ user_data/strategy_research/automation/com.wangsen.freqtrade.strategy-research.w
 - 生成变体短区间真实回测已通过。
 - 真实 GitHub 外部来源已完成隔离抓取、审查、转译、短区间 smoke 和全样本回测。
 - 已新增外部来源发现队列；最新状态见 `source_discovery/latest_source_discovery.md`，并已接入 dashboard 与预检。
+- 已新增强研究员 smoke 循环；入口为 `start_manual_research.sh --strong-researcher-smoke`。
 - `recursive-analysis` 和 `lookahead-analysis` 已在来源转译策略短区间 smoke 上通过命令级验证。
 - 候选策略已完成 bull/bear/range/high-vol × base/stress fee 矩阵回测；两条候选在矩阵摘要中均为 `fragile`。
 - 已下载 Binance BTC/ETH USDT 永续 funding rate 与 mark price 静态数据并生成成本审计。
