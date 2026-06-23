@@ -132,6 +132,7 @@ PY
 "$PYTHON" user_data/strategy_research/analyze_strategy_research.py
 "$PYTHON" user_data/strategy_research/analyze_trade_behavior.py
 "$PYTHON" user_data/strategy_research/plan_behavior_experiments.py
+"$PYTHON" user_data/strategy_research/generate_behavior_experiment_strategies.py
 "$PYTHON" user_data/strategy_research/promotion_gate.py
 "$PYTHON" user_data/strategy_research/research_agenda.py
 "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
@@ -150,6 +151,7 @@ Summary:       user_data/strategy_research/matrix_summaries/latest_matrix_summar
 Assessment:    user_data/strategy_research/strategy_assessments/latest_strategy_assessment.md
 Behavior:      user_data/strategy_research/trade_behavior/latest_trade_behavior.md
 BehaviorEx:    user_data/strategy_research/behavior_experiments/latest_behavior_experiment_plan.md
+BehaviorVar:   user_data/strategy_research/experiments/behavior_experiment_hypothesis_ledger.md
 Promotion:     user_data/strategy_research/promotion_reports/latest_promotion_report.md
 Agenda:        user_data/strategy_research/research_agendas/latest_research_agenda.md
 Dashboard:     user_data/strategy_research/dashboard/index.html
