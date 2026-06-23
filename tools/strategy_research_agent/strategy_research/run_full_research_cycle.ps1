@@ -65,6 +65,7 @@ if (-not $SkipAuxFetch) {
 
 Invoke-Step -Title "Convert futures aux data" -Python $Python -Arguments @("user_data\strategy_research\convert_aux_to_freqtrade_futures.py")
 Invoke-Step -Title "Audit futures cost data" -Python $Python -Arguments @("user_data\strategy_research\audit_futures_cost_data.py")
+Invoke-Step -Title "Scout external sources" -Python $Python -Arguments @("user_data\strategy_research\scout_external_sources.py")
 Invoke-Step -Title "Generate autonomous strategy hypotheses" -Python $Python -Arguments @("user_data\strategy_research\autonomous_strategy_lab.py")
 Invoke-Step -Title "Build experiment matrix" -Python $Python -Arguments @("user_data\strategy_research\build_experiment_matrix.py")
 
@@ -171,5 +172,6 @@ Write-Host "Lineage:       user_data\strategy_research\strategy_library\latest_s
 Write-Host "Memory:        user_data\strategy_research\research_memory\latest_research_memory.md"
 Write-Host "MemPlan:       user_data\strategy_research\experiments\memory_guided_hypothesis_ledger.md"
 Write-Host "MemStrat:      user_data\strategy_research\experiments\memory_guided_strategy_ledger.md"
+Write-Host "Sources:       user_data\strategy_research\source_discovery\latest_source_discovery.md"
 Write-Host "Agenda:        user_data\strategy_research\research_agendas\latest_research_agenda.md"
 Write-Host "Dashboard:     user_data\strategy_research\dashboard\index.html"

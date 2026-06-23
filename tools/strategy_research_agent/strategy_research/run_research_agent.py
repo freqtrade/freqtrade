@@ -585,6 +585,18 @@ def load_memory_guided_strategy_registry() -> dict[str, Any] | None:
     return payload
 
 
+def load_latest_source_discovery() -> dict[str, Any] | None:
+    path = AGENT_ROOT / "source_discovery/latest_source_discovery.json"
+    if not path.exists():
+        return None
+    try:
+        payload = load_json(path)
+    except json.JSONDecodeError:
+        return None
+    payload["_path"] = str(path.relative_to(REPO_ROOT))
+    return payload
+
+
 def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
     dashboard_path = paths["dashboard_dir"] / "index.html"
     rows = []
@@ -673,6 +685,19 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
             f"<td>{html.escape(item.get('inferred_strategy_family', ''))}</td>"
             f"<td>{html.escape(', '.join(item.get('detected_indicators', [])))}</td>"
             f"<td>{html.escape(source.get('title') or '')}</td>"
+            "</tr>"
+        )
+    source_discovery_rows = []
+    source_discovery = payload.get("source_discovery") or {}
+    for item in source_discovery.get("candidates", []):
+        source_discovery_rows.append(
+            "<tr>"
+            f"<td>{html.escape(item.get('id') or '')}</td>"
+            f"<td>{html.escape(item.get('kind') or '')}</td>"
+            f"<td>{html.escape(item.get('review_status') or '')}</td>"
+            f"<td>{item.get('has_snapshot')}</td>"
+            f"<td>{html.escape(item.get('recommended_action') or '')}</td>"
+            f"<td><code>{html.escape(item.get('next_command') or '')}</code></td>"
             "</tr>"
         )
     matrix_rows = []
@@ -1080,6 +1105,13 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
       </table>
     </section>
     <section>
+      <h2>外部来源发现</h2>
+      <table>
+        <thead><tr><th>Source</th><th>Kind</th><th>Review</th><th>Snapshot</th><th>Action</th><th>Next Command</th></tr></thead>
+        <tbody>{''.join(source_discovery_rows)}</tbody>
+      </table>
+    </section>
+    <section>
       <h2>市场状态与成本韧性</h2>
       <table>
         <thead><tr><th>Strategy</th><th>Verdict</th><th>Runs</th><th>Positive</th><th>Too Few</th><th>Stress Negative</th><th>Min Return %</th><th>Max Return %</th><th>Min PF</th></tr></thead>
@@ -1481,6 +1513,23 @@ def write_report(paths: dict[str, Path], payload: dict[str, Any]) -> tuple[Path,
                 indicators=", ".join(item.get("detected_indicators", [])),
             )
         )
+    source_discovery = payload.get("source_discovery") or {}
+    if source_discovery.get("candidates"):
+        lines.extend(
+            [
+                "",
+                "## External Source Discovery",
+                "",
+                "| Source | Kind | Review | Snapshot | Action | Next Command |",
+                "|---|---|---|---:|---|---|",
+            ]
+        )
+        for item in source_discovery["candidates"]:
+            lines.append(
+                "| {id} | {kind} | {review_status} | {has_snapshot} | {recommended_action} | `{next_command}` |".format(
+                    **item
+                )
+            )
     matrix_summary = payload.get("matrix_summary") or {}
     if matrix_summary.get("strategy_summary"):
         lines.extend(
@@ -1729,6 +1778,7 @@ def main() -> None:
         "research_memory": load_latest_research_memory(),
         "memory_guided_hypotheses": load_memory_guided_hypotheses(),
         "memory_guided_strategy_registry": load_memory_guided_strategy_registry(),
+        "source_discovery": load_latest_source_discovery(),
         "results": results,
     }
     json_path, md_path, dashboard_path = write_report(paths, payload)

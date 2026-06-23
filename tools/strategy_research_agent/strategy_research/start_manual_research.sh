@@ -7,12 +7,13 @@ PYTHON="${PYTHON:-./.venv/bin/python}"
 
 usage() {
   cat <<'EOF'
-Usage: user_data/strategy_research/start_manual_research.sh [--quick|--autonomous-smoke|--iterate-smoke|--walk-forward|--promotion-gate|--agenda|--next-agenda|--execute-next-agenda|--trade-behavior|--behavior-experiments|--behavior-variants|--failure-attribution|--strategy-lineage|--research-memory|--memory-guided-hypotheses|--memory-guided-strategies|--full|--full-with-aux|--preflight-only] [--extra-agent-arg ARG ...]
+Usage: user_data/strategy_research/start_manual_research.sh [--quick|--source-scout|--autonomous-smoke|--iterate-smoke|--walk-forward|--promotion-gate|--agenda|--next-agenda|--execute-next-agenda|--trade-behavior|--behavior-experiments|--behavior-variants|--failure-attribution|--strategy-lineage|--research-memory|--memory-guided-hypotheses|--memory-guided-strategies|--full|--full-with-aux|--preflight-only] [--extra-agent-arg ARG ...]
 
 Manual entrypoint for the research-only strategy agent.
 
 Modes:
   --quick            Run preflight, then refresh report/dashboard without backtests.
+  --source-scout     Build the external-source discovery and review queue.
   --autonomous-smoke Generate autonomous hypotheses and run a short smoke backtest.
   --iterate-smoke    Generate V2 hypotheses from the latest autonomous failures and smoke test them.
   --walk-forward     Run fixed-window validation for current iterative strategies.
@@ -53,6 +54,10 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --quick)
       mode="quick"
+      shift
+      ;;
+    --source-scout)
+      mode="source_scout"
       shift
       ;;
     --full)
@@ -158,6 +163,11 @@ case "$mode" in
   quick)
     echo "== Strategy Research Agent: quick refresh =="
     "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests ${extra_args[@]+"${extra_args[@]}"}
+    ;;
+  source_scout)
+    echo "== Strategy Research Agent: external source scout =="
+    "$PYTHON" user_data/strategy_research/scout_external_sources.py
+    "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
     ;;
   autonomous_smoke)
     echo "== Strategy Research Agent: autonomous strategy smoke =="
@@ -289,5 +299,6 @@ Lineage:    user_data/strategy_research/strategy_library/latest_strategy_lineage
 Memory:     user_data/strategy_research/research_memory/latest_research_memory.md
 MemPlan:    user_data/strategy_research/experiments/memory_guided_hypothesis_ledger.md
 MemStrat:   user_data/strategy_research/experiments/memory_guided_strategy_ledger.md
+Sources:    user_data/strategy_research/source_discovery/latest_source_discovery.md
 Reports:    user_data/strategy_research/reports/
 EOF

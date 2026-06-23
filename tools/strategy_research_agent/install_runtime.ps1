@@ -26,6 +26,7 @@ $ExcludedTopDirs = @(
     "failure_attribution",
     "strategy_library",
     "research_memory",
+    "source_discovery",
     "data_updates",
     "strategy_assessments"
 )

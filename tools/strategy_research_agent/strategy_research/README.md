@@ -148,6 +148,37 @@ user_data/strategy_research/run_full_research_cycle.sh --skip-aux-fetch
 
 ## 外部来源登记
 
+生成外部来源发现与审查队列：
+
+```bash
+user_data/strategy_research/start_manual_research.sh --source-scout
+```
+
+直接调用脚本：
+
+```bash
+./.venv/bin/python user_data/strategy_research/scout_external_sources.py
+```
+
+登记并抓取一个新 URL 的有界快照：
+
+```bash
+./.venv/bin/python user_data/strategy_research/scout_external_sources.py \
+  --url https://example.com/strategy-note \
+  --title "Example strategy note" \
+  --kind web_article \
+  --fetch
+```
+
+输出：
+
+```text
+user_data/strategy_research/source_discovery/latest_source_discovery.json
+user_data/strategy_research/source_discovery/latest_source_discovery.md
+```
+
+scout 只登记、抓取最多 1MB 的本地快照、生成审查队列和下一步命令；不会安装依赖、不会 import 或运行外部代码、不会启动交易。
+
 登记但不抓取正文：
 
 ```bash
@@ -660,6 +691,7 @@ user_data/strategy_research/automation/com.wangsen.freqtrade.strategy-research.w
 - 配置：`agent_config.json`
 - 策略登记：`strategy_registry.json`
 - 外部来源登记：`source_registry.json`
+- 外部来源发现：`source_discovery/`
 - 外部来源审查：`sources/reviews/`
 - 外部来源转译草案：`sources/translation_drafts/`
 - 市场状态切片：`market_regimes/`
@@ -697,6 +729,7 @@ user_data/strategy_research/automation/com.wangsen.freqtrade.strategy-research.w
 - 生成策略变体已通过 Freqtrade `list-strategies` 识别。
 - 生成变体短区间真实回测已通过。
 - 真实 GitHub 外部来源已完成隔离抓取、审查、转译、短区间 smoke 和全样本回测。
+- 已新增外部来源发现队列；最新状态见 `source_discovery/latest_source_discovery.md`，并已接入 dashboard 与预检。
 - `recursive-analysis` 和 `lookahead-analysis` 已在来源转译策略短区间 smoke 上通过命令级验证。
 - 候选策略已完成 bull/bear/range/high-vol × base/stress fee 矩阵回测；两条候选在矩阵摘要中均为 `fragile`。
 - 已下载 Binance BTC/ETH USDT 永续 funding rate 与 mark price 静态数据并生成成本审计。
