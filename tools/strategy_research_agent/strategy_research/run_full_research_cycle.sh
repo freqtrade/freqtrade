@@ -18,10 +18,11 @@ Runs the research-only strategy cycle:
   5. Generate autonomous strategy hypotheses and isolated code.
   6. Build BTC regime and base/stress cost experiments.
   7. Run autonomous smoke and failure-driven iteration smoke.
-  8. Run base and stress matrices with Freqtrade backtesting.
-  9. Summarize matrix robustness.
-  10. Build scorecards and failure diagnostics.
-  11. Refresh the dashboard/report without live trading.
+  8. Run walk-forward validation across fixed calendar windows.
+  9. Run base and stress matrices with Freqtrade backtesting.
+  10. Summarize matrix robustness.
+  11. Build scorecards and failure diagnostics.
+  12. Refresh the dashboard/report without live trading.
 
 Safety:
   - Does not start live trading.
@@ -86,6 +87,20 @@ print(index["latest_report"]["path"])
 PY
 )
 
+"$PYTHON" user_data/strategy_research/walk_forward_validator.py build --source iterative --limit 6
+"$PYTHON" user_data/strategy_research/run_research_agent.py \
+  --experiment user_data/strategy_research/experiments/walk_forward_validation_experiment.json
+walk_forward_report=$("$PYTHON" - <<'PY'
+import json
+from pathlib import Path
+
+index = json.loads(Path("user_data/strategy_research/reports/agent_report_index.json").read_text())
+print(index["latest_report"]["path"])
+PY
+)
+"$PYTHON" user_data/strategy_research/walk_forward_validator.py summarize \
+  --report "$walk_forward_report"
+
 "$PYTHON" user_data/strategy_research/run_research_agent.py \
   --experiment user_data/strategy_research/experiments/candidate_regime_matrix_base_cost.json
 base_report=$("$PYTHON" - <<'PY'
@@ -119,10 +134,12 @@ cat <<EOF
 Research cycle complete.
 Autonomous:   $autonomous_smoke_report
 Iterative:    $iterative_smoke_report
+Walk-forward: $walk_forward_report
 Base report:   $base_report
 Stress report: $stress_report
 Hypotheses:    user_data/strategy_research/experiments/autonomous_hypothesis_ledger.md
 Iterations:    user_data/strategy_research/experiments/iterative_hypothesis_ledger.md
+Walk-Fwd:      user_data/strategy_research/walk_forward_summaries/latest_walk_forward_summary.md
 Summary:       user_data/strategy_research/matrix_summaries/latest_matrix_summary.md
 Assessment:    user_data/strategy_research/strategy_assessments/latest_strategy_assessment.md
 Dashboard:     user_data/strategy_research/dashboard/index.html

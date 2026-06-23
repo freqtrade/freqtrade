@@ -15,6 +15,7 @@ $ExcludedTopDirs = @(
     "cost_adjustments",
     "cost_audits",
     "matrix_summaries",
+    "walk_forward_summaries",
     "data_updates",
     "strategy_assessments"
 )

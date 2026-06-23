@@ -156,6 +156,7 @@ def check_outputs(checks: list[Check]) -> None:
         "matrix_summary": AGENT_ROOT / "matrix_summaries/latest_matrix_summary.md",
         "autonomous_hypotheses": AGENT_ROOT / "experiments/autonomous_hypothesis_ledger.md",
         "iterative_hypotheses": AGENT_ROOT / "experiments/iterative_hypothesis_ledger.md",
+        "walk_forward_summary": AGENT_ROOT / "walk_forward_summaries/latest_walk_forward_summary.md",
     }
     for name, path in paths.items():
         if path.exists():

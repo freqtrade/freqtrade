@@ -69,6 +69,14 @@ user_data/strategy_research/start_manual_research.sh --iterate-smoke
 
 它会调用 `strategy_iteration_engine.py`，读取最新自主 smoke 报告，把“交易太少 / PF 低 / 负收益”等失败原因转成下一版策略假设，并写入迭代台账。
 
+对当前迭代策略跑固定窗口 walk-forward：
+
+```bash
+user_data/strategy_research/start_manual_research.sh --walk-forward
+```
+
+它会生成 2024H1、2024H2、2025H1、2025H2、2026H1 五个固定窗口实验，用同一组策略、同一手续费、同一 1m 数据跑回测，再输出稳定性汇总。
+
 只做启动前体检：
 
 ```bash
@@ -231,6 +239,38 @@ user_data/strategy_research/experiments/iterative_hypothesis_ledger.md
 - 交易太少：放宽入场容忍度，但保留市场状态过滤。
 - PF 低或负收益：降低杠杆、加强确认、加快退出。
 - 高频亏损：不加杠杆，先收紧触发条件。
+
+## Walk-Forward 稳健性验证
+
+构建固定窗口实验：
+
+```bash
+./.venv/bin/python user_data/strategy_research/walk_forward_validator.py build --source iterative --limit 6
+```
+
+运行实验：
+
+```bash
+./.venv/bin/python user_data/strategy_research/run_research_agent.py \
+  --experiment user_data/strategy_research/experiments/walk_forward_validation_experiment.json
+```
+
+汇总实验：
+
+```bash
+./.venv/bin/python user_data/strategy_research/walk_forward_validator.py summarize \
+  --report user_data/strategy_research/reports/<walk-forward-report>.json
+```
+
+输出：
+
+```text
+user_data/strategy_research/experiments/walk_forward_validation_experiment.json
+user_data/strategy_research/walk_forward_summaries/latest_walk_forward_summary.json
+user_data/strategy_research/walk_forward_summaries/latest_walk_forward_summary.md
+```
+
+候选至少需要跨多个固定时间窗表现稳定。单个窗口好看不能进入 dry-run 候选。
 
 ## 市场状态与成本矩阵
 
