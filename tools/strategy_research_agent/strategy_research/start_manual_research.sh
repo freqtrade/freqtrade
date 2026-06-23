@@ -7,7 +7,7 @@ PYTHON="${PYTHON:-./.venv/bin/python}"
 
 usage() {
   cat <<'EOF'
-Usage: user_data/strategy_research/start_manual_research.sh [--quick|--autonomous-smoke|--iterate-smoke|--full|--full-with-aux|--preflight-only] [--extra-agent-arg ARG ...]
+Usage: user_data/strategy_research/start_manual_research.sh [--quick|--autonomous-smoke|--iterate-smoke|--walk-forward|--full|--full-with-aux|--preflight-only] [--extra-agent-arg ARG ...]
 
 Manual entrypoint for the research-only strategy agent.
 
@@ -15,6 +15,7 @@ Modes:
   --quick            Run preflight, then refresh report/dashboard without backtests.
   --autonomous-smoke Generate autonomous hypotheses and run a short smoke backtest.
   --iterate-smoke    Generate V2 hypotheses from the latest autonomous failures and smoke test them.
+  --walk-forward     Run fixed-window validation for current iterative strategies.
   --full            Run preflight, update 1m OHLCV, run matrix backtests, skip aux fetch.
   --full-with-aux   Same as --full, but also fetch funding/mark aux data.
   --preflight-only  Only check environment, data, outputs, and safety flags.
@@ -44,6 +45,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --iterate-smoke)
       mode="iterate_smoke"
+      shift
+      ;;
+    --walk-forward)
+      mode="walk_forward"
       shift
       ;;
     --full-with-aux)
@@ -102,6 +107,24 @@ case "$mode" in
       --timerange 20260101-20260201 \
       ${extra_args[@]+"${extra_args[@]}"}
     ;;
+  walk_forward)
+    echo "== Strategy Research Agent: walk-forward validation =="
+    "$PYTHON" user_data/strategy_research/strategy_iteration_engine.py
+    "$PYTHON" user_data/strategy_research/walk_forward_validator.py build --source iterative --limit 6
+    "$PYTHON" user_data/strategy_research/run_research_agent.py \
+      --experiment user_data/strategy_research/experiments/walk_forward_validation_experiment.json \
+      ${extra_args[@]+"${extra_args[@]}"}
+    walk_forward_report=$("$PYTHON" - <<'PY'
+import json
+from pathlib import Path
+
+index = json.loads(Path("user_data/strategy_research/reports/agent_report_index.json").read_text())
+print(index["latest_report"]["path"])
+PY
+)
+    "$PYTHON" user_data/strategy_research/walk_forward_validator.py summarize --report "$walk_forward_report"
+    "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
+    ;;
   full)
     echo "== Strategy Research Agent: full research cycle, aux fetch skipped =="
     user_data/strategy_research/run_full_research_cycle.sh --skip-aux-fetch
@@ -119,5 +142,6 @@ Assessment: user_data/strategy_research/strategy_assessments/latest_strategy_ass
 Matrix:     user_data/strategy_research/matrix_summaries/latest_matrix_summary.md
 Hypotheses: user_data/strategy_research/experiments/autonomous_hypothesis_ledger.md
 Iterations: user_data/strategy_research/experiments/iterative_hypothesis_ledger.md
+Walk-Fwd:   user_data/strategy_research/walk_forward_summaries/latest_walk_forward_summary.md
 Reports:    user_data/strategy_research/reports/
 EOF

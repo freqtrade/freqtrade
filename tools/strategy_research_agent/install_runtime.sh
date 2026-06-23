@@ -14,6 +14,7 @@ rsync -a --delete \
   --exclude 'cost_adjustments/' \
   --exclude 'cost_audits/' \
   --exclude 'matrix_summaries/' \
+  --exclude 'walk_forward_summaries/' \
   --exclude 'data_updates/' \
   --exclude 'strategy_assessments/' \
   --exclude 'candidates/*.json' \

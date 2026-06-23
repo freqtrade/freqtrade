@@ -61,6 +61,12 @@ Failure-driven V2 generation plus short smoke backtests:
 user_data/strategy_research/start_manual_research.sh --iterate-smoke
 ```
 
+Walk-forward validation across fixed calendar windows:
+
+```bash
+user_data/strategy_research/start_manual_research.sh --walk-forward
+```
+
 Preflight only:
 
 ```bash
@@ -95,3 +101,4 @@ On Windows, use `README_WINDOWS.md` for the PowerShell cycle runner and Task Sch
 - No generated reports, market data, or local credentials should be committed.
 - Autonomous strategies are generated from auditable local blueprints, not opaque external code.
 - Iterated strategies must record the failed parent strategy, previous metrics, and the reason for the change.
+- Walk-forward validation must reject strategies that only work in one favorable calendar window.

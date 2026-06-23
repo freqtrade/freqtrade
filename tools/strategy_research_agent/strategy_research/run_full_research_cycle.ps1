@@ -93,6 +93,28 @@ Invoke-Step -Title "Run iterative strategy smoke" -Python $Python -Arguments @(
 $index = Get-Content -Raw -Encoding UTF8 -LiteralPath "user_data\strategy_research\reports\agent_report_index.json" | ConvertFrom-Json
 $iterativeReport = $index.latest_report.path
 
+Invoke-Step -Title "Build walk-forward validation experiment" -Python $Python -Arguments @(
+    "user_data\strategy_research\walk_forward_validator.py",
+    "build",
+    "--source",
+    "iterative",
+    "--limit",
+    "6"
+)
+Invoke-Step -Title "Run walk-forward validation" -Python $Python -Arguments @(
+    "user_data\strategy_research\run_research_agent.py",
+    "--experiment",
+    "user_data\strategy_research\experiments\walk_forward_validation_experiment.json"
+)
+$index = Get-Content -Raw -Encoding UTF8 -LiteralPath "user_data\strategy_research\reports\agent_report_index.json" | ConvertFrom-Json
+$walkForwardReport = $index.latest_report.path
+Invoke-Step -Title "Summarize walk-forward validation" -Python $Python -Arguments @(
+    "user_data\strategy_research\walk_forward_validator.py",
+    "summarize",
+    "--report",
+    $walkForwardReport
+)
+
 Invoke-Step -Title "Run base-cost matrix" -Python $Python -Arguments @(
     "user_data\strategy_research\run_research_agent.py",
     "--experiment",
@@ -122,10 +144,12 @@ Invoke-Step -Title "Refresh dashboard" -Python $Python -Arguments @("user_data\s
 Write-Host "Research cycle complete."
 Write-Host "Autonomous:   $autonomousReport"
 Write-Host "Iterative:    $iterativeReport"
+Write-Host "Walk-forward: $walkForwardReport"
 Write-Host "Base report:   $baseReport"
 Write-Host "Stress report: $stressReport"
 Write-Host "Hypotheses:    user_data\strategy_research\experiments\autonomous_hypothesis_ledger.md"
 Write-Host "Iterations:    user_data\strategy_research\experiments\iterative_hypothesis_ledger.md"
+Write-Host "Walk-Fwd:      user_data\strategy_research\walk_forward_summaries\latest_walk_forward_summary.md"
 Write-Host "Summary:       user_data\strategy_research\matrix_summaries\latest_matrix_summary.md"
 Write-Host "Assessment:    user_data\strategy_research\strategy_assessments\latest_strategy_assessment.md"
 Write-Host "Dashboard:     user_data\strategy_research\dashboard\index.html"

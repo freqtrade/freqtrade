@@ -37,7 +37,7 @@ $env:PYTHONPATH = "user_data\offline_exchange"
 .\user_data\strategy_research\run_full_research_cycle.ps1 -SkipAuxFetch
 ```
 
-This generates autonomous research hypotheses, runs a short smoke backtest for them, generates failure-driven V2 iterations, smoke-tests those iterations, then runs the existing base/stress matrix checks.
+This generates autonomous research hypotheses, runs a short smoke backtest for them, generates failure-driven V2 iterations, smoke-tests those iterations, runs fixed-window walk-forward validation, then runs the existing base/stress matrix checks.
 
 Refresh with Binance funding/mark auxiliary data:
 
