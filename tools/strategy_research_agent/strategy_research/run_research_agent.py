@@ -31,6 +31,7 @@ DEFAULT_REGISTRY = AGENT_ROOT / "strategy_registry.json"
 DEFAULT_EXPERIMENT = AGENT_ROOT / "experiments/btc_eth_futures_core_matrix.json"
 GENERATED_VARIANT_REGISTRY = AGENT_ROOT / "experiments/generated_variant_registry.json"
 SOURCE_TRANSLATED_REGISTRY = AGENT_ROOT / "experiments/source_translated_registry.json"
+AUTONOMOUS_STRATEGY_REGISTRY = AGENT_ROOT / "experiments/autonomous_strategy_registry.json"
 LOOKAHEAD_CONFIG_OVERRIDE = AGENT_ROOT / "config_lookahead_pricing_override.json"
 
 
@@ -206,7 +207,8 @@ def run_backtest_command(
         stderr=subprocess.STDOUT,
         check=False,
     )
-    if completed.returncode != 0:
+    lowered = completed.stdout.lower()
+    if completed.returncode != 0 or "configuration error" in lowered or " - error -" in lowered:
         return BacktestMetrics(
             strategy=strategy,
             status="failed",
@@ -278,7 +280,7 @@ def run_analysis_command(
 
 def strategy_metadata(registry: dict[str, Any]) -> dict[str, dict[str, Any]]:
     metadata = {item["name"]: item for item in registry.get("strategies", [])}
-    for path in [GENERATED_VARIANT_REGISTRY, SOURCE_TRANSLATED_REGISTRY]:
+    for path in [GENERATED_VARIANT_REGISTRY, SOURCE_TRANSLATED_REGISTRY, AUTONOMOUS_STRATEGY_REGISTRY]:
         if path.exists():
             generated = load_json(path)
             metadata.update({item["name"]: item for item in generated.get("strategies", [])})
