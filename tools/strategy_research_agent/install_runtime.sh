@@ -56,6 +56,7 @@ cp "$SOURCE_ROOT/download_binance_um_1m.py" "$ROOT/user_data/download_binance_um
 chmod +x \
   "$ROOT/user_data/strategy_research/run_daily_research.sh" \
   "$ROOT/user_data/strategy_research/run_full_research_cycle.sh" \
+  "$ROOT/user_data/strategy_research/run_strong_researcher_smoke.sh" \
   "$ROOT/user_data/strategy_research/automation/install_launchd.sh" \
   "$ROOT/user_data/strategy_research/automation/uninstall_launchd.sh" \
   "$ROOT/user_data/strategy_research/automation/status_launchd.sh"

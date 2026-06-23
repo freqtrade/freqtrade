@@ -55,6 +55,12 @@ External source discovery and review queue:
 user_data/strategy_research/start_manual_research.sh --source-scout
 ```
 
+Integrated strong researcher smoke loop:
+
+```bash
+user_data/strategy_research/start_manual_research.sh --strong-researcher-smoke
+```
+
 Autonomous hypothesis generation plus short smoke backtests:
 
 ```bash
@@ -178,6 +184,7 @@ On Windows, use `README_WINDOWS.md` for the PowerShell cycle runner and Task Sch
 - Research agenda turns promotion blockers into auditable next experiments and commands.
 - Agenda execution is allowlisted; the default `--next-agenda` mode writes a receipt without running a command.
 - External source scouting queues untrusted online/open-source material for bounded snapshot, review, and isolated translation.
+- Strong researcher smoke runs source scouting, lineage, memory, hypothesis planning, strategy generation, Freqtrade discovery, smoke backtesting, and report refresh in one research-only loop.
 - Trade behavior analysis explains wins, losses, long/short skew, stop-loss exits, and entry excursion quality.
 - Behavior-driven experiment planning turns those diagnostics into concrete next variants to test.
 - Behavior variants turn experiment plans into isolated, auditable Freqtrade strategy subclasses.
