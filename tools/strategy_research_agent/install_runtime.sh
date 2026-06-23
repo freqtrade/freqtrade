@@ -21,6 +21,7 @@ rsync -a --delete \
   --exclude 'research_agendas/' \
   --exclude 'agenda_runs/' \
   --exclude 'trade_behavior/' \
+  --exclude 'behavior_experiments/' \
   --exclude 'data_updates/' \
   --exclude 'strategy_assessments/' \
   --exclude 'candidates/*.json' \

@@ -509,6 +509,18 @@ def load_latest_trade_behavior() -> dict[str, Any] | None:
     return payload
 
 
+def load_latest_behavior_experiment_plan() -> dict[str, Any] | None:
+    path = AGENT_ROOT / "behavior_experiments/latest_behavior_experiment_plan.json"
+    if not path.exists():
+        return None
+    try:
+        payload = load_json(path)
+    except json.JSONDecodeError:
+        return None
+    payload["_path"] = str(path.relative_to(REPO_ROOT))
+    return payload
+
+
 def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
     dashboard_path = paths["dashboard_dir"] / "index.html"
     rows = []
@@ -768,6 +780,18 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
             f"<td>{html.escape('; '.join(item.get('diagnostics', [])))}</td>"
             "</tr>"
         )
+    behavior_experiment_rows = []
+    behavior_experiments = payload.get("behavior_experiments") or {}
+    for item in behavior_experiments.get("plans", []):
+        behavior_experiment_rows.append(
+            "<tr>"
+            f"<td>{item.get('priority')}</td>"
+            f"<td>{html.escape(item.get('strategy', ''))}</td>"
+            f"<td>{html.escape(item.get('experiment_id', ''))}</td>"
+            f"<td>{html.escape(item.get('hypothesis', ''))}</td>"
+            f"<td>{html.escape(item.get('success_gate', ''))}</td>"
+            "</tr>"
+        )
     page = f"""<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -859,6 +883,13 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
       <table>
         <thead><tr><th>Strategy</th><th>Trades</th><th>Win %</th><th>Profit Abs</th><th>PF</th><th>Payoff</th><th>Avg Dur</th><th>Long/Short</th><th>Stop Losses</th><th>MFE %</th><th>MAE %</th><th>Diagnostics</th></tr></thead>
         <tbody>{''.join(trade_behavior_rows)}</tbody>
+      </table>
+    </section>
+    <section>
+      <h2>行为驱动实验计划</h2>
+      <table>
+        <thead><tr><th>Priority</th><th>Strategy</th><th>Experiment</th><th>Hypothesis</th><th>Success Gate</th></tr></thead>
+        <tbody>{''.join(behavior_experiment_rows)}</tbody>
       </table>
     </section>
     <section>
@@ -1148,6 +1179,23 @@ def write_report(paths: dict[str, Path], payload: dict[str, Any]) -> tuple[Path,
                     **row
                 )
             )
+    behavior_experiments = payload.get("behavior_experiments") or {}
+    if behavior_experiments.get("plans"):
+        lines.extend(
+            [
+                "",
+                "## Behavior-Driven Experiment Plan",
+                "",
+                "| Priority | Strategy | Experiment | Hypothesis | Success Gate |",
+                "|---:|---|---|---|---|",
+            ]
+        )
+        for item in behavior_experiments["plans"]:
+            lines.append(
+                "| {priority} | {strategy} | {experiment_id} | {hypothesis} | {success_gate} |".format(
+                    **item
+                )
+            )
     lines.extend(["", "## Source Reviews", "", "| Source | Status | Family | Indicators |", "|---|---|---|---|"])
     for item in payload.get("source_reviews", []):
         lines.append(
@@ -1400,6 +1448,7 @@ def main() -> None:
         "research_agenda": load_latest_research_agenda(),
         "agenda_run": load_latest_agenda_run(),
         "trade_behavior": load_latest_trade_behavior(),
+        "behavior_experiments": load_latest_behavior_experiment_plan(),
         "results": results,
     }
     json_path, md_path, dashboard_path = write_report(paths, payload)
