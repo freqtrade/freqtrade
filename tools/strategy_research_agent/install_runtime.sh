@@ -24,6 +24,7 @@ rsync -a --delete \
   --exclude 'behavior_experiments/' \
   --exclude 'failure_attribution/' \
   --exclude 'strategy_library/' \
+  --exclude 'research_memory/' \
   --exclude 'data_updates/' \
   --exclude 'strategy_assessments/' \
   --exclude 'candidates/*.json' \

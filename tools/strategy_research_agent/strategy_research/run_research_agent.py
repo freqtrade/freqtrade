@@ -547,6 +547,18 @@ def load_latest_strategy_lineage() -> dict[str, Any] | None:
     return payload
 
 
+def load_latest_research_memory() -> dict[str, Any] | None:
+    path = AGENT_ROOT / "research_memory/latest_research_memory.json"
+    if not path.exists():
+        return None
+    try:
+        payload = load_json(path)
+    except json.JSONDecodeError:
+        return None
+    payload["_path"] = str(path.relative_to(REPO_ROOT))
+    return payload
+
+
 def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
     dashboard_path = paths["dashboard_dir"] / "index.html"
     rows = []
@@ -847,6 +859,18 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
             f"<td>{html.escape(item.get('failure_attribution', {}).get('top_mode') or '')}</td>"
             "</tr>"
         )
+    research_memory_rows = []
+    research_memory = payload.get("research_memory") or {}
+    for item in research_memory.get("next_focus", []):
+        research_memory_rows.append(
+            "<tr>"
+            f"<td>{html.escape(item.get('strategy') or '')}</td>"
+            f"<td>{html.escape(item.get('blocker') or '')}</td>"
+            f"<td>{html.escape(item.get('objective') or '')}</td>"
+            f"<td>{html.escape(item.get('success_gate') or '')}</td>"
+            f"<td>{html.escape(item.get('source') or '')}</td>"
+            "</tr>"
+        )
     page = f"""<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -959,6 +983,13 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
       <table>
         <thead><tr><th>Strategy</th><th>Generation</th><th>Root</th><th>Parent</th><th>Children</th><th>Pool</th><th>State</th><th>Score</th><th>Top Failure</th></tr></thead>
         <tbody>{''.join(strategy_lineage_rows)}</tbody>
+      </table>
+    </section>
+    <section>
+      <h2>研究记忆</h2>
+      <table>
+        <thead><tr><th>Strategy</th><th>Blocker</th><th>Objective</th><th>Success Gate</th><th>Source</th></tr></thead>
+        <tbody>{''.join(research_memory_rows)}</tbody>
       </table>
     </section>
     <section>
@@ -1313,6 +1344,27 @@ def write_report(paths: dict[str, Path], payload: dict[str, Any]) -> tuple[Path,
                     top_failure=item.get("failure_attribution", {}).get("top_mode") or "",
                 )
             )
+    research_memory = payload.get("research_memory") or {}
+    if research_memory.get("next_focus"):
+        lines.extend(
+            [
+                "",
+                "## Research Memory",
+                "",
+                "| Strategy | Blocker | Objective | Success Gate | Source |",
+                "|---|---|---|---|---|",
+            ]
+        )
+        for item in research_memory["next_focus"]:
+            lines.append(
+                "| {strategy} | {blocker} | {objective} | {success_gate} | {source} |".format(
+                    strategy=item.get("strategy") or "",
+                    blocker=item.get("blocker") or "",
+                    objective=item.get("objective") or "",
+                    success_gate=item.get("success_gate") or "",
+                    source=item.get("source") or "",
+                )
+            )
     lines.extend(["", "## Source Reviews", "", "| Source | Status | Family | Indicators |", "|---|---|---|---|"])
     for item in payload.get("source_reviews", []):
         lines.append(
@@ -1568,6 +1620,7 @@ def main() -> None:
         "behavior_experiments": load_latest_behavior_experiment_plan(),
         "failure_attribution": load_latest_failure_attribution(),
         "strategy_lineage": load_latest_strategy_lineage(),
+        "research_memory": load_latest_research_memory(),
         "results": results,
     }
     json_path, md_path, dashboard_path = write_report(paths, payload)

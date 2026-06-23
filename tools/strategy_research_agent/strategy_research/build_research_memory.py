@@ -1,0 +1,282 @@
+#!/usr/bin/env python3
+"""Build durable research memory from latest strategy evidence."""
+
+from __future__ import annotations
+
+import json
+from collections import Counter, defaultdict
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+AGENT_ROOT = REPO_ROOT / "user_data/strategy_research"
+OUTPUT_DIR = AGENT_ROOT / "research_memory"
+LATEST_JSON = OUTPUT_DIR / "latest_research_memory.json"
+LATEST_MD = OUTPUT_DIR / "latest_research_memory.md"
+
+
+def load_json(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {}
+    with path.open("r", encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def rel(path: Path) -> str:
+    try:
+        return str(path.relative_to(REPO_ROOT))
+    except ValueError:
+        return str(path)
+
+
+def grouped_nodes(nodes: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for item in nodes:
+        grouped[item.get("root") or item.get("name") or "unknown"].append(item)
+    return grouped
+
+
+def first_action(item: dict[str, Any]) -> str:
+    actions = item.get("promotion", {}).get("next_actions", [])
+    if actions:
+        return actions[0]
+    return item.get("failure_attribution", {}).get("recommendation") or ""
+
+
+def build_active_roots(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    roots = []
+    for root, items in grouped_nodes(nodes).items():
+        candidates = [item for item in items if item.get("pool_status") == "candidate"]
+        watchlist = [item for item in items if item.get("pool_status") == "watchlist"]
+        top_failures = Counter(
+            item.get("failure_attribution", {}).get("top_mode")
+            for item in items
+            if item.get("failure_attribution", {}).get("top_mode")
+        )
+        if not candidates and not watchlist:
+            continue
+        roots.append(
+            {
+                "root": root,
+                "candidate_count": len(candidates),
+                "watchlist_count": len(watchlist),
+                "child_count": max(0, len(items) - 1),
+                "top_failures": [{"mode": key, "count": count} for key, count in top_failures.most_common(3)],
+                "recommended_state": candidates[0].get("recommended_state") if candidates else watchlist[0].get("recommended_state"),
+                "next_action": first_action(candidates[0] if candidates else watchlist[0]),
+            }
+        )
+    return sorted(roots, key=lambda item: (-item["candidate_count"], -item["watchlist_count"], item["root"]))
+
+
+def build_avoid_patterns(nodes: list[dict[str, Any]], failure_summary: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    patterns = []
+    failure_counts = Counter({item.get("mode"): item.get("count") for item in failure_summary if item.get("mode")})
+    archived = [item for item in nodes if item.get("recommended_state") == "archive_or_redesign"]
+    mode_counts = Counter(
+        item.get("failure_attribution", {}).get("top_mode")
+        for item in archived
+        if item.get("failure_attribution", {}).get("top_mode")
+    )
+    combined = failure_counts + mode_counts
+    for mode, count in combined.most_common():
+        if not mode:
+            continue
+        patterns.append(
+            {
+                "pattern": mode,
+                "evidence_count": count or failure_counts.get(mode),
+                "memory_rule": memory_rule_for_mode(mode),
+            }
+        )
+    return patterns
+
+
+def memory_rule_for_mode(mode: str) -> str:
+    rules = {
+        "insufficient_sample": "Do not accept stricter entries until the strategy still produces enough trades for evaluation.",
+        "bias_unverified": "Run recursive/lookahead checks before treating any promising result as reusable evidence.",
+        "regime_fragility": "Require explicit bull/bear/range/high-vol split evidence before promoting a single-rule variant.",
+        "loss_exit_quality": "Improve invalidation and cooldown before adding leverage or widening take profit.",
+        "benchmark_underperformance": "Require benchmark-relative edge, not only positive absolute return.",
+        "cost_sensitivity": "Reject variants whose edge disappears after fee, slippage, and funding adjustments.",
+        "directional_concentration": "Label short-only or long-only behavior explicitly and test hostile regimes.",
+        "pair_drag": "Test pair-disabled and pair-only variants before keeping the weak lane.",
+    }
+    return rules.get(mode, "Keep this failure mode visible in the next experiment design.")
+
+
+def build_next_focus(agenda: dict[str, Any], nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    focus = []
+    for item in agenda.get("top_priorities", [])[:8]:
+        focus.append(
+            {
+                "strategy": item.get("strategy"),
+                "blocker": item.get("blocker"),
+                "objective": item.get("objective"),
+                "success_gate": item.get("success_gate"),
+                "next_command": item.get("next_command"),
+                "source": "research_agenda",
+            }
+        )
+    if focus:
+        return focus
+    for item in nodes:
+        if item.get("recommended_state") in {"research_candidate", "watchlist", "redesign"}:
+            focus.append(
+                {
+                    "strategy": item.get("name"),
+                    "blocker": item.get("failure_attribution", {}).get("top_mode"),
+                    "objective": first_action(item),
+                    "success_gate": item.get("success_gate") or "Improve evidence without violating safety gates.",
+                    "next_command": "user_data/strategy_research/start_manual_research.sh --behavior-experiments",
+                    "source": "strategy_lineage",
+                }
+            )
+    return focus[:8]
+
+
+def build_knowledge_gaps(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    gaps = Counter()
+    for item in nodes:
+        blocks = item.get("promotion", {}).get("blocks", [])
+        for block in blocks:
+            gaps[block] += 1
+        failures = item.get("scorecard", {}).get("primary_failures", [])
+        for failure in failures:
+            gaps[failure] += 1
+    return [
+        {"gap": gap, "count": count, "close_by": close_gap_instruction(gap)}
+        for gap, count in gaps.most_common(10)
+    ]
+
+
+def close_gap_instruction(gap: str) -> str:
+    if gap in {"bias_checks_missing", "lookahead_or_recursive_unverified"}:
+        return "Run recursive-analysis and lookahead-analysis on candidates before promotion review."
+    if gap in {"too_few_trades", "too_few_matrix_trades"}:
+        return "Redesign entries to preserve enough valid trades across fixed windows."
+    if gap in {"matrix_not_robust", "fragile_matrix", "matrix_not_tested"}:
+        return "Run market-regime and cost matrix; split logic by regime if needed."
+    if gap in {"negative_after_cost", "stress_cost_failure", "cost_evidence_missing", "cost_not_estimated"}:
+        return "Export trades and re-estimate fee, slippage, and funding impact."
+    if gap == "weak_profit_factor":
+        return "Improve entry quality or exit asymmetry before adding more variants."
+    if gap in {"negative_or_missing_return", "scorecard_not_promotable"}:
+        return "Rebuild the hypothesis around positive expectancy, then rerun scorecards."
+    if gap == "underperforms_market":
+        return "Add benchmark-relative acceptance gates to the experiment."
+    return "Create a focused experiment that directly tests this gap."
+
+
+def build_payload() -> dict[str, Any]:
+    lineage = load_json(AGENT_ROOT / "strategy_library/latest_strategy_lineage.json")
+    failure = load_json(AGENT_ROOT / "failure_attribution/latest_failure_attribution.json")
+    agenda = load_json(AGENT_ROOT / "research_agendas/latest_research_agenda.json")
+    assessment = load_json(AGENT_ROOT / "strategy_assessments/latest_strategy_assessment.json")
+    nodes = lineage.get("nodes", [])
+    failure_summary = failure.get("failure_mode_summary", [])
+    payload = {
+        "generated_at_utc": datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ"),
+        "memory_version": 1,
+        "strategy_count": len(nodes),
+        "active_roots": build_active_roots(nodes),
+        "avoid_patterns": build_avoid_patterns(nodes, failure_summary),
+        "next_focus": build_next_focus(agenda, nodes),
+        "knowledge_gaps": build_knowledge_gaps(nodes),
+        "durable_rules": [
+            "Never promote a strategy from a single favorable slice.",
+            "Treat leverage as a risk multiplier, not a fix for weak entry timing.",
+            "Prefer variants that improve trade quality and sample size together.",
+            "Keep external strategies quarantined until translated into local auditable code.",
+            "Do not repeat archived variants unless the new experiment changes the diagnosed failure mode.",
+        ],
+        "source_artifacts": {
+            "strategy_lineage": rel(AGENT_ROOT / "strategy_library/latest_strategy_lineage.json") if lineage else None,
+            "failure_attribution": rel(AGENT_ROOT / "failure_attribution/latest_failure_attribution.json") if failure else None,
+            "research_agenda": rel(AGENT_ROOT / "research_agendas/latest_research_agenda.json") if agenda else None,
+            "strategy_assessment": rel(AGENT_ROOT / "strategy_assessments/latest_strategy_assessment.json") if assessment else None,
+        },
+    }
+    return payload
+
+
+def write_markdown(path: Path, payload: dict[str, Any]) -> None:
+    lines = [
+        "# Strategy Research Memory",
+        "",
+        f"- Generated UTC: `{payload['generated_at_utc']}`",
+        f"- Strategies observed: `{payload['strategy_count']}`",
+        "",
+        "## Active Roots",
+        "",
+        "| Root | Candidates | Watchlist | Children | Top Failures | Next Action |",
+        "|---|---:|---:|---:|---|---|",
+    ]
+    for item in payload["active_roots"]:
+        failures = ", ".join(f"{row['mode']}({row['count']})" for row in item.get("top_failures", []))
+        lines.append(
+            "| {root} | {candidate_count} | {watchlist_count} | {child_count} | {failures} | {next_action} |".format(
+                failures=failures,
+                **item,
+            )
+        )
+    lines.extend(["", "## Avoid Patterns", "", "| Pattern | Evidence Count | Memory Rule |", "|---|---:|---|"])
+    for item in payload["avoid_patterns"]:
+        lines.append("| {pattern} | {evidence_count} | {memory_rule} |".format(**item))
+    lines.extend(["", "## Next Focus", "", "| Strategy | Blocker | Objective | Success Gate | Source |", "|---|---|---|---|---|"])
+    for item in payload["next_focus"]:
+        lines.append(
+            "| {strategy} | {blocker} | {objective} | {success_gate} | {source} |".format(
+                strategy=item.get("strategy") or "",
+                blocker=item.get("blocker") or "",
+                objective=item.get("objective") or "",
+                success_gate=item.get("success_gate") or "",
+                source=item.get("source") or "",
+            )
+        )
+    lines.extend(["", "## Knowledge Gaps", "", "| Gap | Count | Close By |", "|---|---:|---|"])
+    for item in payload["knowledge_gaps"]:
+        lines.append("| {gap} | {count} | {close_by} |".format(**item))
+    lines.extend(["", "## Durable Rules", ""])
+    for rule in payload["durable_rules"]:
+        lines.append(f"- {rule}")
+    lines.extend(
+        [
+            "",
+            "## Policy",
+            "",
+            "- Research memory is advisory; it does not start dry-run or live trading.",
+            "- Memory must be rebuilt from current local evidence instead of hand-edited after every run.",
+            "- Promotion remains controlled by the promotion gate and manual review.",
+        ]
+    )
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def write_outputs(payload: dict[str, Any]) -> tuple[Path, Path]:
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    timestamp = payload["generated_at_utc"]
+    json_path = OUTPUT_DIR / f"research_memory_{timestamp}.json"
+    md_path = OUTPUT_DIR / f"research_memory_{timestamp}.md"
+    json_text = json.dumps(payload, indent=2, ensure_ascii=False)
+    json_path.write_text(json_text, encoding="utf-8")
+    LATEST_JSON.write_text(json_text, encoding="utf-8")
+    write_markdown(md_path, payload)
+    LATEST_MD.write_text(md_path.read_text(encoding="utf-8"), encoding="utf-8")
+    return json_path, md_path
+
+
+def main() -> None:
+    payload = build_payload()
+    json_path, md_path = write_outputs(payload)
+    print(f"Wrote {rel(json_path)}")
+    print(f"Wrote {rel(md_path)}")
+    print(f"Wrote {rel(LATEST_JSON)}")
+    print(f"Wrote {rel(LATEST_MD)}")
+
+
+if __name__ == "__main__":
+    main()

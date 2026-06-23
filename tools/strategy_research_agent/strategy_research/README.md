@@ -466,6 +466,29 @@ user_data/strategy_research/strategy_library/latest_strategy_lineage.md
 
 族谱会记录每条策略的 generation、parent、root、children、pool status、推荐研究状态、核心回测指标、评分、晋级阻断、交易行为摘要和 top failure mode。它用于让 Agent 知道“这个策略从哪里来、为什么被保留或淘汰、下一步应该继续改哪一支”，不会授予任何 dry-run 或实盘权限。
 
+## 研究记忆
+
+从最新族谱、失败归因、评分卡和研究议程生成下一轮策略设计记忆：
+
+```bash
+user_data/strategy_research/start_manual_research.sh --research-memory
+```
+
+直接调用脚本：
+
+```bash
+./.venv/bin/python user_data/strategy_research/build_research_memory.py
+```
+
+输出：
+
+```text
+user_data/strategy_research/research_memory/latest_research_memory.json
+user_data/strategy_research/research_memory/latest_research_memory.md
+```
+
+研究记忆包含 active roots、avoid patterns、next focus、knowledge gaps 和 durable rules。它的用途是给下一轮自动策略发明提供上下文：哪些 root 还值得继续，哪些失败模式不要重复，哪些证据缺口必须先补齐。它不会替代回测、不会改配置、不会启动交易。
+
 ## 市场状态与成本矩阵
 
 从本地 BTC futures 1m OHLCV 自动生成市场状态切片和成本场景：
@@ -602,6 +625,7 @@ user_data/strategy_research/automation/com.wangsen.freqtrade.strategy-research.w
 - 行为实验策略变体：`experiments/behavior_experiment_*`、`../strategies/research_generated/behavior_experiment_strategies.py`
 - 失败归因：`failure_attribution/`
 - 策略库与版本族谱：`strategy_library/`
+- 研究记忆：`research_memory/`
 - 合约成本数据审计：`cost_audits/`
 - 策略级成本校正：`cost_adjustments/`
 - 实验定义：`experiments/`
@@ -638,6 +662,7 @@ user_data/strategy_research/automation/com.wangsen.freqtrade.strategy-research.w
 - 已新增行为实验策略变体生成；最新状态见 `experiments/behavior_experiment_hypothesis_ledger.md`。
 - 已新增失败归因；最新状态见 `failure_attribution/latest_failure_attribution.md`，并已接入 dashboard 与预检。
 - 已新增策略库与版本族谱；最新状态见 `strategy_library/latest_strategy_lineage.md`，并已接入 dashboard 与预检。
+- 已新增研究记忆；最新状态见 `research_memory/latest_research_memory.md`，并已接入 dashboard 与预检。
 - 完整研究循环入口 `run_full_research_cycle.sh --help` 已通过。
 - launchd 自动触发任务 plist 已通过 `plutil -lint`，安装/卸载/状态脚本已通过 shell 语法检查；当前已安装每日和每周两条用户级定时任务。
 - 定时巡检入口 `run_daily_research.sh --help` 已通过。
