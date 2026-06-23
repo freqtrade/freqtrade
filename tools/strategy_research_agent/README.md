@@ -55,6 +55,12 @@ Autonomous hypothesis generation plus short smoke backtests:
 user_data/strategy_research/start_manual_research.sh --autonomous-smoke
 ```
 
+Failure-driven V2 generation plus short smoke backtests:
+
+```bash
+user_data/strategy_research/start_manual_research.sh --iterate-smoke
+```
+
 Preflight only:
 
 ```bash
@@ -88,3 +94,4 @@ On Windows, use `README_WINDOWS.md` for the PowerShell cycle runner and Task Sch
 - No live API key access.
 - No generated reports, market data, or local credentials should be committed.
 - Autonomous strategies are generated from auditable local blueprints, not opaque external code.
+- Iterated strategies must record the failed parent strategy, previous metrics, and the reason for the change.

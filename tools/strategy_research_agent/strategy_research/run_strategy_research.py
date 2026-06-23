@@ -106,6 +106,13 @@ def parse_metrics(strategy: str, output: str, command: list[str]) -> BacktestMet
     trades, daily_trades = parse_trade_count(table_value(output, "Total/Daily Avg Trades"))
     long_trades, short_trades = parse_long_short(table_value(output, "Long / Short trades"))
     long_profit_pct, short_profit_pct = parse_long_short_profit(table_value(output, "Long / Short profit %"))
+    if trades is None and "No trades made." in output:
+        trades = 0
+        daily_trades = 0.0
+        long_trades = 0
+        short_trades = 0
+        long_profit_pct = 0.0
+        short_profit_pct = 0.0
     return BacktestMetrics(
         strategy=strategy,
         status="ok",
@@ -113,10 +120,10 @@ def parse_metrics(strategy: str, output: str, command: list[str]) -> BacktestMet
         backtesting_to=table_value(output, "Backtesting to"),
         trades=trades,
         daily_trades=daily_trades,
-        total_profit_pct=pct_value(table_value(output, "Total profit %") or ""),
-        profit_factor=pct_value(table_value(output, "Profit factor") or ""),
+        total_profit_pct=0.0 if trades == 0 else pct_value(table_value(output, "Total profit %") or ""),
+        profit_factor=0.0 if trades == 0 else pct_value(table_value(output, "Profit factor") or ""),
         market_change_pct=pct_value(table_value(output, "Market change") or ""),
-        max_drawdown_pct=pct_value(table_value(output, "Max % of account underwater") or ""),
+        max_drawdown_pct=0.0 if trades == 0 else pct_value(table_value(output, "Max % of account underwater") or ""),
         long_trades=long_trades,
         short_trades=short_trades,
         long_profit_pct=long_profit_pct,

@@ -61,6 +61,14 @@ user_data/strategy_research/start_manual_research.sh --autonomous-smoke
 
 它会调用 `autonomous_strategy_lab.py`，从本地可审计蓝图生成多家族策略候选、策略注册表、实验定义和假设台账，然后用 Freqtrade 官方回测系统跑短区间 smoke。
 
+根据上一轮自主策略失败结果生成 V2 并跑短区间 smoke：
+
+```bash
+user_data/strategy_research/start_manual_research.sh --iterate-smoke
+```
+
+它会调用 `strategy_iteration_engine.py`，读取最新自主 smoke 报告，把“交易太少 / PF 低 / 负收益”等失败原因转成下一版策略假设，并写入迭代台账。
+
 只做启动前体检：
 
 ```bash
@@ -200,6 +208,29 @@ user_data/strategy_research/experiments/autonomous_hypothesis_ledger.md
 ```
 
 当前蓝图覆盖趋势回踩、震荡均值回归、波动压缩突破、失败反弹做空、微动量确认和防御型低杠杆基线。它的目标是让 Agent 主动提出可回测假设，而不是只复跑手工策略。
+
+## 失败驱动迭代
+
+从最新自主 smoke 结果生成第二代策略：
+
+```bash
+./.venv/bin/python user_data/strategy_research/strategy_iteration_engine.py
+```
+
+输出：
+
+```text
+user_data/strategies/research_generated/iterative_research_strategies.py
+user_data/strategy_research/experiments/iterative_strategy_registry.json
+user_data/strategy_research/experiments/iterative_strategy_experiment.json
+user_data/strategy_research/experiments/iterative_hypothesis_ledger.md
+```
+
+迭代规则：
+
+- 交易太少：放宽入场容忍度，但保留市场状态过滤。
+- PF 低或负收益：降低杠杆、加强确认、加快退出。
+- 高频亏损：不加杠杆，先收紧触发条件。
 
 ## 市场状态与成本矩阵
 
