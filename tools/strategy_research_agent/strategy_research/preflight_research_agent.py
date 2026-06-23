@@ -163,6 +163,7 @@ def check_outputs(checks: list[Check]) -> None:
         "trade_behavior": AGENT_ROOT / "trade_behavior/latest_trade_behavior.md",
         "behavior_experiments": AGENT_ROOT / "behavior_experiments/latest_behavior_experiment_plan.md",
         "behavior_variant_ledger": AGENT_ROOT / "experiments/behavior_experiment_hypothesis_ledger.md",
+        "failure_attribution": AGENT_ROOT / "failure_attribution/latest_failure_attribution.md",
     }
     for name, path in paths.items():
         if path.exists():
