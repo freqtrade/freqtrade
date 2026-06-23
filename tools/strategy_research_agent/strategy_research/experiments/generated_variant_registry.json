@@ -1,0 +1,61 @@
+{
+  "generated_at_utc": "20260623T024630Z",
+  "source_candidate_dir": "user_data/strategy_research/candidates",
+  "generated_strategy_file": "user_data/strategies/research_generated/generated_leverage_variants.py",
+  "strategies": [
+    {
+      "name": "GeneratedBtcEthFuturesEthSelfPullbackShortOnlyStrategyL3p0x",
+      "base_strategy": "BtcEthFuturesEthSelfPullbackShortOnlyStrategy",
+      "family": "generated-eth-only-short-pullback",
+      "source": "generated_from_research_candidate",
+      "hypothesis": "Test whether BtcEthFuturesEthSelfPullbackShortOnlyStrategy remains robust with a 3x leverage cap.",
+      "risk_notes": "Generated in isolated research directory. Requires full backtesting, recursive-analysis, lookahead-analysis, and manual review before dry-run.",
+      "leverage_cap": 3.0
+    },
+    {
+      "name": "GeneratedBtcEthFuturesEthSelfPullbackShortOnlyStrategyL5p0x",
+      "base_strategy": "BtcEthFuturesEthSelfPullbackShortOnlyStrategy",
+      "family": "generated-eth-only-short-pullback",
+      "source": "generated_from_research_candidate",
+      "hypothesis": "Test whether BtcEthFuturesEthSelfPullbackShortOnlyStrategy remains robust with a 5x leverage cap.",
+      "risk_notes": "Generated in isolated research directory. Requires full backtesting, recursive-analysis, lookahead-analysis, and manual review before dry-run.",
+      "leverage_cap": 5.0
+    },
+    {
+      "name": "GeneratedBtcEthFuturesEthSelfPullbackShortOnlyStrategyL10p0x",
+      "base_strategy": "BtcEthFuturesEthSelfPullbackShortOnlyStrategy",
+      "family": "generated-eth-only-short-pullback",
+      "source": "generated_from_research_candidate",
+      "hypothesis": "Test whether BtcEthFuturesEthSelfPullbackShortOnlyStrategy remains robust with a 10x leverage cap.",
+      "risk_notes": "Generated in isolated research directory. Requires full backtesting, recursive-analysis, lookahead-analysis, and manual review before dry-run.",
+      "leverage_cap": 10.0
+    },
+    {
+      "name": "GeneratedBtcEthFuturesRegime10xPullbackShortOnlyStrategyL3p0x",
+      "base_strategy": "BtcEthFuturesRegime10xPullbackShortOnlyStrategy",
+      "family": "generated-slow-regime-10x-short-pullback",
+      "source": "generated_from_research_candidate",
+      "hypothesis": "Test whether BtcEthFuturesRegime10xPullbackShortOnlyStrategy remains robust with a 3x leverage cap.",
+      "risk_notes": "Generated in isolated research directory. Requires full backtesting, recursive-analysis, lookahead-analysis, and manual review before dry-run.",
+      "leverage_cap": 3.0
+    },
+    {
+      "name": "GeneratedBtcEthFuturesRegime10xPullbackShortOnlyStrategyL5p0x",
+      "base_strategy": "BtcEthFuturesRegime10xPullbackShortOnlyStrategy",
+      "family": "generated-slow-regime-10x-short-pullback",
+      "source": "generated_from_research_candidate",
+      "hypothesis": "Test whether BtcEthFuturesRegime10xPullbackShortOnlyStrategy remains robust with a 5x leverage cap.",
+      "risk_notes": "Generated in isolated research directory. Requires full backtesting, recursive-analysis, lookahead-analysis, and manual review before dry-run.",
+      "leverage_cap": 5.0
+    },
+    {
+      "name": "GeneratedBtcEthFuturesRegime10xPullbackShortOnlyStrategyL10p0x",
+      "base_strategy": "BtcEthFuturesRegime10xPullbackShortOnlyStrategy",
+      "family": "generated-slow-regime-10x-short-pullback",
+      "source": "generated_from_research_candidate",
+      "hypothesis": "Test whether BtcEthFuturesRegime10xPullbackShortOnlyStrategy remains robust with a 10x leverage cap.",
+      "risk_notes": "Generated in isolated research directory. Requires full backtesting, recursive-analysis, lookahead-analysis, and manual review before dry-run.",
+      "leverage_cap": 10.0
+    }
+  ]
+}

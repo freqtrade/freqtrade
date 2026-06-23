@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.wangsen.freqtrade.strategy-research.daily</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/wangsen/Documents/我的Projects/freqtrade/user_data/strategy_research/run_full_research_cycle.sh</string>
+    <string>--skip-aux-fetch</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/wangsen/Documents/我的Projects/freqtrade</string>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>8</integer>
+    <key>Minute</key>
+    <integer>30</integer>
+  </dict>
+  <key>StandardOutPath</key>
+  <string>/Users/wangsen/Documents/我的Projects/freqtrade/user_data/strategy_research/reports/automation/daily.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/wangsen/Documents/我的Projects/freqtrade/user_data/strategy_research/reports/automation/daily.err.log</string>
+</dict>
+</plist>
