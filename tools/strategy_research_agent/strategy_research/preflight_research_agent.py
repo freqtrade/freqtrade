@@ -164,6 +164,7 @@ def check_outputs(checks: list[Check]) -> None:
         "behavior_experiments": AGENT_ROOT / "behavior_experiments/latest_behavior_experiment_plan.md",
         "behavior_variant_ledger": AGENT_ROOT / "experiments/behavior_experiment_hypothesis_ledger.md",
         "failure_attribution": AGENT_ROOT / "failure_attribution/latest_failure_attribution.md",
+        "strategy_lineage": AGENT_ROOT / "strategy_library/latest_strategy_lineage.md",
     }
     for name, path in paths.items():
         if path.exists():

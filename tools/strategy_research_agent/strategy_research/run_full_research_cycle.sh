@@ -135,6 +135,7 @@ PY
 "$PYTHON" user_data/strategy_research/generate_behavior_experiment_strategies.py
 "$PYTHON" user_data/strategy_research/attribute_strategy_failures.py
 "$PYTHON" user_data/strategy_research/promotion_gate.py
+"$PYTHON" user_data/strategy_research/build_strategy_lineage.py
 "$PYTHON" user_data/strategy_research/research_agenda.py
 "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
 
@@ -155,6 +156,7 @@ BehaviorEx:    user_data/strategy_research/behavior_experiments/latest_behavior_
 BehaviorVar:   user_data/strategy_research/experiments/behavior_experiment_hypothesis_ledger.md
 Failures:      user_data/strategy_research/failure_attribution/latest_failure_attribution.md
 Promotion:     user_data/strategy_research/promotion_reports/latest_promotion_report.md
+Lineage:       user_data/strategy_research/strategy_library/latest_strategy_lineage.md
 Agenda:        user_data/strategy_research/research_agendas/latest_research_agenda.md
 Dashboard:     user_data/strategy_research/dashboard/index.html
 EOF

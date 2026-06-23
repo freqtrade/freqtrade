@@ -109,6 +109,12 @@ Build cross-evidence failure attribution:
 user_data/strategy_research/start_manual_research.sh --failure-attribution
 ```
 
+Build strategy library lineage from registries and research evidence:
+
+```bash
+user_data/strategy_research/start_manual_research.sh --strategy-lineage
+```
+
 Preflight only:
 
 ```bash
@@ -151,3 +157,4 @@ On Windows, use `README_WINDOWS.md` for the PowerShell cycle runner and Task Sch
 - Behavior-driven experiment planning turns those diagnostics into concrete next variants to test.
 - Behavior variants turn experiment plans into isolated, auditable Freqtrade strategy subclasses.
 - Failure attribution combines scorecards, promotion blockers, trade behavior, and experiment plans into ranked root causes.
+- Strategy lineage links base strategies, generated variants, behavior experiments, candidate pools, promotion blockers, and failure modes into a reusable research library.
