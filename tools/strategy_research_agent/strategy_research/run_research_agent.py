@@ -33,6 +33,7 @@ GENERATED_VARIANT_REGISTRY = AGENT_ROOT / "experiments/generated_variant_registr
 SOURCE_TRANSLATED_REGISTRY = AGENT_ROOT / "experiments/source_translated_registry.json"
 AUTONOMOUS_STRATEGY_REGISTRY = AGENT_ROOT / "experiments/autonomous_strategy_registry.json"
 ITERATIVE_STRATEGY_REGISTRY = AGENT_ROOT / "experiments/iterative_strategy_registry.json"
+BEHAVIOR_EXPERIMENT_REGISTRY = AGENT_ROOT / "experiments/behavior_experiment_strategy_registry.json"
 LOOKAHEAD_CONFIG_OVERRIDE = AGENT_ROOT / "config_lookahead_pricing_override.json"
 
 
@@ -286,6 +287,7 @@ def strategy_metadata(registry: dict[str, Any]) -> dict[str, dict[str, Any]]:
         SOURCE_TRANSLATED_REGISTRY,
         AUTONOMOUS_STRATEGY_REGISTRY,
         ITERATIVE_STRATEGY_REGISTRY,
+        BEHAVIOR_EXPERIMENT_REGISTRY,
     ]:
         if path.exists():
             generated = load_json(path)

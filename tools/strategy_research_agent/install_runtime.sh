@@ -29,6 +29,7 @@ rsync -a --delete \
   --exclude 'watchlist/*.json' \
   --exclude 'experiments/autonomous_*' \
   --exclude 'experiments/iterative_*' \
+  --exclude 'experiments/behavior_experiment_*' \
   --exclude 'experiments/walk_forward_validation_experiment.json' \
   --exclude 'sources/inbox/' \
   --exclude 'sources/reviews/' \
@@ -38,6 +39,9 @@ rsync -a --delete \
 
 rsync -a --delete \
   --exclude '__pycache__' \
+  --exclude 'autonomous_research_strategies.py' \
+  --exclude 'iterative_research_strategies.py' \
+  --exclude 'behavior_experiment_strategies.py' \
   "$SOURCE_ROOT/strategies/research_generated/" \
   "$ROOT/user_data/strategies/research_generated/"
 

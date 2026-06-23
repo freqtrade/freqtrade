@@ -34,6 +34,9 @@ $ExcludedRuntimeExperimentFiles = @(
     "experiments/iterative_hypothesis_ledger.md",
     "experiments/iterative_strategy_experiment.json",
     "experiments/iterative_strategy_registry.json",
+    "experiments/behavior_experiment_hypothesis_ledger.md",
+    "experiments/behavior_experiment_strategy_experiment.json",
+    "experiments/behavior_experiment_strategy_registry.json",
     "experiments/walk_forward_validation_experiment.json"
 )
 $ExcludedSourceStateDirs = @("sources/inbox", "sources/reviews", "sources/translation_drafts")
