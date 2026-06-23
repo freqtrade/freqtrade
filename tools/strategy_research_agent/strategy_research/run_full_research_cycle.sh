@@ -60,6 +60,7 @@ fi
 
 "$PYTHON" user_data/strategy_research/convert_aux_to_freqtrade_futures.py
 "$PYTHON" user_data/strategy_research/audit_futures_cost_data.py
+"$PYTHON" user_data/strategy_research/scout_external_sources.py
 "$PYTHON" user_data/strategy_research/autonomous_strategy_lab.py
 "$PYTHON" user_data/strategy_research/build_experiment_matrix.py
 
@@ -163,6 +164,7 @@ Lineage:       user_data/strategy_research/strategy_library/latest_strategy_line
 Memory:        user_data/strategy_research/research_memory/latest_research_memory.md
 MemPlan:       user_data/strategy_research/experiments/memory_guided_hypothesis_ledger.md
 MemStrat:      user_data/strategy_research/experiments/memory_guided_strategy_ledger.md
+Sources:       user_data/strategy_research/source_discovery/latest_source_discovery.md
 Agenda:        user_data/strategy_research/research_agendas/latest_research_agenda.md
 Dashboard:     user_data/strategy_research/dashboard/index.html
 EOF
