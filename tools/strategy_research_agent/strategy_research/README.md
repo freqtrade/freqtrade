@@ -372,6 +372,29 @@ user_data/strategy_research/trade_behavior/latest_trade_behavior.md
 
 当前分析项包括：胜率、平均盈亏、payoff、profit factor、多空比例、多空盈亏、持仓时长、止损退出、最大连续亏损、MFE/MAE、pair/exit/tag 拆分和诊断备注。
 
+## 行为驱动实验计划
+
+基于交易行为分析，自动规划下一批实验：
+
+```bash
+user_data/strategy_research/start_manual_research.sh --behavior-experiments
+```
+
+直接调用脚本：
+
+```bash
+./.venv/bin/python user_data/strategy_research/plan_behavior_experiments.py
+```
+
+输出：
+
+```text
+user_data/strategy_research/behavior_experiments/latest_behavior_experiment_plan.json
+user_data/strategy_research/behavior_experiments/latest_behavior_experiment_plan.md
+```
+
+计划会把止损亏损、连续亏损、short-only 偏置、弱 pair、MFE/MAE 等问题转成实验假设、change set、预期效果、成功闸门和风险备注。
+
 ## 市场状态与成本矩阵
 
 从本地 BTC futures 1m OHLCV 自动生成市场状态切片和成本场景：
@@ -504,6 +527,7 @@ user_data/strategy_research/automation/com.wangsen.freqtrade.strategy-research.w
 - 研究议程：`research_agendas/`
 - 议程执行回执：`agenda_runs/`
 - 交易行为分析：`trade_behavior/`
+- 行为驱动实验计划：`behavior_experiments/`
 - 合约成本数据审计：`cost_audits/`
 - 策略级成本校正：`cost_adjustments/`
 - 实验定义：`experiments/`
@@ -536,6 +560,7 @@ user_data/strategy_research/automation/com.wangsen.freqtrade.strategy-research.w
 - 已新增研究议程；最新状态见 `research_agendas/latest_research_agenda.md`，并已接入 dashboard 与预检。
 - 已新增议程执行回执；最新状态见 `agenda_runs/latest_agenda_run.md`，并已接入 dashboard 与预检。
 - 已新增交易行为分析；最新状态见 `trade_behavior/latest_trade_behavior.md`，并已接入 dashboard 与预检。
+- 已新增行为驱动实验计划；最新状态见 `behavior_experiments/latest_behavior_experiment_plan.md`，并已接入 dashboard 与预检。
 - 完整研究循环入口 `run_full_research_cycle.sh --help` 已通过。
 - launchd 自动触发任务 plist 已通过 `plutil -lint`，安装/卸载/状态脚本已通过 shell 语法检查；当前已安装每日和每周两条用户级定时任务。
 - 定时巡检入口 `run_daily_research.sh --help` 已通过。

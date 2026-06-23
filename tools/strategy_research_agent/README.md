@@ -91,6 +91,12 @@ Analyze exported trades for behavior-level diagnostics:
 user_data/strategy_research/start_manual_research.sh --trade-behavior
 ```
 
+Plan follow-up experiments from behavior diagnostics:
+
+```bash
+user_data/strategy_research/start_manual_research.sh --behavior-experiments
+```
+
 Preflight only:
 
 ```bash
@@ -130,3 +136,4 @@ On Windows, use `README_WINDOWS.md` for the PowerShell cycle runner and Task Sch
 - Research agenda turns promotion blockers into auditable next experiments and commands.
 - Agenda execution is allowlisted; the default `--next-agenda` mode writes a receipt without running a command.
 - Trade behavior analysis explains wins, losses, long/short skew, stop-loss exits, and entry excursion quality.
+- Behavior-driven experiment planning turns those diagnostics into concrete next variants to test.
