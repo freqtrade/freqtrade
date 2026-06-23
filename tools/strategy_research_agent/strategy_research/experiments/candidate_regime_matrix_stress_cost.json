@@ -1,0 +1,60 @@
+{
+  "id": "candidate_regime_matrix_stress_cost",
+  "title": "Candidate strategies across BTC market regimes, stress fee",
+  "profile_ref": "strategy_registry.json",
+  "timeframes": [
+    "1m"
+  ],
+  "fee": 0.001,
+  "strategies": [
+    "BtcEthFuturesRegime10xPullbackShortOnlyStrategy",
+    "BtcEthFuturesEthSelfPullbackShortOnlyStrategy"
+  ],
+  "matrix": {
+    "timeranges": [
+      {
+        "name": "bull",
+        "label": "BTC 90d strongest uptrend",
+        "timerange": "20241022-20250120",
+        "btc_return_pct": 50.3,
+        "realized_vol_pct": 51.01
+      },
+      {
+        "name": "bear",
+        "label": "BTC 90d strongest downtrend",
+        "timerange": "20251222-20260322",
+        "btc_return_pct": -22.24,
+        "realized_vol_pct": 57.21
+      },
+      {
+        "name": "range",
+        "label": "BTC flattest lower-volatility range",
+        "timerange": "20240507-20240805",
+        "btc_return_pct": -6.66,
+        "realized_vol_pct": 45.62
+      },
+      {
+        "name": "high_vol",
+        "label": "BTC highest realized volatility",
+        "timerange": "20260118-20260418",
+        "btc_return_pct": -17.71,
+        "realized_vol_pct": 60.25
+      }
+    ]
+  },
+  "checks": {
+    "backtesting": true,
+    "recursive_analysis": false,
+    "lookahead_analysis": false
+  },
+  "cost_model": {
+    "fee": 0.001,
+    "slippage_included": false,
+    "funding_included": false,
+    "mark_price_included": false,
+    "notes": [
+      "Uses doubled explicit Freqtrade fee 0.10% as a simple stress proxy for fee/slippage drag.",
+      "Funding and mark price are available for timeranges through 2026-05-31; the doubled fee remains only a rough slippage/cost stress proxy."
+    ]
+  }
+}
