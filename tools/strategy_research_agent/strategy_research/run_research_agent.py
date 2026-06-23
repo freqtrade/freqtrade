@@ -559,6 +559,18 @@ def load_latest_research_memory() -> dict[str, Any] | None:
     return payload
 
 
+def load_memory_guided_hypotheses() -> dict[str, Any] | None:
+    path = AGENT_ROOT / "experiments/memory_guided_hypothesis_plan.json"
+    if not path.exists():
+        return None
+    try:
+        payload = load_json(path)
+    except json.JSONDecodeError:
+        return None
+    payload["_path"] = str(path.relative_to(REPO_ROOT))
+    return payload
+
+
 def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
     dashboard_path = paths["dashboard_dir"] / "index.html"
     rows = []
@@ -871,6 +883,20 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
             f"<td>{html.escape(item.get('source') or '')}</td>"
             "</tr>"
         )
+    memory_hypothesis_rows = []
+    memory_hypotheses = payload.get("memory_guided_hypotheses") or {}
+    for item in memory_hypotheses.get("hypotheses", []):
+        changes = item.get("proposed_changes", {})
+        memory_hypothesis_rows.append(
+            "<tr>"
+            f"<td>{html.escape(item.get('hypothesis_id') or '')}</td>"
+            f"<td>{html.escape(item.get('strategy') or '')}</td>"
+            f"<td>{html.escape(item.get('blocker') or '')}</td>"
+            f"<td>{html.escape(item.get('objective') or '')}</td>"
+            f"<td>{html.escape(changes.get('entry_change') or '')}</td>"
+            f"<td>{html.escape(item.get('success_gate') or '')}</td>"
+            "</tr>"
+        )
     page = f"""<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -990,6 +1016,13 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
       <table>
         <thead><tr><th>Strategy</th><th>Blocker</th><th>Objective</th><th>Success Gate</th><th>Source</th></tr></thead>
         <tbody>{''.join(research_memory_rows)}</tbody>
+      </table>
+    </section>
+    <section>
+      <h2>记忆驱动假设</h2>
+      <table>
+        <thead><tr><th>ID</th><th>Strategy</th><th>Blocker</th><th>Objective</th><th>Entry Change</th><th>Success Gate</th></tr></thead>
+        <tbody>{''.join(memory_hypothesis_rows)}</tbody>
       </table>
     </section>
     <section>
@@ -1365,6 +1398,29 @@ def write_report(paths: dict[str, Path], payload: dict[str, Any]) -> tuple[Path,
                     source=item.get("source") or "",
                 )
             )
+    memory_hypotheses = payload.get("memory_guided_hypotheses") or {}
+    if memory_hypotheses.get("hypotheses"):
+        lines.extend(
+            [
+                "",
+                "## Memory-Guided Hypotheses",
+                "",
+                "| ID | Strategy | Blocker | Objective | Entry Change | Success Gate |",
+                "|---|---|---|---|---|---|",
+            ]
+        )
+        for item in memory_hypotheses["hypotheses"]:
+            changes = item.get("proposed_changes", {})
+            lines.append(
+                "| {hypothesis_id} | {strategy} | {blocker} | {objective} | {entry_change} | {success_gate} |".format(
+                    hypothesis_id=item.get("hypothesis_id") or "",
+                    strategy=item.get("strategy") or "",
+                    blocker=item.get("blocker") or "",
+                    objective=item.get("objective") or "",
+                    entry_change=changes.get("entry_change") or "",
+                    success_gate=item.get("success_gate") or "",
+                )
+            )
     lines.extend(["", "## Source Reviews", "", "| Source | Status | Family | Indicators |", "|---|---|---|---|"])
     for item in payload.get("source_reviews", []):
         lines.append(
@@ -1621,6 +1677,7 @@ def main() -> None:
         "failure_attribution": load_latest_failure_attribution(),
         "strategy_lineage": load_latest_strategy_lineage(),
         "research_memory": load_latest_research_memory(),
+        "memory_guided_hypotheses": load_memory_guided_hypotheses(),
         "results": results,
     }
     json_path, md_path, dashboard_path = write_report(paths, payload)

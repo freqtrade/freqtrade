@@ -146,6 +146,7 @@ Invoke-Step -Title "Attribute strategy failures" -Python $Python -Arguments @("u
 Invoke-Step -Title "Run promotion gate" -Python $Python -Arguments @("user_data\strategy_research\promotion_gate.py")
 Invoke-Step -Title "Build strategy lineage" -Python $Python -Arguments @("user_data\strategy_research\build_strategy_lineage.py")
 Invoke-Step -Title "Build research memory" -Python $Python -Arguments @("user_data\strategy_research\build_research_memory.py")
+Invoke-Step -Title "Plan memory-guided hypotheses" -Python $Python -Arguments @("user_data\strategy_research\plan_memory_guided_hypotheses.py")
 Invoke-Step -Title "Build research agenda" -Python $Python -Arguments @("user_data\strategy_research\research_agenda.py")
 Invoke-Step -Title "Refresh dashboard" -Python $Python -Arguments @("user_data\strategy_research\run_research_agent.py", "--skip-backtests")
 
@@ -167,5 +168,6 @@ Write-Host "Failures:      user_data\strategy_research\failure_attribution\lates
 Write-Host "Promotion:     user_data\strategy_research\promotion_reports\latest_promotion_report.md"
 Write-Host "Lineage:       user_data\strategy_research\strategy_library\latest_strategy_lineage.md"
 Write-Host "Memory:        user_data\strategy_research\research_memory\latest_research_memory.md"
+Write-Host "MemPlan:       user_data\strategy_research\experiments\memory_guided_hypothesis_ledger.md"
 Write-Host "Agenda:        user_data\strategy_research\research_agendas\latest_research_agenda.md"
 Write-Host "Dashboard:     user_data\strategy_research\dashboard\index.html"

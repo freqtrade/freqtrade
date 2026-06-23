@@ -489,6 +489,30 @@ user_data/strategy_research/research_memory/latest_research_memory.md
 
 研究记忆包含 active roots、avoid patterns、next focus、knowledge gaps 和 durable rules。它的用途是给下一轮自动策略发明提供上下文：哪些 root 还值得继续，哪些失败模式不要重复，哪些证据缺口必须先补齐。它不会替代回测、不会改配置、不会启动交易。
 
+## 记忆驱动假设规划
+
+从研究记忆生成下一批策略研发假设：
+
+```bash
+user_data/strategy_research/start_manual_research.sh --memory-guided-hypotheses
+```
+
+直接调用脚本：
+
+```bash
+./.venv/bin/python user_data/strategy_research/plan_memory_guided_hypotheses.py
+```
+
+输出：
+
+```text
+user_data/strategy_research/experiments/memory_guided_hypothesis_plan.json
+user_data/strategy_research/experiments/memory_guided_hypothesis_ledger.md
+user_data/strategy_research/experiments/memory_guided_strategy_experiment.json
+```
+
+该规划器把 research memory 里的 active roots、avoid patterns、next focus 和 knowledge gaps 转成明确的 hypothesis id、目标策略、阻断原因、拟议入场/退出/风控变化、成功闸门和下一步命令。它是策略代码生成前的研究设计层，不直接创建 live 代码，也不直接回测。
+
 ## 市场状态与成本矩阵
 
 从本地 BTC futures 1m OHLCV 自动生成市场状态切片和成本场景：
@@ -626,6 +650,7 @@ user_data/strategy_research/automation/com.wangsen.freqtrade.strategy-research.w
 - 失败归因：`failure_attribution/`
 - 策略库与版本族谱：`strategy_library/`
 - 研究记忆：`research_memory/`
+- 记忆驱动假设：`experiments/memory_guided_*`
 - 合约成本数据审计：`cost_audits/`
 - 策略级成本校正：`cost_adjustments/`
 - 实验定义：`experiments/`
@@ -663,6 +688,7 @@ user_data/strategy_research/automation/com.wangsen.freqtrade.strategy-research.w
 - 已新增失败归因；最新状态见 `failure_attribution/latest_failure_attribution.md`，并已接入 dashboard 与预检。
 - 已新增策略库与版本族谱；最新状态见 `strategy_library/latest_strategy_lineage.md`，并已接入 dashboard 与预检。
 - 已新增研究记忆；最新状态见 `research_memory/latest_research_memory.md`，并已接入 dashboard 与预检。
+- 已新增记忆驱动假设规划；最新状态见 `experiments/memory_guided_hypothesis_ledger.md`，并已接入 dashboard 与预检。
 - 完整研究循环入口 `run_full_research_cycle.sh --help` 已通过。
 - launchd 自动触发任务 plist 已通过 `plutil -lint`，安装/卸载/状态脚本已通过 shell 语法检查；当前已安装每日和每周两条用户级定时任务。
 - 定时巡检入口 `run_daily_research.sh --help` 已通过。
