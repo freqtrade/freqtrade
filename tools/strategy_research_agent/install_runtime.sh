@@ -33,6 +33,7 @@ rsync -a --delete \
   --exclude 'experiments/autonomous_*' \
   --exclude 'experiments/iterative_*' \
   --exclude 'experiments/behavior_experiment_*' \
+  --exclude 'experiments/memory_guided_*' \
   --exclude 'experiments/walk_forward_validation_experiment.json' \
   --exclude 'sources/inbox/' \
   --exclude 'sources/reviews/' \

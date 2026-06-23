@@ -121,6 +121,12 @@ Build durable research memory for the next strategy-design loop:
 user_data/strategy_research/start_manual_research.sh --research-memory
 ```
 
+Plan next strategy hypotheses from research memory:
+
+```bash
+user_data/strategy_research/start_manual_research.sh --memory-guided-hypotheses
+```
+
 Preflight only:
 
 ```bash
@@ -165,3 +171,4 @@ On Windows, use `README_WINDOWS.md` for the PowerShell cycle runner and Task Sch
 - Failure attribution combines scorecards, promotion blockers, trade behavior, and experiment plans into ranked root causes.
 - Strategy lineage links base strategies, generated variants, behavior experiments, candidate pools, promotion blockers, and failure modes into a reusable research library.
 - Research memory turns current evidence into next-focus items, avoid patterns, knowledge gaps, and durable research rules.
+- Memory-guided hypotheses convert that memory into auditable next strategy-design plans with explicit blockers and success gates.
