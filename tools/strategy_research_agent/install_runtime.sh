@@ -15,11 +15,17 @@ rsync -a --delete \
   --exclude 'cost_audits/' \
   --exclude 'matrix_summaries/' \
   --exclude 'walk_forward_summaries/' \
+  --exclude 'promotion_candidates/' \
+  --exclude 'promotion_blocks/' \
+  --exclude 'promotion_reports/' \
   --exclude 'data_updates/' \
   --exclude 'strategy_assessments/' \
   --exclude 'candidates/*.json' \
   --exclude 'rejected/*.json' \
   --exclude 'watchlist/*.json' \
+  --exclude 'experiments/autonomous_*' \
+  --exclude 'experiments/iterative_*' \
+  --exclude 'experiments/walk_forward_validation_experiment.json' \
   --exclude 'sources/inbox/' \
   --exclude 'sources/reviews/' \
   --exclude 'sources/translation_drafts/' \

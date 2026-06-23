@@ -272,6 +272,31 @@ user_data/strategy_research/walk_forward_summaries/latest_walk_forward_summary.m
 
 候选至少需要跨多个固定时间窗表现稳定。单个窗口好看不能进入 dry-run 候选。
 
+## 晋级闸门
+
+对当前候选池和观察池做保守晋级检查：
+
+```bash
+./.venv/bin/python user_data/strategy_research/promotion_gate.py
+```
+
+或通过手动入口运行并刷新 dashboard：
+
+```bash
+user_data/strategy_research/start_manual_research.sh --promotion-gate
+```
+
+输出：
+
+```text
+user_data/strategy_research/promotion_reports/latest_promotion_report.json
+user_data/strategy_research/promotion_reports/latest_promotion_report.md
+user_data/strategy_research/promotion_candidates/
+user_data/strategy_research/promotion_blocks/
+```
+
+通过闸门只代表“可进入人工 dry-run 复核”，不会自动改配置、不会读取私钥、不会启动实盘。
+
 ## 市场状态与成本矩阵
 
 从本地 BTC futures 1m OHLCV 自动生成市场状态切片和成本场景：
@@ -400,6 +425,7 @@ user_data/strategy_research/automation/com.wangsen.freqtrade.strategy-research.w
 - 1m K 线更新报告：`data_updates/`
 - 矩阵韧性摘要：`matrix_summaries/`
 - 策略评分和失败归因：`strategy_assessments/`
+- 晋级闸门：`promotion_reports/`、`promotion_candidates/`、`promotion_blocks/`
 - 合约成本数据审计：`cost_audits/`
 - 策略级成本校正：`cost_adjustments/`
 - 实验定义：`experiments/`
@@ -428,6 +454,7 @@ user_data/strategy_research/automation/com.wangsen.freqtrade.strategy-research.w
 - 已用 Freqtrade `--export trades` 交易明细估算候选策略的 funding 与 4 bps 往返滑点影响；两条候选的校正后收益约为 `+1.69%` 与 `+1.76%`。
 - 主回测 BTC/ETH USDT-M `1m` K 线已接入增量补数；最新状态见 `data_updates/latest_ohlcv_1m_update.md`。
 - 已新增策略评分卡与失败归因报告；最新状态见 `strategy_assessments/latest_strategy_assessment.md`，并已接入 dashboard。
+- 已新增晋级闸门；最新状态见 `promotion_reports/latest_promotion_report.md`，并已接入 dashboard 与预检。
 - 完整研究循环入口 `run_full_research_cycle.sh --help` 已通过。
 - launchd 自动触发任务 plist 已通过 `plutil -lint`，安装/卸载/状态脚本已通过 shell 语法检查；当前已安装每日和每周两条用户级定时任务。
 - 定时巡检入口 `run_daily_research.sh --help` 已通过。

@@ -67,6 +67,12 @@ Walk-forward validation across fixed calendar windows:
 user_data/strategy_research/start_manual_research.sh --walk-forward
 ```
 
+Promotion gate for manual dry-run review readiness:
+
+```bash
+user_data/strategy_research/start_manual_research.sh --promotion-gate
+```
+
 Preflight only:
 
 ```bash
@@ -102,3 +108,4 @@ On Windows, use `README_WINDOWS.md` for the PowerShell cycle runner and Task Sch
 - Autonomous strategies are generated from auditable local blueprints, not opaque external code.
 - Iterated strategies must record the failed parent strategy, previous metrics, and the reason for the change.
 - Walk-forward validation must reject strategies that only work in one favorable calendar window.
+- Promotion gate only records readiness for manual dry-run review; it never starts dry-run/live trading.
