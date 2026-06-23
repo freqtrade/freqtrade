@@ -167,6 +167,7 @@ def check_outputs(checks: list[Check]) -> None:
         "strategy_lineage": AGENT_ROOT / "strategy_library/latest_strategy_lineage.md",
         "research_memory": AGENT_ROOT / "research_memory/latest_research_memory.md",
         "memory_guided_hypotheses": AGENT_ROOT / "experiments/memory_guided_hypothesis_ledger.md",
+        "memory_guided_strategy_ledger": AGENT_ROOT / "experiments/memory_guided_strategy_ledger.md",
     }
     for name, path in paths.items():
         if path.exists():

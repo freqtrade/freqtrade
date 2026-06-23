@@ -46,6 +46,7 @@ rsync -a --delete \
   --exclude 'autonomous_research_strategies.py' \
   --exclude 'iterative_research_strategies.py' \
   --exclude 'behavior_experiment_strategies.py' \
+  --exclude 'memory_guided_research_strategies.py' \
   "$SOURCE_ROOT/strategies/research_generated/" \
   "$ROOT/user_data/strategies/research_generated/"
 

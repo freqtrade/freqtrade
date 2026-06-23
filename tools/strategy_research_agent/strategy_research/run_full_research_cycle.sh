@@ -138,6 +138,7 @@ PY
 "$PYTHON" user_data/strategy_research/build_strategy_lineage.py
 "$PYTHON" user_data/strategy_research/build_research_memory.py
 "$PYTHON" user_data/strategy_research/plan_memory_guided_hypotheses.py
+"$PYTHON" user_data/strategy_research/generate_memory_guided_strategies.py
 "$PYTHON" user_data/strategy_research/research_agenda.py
 "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
 
@@ -161,6 +162,7 @@ Promotion:     user_data/strategy_research/promotion_reports/latest_promotion_re
 Lineage:       user_data/strategy_research/strategy_library/latest_strategy_lineage.md
 Memory:        user_data/strategy_research/research_memory/latest_research_memory.md
 MemPlan:       user_data/strategy_research/experiments/memory_guided_hypothesis_ledger.md
+MemStrat:      user_data/strategy_research/experiments/memory_guided_strategy_ledger.md
 Agenda:        user_data/strategy_research/research_agendas/latest_research_agenda.md
 Dashboard:     user_data/strategy_research/dashboard/index.html
 EOF
