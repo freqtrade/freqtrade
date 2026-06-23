@@ -485,6 +485,18 @@ def load_latest_research_agenda() -> dict[str, Any] | None:
     return payload
 
 
+def load_latest_agenda_run() -> dict[str, Any] | None:
+    path = AGENT_ROOT / "agenda_runs/latest_agenda_run.json"
+    if not path.exists():
+        return None
+    try:
+        payload = load_json(path)
+    except json.JSONDecodeError:
+        return None
+    payload["_path"] = str(path.relative_to(REPO_ROOT))
+    return payload
+
+
 def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
     dashboard_path = paths["dashboard_dir"] / "index.html"
     rows = []
@@ -711,6 +723,20 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
             f"<td>{html.escape(item.get('success_gate', ''))}</td>"
             "</tr>"
         )
+    agenda_run = payload.get("agenda_run") or {}
+    agenda_run_item = agenda_run.get("selected_item") or {}
+    agenda_run_rows = []
+    if agenda_run:
+        agenda_run_rows.append(
+            "<tr>"
+            f"<td>{html.escape(agenda_run.get('status', ''))}</td>"
+            f"<td>{html.escape(agenda_run.get('mode', ''))}</td>"
+            f"<td>{html.escape(agenda_run_item.get('strategy', ''))}</td>"
+            f"<td>{html.escape(agenda_run_item.get('blocker', ''))}</td>"
+            f"<td><code>{html.escape(agenda_run.get('command') or '')}</code></td>"
+            f"<td>{agenda_run.get('returncode')}</td>"
+            "</tr>"
+        )
     page = f"""<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -791,6 +817,10 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
       <table>
         <thead><tr><th>Priority</th><th>Strategy</th><th>Blocker</th><th>Objective</th><th>Next Command</th><th>Success Gate</th></tr></thead>
         <tbody>{''.join(agenda_rows)}</tbody>
+      </table>
+      <table>
+        <thead><tr><th>Status</th><th>Mode</th><th>Strategy</th><th>Blocker</th><th>Command</th><th>Return Code</th></tr></thead>
+        <tbody>{''.join(agenda_run_rows)}</tbody>
       </table>
     </section>
     <section>
@@ -1041,6 +1071,26 @@ def write_report(paths: dict[str, Path], payload: dict[str, Any]) -> tuple[Path,
                     **item
                 )
             )
+    agenda_run = payload.get("agenda_run") or {}
+    if agenda_run:
+        item = agenda_run.get("selected_item") or {}
+        lines.extend(
+            [
+                "",
+                "## Agenda Run",
+                "",
+                "| Status | Mode | Strategy | Blocker | Command | Return Code |",
+                "|---|---|---|---|---|---:|",
+                "| {status} | {mode} | {strategy} | {blocker} | `{command}` | {returncode} |".format(
+                    status=agenda_run.get("status"),
+                    mode=agenda_run.get("mode"),
+                    strategy=item.get("strategy", ""),
+                    blocker=item.get("blocker", ""),
+                    command=agenda_run.get("command") or "",
+                    returncode=agenda_run.get("returncode"),
+                ),
+            ]
+        )
     lines.extend(["", "## Source Reviews", "", "| Source | Status | Family | Indicators |", "|---|---|---|---|"])
     for item in payload.get("source_reviews", []):
         lines.append(
@@ -1291,6 +1341,7 @@ def main() -> None:
         "walk_forward_summary": load_latest_walk_forward_summary(),
         "promotion_report": load_latest_promotion_report(),
         "research_agenda": load_latest_research_agenda(),
+        "agenda_run": load_latest_agenda_run(),
         "results": results,
     }
     json_path, md_path, dashboard_path = write_report(paths, payload)

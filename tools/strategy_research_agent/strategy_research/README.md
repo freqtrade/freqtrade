@@ -320,6 +320,35 @@ user_data/strategy_research/research_agendas/latest_research_agenda.md
 
 议程会记录优先级、阻断原因、研究假设、下一步命令、成功闸门和风险备注。它只生成研究任务，不启动交易。
 
+## 议程执行回执
+
+选择下一项安全研究任务并写入 dry-run 回执：
+
+```bash
+user_data/strategy_research/start_manual_research.sh --next-agenda
+```
+
+显式执行下一项非长任务：
+
+```bash
+user_data/strategy_research/start_manual_research.sh --execute-next-agenda
+```
+
+直接调用脚本：
+
+```bash
+./.venv/bin/python user_data/strategy_research/agenda_executor.py
+```
+
+输出：
+
+```text
+user_data/strategy_research/agenda_runs/latest_agenda_run.json
+user_data/strategy_research/agenda_runs/latest_agenda_run.md
+```
+
+执行器只允许 allowlist 中的研究命令。walk-forward/full-cycle 等长任务需要额外传 `--allow-long`，默认不会执行。
+
 ## 市场状态与成本矩阵
 
 从本地 BTC futures 1m OHLCV 自动生成市场状态切片和成本场景：
@@ -450,6 +479,7 @@ user_data/strategy_research/automation/com.wangsen.freqtrade.strategy-research.w
 - 策略评分和失败归因：`strategy_assessments/`
 - 晋级闸门：`promotion_reports/`、`promotion_candidates/`、`promotion_blocks/`
 - 研究议程：`research_agendas/`
+- 议程执行回执：`agenda_runs/`
 - 合约成本数据审计：`cost_audits/`
 - 策略级成本校正：`cost_adjustments/`
 - 实验定义：`experiments/`
@@ -480,6 +510,7 @@ user_data/strategy_research/automation/com.wangsen.freqtrade.strategy-research.w
 - 已新增策略评分卡与失败归因报告；最新状态见 `strategy_assessments/latest_strategy_assessment.md`，并已接入 dashboard。
 - 已新增晋级闸门；最新状态见 `promotion_reports/latest_promotion_report.md`，并已接入 dashboard 与预检。
 - 已新增研究议程；最新状态见 `research_agendas/latest_research_agenda.md`，并已接入 dashboard 与预检。
+- 已新增议程执行回执；最新状态见 `agenda_runs/latest_agenda_run.md`，并已接入 dashboard 与预检。
 - 完整研究循环入口 `run_full_research_cycle.sh --help` 已通过。
 - launchd 自动触发任务 plist 已通过 `plutil -lint`，安装/卸载/状态脚本已通过 shell 语法检查；当前已安装每日和每周两条用户级定时任务。
 - 定时巡检入口 `run_daily_research.sh --help` 已通过。

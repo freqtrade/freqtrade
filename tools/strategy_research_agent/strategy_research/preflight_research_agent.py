@@ -159,6 +159,7 @@ def check_outputs(checks: list[Check]) -> None:
         "walk_forward_summary": AGENT_ROOT / "walk_forward_summaries/latest_walk_forward_summary.md",
         "promotion_report": AGENT_ROOT / "promotion_reports/latest_promotion_report.md",
         "research_agenda": AGENT_ROOT / "research_agendas/latest_research_agenda.md",
+        "agenda_run": AGENT_ROOT / "agenda_runs/latest_agenda_run.md",
     }
     for name, path in paths.items():
         if path.exists():
