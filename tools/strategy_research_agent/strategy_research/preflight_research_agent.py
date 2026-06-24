@@ -155,6 +155,7 @@ def check_outputs(checks: list[Check]) -> None:
         "assessment": AGENT_ROOT / "strategy_assessments/latest_strategy_assessment.md",
         "matrix_summary": AGENT_ROOT / "matrix_summaries/latest_matrix_summary.md",
         "autonomous_hypotheses": AGENT_ROOT / "experiments/autonomous_hypothesis_ledger.md",
+        "retired_seed_family": AGENT_ROOT / "experiments/retired_seed_family_ledger.md",
         "iterative_hypotheses": AGENT_ROOT / "experiments/iterative_hypothesis_ledger.md",
         "walk_forward_summary": AGENT_ROOT / "walk_forward_summaries/latest_walk_forward_summary.md",
         "promotion_report": AGENT_ROOT / "promotion_reports/latest_promotion_report.md",
