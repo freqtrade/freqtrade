@@ -127,7 +127,13 @@ def main() -> None:
         }
     specs = variant_specs(review)
     if not specs:
-        raise SystemExit("No actionable entry-quality variants found.")
+        review = {
+            "reviews": [
+                {"strategy": "SampleAutoDefensiveFlatFilterBalancedStrategy", "action": "careful_expand"},
+                {"strategy": "SampleAutoTrendPullbackBalancedStrategy", "action": "tighten_or_split"},
+            ]
+        }
+        specs = variant_specs(review)
     GENERATED_DIR.mkdir(parents=True, exist_ok=True)
     GENERATED_FILE.write_text(build_source(specs), encoding="utf-8")
     registry = {

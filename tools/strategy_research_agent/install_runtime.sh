@@ -46,6 +46,7 @@ rsync -a --delete \
   --exclude 'experiments/family_diversity_*' \
   --exclude 'experiments/sample_expansion_*' \
   --exclude 'experiments/entry_quality_*' \
+  --exclude 'experiments/manual_direction_*' \
   --exclude 'experiments/walk_forward_validation_experiment.json' \
   --exclude 'sources/inbox/' \
   --exclude 'sources/reviews/' \
@@ -61,6 +62,7 @@ rsync -a --delete \
   --exclude 'memory_guided_research_strategies.py' \
   --exclude 'sample_expansion_strategies.py' \
   --exclude 'entry_quality_strategies.py' \
+  --exclude 'manual_direction_strategies.py' \
   "$SOURCE_ROOT/strategies/research_generated/" \
   "$ROOT/user_data/strategies/research_generated/"
 

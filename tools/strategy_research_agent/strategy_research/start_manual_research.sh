@@ -206,6 +206,7 @@ case "$mode" in
   research_iteration)
     echo "== Strategy Research Agent: research iteration loop =="
     "$PYTHON" user_data/strategy_research/plan_manual_trade_playbook.py
+    "$PYTHON" user_data/strategy_research/generate_manual_direction_strategies.py
     "$PYTHON" user_data/strategy_research/autonomous_strategy_lab.py
     "$PYTHON" user_data/strategy_research/plan_context_sources.py
     "$PYTHON" user_data/strategy_research/build_strategy_lineage.py
@@ -216,7 +217,7 @@ case "$mode" in
     "$PYTHON" user_data/strategy_research/generate_sample_expansion_strategies.py
     "$PYTHON" user_data/strategy_research/generate_entry_quality_strategies.py
     "$PYTHON" user_data/strategy_research/run_research_agent.py \
-      --experiment user_data/strategy_research/experiments/entry_quality_experiment.json \
+      --experiment user_data/strategy_research/experiments/manual_direction_experiment.json \
       --timerange 20260101-20260201 \
       ${extra_args[@]+"${extra_args[@]}"}
     "$PYTHON" user_data/strategy_research/analyze_trade_behavior.py
@@ -377,6 +378,7 @@ IterReview: user_data/strategy_research/agent_iterations/latest_iteration_review
 ImproveQ:   user_data/strategy_research/agent_iterations/improvement_queue.json
 Context:    user_data/strategy_research/context_sources/latest_context_source_plan.md
 ManualPB:   user_data/strategy_research/manual_playbook/latest_manual_trade_playbook.md
+ManualDir:  user_data/strategy_research/manual_playbook/latest_manual_direction_plan.md
 FamilyDiv:  user_data/strategy_research/family_diversity/latest_family_diversity_plan.md
 SampleEx:   user_data/strategy_research/sample_expansion/latest_sample_expansion_plan.md
 EntryQual:  user_data/strategy_research/entry_quality/latest_entry_quality_review.md
