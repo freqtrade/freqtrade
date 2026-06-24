@@ -38,6 +38,7 @@ MEMORY_GUIDED_REGISTRY = AGENT_ROOT / "experiments/memory_guided_strategy_regist
 CONTEXT_SOURCE_REGISTRY = AGENT_ROOT / "context_sources/context_source_strategy_registry.json"
 MANUAL_DIRECTION_REGISTRY = AGENT_ROOT / "experiments/manual_direction_strategy_registry.json"
 MANUAL_ENTRY_REGISTRY = AGENT_ROOT / "experiments/manual_entry_confirmation_strategy_registry.json"
+MANUAL_ABSTENTION_REGISTRY = AGENT_ROOT / "experiments/manual_abstention_strategy_registry.json"
 SAMPLE_EXPANSION_REGISTRY = AGENT_ROOT / "experiments/sample_expansion_strategy_registry.json"
 ENTRY_QUALITY_REGISTRY = AGENT_ROOT / "experiments/entry_quality_strategy_registry.json"
 LOOKAHEAD_CONFIG_OVERRIDE = AGENT_ROOT / "config_lookahead_pricing_override.json"
@@ -298,6 +299,7 @@ def strategy_metadata(registry: dict[str, Any]) -> dict[str, dict[str, Any]]:
         CONTEXT_SOURCE_REGISTRY,
         MANUAL_DIRECTION_REGISTRY,
         MANUAL_ENTRY_REGISTRY,
+        MANUAL_ABSTENTION_REGISTRY,
         SAMPLE_EXPANSION_REGISTRY,
         ENTRY_QUALITY_REGISTRY,
     ]:
