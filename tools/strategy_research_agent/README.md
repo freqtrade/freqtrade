@@ -8,9 +8,12 @@ Runtime files are installed into `user_data/` because Freqtrade expects strategi
 
 - `strategy_research/`: research agent scripts, experiment templates, source registry, launchd templates, and documentation.
 - `strategies/research_generated/`: generated strategy source files that are safe to version.
+- `skills/`: Codex skills for strategy diagnosis, Freqtrade research loops, futures risk, scalping/microstructure, and promotion gates.
 - `download_binance_um_1m.py`: incremental Binance USDT-M 1m OHLCV updater.
 - `install_runtime.sh`: deploys the versioned source back into `user_data/`.
+- `install_skills.sh`: installs versioned strategy research skills into `~/.agents/skills`.
 - `install_runtime.ps1`: Windows PowerShell runtime installer.
+- `install_skills.ps1`: Windows PowerShell skill installer.
 - `README_WINDOWS.md`: Windows PowerShell and Task Scheduler setup guide.
 
 ## Install Runtime Files
@@ -34,6 +37,28 @@ user_data/download_binance_um_1m.py
 ```
 
 It does not copy local market data, reports, dashboards, API keys, Freqtrade configs, or backtest result archives into git.
+
+## Install Strategy Research Skills
+
+macOS/Linux:
+
+```bash
+tools/strategy_research_agent/install_skills.sh
+```
+
+Windows PowerShell:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\strategy_research_agent\install_skills.ps1
+```
+
+By default, skills are installed into:
+
+```text
+~/.agents/skills
+```
+
+Override with `CODEX_AGENT_SKILLS_DIR` when needed.
 
 ## Run
 
