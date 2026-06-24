@@ -50,6 +50,7 @@ rsync -a --delete \
   --exclude 'experiments/manual_entry_confirmation_*' \
   --exclude 'experiments/manual_abstention_*' \
   --exclude 'experiments/manual_strong_confirmation_*' \
+  --exclude 'experiments/multi_timeframe_kline_*' \
   --exclude 'experiments/walk_forward_validation_experiment.json' \
   --exclude 'sources/inbox/' \
   --exclude 'sources/reviews/' \
@@ -69,6 +70,7 @@ rsync -a --delete \
   --exclude 'manual_entry_confirmation_strategies.py' \
   --exclude 'manual_abstention_strategies.py' \
   --exclude 'manual_strong_confirmation_strategies.py' \
+  --exclude 'multi_timeframe_kline_strategies.py' \
   "$SOURCE_ROOT/strategies/research_generated/" \
   "$ROOT/user_data/strategies/research_generated/"
 

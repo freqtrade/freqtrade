@@ -40,6 +40,7 @@ MANUAL_DIRECTION_REGISTRY = AGENT_ROOT / "experiments/manual_direction_strategy_
 MANUAL_ENTRY_REGISTRY = AGENT_ROOT / "experiments/manual_entry_confirmation_strategy_registry.json"
 MANUAL_ABSTENTION_REGISTRY = AGENT_ROOT / "experiments/manual_abstention_strategy_registry.json"
 MANUAL_STRONG_CONFIRMATION_REGISTRY = AGENT_ROOT / "experiments/manual_strong_confirmation_strategy_registry.json"
+MULTI_TIMEFRAME_KLINE_REGISTRY = AGENT_ROOT / "experiments/multi_timeframe_kline_strategy_registry.json"
 SAMPLE_EXPANSION_REGISTRY = AGENT_ROOT / "experiments/sample_expansion_strategy_registry.json"
 ENTRY_QUALITY_REGISTRY = AGENT_ROOT / "experiments/entry_quality_strategy_registry.json"
 LOOKAHEAD_CONFIG_OVERRIDE = AGENT_ROOT / "config_lookahead_pricing_override.json"
@@ -302,6 +303,7 @@ def strategy_metadata(registry: dict[str, Any]) -> dict[str, dict[str, Any]]:
         MANUAL_ENTRY_REGISTRY,
         MANUAL_ABSTENTION_REGISTRY,
         MANUAL_STRONG_CONFIRMATION_REGISTRY,
+        MULTI_TIMEFRAME_KLINE_REGISTRY,
         SAMPLE_EXPANSION_REGISTRY,
         ENTRY_QUALITY_REGISTRY,
     ]:

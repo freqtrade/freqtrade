@@ -7,7 +7,7 @@ PYTHON="${PYTHON:-./.venv/bin/python}"
 
 usage() {
   cat <<'EOF'
-Usage: user_data/strategy_research/start_manual_research.sh [--quick|--source-scout|--strong-researcher-smoke|--research-iteration|--autonomous-smoke|--iterate-smoke|--walk-forward|--promotion-gate|--agenda|--next-agenda|--execute-next-agenda|--trade-behavior|--behavior-experiments|--behavior-variants|--failure-attribution|--mature-researcher|--mature-researcher-queue|--execute-mature-researcher|--strategy-lineage|--research-memory|--memory-guided-hypotheses|--memory-guided-strategies|--full|--full-with-aux|--preflight-only] [--extra-agent-arg ARG ...]
+Usage: user_data/strategy_research/start_manual_research.sh [--quick|--source-scout|--strong-researcher-smoke|--research-iteration|--multi-timeframe-kline|--autonomous-smoke|--iterate-smoke|--walk-forward|--promotion-gate|--agenda|--next-agenda|--execute-next-agenda|--trade-behavior|--behavior-experiments|--behavior-variants|--failure-attribution|--mature-researcher|--mature-researcher-queue|--execute-mature-researcher|--strategy-lineage|--research-memory|--memory-guided-hypotheses|--memory-guided-strategies|--full|--full-with-aux|--preflight-only] [--extra-agent-arg ARG ...]
 
 Manual entrypoint for the research-only strategy agent.
 
@@ -18,6 +18,8 @@ Modes:
                      Run the integrated research-only scout/memory/generate/smoke loop.
   --research-iteration
                      Run the fixed experiment -> agent diagnosis -> improvement queue loop.
+  --multi-timeframe-kline
+                     Build 3m/5m data and test 1m composite, native 3m, and native 5m kline strategies.
   --autonomous-smoke Generate autonomous hypotheses and run a short smoke backtest.
   --iterate-smoke    Generate V2 hypotheses from the latest autonomous failures and smoke test them.
   --walk-forward     Run fixed-window validation for current iterative strategies.
@@ -76,6 +78,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --research-iteration)
       mode="research_iteration"
+      shift
+      ;;
+    --multi-timeframe-kline)
+      mode="multi_timeframe_kline"
       shift
       ;;
     --full)
@@ -230,6 +236,25 @@ case "$mode" in
     "$PYTHON" user_data/strategy_research/mature_researcher.py
     "$PYTHON" user_data/strategy_research/mature_researcher_queue.py
     "$PYTHON" user_data/strategy_research/agent_iteration_review.py
+    "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
+    ;;
+  multi_timeframe_kline)
+    echo "== Strategy Research Agent: multi-timeframe kline lab =="
+    "$PYTHON" user_data/strategy_research/build_resampled_futures_timeframes.py
+    "$PYTHON" user_data/strategy_research/generate_multi_timeframe_kline_strategies.py
+    "$PYTHON" user_data/strategy_research/run_research_agent.py \
+      --experiment user_data/strategy_research/experiments/multi_timeframe_kline_1m_experiment.json \
+      --timerange 20260101-20260201 \
+      ${extra_args[@]+"${extra_args[@]}"}
+    "$PYTHON" user_data/strategy_research/run_research_agent.py \
+      --experiment user_data/strategy_research/experiments/multi_timeframe_kline_3m_experiment.json \
+      --timerange 20260101-20260201 \
+      ${extra_args[@]+"${extra_args[@]}"}
+    "$PYTHON" user_data/strategy_research/run_research_agent.py \
+      --experiment user_data/strategy_research/experiments/multi_timeframe_kline_5m_experiment.json \
+      --timerange 20260101-20260201 \
+      ${extra_args[@]+"${extra_args[@]}"}
+    "$PYTHON" user_data/strategy_research/entry_quality_review.py
     "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
     ;;
   autonomous_smoke)
@@ -387,6 +412,8 @@ ManualEnt:  user_data/strategy_research/manual_playbook/latest_manual_entry_conf
 ManualAbs:  user_data/strategy_research/manual_playbook/latest_manual_abstention_plan.md
 ManualStr:  user_data/strategy_research/manual_playbook/latest_manual_strong_confirmation_plan.md
 ManualRev:  user_data/strategy_research/manual_playbook/latest_manual_research_review.md
+MultiTF:    user_data/strategy_research/manual_playbook/latest_multi_timeframe_kline_plan.md
+Resample:   user_data/strategy_research/data_updates/latest_resampled_timeframes.md
 FamilyDiv:  user_data/strategy_research/family_diversity/latest_family_diversity_plan.md
 SampleEx:   user_data/strategy_research/sample_expansion/latest_sample_expansion_plan.md
 EntryQual:  user_data/strategy_research/entry_quality/latest_entry_quality_review.md
