@@ -162,6 +162,78 @@ class MultiTfThreeMinuteStructureStrategy(MultiTfBaseStrategy):
         return dataframe
 
 
+class MultiTfThreeMinutePullbackStrategy(MultiTfBaseStrategy):
+    """Native 3m trend pullback strategy."""
+
+    timeframe = "3m"
+    startup_candle_count = 900
+    minimal_roi = {{"180": 0.0, "60": 0.006, "0": 0.010}}
+    stoploss = -0.006
+
+    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        dataframe = self.add_common_indicators(dataframe, bars_per_day=480)
+        dataframe["mtf_ema_20bar"] = ta.EMA(dataframe, timeperiod=20)
+        dataframe["mtf_ema_80bar"] = ta.EMA(dataframe, timeperiod=80)
+        dataframe["mtf_ret_2bar"] = dataframe["close"] / dataframe["close"].shift(2) - 1.0
+        dataframe["mtf_pullback_dist"] = (dataframe["close"] - dataframe["mtf_ema_20bar"]) / dataframe["close"]
+        return dataframe
+
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        long_setup = dataframe["risk_allowed"] & (dataframe["mtf_ema_20bar"] > dataframe["mtf_ema_80bar"]) & dataframe["mtf_pullback_dist"].between(-0.004, 0.002) & (dataframe["mtf_ret_2bar"] > 0.0002)
+        short_setup = dataframe["risk_allowed"] & (dataframe["mtf_ema_20bar"] < dataframe["mtf_ema_80bar"]) & dataframe["mtf_pullback_dist"].between(-0.002, 0.004) & (dataframe["mtf_ret_2bar"] < -0.0002)
+        dataframe.loc[long_setup & (dataframe["volume"] > 0), ["enter_long", "enter_tag"]] = (1, "mtf_3m_pullback_long")
+        dataframe.loc[short_setup & (dataframe["volume"] > 0), ["enter_short", "enter_tag"]] = (1, "mtf_3m_pullback_short")
+        return dataframe
+
+
+class MultiTfThreeMinuteMomentumLiteStrategy(MultiTfBaseStrategy):
+    """Native 3m momentum with fewer confirmation gates."""
+
+    timeframe = "3m"
+    startup_candle_count = 900
+    minimal_roi = {{"150": 0.0, "45": 0.005, "0": 0.009}}
+    stoploss = -0.0065
+
+    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        dataframe = self.add_common_indicators(dataframe, bars_per_day=480)
+        dataframe["mtf_ema_60bar"] = ta.EMA(dataframe, timeperiod=60)
+        dataframe["mtf_ret_6bar"] = dataframe["close"] / dataframe["close"].shift(6) - 1.0
+        return dataframe
+
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        long_setup = dataframe["risk_allowed"] & (dataframe["close"] > dataframe["mtf_ema_60bar"]) & (dataframe["mtf_ret_6bar"] > 0.0008)
+        short_setup = dataframe["risk_allowed"] & (dataframe["close"] < dataframe["mtf_ema_60bar"]) & (dataframe["mtf_ret_6bar"] < -0.0008)
+        dataframe.loc[long_setup & (dataframe["volume"] > 0), ["enter_long", "enter_tag"]] = (1, "mtf_3m_mom_lite_long")
+        dataframe.loc[short_setup & (dataframe["volume"] > 0), ["enter_short", "enter_tag"]] = (1, "mtf_3m_mom_lite_short")
+        return dataframe
+
+
+class MultiTfThreeMinuteFadeStrategy(MultiTfBaseStrategy):
+    """Native 3m range fade around short Donchian extremes."""
+
+    timeframe = "3m"
+    startup_candle_count = 900
+    minimal_roi = {{"120": 0.0, "30": 0.004, "0": 0.007}}
+    stoploss = -0.0055
+
+    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        dataframe = self.add_common_indicators(dataframe, bars_per_day=480)
+        dataframe["mtf_ema_80bar"] = ta.EMA(dataframe, timeperiod=80)
+        dataframe["mtf_ema_slope"] = dataframe["mtf_ema_80bar"] / dataframe["mtf_ema_80bar"].shift(10) - 1.0
+        dataframe["mtf_rsi"] = ta.RSI(dataframe, timeperiod=14)
+        dataframe["mtf_high_12bar"] = dataframe["high"].rolling(12).max().shift(1)
+        dataframe["mtf_low_12bar"] = dataframe["low"].rolling(12).min().shift(1)
+        return dataframe
+
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        range_regime = dataframe["risk_allowed"] & (dataframe["mtf_ema_slope"].abs() < 0.0015)
+        long_setup = range_regime & (dataframe["close"] < dataframe["mtf_low_12bar"]) & (dataframe["mtf_rsi"] < 38)
+        short_setup = range_regime & (dataframe["close"] > dataframe["mtf_high_12bar"]) & (dataframe["mtf_rsi"] > 62)
+        dataframe.loc[long_setup & (dataframe["volume"] > 0), ["enter_long", "enter_tag"]] = (1, "mtf_3m_fade_long")
+        dataframe.loc[short_setup & (dataframe["volume"] > 0), ["enter_short", "enter_tag"]] = (1, "mtf_3m_fade_short")
+        return dataframe
+
+
 class MultiTfFiveMinuteRegimeStrategy(MultiTfBaseStrategy):
     """Native 5m timeframe regime strategy with slower confirmation."""
 
@@ -186,14 +258,128 @@ class MultiTfFiveMinuteRegimeStrategy(MultiTfBaseStrategy):
         dataframe.loc[long_setup & (dataframe["volume"] > 0), ["enter_long", "enter_tag"]] = (1, "mtf_5m_regime_long")
         dataframe.loc[short_setup & (dataframe["volume"] > 0), ["enter_short", "enter_tag"]] = (1, "mtf_5m_regime_short")
         return dataframe
+
+
+class MultiTfFiveMinuteBreakoutStrategy(MultiTfBaseStrategy):
+    """Native 5m Donchian breakout strategy."""
+
+    timeframe = "5m"
+    startup_candle_count = 600
+    minimal_roi = {{"240": 0.0, "90": 0.010, "0": 0.018}}
+    stoploss = -0.010
+
+    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        dataframe = self.add_common_indicators(dataframe, bars_per_day=288)
+        dataframe["mtf_ema_36bar"] = ta.EMA(dataframe, timeperiod=36)
+        dataframe["mtf_ema_144bar"] = ta.EMA(dataframe, timeperiod=144)
+        dataframe["mtf_high_24bar"] = dataframe["high"].rolling(24).max().shift(1)
+        dataframe["mtf_low_24bar"] = dataframe["low"].rolling(24).min().shift(1)
+        dataframe["mtf_vol_ratio"] = dataframe["volume"] / dataframe["volume"].rolling(24).mean()
+        return dataframe
+
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        long_setup = dataframe["risk_allowed"] & (dataframe["mtf_ema_36bar"] > dataframe["mtf_ema_144bar"]) & (dataframe["close"] > dataframe["mtf_high_24bar"]) & (dataframe["mtf_vol_ratio"] > 1.05)
+        short_setup = dataframe["risk_allowed"] & (dataframe["mtf_ema_36bar"] < dataframe["mtf_ema_144bar"]) & (dataframe["close"] < dataframe["mtf_low_24bar"]) & (dataframe["mtf_vol_ratio"] > 1.05)
+        dataframe.loc[long_setup & (dataframe["volume"] > 0), ["enter_long", "enter_tag"]] = (1, "mtf_5m_breakout_long")
+        dataframe.loc[short_setup & (dataframe["volume"] > 0), ["enter_short", "enter_tag"]] = (1, "mtf_5m_breakout_short")
+        return dataframe
+
+
+class MultiTfFiveMinuteBreakoutFadeStrategy(MultiTfBaseStrategy):
+    """Native 5m failed-breakout fade strategy."""
+
+    timeframe = "5m"
+    startup_candle_count = 600
+    minimal_roi = {{"180": 0.0, "45": 0.0045, "0": 0.008}}
+    stoploss = -0.006
+
+    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        dataframe = self.add_common_indicators(dataframe, bars_per_day=288)
+        dataframe["mtf_ema_96bar"] = ta.EMA(dataframe, timeperiod=96)
+        dataframe["mtf_ema_slope"] = dataframe["mtf_ema_96bar"] / dataframe["mtf_ema_96bar"].shift(12) - 1.0
+        dataframe["mtf_high_18bar"] = dataframe["high"].rolling(18).max().shift(1)
+        dataframe["mtf_low_18bar"] = dataframe["low"].rolling(18).min().shift(1)
+        dataframe["mtf_rsi"] = ta.RSI(dataframe, timeperiod=14)
+        return dataframe
+
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        flat = dataframe["risk_allowed"] & (dataframe["mtf_ema_slope"].abs() < 0.0025)
+        long_setup = flat & (dataframe["close"] < dataframe["mtf_low_18bar"]) & (dataframe["mtf_rsi"] < 40)
+        short_setup = flat & (dataframe["close"] > dataframe["mtf_high_18bar"]) & (dataframe["mtf_rsi"] > 60)
+        dataframe.loc[long_setup & (dataframe["volume"] > 0), ["enter_long", "enter_tag"]] = (1, "mtf_5m_breakout_fade_long")
+        dataframe.loc[short_setup & (dataframe["volume"] > 0), ["enter_short", "enter_tag"]] = (1, "mtf_5m_breakout_fade_short")
+        return dataframe
+
+
+class MultiTfFiveMinuteMeanReversionStrategy(MultiTfBaseStrategy):
+    """Native 5m range mean-reversion strategy."""
+
+    timeframe = "5m"
+    startup_candle_count = 600
+    minimal_roi = {{"180": 0.0, "45": 0.004, "0": 0.007}}
+    stoploss = -0.006
+
+    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        dataframe = self.add_common_indicators(dataframe, bars_per_day=288)
+        dataframe["mtf_ema_48bar"] = ta.EMA(dataframe, timeperiod=48)
+        dataframe["mtf_ema_slope"] = dataframe["mtf_ema_48bar"] / dataframe["mtf_ema_48bar"].shift(12) - 1.0
+        dataframe["mtf_rsi"] = ta.RSI(dataframe, timeperiod=14)
+        dataframe["mtf_low_18bar"] = dataframe["low"].rolling(18).min().shift(1)
+        dataframe["mtf_high_18bar"] = dataframe["high"].rolling(18).max().shift(1)
+        return dataframe
+
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        range_regime = dataframe["risk_allowed"] & (dataframe["mtf_ema_slope"].abs() < 0.002)
+        long_setup = range_regime & (dataframe["close"] < dataframe["mtf_low_18bar"]) & (dataframe["mtf_rsi"] < 34)
+        short_setup = range_regime & (dataframe["close"] > dataframe["mtf_high_18bar"]) & (dataframe["mtf_rsi"] > 66)
+        dataframe.loc[long_setup & (dataframe["volume"] > 0), ["enter_long", "enter_tag"]] = (1, "mtf_5m_meanrev_long")
+        dataframe.loc[short_setup & (dataframe["volume"] > 0), ["enter_short", "enter_tag"]] = (1, "mtf_5m_meanrev_short")
+        return dataframe
+
+
+class MultiTfOneMinuteTriggerStrategy(MultiTfBaseStrategy):
+    """1m trigger with 5m/15m synthetic background."""
+
+    timeframe = "1m"
+    startup_candle_count = 2400
+    minimal_roi = {{"120": 0.0, "30": 0.0045, "0": 0.008}}
+    stoploss = -0.0055
+
+    def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        dataframe = self.add_common_indicators(dataframe, bars_per_day=1440)
+        dataframe["mtf_ema_5m"] = ta.EMA(dataframe, timeperiod=5)
+        dataframe["mtf_ema_15m"] = ta.EMA(dataframe, timeperiod=15)
+        dataframe["mtf_ema_60m"] = ta.EMA(dataframe, timeperiod=60)
+        dataframe["mtf_ret_1m"] = dataframe["close"].pct_change()
+        dataframe["mtf_ret_5m"] = dataframe["close"] / dataframe["close"].shift(5) - 1.0
+        dataframe["mtf_ret_15m"] = dataframe["close"] / dataframe["close"].shift(15) - 1.0
+        dataframe["mtf_prev_3m_low"] = dataframe["low"].rolling(3).min().shift(1)
+        dataframe["mtf_prev_3m_high"] = dataframe["high"].rolling(3).max().shift(1)
+        return dataframe
+
+    def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        long_background = dataframe["risk_allowed"] & (dataframe["mtf_ema_15m"] > dataframe["mtf_ema_60m"]) & (dataframe["mtf_ret_15m"] > 0.0008)
+        short_background = dataframe["risk_allowed"] & (dataframe["mtf_ema_15m"] < dataframe["mtf_ema_60m"]) & (dataframe["mtf_ret_15m"] < -0.0008)
+        long_trigger = (dataframe["close"] > dataframe["mtf_prev_3m_high"]) & (dataframe["mtf_ret_1m"] > 0)
+        short_trigger = (dataframe["close"] < dataframe["mtf_prev_3m_low"]) & (dataframe["mtf_ret_1m"] < 0)
+        dataframe.loc[long_background & long_trigger & (dataframe["volume"] > 0), ["enter_long", "enter_tag"]] = (1, "mtf_1m_trigger_long")
+        dataframe.loc[short_background & short_trigger & (dataframe["volume"] > 0), ["enter_short", "enter_tag"]] = (1, "mtf_1m_trigger_short")
+        return dataframe
 '''
 
 
 def registry_payload() -> dict[str, Any]:
     strategies = [
         ("MultiTfOneMinuteCompositeStrategy", "1m_composite"),
+        ("MultiTfOneMinuteTriggerStrategy", "1m_trigger"),
         ("MultiTfThreeMinuteStructureStrategy", "3m_native"),
+        ("MultiTfThreeMinutePullbackStrategy", "3m_pullback"),
+        ("MultiTfThreeMinuteMomentumLiteStrategy", "3m_momentum_lite"),
+        ("MultiTfThreeMinuteFadeStrategy", "3m_fade"),
         ("MultiTfFiveMinuteRegimeStrategy", "5m_native"),
+        ("MultiTfFiveMinuteBreakoutStrategy", "5m_breakout"),
+        ("MultiTfFiveMinuteBreakoutFadeStrategy", "5m_breakout_fade"),
+        ("MultiTfFiveMinuteMeanReversionStrategy", "5m_mean_reversion"),
     ]
     return {
         "generated_at_utc": utc_stamp(),
@@ -213,7 +399,7 @@ def registry_payload() -> dict[str, Any]:
     }
 
 
-def experiment_payload(strategy: str, timeframe: str, experiment_id: str) -> dict[str, Any]:
+def experiment_payload(strategies: list[str], timeframe: str, experiment_id: str) -> dict[str, Any]:
     return {
         "id": experiment_id,
         "title": f"Multi-timeframe kline lab {timeframe}",
@@ -223,8 +409,8 @@ def experiment_payload(strategy: str, timeframe: str, experiment_id: str) -> dic
         "timeranges": ["20240101-20260622"],
         "matrix": {"timeranges": [{"name": "smoke", "label": "Recent smoke", "timerange": "20260101-20260201"}]},
         "fee": 0.0005,
-        "strategies": [strategy],
-        "strategy_groups": {"multi_timeframe_kline": [strategy]},
+        "strategies": strategies,
+        "strategy_groups": {"multi_timeframe_kline": strategies},
         "checks": {"backtesting": True, "recursive_analysis": False, "lookahead_analysis": False},
         "notes": ["Tests whether native or composed kline granularity improves signal quality versus pure 1m."],
     }
@@ -235,9 +421,9 @@ def main() -> None:
     GENERATED_FILE.write_text(build_source(), encoding="utf-8")
     registry = registry_payload()
     REGISTRY_PATH.write_text(json.dumps(registry, indent=2, ensure_ascii=False), encoding="utf-8")
-    EXPERIMENT_1M.write_text(json.dumps(experiment_payload("MultiTfOneMinuteCompositeStrategy", "1m", "multi_timeframe_kline_1m_lab"), indent=2, ensure_ascii=False), encoding="utf-8")
-    EXPERIMENT_3M.write_text(json.dumps(experiment_payload("MultiTfThreeMinuteStructureStrategy", "3m", "multi_timeframe_kline_3m_lab"), indent=2, ensure_ascii=False), encoding="utf-8")
-    EXPERIMENT_5M.write_text(json.dumps(experiment_payload("MultiTfFiveMinuteRegimeStrategy", "5m", "multi_timeframe_kline_5m_lab"), indent=2, ensure_ascii=False), encoding="utf-8")
+    EXPERIMENT_1M.write_text(json.dumps(experiment_payload(["MultiTfOneMinuteCompositeStrategy", "MultiTfOneMinuteTriggerStrategy"], "1m", "multi_timeframe_kline_1m_lab"), indent=2, ensure_ascii=False), encoding="utf-8")
+    EXPERIMENT_3M.write_text(json.dumps(experiment_payload(["MultiTfThreeMinuteStructureStrategy", "MultiTfThreeMinutePullbackStrategy", "MultiTfThreeMinuteMomentumLiteStrategy", "MultiTfThreeMinuteFadeStrategy"], "3m", "multi_timeframe_kline_3m_lab"), indent=2, ensure_ascii=False), encoding="utf-8")
+    EXPERIMENT_5M.write_text(json.dumps(experiment_payload(["MultiTfFiveMinuteRegimeStrategy", "MultiTfFiveMinuteBreakoutStrategy", "MultiTfFiveMinuteBreakoutFadeStrategy", "MultiTfFiveMinuteMeanReversionStrategy"], "5m", "multi_timeframe_kline_5m_lab"), indent=2, ensure_ascii=False), encoding="utf-8")
     LEDGER_PATH.parent.mkdir(parents=True, exist_ok=True)
     LEDGER_PATH.write_text(
         "# Multi-Timeframe Kline Plan\n\n"
