@@ -160,6 +160,7 @@ def check_outputs(checks: list[Check]) -> None:
         "family_diversity_plan": AGENT_ROOT / "family_diversity/latest_family_diversity_plan.md",
         "sample_expansion_plan": AGENT_ROOT / "sample_expansion/latest_sample_expansion_plan.md",
         "entry_quality_review": AGENT_ROOT / "entry_quality/latest_entry_quality_review.md",
+        "entry_quality_directed_plan": AGENT_ROOT / "entry_quality/latest_directed_experiment_plan.md",
         "iterative_hypotheses": AGENT_ROOT / "experiments/iterative_hypothesis_ledger.md",
         "walk_forward_summary": AGENT_ROOT / "walk_forward_summaries/latest_walk_forward_summary.md",
         "promotion_report": AGENT_ROOT / "promotion_reports/latest_promotion_report.md",

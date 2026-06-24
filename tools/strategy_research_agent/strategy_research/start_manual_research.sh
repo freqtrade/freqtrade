@@ -213,8 +213,9 @@ case "$mode" in
     "$PYTHON" user_data/strategy_research/generate_memory_guided_strategies.py
     "$PYTHON" user_data/strategy_research/plan_family_diversity_experiment.py
     "$PYTHON" user_data/strategy_research/generate_sample_expansion_strategies.py
+    "$PYTHON" user_data/strategy_research/generate_entry_quality_strategies.py
     "$PYTHON" user_data/strategy_research/run_research_agent.py \
-      --experiment user_data/strategy_research/experiments/sample_expansion_experiment.json \
+      --experiment user_data/strategy_research/experiments/entry_quality_experiment.json \
       --timerange 20260101-20260201 \
       ${extra_args[@]+"${extra_args[@]}"}
     "$PYTHON" user_data/strategy_research/analyze_trade_behavior.py
@@ -377,6 +378,7 @@ Context:    user_data/strategy_research/context_sources/latest_context_source_pl
 FamilyDiv:  user_data/strategy_research/family_diversity/latest_family_diversity_plan.md
 SampleEx:   user_data/strategy_research/sample_expansion/latest_sample_expansion_plan.md
 EntryQual:  user_data/strategy_research/entry_quality/latest_entry_quality_review.md
+EntryPlan:  user_data/strategy_research/entry_quality/latest_directed_experiment_plan.md
 Lineage:    user_data/strategy_research/strategy_library/latest_strategy_lineage.md
 Memory:     user_data/strategy_research/research_memory/latest_research_memory.md
 MemPlan:    user_data/strategy_research/experiments/memory_guided_hypothesis_ledger.md
