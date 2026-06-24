@@ -15,6 +15,7 @@ rsync -a --delete \
   --exclude 'cost_audits/' \
   --exclude 'context_sources/' \
   --exclude 'family_diversity/' \
+  --exclude 'sample_expansion/' \
   --exclude 'matrix_summaries/' \
   --exclude 'walk_forward_summaries/' \
   --exclude 'promotion_candidates/' \
@@ -41,6 +42,7 @@ rsync -a --delete \
   --exclude 'experiments/behavior_experiment_*' \
   --exclude 'experiments/memory_guided_*' \
   --exclude 'experiments/family_diversity_*' \
+  --exclude 'experiments/sample_expansion_*' \
   --exclude 'experiments/walk_forward_validation_experiment.json' \
   --exclude 'sources/inbox/' \
   --exclude 'sources/reviews/' \
@@ -54,6 +56,7 @@ rsync -a --delete \
   --exclude 'iterative_research_strategies.py' \
   --exclude 'behavior_experiment_strategies.py' \
   --exclude 'memory_guided_research_strategies.py' \
+  --exclude 'sample_expansion_strategies.py' \
   "$SOURCE_ROOT/strategies/research_generated/" \
   "$ROOT/user_data/strategies/research_generated/"
 

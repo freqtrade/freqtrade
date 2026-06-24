@@ -158,6 +158,7 @@ def check_outputs(checks: list[Check]) -> None:
         "retired_seed_family": AGENT_ROOT / "experiments/retired_seed_family_ledger.md",
         "context_source_plan": AGENT_ROOT / "context_sources/latest_context_source_plan.md",
         "family_diversity_plan": AGENT_ROOT / "family_diversity/latest_family_diversity_plan.md",
+        "sample_expansion_plan": AGENT_ROOT / "sample_expansion/latest_sample_expansion_plan.md",
         "iterative_hypotheses": AGENT_ROOT / "experiments/iterative_hypothesis_ledger.md",
         "walk_forward_summary": AGENT_ROOT / "walk_forward_summaries/latest_walk_forward_summary.md",
         "promotion_report": AGENT_ROOT / "promotion_reports/latest_promotion_report.md",
