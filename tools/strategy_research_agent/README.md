@@ -67,6 +67,13 @@ Build senior researcher diagnoses and next-experiment decisions:
 user_data/strategy_research/start_manual_research.sh --mature-researcher
 ```
 
+Convert those decisions into a safe response queue or execute one queued item:
+
+```bash
+user_data/strategy_research/start_manual_research.sh --mature-researcher-queue
+user_data/strategy_research/start_manual_research.sh --execute-mature-researcher
+```
+
 Autonomous hypothesis generation plus short smoke backtests:
 
 ```bash

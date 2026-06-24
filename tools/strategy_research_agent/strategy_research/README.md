@@ -117,6 +117,27 @@ user_data/strategy_research/start_manual_research.sh --mature-researcher
 ```text
 user_data/strategy_research/mature_researcher/latest_researcher_decision.json
 user_data/strategy_research/mature_researcher/latest_researcher_decision.md
+user_data/strategy_research/mature_researcher/latest_response_queue.json
+user_data/strategy_research/mature_researcher/latest_response_queue.md
+```
+
+只把成熟研究员决策转成可执行队列：
+
+```bash
+user_data/strategy_research/start_manual_research.sh --mature-researcher-queue
+```
+
+执行最高优先级的安全队列项：
+
+```bash
+user_data/strategy_research/start_manual_research.sh --execute-mature-researcher
+```
+
+执行器一次只跑一个队列项，会写入：
+
+```text
+user_data/strategy_research/mature_researcher/latest_response_execution.json
+user_data/strategy_research/mature_researcher/latest_response_execution.md
 ```
 
 如果还要重新尝试拉取 funding/mark 辅助数据：

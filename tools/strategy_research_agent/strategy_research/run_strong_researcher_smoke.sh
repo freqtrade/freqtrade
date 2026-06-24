@@ -43,6 +43,7 @@ echo "== Strong Strategy Researcher: memory-guided smoke backtest =="
 "$PYTHON" user_data/strategy_research/analyze_strategy_research.py
 "$PYTHON" user_data/strategy_research/attribute_strategy_failures.py
 "$PYTHON" user_data/strategy_research/mature_researcher.py
+"$PYTHON" user_data/strategy_research/mature_researcher_queue.py
 "$PYTHON" user_data/strategy_research/build_strategy_lineage.py
 "$PYTHON" user_data/strategy_research/build_research_memory.py
 "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
@@ -58,5 +59,6 @@ MemStrat:   user_data/strategy_research/experiments/memory_guided_strategy_ledge
 Assessment: user_data/strategy_research/strategy_assessments/latest_strategy_assessment.md
 Failures:   user_data/strategy_research/failure_attribution/latest_failure_attribution.md
 Researcher: user_data/strategy_research/mature_researcher/latest_researcher_decision.md
+ResearchQ:  user_data/strategy_research/mature_researcher/latest_response_queue.md
 Reports:    user_data/strategy_research/reports/
 EOF
