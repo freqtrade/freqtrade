@@ -99,6 +99,8 @@ user_data/strategy_research/start_manual_research.sh --mature-researcher-queue
 user_data/strategy_research/start_manual_research.sh --execute-mature-researcher
 ```
 
+The response queue records execution history and skips duplicate `strategy + experiment + command` items inside its cooldown window, so long research loops rotate instead of repeatedly executing the same action.
+
 Autonomous hypothesis generation plus short smoke backtests:
 
 ```bash
