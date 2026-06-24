@@ -35,6 +35,7 @@ AUTONOMOUS_STRATEGY_REGISTRY = AGENT_ROOT / "experiments/autonomous_strategy_reg
 ITERATIVE_STRATEGY_REGISTRY = AGENT_ROOT / "experiments/iterative_strategy_registry.json"
 BEHAVIOR_EXPERIMENT_REGISTRY = AGENT_ROOT / "experiments/behavior_experiment_strategy_registry.json"
 MEMORY_GUIDED_REGISTRY = AGENT_ROOT / "experiments/memory_guided_strategy_registry.json"
+CONTEXT_SOURCE_REGISTRY = AGENT_ROOT / "context_sources/context_source_strategy_registry.json"
 LOOKAHEAD_CONFIG_OVERRIDE = AGENT_ROOT / "config_lookahead_pricing_override.json"
 
 
@@ -290,6 +291,7 @@ def strategy_metadata(registry: dict[str, Any]) -> dict[str, dict[str, Any]]:
         ITERATIVE_STRATEGY_REGISTRY,
         BEHAVIOR_EXPERIMENT_REGISTRY,
         MEMORY_GUIDED_REGISTRY,
+        CONTEXT_SOURCE_REGISTRY,
     ]:
         if path.exists():
             generated = load_json(path)
@@ -563,6 +565,18 @@ def load_latest_mature_researcher_queue() -> dict[str, Any] | None:
 
 def load_latest_iteration_review() -> dict[str, Any] | None:
     path = AGENT_ROOT / "agent_iterations/latest_iteration_review.json"
+    if not path.exists():
+        return None
+    try:
+        payload = load_json(path)
+    except json.JSONDecodeError:
+        return None
+    payload["_path"] = str(path.relative_to(REPO_ROOT))
+    return payload
+
+
+def load_latest_context_source_plan() -> dict[str, Any] | None:
+    path = AGENT_ROOT / "context_sources/latest_context_source_plan.json"
     if not path.exists():
         return None
     try:
@@ -975,6 +989,17 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
             f"<td>{html.escape(item.get('success_gate', ''))}</td>"
             "</tr>"
         )
+    context_source_rows = []
+    context_source_plan = payload.get("context_source_plan") or {}
+    for item in context_source_plan.get("research_tracks", []):
+        context_source_rows.append(
+            "<tr>"
+            f"<td>{html.escape(item.get('id', ''))}</td>"
+            f"<td>{html.escape(item.get('status', ''))}</td>"
+            f"<td>{html.escape(item.get('hypothesis', ''))}</td>"
+            f"<td>{html.escape(item.get('success_gate', ''))}</td>"
+            "</tr>"
+        )
     strategy_lineage_rows = []
     strategy_lineage = payload.get("strategy_lineage") or {}
     for item in strategy_lineage.get("nodes", []):
@@ -1153,6 +1178,14 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
       <table>
         <thead><tr><th>Priority</th><th>Issue</th><th>Status</th><th>Diagnosis</th><th>Proposed Upgrade</th><th>Success Gate</th></tr></thead>
         <tbody>{''.join(iteration_issue_rows)}</tbody>
+      </table>
+    </section>
+    <section>
+      <h2>Context Source Plan</h2>
+      <p>Source: <code>{html.escape(context_source_plan.get('_path', ''))}</code></p>
+      <table>
+        <thead><tr><th>Track</th><th>Status</th><th>Hypothesis</th><th>Success Gate</th></tr></thead>
+        <tbody>{''.join(context_source_rows)}</tbody>
       </table>
     </section>
     <section>
@@ -1574,6 +1607,19 @@ def write_report(paths: dict[str, Path], payload: dict[str, Any]) -> tuple[Path,
                     **item
                 )
             )
+    context_source_plan = payload.get("context_source_plan") or {}
+    if context_source_plan.get("research_tracks"):
+        lines.extend(
+            [
+                "",
+                "## Context Source Plan",
+                "",
+                "| Track | Status | Hypothesis | Success Gate |",
+                "|---|---|---|---|",
+            ]
+        )
+        for item in context_source_plan["research_tracks"]:
+            lines.append("| {id} | {status} | {hypothesis} | {success_gate} |".format(**item))
     strategy_lineage = payload.get("strategy_lineage") or {}
     if strategy_lineage.get("nodes"):
         lines.extend(
@@ -1935,6 +1981,7 @@ def main() -> None:
         "mature_researcher": load_latest_mature_researcher(),
         "mature_researcher_queue": load_latest_mature_researcher_queue(),
         "iteration_review": load_latest_iteration_review(),
+        "context_source_plan": load_latest_context_source_plan(),
         "strategy_lineage": load_latest_strategy_lineage(),
         "research_memory": load_latest_research_memory(),
         "memory_guided_hypotheses": load_memory_guided_hypotheses(),

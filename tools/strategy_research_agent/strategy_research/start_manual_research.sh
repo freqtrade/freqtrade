@@ -206,12 +206,13 @@ case "$mode" in
   research_iteration)
     echo "== Strategy Research Agent: research iteration loop =="
     "$PYTHON" user_data/strategy_research/autonomous_strategy_lab.py
+    "$PYTHON" user_data/strategy_research/plan_context_sources.py
     "$PYTHON" user_data/strategy_research/build_strategy_lineage.py
     "$PYTHON" user_data/strategy_research/build_research_memory.py
     "$PYTHON" user_data/strategy_research/plan_memory_guided_hypotheses.py
     "$PYTHON" user_data/strategy_research/generate_memory_guided_strategies.py
     "$PYTHON" user_data/strategy_research/run_research_agent.py \
-      --experiment user_data/strategy_research/experiments/memory_guided_strategy_experiment.json \
+      --experiment user_data/strategy_research/experiments/context_source_experiment.json \
       --timerange 20260101-20260201 \
       ${extra_args[@]+"${extra_args[@]}"}
     "$PYTHON" user_data/strategy_research/analyze_trade_behavior.py
@@ -369,6 +370,7 @@ Researcher: user_data/strategy_research/mature_researcher/latest_researcher_deci
 ResearchQ:  user_data/strategy_research/mature_researcher/latest_response_queue.md
 IterReview: user_data/strategy_research/agent_iterations/latest_iteration_review.md
 ImproveQ:   user_data/strategy_research/agent_iterations/improvement_queue.json
+Context:    user_data/strategy_research/context_sources/latest_context_source_plan.md
 Lineage:    user_data/strategy_research/strategy_library/latest_strategy_lineage.md
 Memory:     user_data/strategy_research/research_memory/latest_research_memory.md
 MemPlan:    user_data/strategy_research/experiments/memory_guided_hypothesis_ledger.md

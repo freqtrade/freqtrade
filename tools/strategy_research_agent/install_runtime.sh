@@ -13,6 +13,7 @@ rsync -a --delete \
   --exclude 'dashboard/' \
   --exclude 'cost_adjustments/' \
   --exclude 'cost_audits/' \
+  --exclude 'context_sources/' \
   --exclude 'matrix_summaries/' \
   --exclude 'walk_forward_summaries/' \
   --exclude 'promotion_candidates/' \
