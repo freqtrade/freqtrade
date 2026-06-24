@@ -122,8 +122,15 @@ def summarize_results(report: dict[str, Any]) -> dict[str, Any]:
         for item in autonomous_registry.get("strategies", [])
         if item.get("source_type") == "seed_followup"
     }
+    anti_edge_names = {
+        item.get("name")
+        for item in autonomous_registry.get("strategies", [])
+        if item.get("source_type") == "anti_edge_followup"
+    }
     if seed_followup_names:
         grouped["seed_followup"] = [item for item in results if item.get("strategy") in seed_followup_names]
+    if anti_edge_names:
+        grouped["anti_edge_followup"] = [item for item in results if item.get("strategy") in anti_edge_names]
     best = sorted(
         results,
         key=lambda item: (num(item.get("total_profit_pct")), num(item.get("profit_factor"))),
@@ -174,6 +181,7 @@ def build_issues(
     rejected_count = summary["classifications"].get("rejected", 0)
     autonomous_group = summary.get("groups", {}).get("autonomous_seed", {})
     followup_group = summary.get("groups", {}).get("seed_followup", {})
+    anti_edge_group = summary.get("groups", {}).get("anti_edge_followup", {})
     candidate_count = len(pools["candidate"]) + len(pools["watchlist"])
     safe_queue_count = num(mature_queue.get("safe_count"))
     cooldown_skips = [
@@ -216,6 +224,7 @@ def build_issues(
         and followup_group
         and followup_group.get("count", 0) > 0
         and followup_group.get("negative_expectancy", 0) >= max(2, followup_group.get("count", 0) // 2)
+        and not anti_edge_group
     ):
         issues.append(
             AgentIssue(
@@ -232,6 +241,30 @@ def build_issues(
                 proposed_upgrade="增加 anti-edge 研究分支：对负期望 follow-up 自动生成反向、禁用方向、退出缩短和成本压力对照实验。",
                 next_action="在 autonomous_strategy_lab 中为高样本负期望 follow-up 增加 inverse/cost-aware exit variants。",
                 success_gate="下一轮至少明确一个 follow-up 家族是可反向利用、可通过退出改善，或应被降级为失败模式。",
+            )
+        )
+
+    if (
+        result_count
+        and anti_edge_group
+        and anti_edge_group.get("count", 0) > 0
+        and anti_edge_group.get("negative_expectancy", 0) == anti_edge_group.get("count", 0)
+    ):
+        issues.append(
+            AgentIssue(
+                issue_id="anti_edge_family_failed",
+                priority=112,
+                status="open",
+                diagnosis="base seed、sample-floor、anti-edge 三层 1m OHLCV 变体均失败，简单 K 线方向/反向/快退出研究已经进入低收益区域。",
+                evidence=[
+                    f"anti_edge_count={anti_edge_group.get('count')}",
+                    f"anti_edge_negative_expectancy={anti_edge_group.get('negative_expectancy')}",
+                    f"anti_edge_max_trades={anti_edge_group.get('max_trades')}",
+                    f"autonomous_seed_negative_expectancy={autonomous_group.get('negative_expectancy')}",
+                ],
+                proposed_upgrade="加入策略族降级机制：把失败的 1m OHLCV seed 家族标记为 retired，并把下一轮研究预算转向新信息源、跨周期特征或非 OHLCV 微结构特征。",
+                next_action="实现 retired_family ledger，让 autonomous generator 跳过已证伪的 seed 家族，并生成 higher-timeframe/context-feature 实验。",
+                success_gate="下一轮不再继续扩写同一批 1m OHLCV seed，而是生成可审计的新研究族或明确需要外部特征数据。",
             )
         )
 
