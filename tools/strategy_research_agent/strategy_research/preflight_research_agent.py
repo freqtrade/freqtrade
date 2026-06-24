@@ -161,6 +161,7 @@ def check_outputs(checks: list[Check]) -> None:
         "manual_direction_plan": AGENT_ROOT / "manual_playbook/latest_manual_direction_plan.md",
         "manual_entry_confirmation_plan": AGENT_ROOT / "manual_playbook/latest_manual_entry_confirmation_plan.md",
         "manual_abstention_plan": AGENT_ROOT / "manual_playbook/latest_manual_abstention_plan.md",
+        "manual_research_review": AGENT_ROOT / "manual_playbook/latest_manual_research_review.md",
         "family_diversity_plan": AGENT_ROOT / "family_diversity/latest_family_diversity_plan.md",
         "sample_expansion_plan": AGENT_ROOT / "sample_expansion/latest_sample_expansion_plan.md",
         "entry_quality_review": AGENT_ROOT / "entry_quality/latest_entry_quality_review.md",

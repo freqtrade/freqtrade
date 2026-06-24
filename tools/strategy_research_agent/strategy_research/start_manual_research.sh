@@ -224,6 +224,7 @@ case "$mode" in
       ${extra_args[@]+"${extra_args[@]}"}
     "$PYTHON" user_data/strategy_research/analyze_trade_behavior.py
     "$PYTHON" user_data/strategy_research/entry_quality_review.py
+    "$PYTHON" user_data/strategy_research/manual_research_review.py
     "$PYTHON" user_data/strategy_research/attribute_strategy_failures.py
     "$PYTHON" user_data/strategy_research/mature_researcher.py
     "$PYTHON" user_data/strategy_research/mature_researcher_queue.py
@@ -383,6 +384,7 @@ ManualPB:   user_data/strategy_research/manual_playbook/latest_manual_trade_play
 ManualDir:  user_data/strategy_research/manual_playbook/latest_manual_direction_plan.md
 ManualEnt:  user_data/strategy_research/manual_playbook/latest_manual_entry_confirmation_plan.md
 ManualAbs:  user_data/strategy_research/manual_playbook/latest_manual_abstention_plan.md
+ManualRev:  user_data/strategy_research/manual_playbook/latest_manual_research_review.md
 FamilyDiv:  user_data/strategy_research/family_diversity/latest_family_diversity_plan.md
 SampleEx:   user_data/strategy_research/sample_expansion/latest_sample_expansion_plan.md
 EntryQual:  user_data/strategy_research/entry_quality/latest_entry_quality_review.md
