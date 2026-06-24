@@ -116,6 +116,14 @@ def summarize_results(report: dict[str, Any]) -> dict[str, Any]:
     for group, names in strategy_groups.items():
         name_set = set(names)
         grouped[group] = [item for item in results if item.get("strategy") in name_set]
+    autonomous_registry = load_json(AGENT_ROOT / "experiments/autonomous_strategy_registry.json")
+    seed_followup_names = {
+        item.get("name")
+        for item in autonomous_registry.get("strategies", [])
+        if item.get("source_type") == "seed_followup"
+    }
+    if seed_followup_names:
+        grouped["seed_followup"] = [item for item in results if item.get("strategy") in seed_followup_names]
     best = sorted(
         results,
         key=lambda item: (num(item.get("total_profit_pct")), num(item.get("profit_factor"))),
@@ -165,6 +173,7 @@ def build_issues(
     result_count = summary["result_count"]
     rejected_count = summary["classifications"].get("rejected", 0)
     autonomous_group = summary.get("groups", {}).get("autonomous_seed", {})
+    followup_group = summary.get("groups", {}).get("seed_followup", {})
     candidate_count = len(pools["candidate"]) + len(pools["watchlist"])
     safe_queue_count = num(mature_queue.get("safe_count"))
     cooldown_skips = [
@@ -181,6 +190,7 @@ def build_issues(
         and rejected_count == result_count
         and autonomous_group
         and autonomous_group.get("count", 0) > 0
+        and not followup_group
     ):
         issues.append(
             AgentIssue(
@@ -198,6 +208,30 @@ def build_issues(
                 proposed_upgrade="增加 seed-family 诊断生成器：对样本不足的 seed 自动放宽单个条件；对高交易数负期望 seed 自动生成反向/禁用/退出改造实验。",
                 next_action="实现 seed-family follow-up planner，让 --research-iteration 读取 seed 组结果并生成下一代 targeted seed variants。",
                 success_gate="下一轮 seed 组至少出现一个可评估样本量的正 PF 变体，或把高交易数负期望 seed 明确降级并生成反向实验。",
+            )
+        )
+
+    if (
+        result_count
+        and followup_group
+        and followup_group.get("count", 0) > 0
+        and followup_group.get("negative_expectancy", 0) >= max(2, followup_group.get("count", 0) // 2)
+    ):
+        issues.append(
+            AgentIssue(
+                issue_id="followup_negative_expectancy",
+                priority=108,
+                status="open",
+                diagnosis="seed follow-up 已经补足样本探索，但多数 follow-up 变体仍是负期望，说明问题从样本不足转为信号方向/成本/退出质量问题。",
+                evidence=[
+                    f"seed_followup_count={followup_group.get('count')}",
+                    f"seed_followup_negative_expectancy={followup_group.get('negative_expectancy')}",
+                    f"seed_followup_too_few_trades={followup_group.get('too_few_trades')}",
+                    f"seed_followup_max_trades={followup_group.get('max_trades')}",
+                ],
+                proposed_upgrade="增加 anti-edge 研究分支：对负期望 follow-up 自动生成反向、禁用方向、退出缩短和成本压力对照实验。",
+                next_action="在 autonomous_strategy_lab 中为高样本负期望 follow-up 增加 inverse/cost-aware exit variants。",
+                success_gate="下一轮至少明确一个 follow-up 家族是可反向利用、可通过退出改善，或应被降级为失败模式。",
             )
         )
 
