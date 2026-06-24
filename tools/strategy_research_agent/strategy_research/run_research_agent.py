@@ -1253,6 +1253,11 @@ def write_report(paths: dict[str, Path], payload: dict[str, Any]) -> tuple[Path,
     timestamp = payload["generated_at_utc"]
     json_path = report_dir / f"agent_research_{timestamp}.json"
     md_path = report_dir / f"agent_research_{timestamp}.md"
+    suffix = 1
+    while json_path.exists() or md_path.exists():
+        json_path = report_dir / f"agent_research_{timestamp}_{suffix:02d}.json"
+        md_path = report_dir / f"agent_research_{timestamp}_{suffix:02d}.md"
+        suffix += 1
     json_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
 
     lines = [
