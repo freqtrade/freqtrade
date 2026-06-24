@@ -22,6 +22,7 @@ GENERATED_FILE = GENERATED_DIR / "autonomous_research_strategies.py"
 GENERATED_REGISTRY = AGENT_ROOT / "experiments/autonomous_strategy_registry.json"
 GENERATED_EXPERIMENT = AGENT_ROOT / "experiments/autonomous_strategy_experiment.json"
 HYPOTHESIS_LEDGER = AGENT_ROOT / "experiments/autonomous_hypothesis_ledger.md"
+REPORT_INDEX = AGENT_ROOT / "reports/agent_report_index.json"
 
 
 @dataclass(frozen=True)
@@ -78,6 +79,52 @@ def common_imports(generated_at: str) -> list[str]:
 def roi_literal(roi: dict[str, float]) -> str:
     pieces = [f"{key!r}: {value!r}" for key, value in roi.items()]
     return "{" + ", ".join(pieces) + "}"
+
+
+def load_json(path: Path) -> dict[str, object]:
+    if not path.exists():
+        return {}
+    with path.open("r", encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def latest_report() -> dict[str, object]:
+    index = load_json(REPORT_INDEX)
+    latest = index.get("latest_report") if isinstance(index.get("latest_report"), dict) else {}
+    if not latest:
+        latest = index.get("latest_dashboard_refresh") if isinstance(index.get("latest_dashboard_refresh"), dict) else {}
+    path_value = latest.get("path") if isinstance(latest, dict) else None
+    if not path_value:
+        return {}
+    return load_json(REPO_ROOT / str(path_value))
+
+
+def num(value: object, default: float = 0.0) -> float:
+    try:
+        return float(value) if value is not None else default
+    except (TypeError, ValueError):
+        return default
+
+
+def needs_seed_followups(report: dict[str, object]) -> bool:
+    results = report.get("results")
+    experiment = report.get("experiment")
+    if not isinstance(results, list) or not isinstance(experiment, dict):
+        return False
+    strategy_groups = experiment.get("strategy_groups")
+    if not isinstance(strategy_groups, dict):
+        return False
+    seed_names = set(strategy_groups.get("autonomous_seed") or [])
+    seed_results = [item for item in results if isinstance(item, dict) and item.get("strategy") in seed_names]
+    if not seed_results:
+        return False
+    rejected = sum(1 for item in seed_results if item.get("classification") == "rejected")
+    too_few = sum(1 for item in seed_results if "too few trades" in ";".join(item.get("reasons", [])))
+    high_trade_negative = any(
+        num(item.get("trades")) >= 200 and (num(item.get("total_profit_pct")) < 0 or num(item.get("profit_factor")) < 1)
+        for item in seed_results
+    )
+    return rejected == len(seed_results) or too_few >= max(3, len(seed_results) // 2) or high_trade_negative
 
 
 def class_block(blueprint: Blueprint) -> list[str]:
@@ -375,6 +422,111 @@ def blueprints() -> list[Blueprint]:
     ]
 
 
+def seed_followup_blueprints(report: dict[str, object]) -> list[Blueprint]:
+    if not needs_seed_followups(report):
+        return []
+    return [
+        Blueprint(
+            class_name="AutoSampleFloorTrendProbeStrategy",
+            family="sample-floor-trend-probe",
+            regime="trend",
+            direction="long_short",
+            leverage=2.0,
+            roi={"120": 0.0, "30": 0.003, "0": 0.008},
+            stoploss=-0.008,
+            hypothesis="When trend seed variants are too sparse, loosen to a two-condition trend probe: slow regime plus 24h direction.",
+            risk_notes="Research-only sample-floor probe; reject if higher sample size still has negative expectancy.",
+            indicator_block=[
+                'dataframe["auto_ret_10m"] = dataframe["close"] / dataframe["close"].shift(10) - 1.0',
+                'dataframe["auto_volume_ok"] = dataframe["volume"] > 0',
+            ],
+            entry_block=[
+                'dataframe.loc[(dataframe["risk_allowed"] & dataframe["trend_up_regime"] & (dataframe["ret_24h"] > 0.001) & dataframe["auto_volume_ok"]), ["enter_long", "enter_tag"]] = (1, "auto_sample_trend_long")',
+                'dataframe.loc[(dataframe["risk_allowed"] & dataframe["trend_down_regime"] & (dataframe["ret_24h"] < -0.001) & dataframe["auto_volume_ok"]), ["enter_short", "enter_tag"]] = (1, "auto_sample_trend_short")',
+            ],
+            exit_block=[
+                'dataframe.loc[((dataframe["auto_ret_10m"] < -0.0005) | dataframe["range_regime"] | dataframe["high_vol_regime"]) & (dataframe["volume"] > 0), ["exit_long", "exit_tag"]] = (1, "auto_sample_trend_long_exit")',
+                'dataframe.loc[((dataframe["auto_ret_10m"] > 0.0005) | dataframe["range_regime"] | dataframe["high_vol_regime"]) & (dataframe["volume"] > 0), ["exit_short", "exit_tag"]] = (1, "auto_sample_trend_short_exit")',
+            ],
+        ),
+        Blueprint(
+            class_name="AutoSampleFloorRangeProbeStrategy",
+            family="sample-floor-range-probe",
+            regime="range",
+            direction="long_short",
+            leverage=1.5,
+            roi={"90": 0.0, "20": 0.0025, "0": 0.006},
+            stoploss=-0.006,
+            hypothesis="Range mean-reversion was too sparse; test a looser Bollinger mean-reversion probe with broad RSI bands.",
+            risk_notes="Cost-sensitive probe; promotion requires fee stress because targets are small.",
+            indicator_block=[
+                'bb = ta.BBANDS(dataframe, timeperiod=480)',
+                'dataframe["auto_bb_upper"] = bb["upperband"]',
+                'dataframe["auto_bb_middle"] = bb["middleband"]',
+                'dataframe["auto_bb_lower"] = bb["lowerband"]',
+                'dataframe["auto_rsi"] = ta.RSI(dataframe, timeperiod=60)',
+            ],
+            entry_block=[
+                'dataframe.loc[(dataframe["risk_allowed"] & dataframe["range_regime"] & (dataframe["close"] < dataframe["auto_bb_lower"]) & (dataframe["auto_rsi"] < 42) & (dataframe["volume"] > 0)), ["enter_long", "enter_tag"]] = (1, "auto_sample_range_long")',
+                'dataframe.loc[(dataframe["risk_allowed"] & dataframe["range_regime"] & (dataframe["close"] > dataframe["auto_bb_upper"]) & (dataframe["auto_rsi"] > 58) & (dataframe["volume"] > 0)), ["enter_short", "enter_tag"]] = (1, "auto_sample_range_short")',
+            ],
+            exit_block=[
+                'dataframe.loc[((dataframe["close"] >= dataframe["auto_bb_middle"]) | ~dataframe["range_regime"]) & (dataframe["volume"] > 0), ["exit_long", "exit_tag"]] = (1, "auto_sample_range_long_exit")',
+                'dataframe.loc[((dataframe["close"] <= dataframe["auto_bb_middle"]) | ~dataframe["range_regime"]) & (dataframe["volume"] > 0), ["exit_short", "exit_tag"]] = (1, "auto_sample_range_short_exit")',
+            ],
+        ),
+        Blueprint(
+            class_name="AutoSampleFloorMicroProbeStrategy",
+            family="sample-floor-micro-probe",
+            regime="micro_momentum",
+            direction="long_short",
+            leverage=2.0,
+            roi={"90": 0.0, "20": 0.003, "0": 0.007},
+            stoploss=-0.007,
+            hypothesis="Micro momentum should be evaluated with enough trades before adding slow regime filters back.",
+            risk_notes="Designed to measure signal edge; can be noisy and must pass cost stress.",
+            indicator_block=[
+                'dataframe["auto_ret_5m"] = dataframe["close"] / dataframe["close"].shift(5) - 1.0',
+                'dataframe["auto_ret_15m"] = dataframe["close"] / dataframe["close"].shift(15) - 1.0',
+                'dataframe["auto_rsi"] = ta.RSI(dataframe, timeperiod=30)',
+            ],
+            entry_block=[
+                'dataframe.loc[(dataframe["risk_allowed"] & (dataframe["auto_ret_5m"] > 0.0003) & (dataframe["auto_ret_15m"] > 0.0008) & dataframe["auto_rsi"].between(44, 72) & (dataframe["volume"] > 0)), ["enter_long", "enter_tag"]] = (1, "auto_sample_micro_long")',
+                'dataframe.loc[(dataframe["risk_allowed"] & (dataframe["auto_ret_5m"] < -0.0003) & (dataframe["auto_ret_15m"] < -0.0008) & dataframe["auto_rsi"].between(28, 56) & (dataframe["volume"] > 0)), ["enter_short", "enter_tag"]] = (1, "auto_sample_micro_short")',
+            ],
+            exit_block=[
+                'dataframe.loc[((dataframe["auto_ret_5m"] < -0.0002) | dataframe["high_vol_regime"]) & (dataframe["volume"] > 0), ["exit_long", "exit_tag"]] = (1, "auto_sample_micro_long_exit")',
+                'dataframe.loc[((dataframe["auto_ret_5m"] > 0.0002) | dataframe["high_vol_regime"]) & (dataframe["volume"] > 0), ["exit_short", "exit_tag"]] = (1, "auto_sample_micro_short_exit")',
+            ],
+        ),
+        Blueprint(
+            class_name="AutoInverseSqueezeFadeStrategy",
+            family="inverse-squeeze-fade",
+            regime="compression_expansion",
+            direction="long_short",
+            leverage=1.5,
+            roi={"120": 0.0, "30": 0.003, "0": 0.008},
+            stoploss=-0.008,
+            hypothesis="The high-trade squeeze breakout seed was strongly negative; test whether post-breakout fade has the opposite edge.",
+            risk_notes="This is an explicit inverse test, not a promotion candidate without out-of-sample confirmation.",
+            indicator_block=[
+                'dataframe["auto_high_6h"] = dataframe["high"].rolling(360).max().shift(1)',
+                'dataframe["auto_low_6h"] = dataframe["low"].rolling(360).min().shift(1)',
+                'dataframe["auto_mid_2h"] = ta.EMA(dataframe, timeperiod=120)',
+                'dataframe["auto_rsi"] = ta.RSI(dataframe, timeperiod=45)',
+            ],
+            entry_block=[
+                'dataframe.loc[(dataframe["risk_allowed"] & (dataframe["close"] > dataframe["auto_high_6h"]) & (dataframe["auto_rsi"] > 62) & (dataframe["volume"] > 0)), ["enter_short", "enter_tag"]] = (1, "auto_inverse_squeeze_short")',
+                'dataframe.loc[(dataframe["risk_allowed"] & (dataframe["close"] < dataframe["auto_low_6h"]) & (dataframe["auto_rsi"] < 38) & (dataframe["volume"] > 0)), ["enter_long", "enter_tag"]] = (1, "auto_inverse_squeeze_long")',
+            ],
+            exit_block=[
+                'dataframe.loc[((dataframe["close"] >= dataframe["auto_mid_2h"]) | dataframe["high_vol_regime"]) & (dataframe["volume"] > 0), ["exit_long", "exit_tag"]] = (1, "auto_inverse_squeeze_long_exit")',
+                'dataframe.loc[((dataframe["close"] <= dataframe["auto_mid_2h"]) | dataframe["high_vol_regime"]) & (dataframe["volume"] > 0), ["exit_short", "exit_tag"]] = (1, "auto_inverse_squeeze_short_exit")',
+            ],
+        ),
+    ]
+
+
 def build_source(items: list[Blueprint]) -> str:
     generated_at = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     lines = common_imports(generated_at)
@@ -385,15 +537,19 @@ def build_source(items: list[Blueprint]) -> str:
 
 def registry_payload(items: list[Blueprint]) -> dict[str, object]:
     generated_at = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    followup_count = sum(1 for item in items if item.family.startswith(("sample-floor", "inverse-")))
     return {
         "generated_at_utc": generated_at,
         "generated_strategy_file": str(GENERATED_FILE.relative_to(REPO_ROOT)),
         "research_mode": "autonomous_blueprint_generation",
+        "base_seed_count": len(items) - followup_count,
+        "followup_seed_count": followup_count,
         "strategies": [
             {
                 "name": item.class_name,
                 "family": f"autonomous-{item.family}",
                 "source": "autonomous_strategy_lab",
+                "source_type": "seed_followup" if item.family.startswith(("sample-floor", "inverse-")) else "base_seed",
                 "regime": item.regime,
                 "direction": item.direction,
                 "leverage_cap": item.leverage,
@@ -466,7 +622,8 @@ def ledger_markdown(payload: dict[str, object]) -> str:
 
 def main() -> None:
     args = parse_args()
-    items = blueprints()
+    report = latest_report()
+    items = blueprints() + seed_followup_blueprints(report)
     source = build_source(items)
     registry = registry_payload(items)
     experiment = experiment_payload(items, args.timerange, args.smoke_timerange)
