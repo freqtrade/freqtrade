@@ -205,6 +205,7 @@ case "$mode" in
     ;;
   research_iteration)
     echo "== Strategy Research Agent: research iteration loop =="
+    "$PYTHON" user_data/strategy_research/plan_manual_trade_playbook.py
     "$PYTHON" user_data/strategy_research/autonomous_strategy_lab.py
     "$PYTHON" user_data/strategy_research/plan_context_sources.py
     "$PYTHON" user_data/strategy_research/build_strategy_lineage.py
@@ -375,6 +376,7 @@ ResearchQ:  user_data/strategy_research/mature_researcher/latest_response_queue.
 IterReview: user_data/strategy_research/agent_iterations/latest_iteration_review.md
 ImproveQ:   user_data/strategy_research/agent_iterations/improvement_queue.json
 Context:    user_data/strategy_research/context_sources/latest_context_source_plan.md
+ManualPB:   user_data/strategy_research/manual_playbook/latest_manual_trade_playbook.md
 FamilyDiv:  user_data/strategy_research/family_diversity/latest_family_diversity_plan.md
 SampleEx:   user_data/strategy_research/sample_expansion/latest_sample_expansion_plan.md
 EntryQual:  user_data/strategy_research/entry_quality/latest_entry_quality_review.md

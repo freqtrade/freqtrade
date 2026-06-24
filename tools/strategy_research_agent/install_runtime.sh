@@ -14,6 +14,7 @@ rsync -a --delete \
   --exclude 'cost_adjustments/' \
   --exclude 'cost_audits/' \
   --exclude 'context_sources/' \
+  --exclude 'manual_playbook/' \
   --exclude 'family_diversity/' \
   --exclude 'sample_expansion/' \
   --exclude 'entry_quality/' \
