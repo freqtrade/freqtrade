@@ -133,11 +133,19 @@ user_data/strategy_research/start_manual_research.sh --mature-researcher-queue
 user_data/strategy_research/start_manual_research.sh --execute-mature-researcher
 ```
 
+队列执行器会记录每个 `strategy + experiment + command` 的执行历史，并默认在 6 小时内跳过重复项，避免长时间研究循环反复打同一个靶子。需要调试时可直接调用底层脚本：
+
+```bash
+./.venv/bin/python user_data/strategy_research/mature_researcher_queue.py --cooldown-hours 1
+./.venv/bin/python user_data/strategy_research/mature_researcher_queue.py --execute-next --cooldown-hours 1
+```
+
 执行器一次只跑一个队列项，会写入：
 
 ```text
 user_data/strategy_research/mature_researcher/latest_response_execution.json
 user_data/strategy_research/mature_researcher/latest_response_execution.md
+user_data/strategy_research/mature_researcher/response_execution_history.jsonl
 ```
 
 如果还要重新尝试拉取 funding/mark 辅助数据：

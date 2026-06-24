@@ -942,6 +942,10 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
             f"<td>{html.escape(item.get('experiment', ''))}</td>"
             f"<td>{html.escape(item.get('objective', ''))}</td>"
             f"<td>{item.get('safe_to_execute')}</td>"
+            f"<td>{item.get('attempts_24h')}</td>"
+            f"<td>{html.escape(item.get('last_executed_utc') or '')}</td>"
+            f"<td>{html.escape(item.get('cooldown_until_utc') or '')}</td>"
+            f"<td>{html.escape(item.get('skip_reason') or '')}</td>"
             f"<td>{html.escape(item.get('expected_runtime', ''))}</td>"
             f"<td><code>{html.escape(' '.join(item.get('command', [])))}</code></td>"
             "</tr>"
@@ -1114,7 +1118,7 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
         <tbody>{''.join(mature_researcher_rows)}</tbody>
       </table>
       <table>
-        <thead><tr><th>Priority</th><th>Strategy</th><th>Experiment</th><th>Objective</th><th>Safe</th><th>Runtime</th><th>Command</th></tr></thead>
+        <thead><tr><th>Priority</th><th>Strategy</th><th>Experiment</th><th>Objective</th><th>Safe</th><th>Attempts 24h</th><th>Last</th><th>Cooldown Until</th><th>Skip Reason</th><th>Runtime</th><th>Command</th></tr></thead>
         <tbody>{''.join(mature_queue_rows)}</tbody>
       </table>
     </section>
@@ -1503,15 +1507,15 @@ def write_report(paths: dict[str, Path], payload: dict[str, Any]) -> tuple[Path,
                 "",
                 "## Mature Researcher Response Queue",
                 "",
-                "| Priority | Strategy | Experiment | Objective | Safe | Runtime | Command |",
-                "|---:|---|---|---|---:|---|---|",
+                "| Priority | Strategy | Experiment | Objective | Safe | Attempts 24h | Last | Cooldown Until | Skip Reason | Runtime | Command |",
+                "|---:|---|---|---|---:|---:|---|---|---|---|---|",
             ]
         )
         for item in mature_queue["queue"][:20]:
             row = dict(item)
             row["command"] = " ".join(item.get("command", []))
             lines.append(
-                "| {priority} | {strategy} | {experiment} | {objective} | {safe_to_execute} | {expected_runtime} | `{command}` |".format(
+                "| {priority} | {strategy} | {experiment} | {objective} | {safe_to_execute} | {attempts_24h} | {last_executed_utc} | {cooldown_until_utc} | {skip_reason} | {expected_runtime} | `{command}` |".format(
                     **row,
                 )
             )
