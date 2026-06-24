@@ -16,6 +16,7 @@ rsync -a --delete \
   --exclude 'context_sources/' \
   --exclude 'family_diversity/' \
   --exclude 'sample_expansion/' \
+  --exclude 'entry_quality/' \
   --exclude 'matrix_summaries/' \
   --exclude 'walk_forward_summaries/' \
   --exclude 'promotion_candidates/' \

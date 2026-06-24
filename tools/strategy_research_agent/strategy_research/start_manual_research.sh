@@ -218,6 +218,7 @@ case "$mode" in
       --timerange 20260101-20260201 \
       ${extra_args[@]+"${extra_args[@]}"}
     "$PYTHON" user_data/strategy_research/analyze_trade_behavior.py
+    "$PYTHON" user_data/strategy_research/entry_quality_review.py
     "$PYTHON" user_data/strategy_research/attribute_strategy_failures.py
     "$PYTHON" user_data/strategy_research/mature_researcher.py
     "$PYTHON" user_data/strategy_research/mature_researcher_queue.py
@@ -375,6 +376,7 @@ ImproveQ:   user_data/strategy_research/agent_iterations/improvement_queue.json
 Context:    user_data/strategy_research/context_sources/latest_context_source_plan.md
 FamilyDiv:  user_data/strategy_research/family_diversity/latest_family_diversity_plan.md
 SampleEx:   user_data/strategy_research/sample_expansion/latest_sample_expansion_plan.md
+EntryQual:  user_data/strategy_research/entry_quality/latest_entry_quality_review.md
 Lineage:    user_data/strategy_research/strategy_library/latest_strategy_lineage.md
 Memory:     user_data/strategy_research/research_memory/latest_research_memory.md
 MemPlan:    user_data/strategy_research/experiments/memory_guided_hypothesis_ledger.md
