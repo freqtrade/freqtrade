@@ -165,6 +165,7 @@ def check_outputs(checks: list[Check]) -> None:
         "behavior_variant_ledger": AGENT_ROOT / "experiments/behavior_experiment_hypothesis_ledger.md",
         "failure_attribution": AGENT_ROOT / "failure_attribution/latest_failure_attribution.md",
         "mature_researcher": AGENT_ROOT / "mature_researcher/latest_researcher_decision.md",
+        "mature_researcher_queue": AGENT_ROOT / "mature_researcher/latest_response_queue.md",
         "strategy_lineage": AGENT_ROOT / "strategy_library/latest_strategy_lineage.md",
         "research_memory": AGENT_ROOT / "research_memory/latest_research_memory.md",
         "memory_guided_hypotheses": AGENT_ROOT / "experiments/memory_guided_hypothesis_ledger.md",
