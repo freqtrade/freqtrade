@@ -111,6 +111,11 @@ def summarize_results(report: dict[str, Any]) -> dict[str, Any]:
         classification = item.get("classification", "unknown")
         classifications[classification] = classifications.get(classification, 0) + 1
     unique_strategies = sorted({item.get("strategy", "") for item in results if item.get("strategy")})
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    strategy_groups = report.get("experiment", {}).get("strategy_groups", {})
+    for group, names in strategy_groups.items():
+        name_set = set(names)
+        grouped[group] = [item for item in results if item.get("strategy") in name_set]
     best = sorted(
         results,
         key=lambda item: (num(item.get("total_profit_pct")), num(item.get("profit_factor"))),
@@ -120,6 +125,20 @@ def summarize_results(report: dict[str, Any]) -> dict[str, Any]:
         "result_count": len(results),
         "unique_strategy_count": len(unique_strategies),
         "classifications": classifications,
+        "groups": {
+            name: {
+                "count": len(items),
+                "rejected": sum(1 for item in items if item.get("classification") == "rejected"),
+                "too_few_trades": sum(1 for item in items if "too few trades" in ";".join(item.get("reasons", []))),
+                "negative_expectancy": sum(
+                    1
+                    for item in items
+                    if num(item.get("total_profit_pct")) < 0 or num(item.get("profit_factor")) < 1
+                ),
+                "max_trades": max((num(item.get("trades")) for item in items), default=0),
+            }
+            for name, items in grouped.items()
+        },
         "best_results": [
             {
                 "strategy": item.get("strategy"),
@@ -145,6 +164,7 @@ def build_issues(
     summary = summarize_results(report)
     result_count = summary["result_count"]
     rejected_count = summary["classifications"].get("rejected", 0)
+    autonomous_group = summary.get("groups", {}).get("autonomous_seed", {})
     candidate_count = len(pools["candidate"]) + len(pools["watchlist"])
     safe_queue_count = num(mature_queue.get("safe_count"))
     cooldown_skips = [
@@ -156,7 +176,32 @@ def build_issues(
     duplicate_history = len(history_keys) - len(set(history_keys))
     issues: list[AgentIssue] = []
 
-    if result_count and rejected_count == result_count:
+    if (
+        result_count
+        and rejected_count == result_count
+        and autonomous_group
+        and autonomous_group.get("count", 0) > 0
+    ):
+        issues.append(
+            AgentIssue(
+                issue_id="seed_family_underpowered",
+                priority=106,
+                status="open",
+                diagnosis="自主 seed 策略族已经加入研究闭环，但本轮 seed 仍全部被拒，问题从缺少探索转为 seed 家族本身样本/edge 不足。",
+                evidence=[
+                    f"autonomous_seed_count={autonomous_group.get('count')}",
+                    f"autonomous_seed_rejected={autonomous_group.get('rejected')}",
+                    f"autonomous_seed_too_few_trades={autonomous_group.get('too_few_trades')}",
+                    f"autonomous_seed_negative_expectancy={autonomous_group.get('negative_expectancy')}",
+                    f"autonomous_seed_max_trades={autonomous_group.get('max_trades')}",
+                ],
+                proposed_upgrade="增加 seed-family 诊断生成器：对样本不足的 seed 自动放宽单个条件；对高交易数负期望 seed 自动生成反向/禁用/退出改造实验。",
+                next_action="实现 seed-family follow-up planner，让 --research-iteration 读取 seed 组结果并生成下一代 targeted seed variants。",
+                success_gate="下一轮 seed 组至少出现一个可评估样本量的正 PF 变体，或把高交易数负期望 seed 明确降级并生成反向实验。",
+            )
+        )
+
+    if result_count and rejected_count == result_count and not autonomous_group:
         issues.append(
             AgentIssue(
                 issue_id="no_candidate_yield",
@@ -171,6 +216,23 @@ def build_issues(
                 proposed_upgrade="增加更强的新策略族生成器，并要求每轮至少覆盖趋势、均值回归、短动量、成本压力四类不同假设。",
                 next_action="实现或刷新一个 strategy-family generator，再跑 --research-iteration 验证候选产出是否改善。",
                 success_gate="下一轮至少产生 1 个 watchlist/research_candidate，或明确证明全部新族在成本压力下失败。",
+            )
+        )
+
+    if result_count and autonomous_group and autonomous_group.get("too_few_trades", 0) >= max(3, autonomous_group.get("count", 0) // 2):
+        issues.append(
+            AgentIssue(
+                issue_id="sample_floor_failure",
+                priority=94,
+                status="open",
+                diagnosis="多数 seed 策略仍因交易太少被拒，Agent 需要把样本量作为策略生成阶段的一等目标。",
+                evidence=[
+                    f"autonomous_seed_too_few_trades={autonomous_group.get('too_few_trades')}",
+                    f"autonomous_seed_count={autonomous_group.get('count')}",
+                ],
+                proposed_upgrade="为 seed 生成器加入 sample-floor variants：每个稀疏 seed 自动生成一个只放宽单一入场条件的版本，并保留原始版本作对照。",
+                next_action="在 autonomous_strategy_lab 中增加 sample-floor blueprint 或 follow-up variant generator。",
+                success_gate="下一轮至少一半 seed 变体达到最低可评估交易数。",
             )
         )
 

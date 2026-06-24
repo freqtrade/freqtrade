@@ -205,6 +205,7 @@ case "$mode" in
     ;;
   research_iteration)
     echo "== Strategy Research Agent: research iteration loop =="
+    "$PYTHON" user_data/strategy_research/autonomous_strategy_lab.py
     "$PYTHON" user_data/strategy_research/build_strategy_lineage.py
     "$PYTHON" user_data/strategy_research/build_research_memory.py
     "$PYTHON" user_data/strategy_research/plan_memory_guided_hypotheses.py
