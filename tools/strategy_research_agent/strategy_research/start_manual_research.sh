@@ -7,7 +7,7 @@ PYTHON="${PYTHON:-./.venv/bin/python}"
 
 usage() {
   cat <<'EOF'
-Usage: user_data/strategy_research/start_manual_research.sh [--quick|--source-scout|--strong-researcher-smoke|--autonomous-smoke|--iterate-smoke|--walk-forward|--promotion-gate|--agenda|--next-agenda|--execute-next-agenda|--trade-behavior|--behavior-experiments|--behavior-variants|--failure-attribution|--strategy-lineage|--research-memory|--memory-guided-hypotheses|--memory-guided-strategies|--full|--full-with-aux|--preflight-only] [--extra-agent-arg ARG ...]
+Usage: user_data/strategy_research/start_manual_research.sh [--quick|--source-scout|--strong-researcher-smoke|--autonomous-smoke|--iterate-smoke|--walk-forward|--promotion-gate|--agenda|--next-agenda|--execute-next-agenda|--trade-behavior|--behavior-experiments|--behavior-variants|--failure-attribution|--mature-researcher|--strategy-lineage|--research-memory|--memory-guided-hypotheses|--memory-guided-strategies|--full|--full-with-aux|--preflight-only] [--extra-agent-arg ARG ...]
 
 Manual entrypoint for the research-only strategy agent.
 
@@ -31,6 +31,8 @@ Modes:
                      Generate strategy variants from behavior experiment plans.
   --failure-attribution
                      Build cross-evidence strategy failure attribution.
+  --mature-researcher
+                     Build the senior researcher diagnosis and next-experiment decision plan.
   --strategy-lineage
                      Build strategy library lineage and refresh report/dashboard.
   --research-memory
@@ -112,6 +114,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --failure-attribution)
       mode="failure_attribution"
+      shift
+      ;;
+    --mature-researcher)
+      mode="mature_researcher"
       shift
       ;;
     --strategy-lineage)
@@ -254,6 +260,13 @@ PY
     "$PYTHON" user_data/strategy_research/attribute_strategy_failures.py
     "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
     ;;
+  mature_researcher)
+    echo "== Strategy Research Agent: mature researcher decision plan =="
+    "$PYTHON" user_data/strategy_research/analyze_strategy_research.py
+    "$PYTHON" user_data/strategy_research/attribute_strategy_failures.py
+    "$PYTHON" user_data/strategy_research/mature_researcher.py
+    "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
+    ;;
   strategy_lineage)
     echo "== Strategy Research Agent: strategy lineage =="
     "$PYTHON" user_data/strategy_research/build_strategy_lineage.py
@@ -305,6 +318,7 @@ Behavior:   user_data/strategy_research/trade_behavior/latest_trade_behavior.md
 BehaviorEx: user_data/strategy_research/behavior_experiments/latest_behavior_experiment_plan.md
 BehaviorVar:user_data/strategy_research/experiments/behavior_experiment_hypothesis_ledger.md
 Failures:   user_data/strategy_research/failure_attribution/latest_failure_attribution.md
+Researcher: user_data/strategy_research/mature_researcher/latest_researcher_decision.md
 Lineage:    user_data/strategy_research/strategy_library/latest_strategy_lineage.md
 Memory:     user_data/strategy_research/research_memory/latest_research_memory.md
 MemPlan:    user_data/strategy_research/experiments/memory_guided_hypothesis_ledger.md

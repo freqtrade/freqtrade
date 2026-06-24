@@ -24,6 +24,7 @@ $ExcludedTopDirs = @(
     "trade_behavior",
     "behavior_experiments",
     "failure_attribution",
+    "mature_researcher",
     "strategy_library",
     "research_memory",
     "source_discovery",

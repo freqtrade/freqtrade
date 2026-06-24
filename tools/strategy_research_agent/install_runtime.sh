@@ -23,6 +23,7 @@ rsync -a --delete \
   --exclude 'trade_behavior/' \
   --exclude 'behavior_experiments/' \
   --exclude 'failure_attribution/' \
+  --exclude 'mature_researcher/' \
   --exclude 'strategy_library/' \
   --exclude 'research_memory/' \
   --exclude 'source_discovery/' \

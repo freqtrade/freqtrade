@@ -537,6 +537,18 @@ def load_latest_failure_attribution() -> dict[str, Any] | None:
     return payload
 
 
+def load_latest_mature_researcher() -> dict[str, Any] | None:
+    path = AGENT_ROOT / "mature_researcher/latest_researcher_decision.json"
+    if not path.exists():
+        return None
+    try:
+        payload = load_json(path)
+    except json.JSONDecodeError:
+        return None
+    payload["_path"] = str(path.relative_to(REPO_ROOT))
+    return payload
+
+
 def load_latest_strategy_lineage() -> dict[str, Any] | None:
     path = AGENT_ROOT / "strategy_library/latest_strategy_lineage.json"
     if not path.exists():
@@ -894,6 +906,20 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
             f"<td>{html.escape(', '.join(top.get('linked_experiments', [])))}</td>"
             "</tr>"
         )
+    mature_researcher_rows = []
+    mature_researcher = payload.get("mature_researcher") or {}
+    for item in mature_researcher.get("top_decisions", []):
+        mature_researcher_rows.append(
+            "<tr>"
+            f"<td>{item.get('priority')}</td>"
+            f"<td>{html.escape(item.get('strategy', ''))}</td>"
+            f"<td>{html.escape(item.get('diagnosis', ''))}</td>"
+            f"<td>{html.escape(item.get('confidence', ''))}</td>"
+            f"<td><code>{html.escape(item.get('next_command', ''))}</code></td>"
+            f"<td>{html.escape(item.get('success_gate', ''))}</td>"
+            f"<td>{html.escape(item.get('promotion_block', ''))}</td>"
+            "</tr>"
+        )
     strategy_lineage_rows = []
     strategy_lineage = payload.get("strategy_lineage") or {}
     for item in strategy_lineage.get("nodes", []):
@@ -1053,6 +1079,13 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
       <table>
         <thead><tr><th>Strategy</th><th>Top Mode</th><th>Severity</th><th>Recommendation</th><th>Linked Experiments</th></tr></thead>
         <tbody>{''.join(failure_attribution_rows)}</tbody>
+      </table>
+    </section>
+    <section>
+      <h2>成熟研究员决策</h2>
+      <table>
+        <thead><tr><th>Priority</th><th>Strategy</th><th>Diagnosis</th><th>Confidence</th><th>Next Command</th><th>Success Gate</th><th>Promotion Block</th></tr></thead>
+        <tbody>{''.join(mature_researcher_rows)}</tbody>
       </table>
     </section>
     <section>
@@ -1416,6 +1449,23 @@ def write_report(paths: dict[str, Path], payload: dict[str, Any]) -> tuple[Path,
                     linked=", ".join(top.get("linked_experiments", [])),
                 )
             )
+    mature_researcher = payload.get("mature_researcher") or {}
+    if mature_researcher.get("top_decisions"):
+        lines.extend(
+            [
+                "",
+                "## Mature Researcher Decisions",
+                "",
+                "| Priority | Strategy | Diagnosis | Confidence | Next Command | Success Gate | Promotion Block |",
+                "|---:|---|---|---|---|---|---|",
+            ]
+        )
+        for item in mature_researcher["top_decisions"]:
+            lines.append(
+                "| {priority} | {strategy} | {diagnosis} | {confidence} | `{next_command}` | {success_gate} | {promotion_block} |".format(
+                    **item
+                )
+            )
     strategy_lineage = payload.get("strategy_lineage") or {}
     if strategy_lineage.get("nodes"):
         lines.extend(
@@ -1774,6 +1824,7 @@ def main() -> None:
         "trade_behavior": load_latest_trade_behavior(),
         "behavior_experiments": load_latest_behavior_experiment_plan(),
         "failure_attribution": load_latest_failure_attribution(),
+        "mature_researcher": load_latest_mature_researcher(),
         "strategy_lineage": load_latest_strategy_lineage(),
         "research_memory": load_latest_research_memory(),
         "memory_guided_hypotheses": load_memory_guided_hypotheses(),
