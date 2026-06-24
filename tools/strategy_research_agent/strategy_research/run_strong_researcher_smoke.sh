@@ -18,7 +18,8 @@ Research-only flow:
   4. Plan and generate memory-guided strategy variants.
   5. Verify Freqtrade can discover generated variants.
   6. Smoke backtest generated variants on a short timerange.
-  7. Rebuild lineage/memory and refresh dashboard/report.
+  7. Build mature researcher diagnosis and next-experiment decisions.
+  8. Rebuild lineage/memory and refresh dashboard/report.
 EOF
 
 "$PYTHON" user_data/strategy_research/preflight_research_agent.py
@@ -41,6 +42,7 @@ echo "== Strong Strategy Researcher: memory-guided smoke backtest =="
 
 "$PYTHON" user_data/strategy_research/analyze_strategy_research.py
 "$PYTHON" user_data/strategy_research/attribute_strategy_failures.py
+"$PYTHON" user_data/strategy_research/mature_researcher.py
 "$PYTHON" user_data/strategy_research/build_strategy_lineage.py
 "$PYTHON" user_data/strategy_research/build_research_memory.py
 "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
@@ -55,5 +57,6 @@ MemPlan:    user_data/strategy_research/experiments/memory_guided_hypothesis_led
 MemStrat:   user_data/strategy_research/experiments/memory_guided_strategy_ledger.md
 Assessment: user_data/strategy_research/strategy_assessments/latest_strategy_assessment.md
 Failures:   user_data/strategy_research/failure_attribution/latest_failure_attribution.md
+Researcher: user_data/strategy_research/mature_researcher/latest_researcher_decision.md
 Reports:    user_data/strategy_research/reports/
 EOF

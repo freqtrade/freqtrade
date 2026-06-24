@@ -95,7 +95,29 @@ user_data/strategy_research/start_manual_research.sh --full
 user_data/strategy_research/start_manual_research.sh --strong-researcher-smoke
 ```
 
-它会串联 source scout、strategy lineage、research memory、memory-guided hypothesis planning、memory-guided strategy generation、Freqtrade `list-strategies`、短区间 smoke backtesting、评分/失败归因刷新和 dashboard/report 刷新。这个模式仍然是 research-only，不读取私钥、不改 dry-run/live 配置、不启动交易。
+它会串联 source scout、strategy lineage、research memory、memory-guided hypothesis planning、memory-guided strategy generation、Freqtrade `list-strategies`、短区间 smoke backtesting、评分/失败归因、成熟研究员决策计划和 dashboard/report 刷新。这个模式仍然是 research-only，不读取私钥、不改 dry-run/live 配置、不启动交易。
+
+只刷新成熟研究员诊断和下一步实验计划：
+
+```bash
+user_data/strategy_research/start_manual_research.sh --mature-researcher
+```
+
+成熟研究员决策器会读取最新回测、交易行为、失败归因、评分卡和晋级闸门，自动判断：
+
+- 高频但亏损：停止加杠杆，转向反向信号、低杠杆 edge 网格、手续费压力、延迟入场和短持仓退出实验。
+- 多空都亏：拆 long-only / short-only，按方向跑 regime matrix，不允许用混合收益掩盖双侧失败。
+- 入场时机差：用 MFE/MAE 证据触发延迟入场、价格先朝有利方向移动、入场前后对照实验。
+- 成本敏感：自动要求 base fee / stress fee / slippage 检查，不允许 base-fee-only 晋级。
+- 样本不足：每次只放宽一个条件，并保持最多 3 个确认条件，避免复杂过拟合。
+- 候选策略：必须补齐 recursive/lookahead、regime matrix、walk-forward 和 stress-cost 才能进入人工 dry-run 评审。
+
+输出：
+
+```text
+user_data/strategy_research/mature_researcher/latest_researcher_decision.json
+user_data/strategy_research/mature_researcher/latest_researcher_decision.md
+```
 
 如果还要重新尝试拉取 funding/mark 辅助数据：
 

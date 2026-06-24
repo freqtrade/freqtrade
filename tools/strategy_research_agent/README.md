@@ -61,6 +61,12 @@ Integrated strong researcher smoke loop:
 user_data/strategy_research/start_manual_research.sh --strong-researcher-smoke
 ```
 
+Build senior researcher diagnoses and next-experiment decisions:
+
+```bash
+user_data/strategy_research/start_manual_research.sh --mature-researcher
+```
+
 Autonomous hypothesis generation plus short smoke backtests:
 
 ```bash
