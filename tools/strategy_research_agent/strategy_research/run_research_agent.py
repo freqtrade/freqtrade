@@ -561,6 +561,18 @@ def load_latest_mature_researcher_queue() -> dict[str, Any] | None:
     return payload
 
 
+def load_latest_iteration_review() -> dict[str, Any] | None:
+    path = AGENT_ROOT / "agent_iterations/latest_iteration_review.json"
+    if not path.exists():
+        return None
+    try:
+        payload = load_json(path)
+    except json.JSONDecodeError:
+        return None
+    payload["_path"] = str(path.relative_to(REPO_ROOT))
+    return payload
+
+
 def load_latest_strategy_lineage() -> dict[str, Any] | None:
     path = AGENT_ROOT / "strategy_library/latest_strategy_lineage.json"
     if not path.exists():
@@ -950,6 +962,19 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
             f"<td><code>{html.escape(' '.join(item.get('command', [])))}</code></td>"
             "</tr>"
         )
+    iteration_issue_rows = []
+    iteration_review = payload.get("iteration_review") or {}
+    for item in iteration_review.get("agent_issues", [])[:10]:
+        iteration_issue_rows.append(
+            "<tr>"
+            f"<td>{item.get('priority')}</td>"
+            f"<td>{html.escape(item.get('issue_id', ''))}</td>"
+            f"<td>{html.escape(item.get('status', ''))}</td>"
+            f"<td>{html.escape(item.get('diagnosis', ''))}</td>"
+            f"<td>{html.escape(item.get('proposed_upgrade', ''))}</td>"
+            f"<td>{html.escape(item.get('success_gate', ''))}</td>"
+            "</tr>"
+        )
     strategy_lineage_rows = []
     strategy_lineage = payload.get("strategy_lineage") or {}
     for item in strategy_lineage.get("nodes", []):
@@ -1120,6 +1145,14 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
       <table>
         <thead><tr><th>Priority</th><th>Strategy</th><th>Experiment</th><th>Objective</th><th>Safe</th><th>Attempts 24h</th><th>Last</th><th>Cooldown Until</th><th>Skip Reason</th><th>Runtime</th><th>Command</th></tr></thead>
         <tbody>{''.join(mature_queue_rows)}</tbody>
+      </table>
+    </section>
+    <section>
+      <h2>Agent 迭代复盘</h2>
+      <p>Source: <code>{html.escape(iteration_review.get('_path', ''))}</code></p>
+      <table>
+        <thead><tr><th>Priority</th><th>Issue</th><th>Status</th><th>Diagnosis</th><th>Proposed Upgrade</th><th>Success Gate</th></tr></thead>
+        <tbody>{''.join(iteration_issue_rows)}</tbody>
       </table>
     </section>
     <section>
@@ -1519,6 +1552,23 @@ def write_report(paths: dict[str, Path], payload: dict[str, Any]) -> tuple[Path,
                     **row,
                 )
             )
+    iteration_review = payload.get("iteration_review") or {}
+    if iteration_review.get("agent_issues"):
+        lines.extend(
+            [
+                "",
+                "## Agent Iteration Review",
+                "",
+                "| Priority | Issue | Status | Diagnosis | Proposed Upgrade | Success Gate |",
+                "|---:|---|---|---|---|---|",
+            ]
+        )
+        for item in iteration_review["agent_issues"][:10]:
+            lines.append(
+                "| {priority} | {issue_id} | {status} | {diagnosis} | {proposed_upgrade} | {success_gate} |".format(
+                    **item
+                )
+            )
     strategy_lineage = payload.get("strategy_lineage") or {}
     if strategy_lineage.get("nodes"):
         lines.extend(
@@ -1879,6 +1929,7 @@ def main() -> None:
         "failure_attribution": load_latest_failure_attribution(),
         "mature_researcher": load_latest_mature_researcher(),
         "mature_researcher_queue": load_latest_mature_researcher_queue(),
+        "iteration_review": load_latest_iteration_review(),
         "strategy_lineage": load_latest_strategy_lineage(),
         "research_memory": load_latest_research_memory(),
         "memory_guided_hypotheses": load_memory_guided_hypotheses(),

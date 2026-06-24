@@ -7,7 +7,7 @@ PYTHON="${PYTHON:-./.venv/bin/python}"
 
 usage() {
   cat <<'EOF'
-Usage: user_data/strategy_research/start_manual_research.sh [--quick|--source-scout|--strong-researcher-smoke|--autonomous-smoke|--iterate-smoke|--walk-forward|--promotion-gate|--agenda|--next-agenda|--execute-next-agenda|--trade-behavior|--behavior-experiments|--behavior-variants|--failure-attribution|--mature-researcher|--mature-researcher-queue|--execute-mature-researcher|--strategy-lineage|--research-memory|--memory-guided-hypotheses|--memory-guided-strategies|--full|--full-with-aux|--preflight-only] [--extra-agent-arg ARG ...]
+Usage: user_data/strategy_research/start_manual_research.sh [--quick|--source-scout|--strong-researcher-smoke|--research-iteration|--autonomous-smoke|--iterate-smoke|--walk-forward|--promotion-gate|--agenda|--next-agenda|--execute-next-agenda|--trade-behavior|--behavior-experiments|--behavior-variants|--failure-attribution|--mature-researcher|--mature-researcher-queue|--execute-mature-researcher|--strategy-lineage|--research-memory|--memory-guided-hypotheses|--memory-guided-strategies|--full|--full-with-aux|--preflight-only] [--extra-agent-arg ARG ...]
 
 Manual entrypoint for the research-only strategy agent.
 
@@ -16,6 +16,8 @@ Modes:
   --source-scout     Build the external-source discovery and review queue.
   --strong-researcher-smoke
                      Run the integrated research-only scout/memory/generate/smoke loop.
+  --research-iteration
+                     Run the fixed experiment -> agent diagnosis -> improvement queue loop.
   --autonomous-smoke Generate autonomous hypotheses and run a short smoke backtest.
   --iterate-smoke    Generate V2 hypotheses from the latest autonomous failures and smoke test them.
   --walk-forward     Run fixed-window validation for current iterative strategies.
@@ -70,6 +72,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --strong-researcher-smoke)
       mode="strong_researcher_smoke"
+      shift
+      ;;
+    --research-iteration)
+      mode="research_iteration"
       shift
       ;;
     --full)
@@ -196,6 +202,23 @@ case "$mode" in
   strong_researcher_smoke)
     echo "== Strategy Research Agent: strong researcher smoke =="
     user_data/strategy_research/run_strong_researcher_smoke.sh
+    ;;
+  research_iteration)
+    echo "== Strategy Research Agent: research iteration loop =="
+    "$PYTHON" user_data/strategy_research/build_strategy_lineage.py
+    "$PYTHON" user_data/strategy_research/build_research_memory.py
+    "$PYTHON" user_data/strategy_research/plan_memory_guided_hypotheses.py
+    "$PYTHON" user_data/strategy_research/generate_memory_guided_strategies.py
+    "$PYTHON" user_data/strategy_research/run_research_agent.py \
+      --experiment user_data/strategy_research/experiments/memory_guided_strategy_experiment.json \
+      --timerange 20260101-20260201 \
+      ${extra_args[@]+"${extra_args[@]}"}
+    "$PYTHON" user_data/strategy_research/analyze_trade_behavior.py
+    "$PYTHON" user_data/strategy_research/attribute_strategy_failures.py
+    "$PYTHON" user_data/strategy_research/mature_researcher.py
+    "$PYTHON" user_data/strategy_research/mature_researcher_queue.py
+    "$PYTHON" user_data/strategy_research/agent_iteration_review.py
+    "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
     ;;
   autonomous_smoke)
     echo "== Strategy Research Agent: autonomous strategy smoke =="
@@ -343,6 +366,8 @@ BehaviorVar:user_data/strategy_research/experiments/behavior_experiment_hypothes
 Failures:   user_data/strategy_research/failure_attribution/latest_failure_attribution.md
 Researcher: user_data/strategy_research/mature_researcher/latest_researcher_decision.md
 ResearchQ:  user_data/strategy_research/mature_researcher/latest_response_queue.md
+IterReview: user_data/strategy_research/agent_iterations/latest_iteration_review.md
+ImproveQ:   user_data/strategy_research/agent_iterations/improvement_queue.json
 Lineage:    user_data/strategy_research/strategy_library/latest_strategy_lineage.md
 Memory:     user_data/strategy_research/research_memory/latest_research_memory.md
 MemPlan:    user_data/strategy_research/experiments/memory_guided_hypothesis_ledger.md

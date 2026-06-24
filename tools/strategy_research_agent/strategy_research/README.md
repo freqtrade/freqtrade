@@ -121,6 +121,33 @@ user_data/strategy_research/mature_researcher/latest_response_queue.json
 user_data/strategy_research/mature_researcher/latest_response_queue.md
 ```
 
+固定研究迭代闭环：
+
+```bash
+user_data/strategy_research/start_manual_research.sh --research-iteration
+```
+
+这条命令把你总结的路线固化为默认动作：
+
+```text
+生成/刷新研究记忆
+-> 生成记忆驱动策略
+-> 跑一轮 Freqtrade 回测
+-> 分析交易行为和失败归因
+-> 生成成熟研究员决策与响应队列
+-> 复盘 Agent 研究员本身的问题
+-> 写入下一轮 Agent 升级队列
+```
+
+复盘输出：
+
+```text
+user_data/strategy_research/agent_iterations/latest_iteration_review.json
+user_data/strategy_research/agent_iterations/latest_iteration_review.md
+user_data/strategy_research/agent_iterations/improvement_queue.json
+user_data/strategy_research/agent_iterations/improvement_queue.md
+```
+
 只把成熟研究员决策转成可执行队列：
 
 ```bash

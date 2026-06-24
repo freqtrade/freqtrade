@@ -86,6 +86,19 @@ Integrated strong researcher smoke loop:
 user_data/strategy_research/start_manual_research.sh --strong-researcher-smoke
 ```
 
+Fixed research iteration loop:
+
+```bash
+user_data/strategy_research/start_manual_research.sh --research-iteration
+```
+
+This runs the agent loop as `experiment -> strategy result summary -> researcher diagnosis -> response queue -> agent iteration review`. The review writes the current researcher weaknesses and the next agent-upgrade queue to:
+
+```text
+user_data/strategy_research/agent_iterations/latest_iteration_review.md
+user_data/strategy_research/agent_iterations/improvement_queue.json
+```
+
 Build senior researcher diagnoses and next-experiment decisions:
 
 ```bash
