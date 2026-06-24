@@ -23,6 +23,9 @@ GENERATED_REGISTRY = AGENT_ROOT / "experiments/autonomous_strategy_registry.json
 GENERATED_EXPERIMENT = AGENT_ROOT / "experiments/autonomous_strategy_experiment.json"
 HYPOTHESIS_LEDGER = AGENT_ROOT / "experiments/autonomous_hypothesis_ledger.md"
 REPORT_INDEX = AGENT_ROOT / "reports/agent_report_index.json"
+IMPROVEMENT_QUEUE = AGENT_ROOT / "agent_iterations/improvement_queue.json"
+RETIRED_FAMILY_JSON = AGENT_ROOT / "experiments/retired_seed_family_ledger.json"
+RETIRED_FAMILY_MD = AGENT_ROOT / "experiments/retired_seed_family_ledger.md"
 
 
 @dataclass(frozen=True)
@@ -152,6 +155,14 @@ def needs_anti_edge_followups(report: dict[str, object]) -> bool:
         for item in followup_results
     )
     return negative >= max(2, len(followup_results) // 2) or enough_sample_negative
+
+
+def anti_edge_family_failed() -> bool:
+    queue = load_json(IMPROVEMENT_QUEUE)
+    for item in queue.get("items", []):
+        if isinstance(item, dict) and item.get("issue_id") == "anti_edge_family_failed" and item.get("status") == "open":
+            return True
+    return False
 
 
 def class_block(blueprint: Blueprint) -> list[str]:
@@ -635,6 +646,64 @@ def anti_edge_followup_blueprints(report: dict[str, object]) -> list[Blueprint]:
     ]
 
 
+def context_feature_blueprints() -> list[Blueprint]:
+    return [
+        Blueprint(
+            class_name="AutoContextDailyTrendPullbackStrategy",
+            family="context-daily-trend-pullback",
+            regime="higher_timeframe_context",
+            direction="long_short",
+            leverage=2.0,
+            roi={"240": 0.0, "60": 0.006, "0": 0.014},
+            stoploss=-0.010,
+            hypothesis="After retiring simple 1m OHLCV seeds, use 24h/72h context plus a local pullback/resume trigger.",
+            risk_notes="Context-feature replacement for retired simple OHLCV seeds; requires matrix and walk-forward checks.",
+            indicator_block=[
+                'dataframe["ctx_ema_4h"] = ta.EMA(dataframe, timeperiod=240)',
+                'dataframe["ctx_ema_24h"] = ta.EMA(dataframe, timeperiod=1440)',
+                'dataframe["ctx_ret_6h"] = dataframe["close"] / dataframe["close"].shift(360) - 1.0',
+                'dataframe["ctx_ret_24h"] = dataframe["close"] / dataframe["close"].shift(1440) - 1.0',
+                'dataframe["ctx_pullback_long"] = dataframe["low"].rolling(90).min() <= dataframe["ctx_ema_4h"] * 1.001',
+                'dataframe["ctx_pullback_short"] = dataframe["high"].rolling(90).max() >= dataframe["ctx_ema_4h"] * 0.999',
+            ],
+            entry_block=[
+                'dataframe.loc[(dataframe["risk_allowed"] & (dataframe["close"] > dataframe["ctx_ema_24h"]) & (dataframe["ctx_ret_24h"] > 0.004) & dataframe["ctx_pullback_long"] & (dataframe["ctx_ret_6h"] > 0.001) & (dataframe["volume"] > 0)), ["enter_long", "enter_tag"]] = (1, "auto_context_daily_long")',
+                'dataframe.loc[(dataframe["risk_allowed"] & (dataframe["close"] < dataframe["ctx_ema_24h"]) & (dataframe["ctx_ret_24h"] < -0.004) & dataframe["ctx_pullback_short"] & (dataframe["ctx_ret_6h"] < -0.001) & (dataframe["volume"] > 0)), ["enter_short", "enter_tag"]] = (1, "auto_context_daily_short")',
+            ],
+            exit_block=[
+                'dataframe.loc[((dataframe["close"] < dataframe["ctx_ema_4h"]) | dataframe["high_vol_regime"]) & (dataframe["volume"] > 0), ["exit_long", "exit_tag"]] = (1, "auto_context_daily_long_exit")',
+                'dataframe.loc[((dataframe["close"] > dataframe["ctx_ema_4h"]) | dataframe["high_vol_regime"]) & (dataframe["volume"] > 0), ["exit_short", "exit_tag"]] = (1, "auto_context_daily_short_exit")',
+            ],
+        ),
+        Blueprint(
+            class_name="AutoContextVolatilityExpansionStrategy",
+            family="context-volatility-expansion",
+            regime="volatility_context",
+            direction="long_short",
+            leverage=1.5,
+            roi={"180": 0.0, "45": 0.005, "0": 0.012},
+            stoploss=-0.009,
+            hypothesis="Use volatility expansion only when 24h direction and 7d context agree, avoiding isolated 1m breakout noise.",
+            risk_notes="Tests whether context filters can salvage expansion logic after simple squeeze breakout failed.",
+            indicator_block=[
+                'dataframe["ctx_ret_24h"] = dataframe["close"] / dataframe["close"].shift(1440) - 1.0',
+                'dataframe["ctx_ret_7d"] = dataframe["close"] / dataframe["close"].shift(10080) - 1.0',
+                'dataframe["ctx_bb_width_ma"] = dataframe["bb_width"].rolling(1440).mean()',
+                'dataframe["ctx_expanding"] = dataframe["bb_width"] > dataframe["ctx_bb_width_ma"] * 1.15',
+                'dataframe["ctx_ret_30m"] = dataframe["close"] / dataframe["close"].shift(30) - 1.0',
+            ],
+            entry_block=[
+                'dataframe.loc[(dataframe["risk_allowed"] & dataframe["ctx_expanding"] & (dataframe["ctx_ret_7d"] > 0.01) & (dataframe["ctx_ret_24h"] > 0.002) & (dataframe["ctx_ret_30m"] > 0.0008) & (dataframe["volume"] > 0)), ["enter_long", "enter_tag"]] = (1, "auto_context_vol_long")',
+                'dataframe.loc[(dataframe["risk_allowed"] & dataframe["ctx_expanding"] & (dataframe["ctx_ret_7d"] < -0.01) & (dataframe["ctx_ret_24h"] < -0.002) & (dataframe["ctx_ret_30m"] < -0.0008) & (dataframe["volume"] > 0)), ["enter_short", "enter_tag"]] = (1, "auto_context_vol_short")',
+            ],
+            exit_block=[
+                'dataframe.loc[((dataframe["ctx_ret_30m"] < -0.0004) | dataframe["high_vol_regime"]) & (dataframe["volume"] > 0), ["exit_long", "exit_tag"]] = (1, "auto_context_vol_long_exit")',
+                'dataframe.loc[((dataframe["ctx_ret_30m"] > 0.0004) | dataframe["high_vol_regime"]) & (dataframe["volume"] > 0), ["exit_short", "exit_tag"]] = (1, "auto_context_vol_short_exit")',
+            ],
+        ),
+    ]
+
+
 def build_source(items: list[Blueprint]) -> str:
     generated_at = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     lines = common_imports(generated_at)
@@ -736,10 +805,39 @@ def ledger_markdown(payload: dict[str, object]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def write_retired_family_ledger(enabled: bool, items: list[Blueprint]) -> None:
+    payload = {
+        "generated_at_utc": datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ"),
+        "retired": enabled,
+        "retired_family": "simple_1m_ohlcv_seed_family" if enabled else None,
+        "replacement_families": [item.family for item in items],
+        "reason": "base, sample-floor, and anti-edge 1m OHLCV seed variants failed" if enabled else "not retired",
+    }
+    RETIRED_FAMILY_JSON.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    lines = [
+        "# Retired Seed Family Ledger",
+        "",
+        f"- Generated UTC: `{payload['generated_at_utc']}`",
+        f"- Retired: `{payload['retired']}`",
+        f"- Retired family: `{payload['retired_family']}`",
+        f"- Reason: {payload['reason']}",
+        "",
+        "## Replacement Families",
+        "",
+    ]
+    for family in payload["replacement_families"]:
+        lines.append(f"- `{family}`")
+    RETIRED_FAMILY_MD.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
 def main() -> None:
     args = parse_args()
     report = latest_report()
-    items = blueprints() + seed_followup_blueprints(report) + anti_edge_followup_blueprints(report)
+    retire_simple_seed = anti_edge_family_failed()
+    if retire_simple_seed:
+        items = context_feature_blueprints()
+    else:
+        items = blueprints() + seed_followup_blueprints(report) + anti_edge_followup_blueprints(report)
     source = build_source(items)
     registry = registry_payload(items)
     experiment = experiment_payload(items, args.timerange, args.smoke_timerange)
@@ -754,10 +852,13 @@ def main() -> None:
     GENERATED_REGISTRY.write_text(json.dumps(registry, indent=2, ensure_ascii=False), encoding="utf-8")
     GENERATED_EXPERIMENT.write_text(json.dumps(experiment, indent=2, ensure_ascii=False), encoding="utf-8")
     HYPOTHESIS_LEDGER.write_text(ledger_markdown(registry), encoding="utf-8")
+    write_retired_family_ledger(retire_simple_seed, items)
     print(f"Wrote {GENERATED_FILE.relative_to(REPO_ROOT)}")
     print(f"Wrote {GENERATED_REGISTRY.relative_to(REPO_ROOT)}")
     print(f"Wrote {GENERATED_EXPERIMENT.relative_to(REPO_ROOT)}")
     print(f"Wrote {HYPOTHESIS_LEDGER.relative_to(REPO_ROOT)}")
+    print(f"Wrote {RETIRED_FAMILY_JSON.relative_to(REPO_ROOT)}")
+    print(f"Wrote {RETIRED_FAMILY_MD.relative_to(REPO_ROOT)}")
 
 
 if __name__ == "__main__":

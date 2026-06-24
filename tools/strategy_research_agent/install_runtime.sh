@@ -34,6 +34,7 @@ rsync -a --delete \
   --exclude 'rejected/*.json' \
   --exclude 'watchlist/*.json' \
   --exclude 'experiments/autonomous_*' \
+  --exclude 'experiments/retired_seed_family_ledger.*' \
   --exclude 'experiments/iterative_*' \
   --exclude 'experiments/behavior_experiment_*' \
   --exclude 'experiments/memory_guided_*' \

@@ -182,6 +182,7 @@ def build_issues(
     autonomous_group = summary.get("groups", {}).get("autonomous_seed", {})
     followup_group = summary.get("groups", {}).get("seed_followup", {})
     anti_edge_group = summary.get("groups", {}).get("anti_edge_followup", {})
+    retired_seed = load_json(AGENT_ROOT / "experiments/retired_seed_family_ledger.json")
     candidate_count = len(pools["candidate"]) + len(pools["watchlist"])
     safe_queue_count = num(mature_queue.get("safe_count"))
     cooldown_skips = [
@@ -199,6 +200,7 @@ def build_issues(
         and autonomous_group
         and autonomous_group.get("count", 0) > 0
         and not followup_group
+        and not retired_seed.get("retired")
     ):
         issues.append(
             AgentIssue(
@@ -216,6 +218,31 @@ def build_issues(
                 proposed_upgrade="增加 seed-family 诊断生成器：对样本不足的 seed 自动放宽单个条件；对高交易数负期望 seed 自动生成反向/禁用/退出改造实验。",
                 next_action="实现 seed-family follow-up planner，让 --research-iteration 读取 seed 组结果并生成下一代 targeted seed variants。",
                 success_gate="下一轮 seed 组至少出现一个可评估样本量的正 PF 变体，或把高交易数负期望 seed 明确降级并生成反向实验。",
+            )
+        )
+
+    if (
+        result_count
+        and retired_seed.get("retired")
+        and autonomous_group
+        and autonomous_group.get("count", 0) > 0
+        and autonomous_group.get("negative_expectancy", 0) == autonomous_group.get("count", 0)
+    ):
+        issues.append(
+            AgentIssue(
+                issue_id="context_seed_negative_expectancy",
+                priority=110,
+                status="open",
+                diagnosis="旧 1m OHLCV seed 家族已退休，替代的 context-feature seed 仍为负期望；下一步不应继续堆简单 K 线特征。",
+                evidence=[
+                    f"retired_family={retired_seed.get('retired_family')}",
+                    f"context_seed_count={autonomous_group.get('count')}",
+                    f"context_seed_negative_expectancy={autonomous_group.get('negative_expectancy')}",
+                    f"context_seed_max_trades={autonomous_group.get('max_trades')}",
+                ],
+                proposed_upgrade="把研究预算转向非 OHLCV 信息源或更明确的多周期验证，例如 funding/mark/盘口代理特征、BTC->ETH lead-lag、4h/1h context 分层。",
+                next_action="实现 context-source scout/planner，生成外部特征或跨资产 lead-lag 的可审计实验，而不是继续扩写 1m OHLCV seed。",
+                success_gate="下一轮产生一个非纯 1m OHLCV 的实验族，或明确记录缺少所需外部数据。",
             )
         )
 
