@@ -92,7 +92,7 @@ Fixed research iteration loop:
 user_data/strategy_research/start_manual_research.sh --research-iteration
 ```
 
-This runs the agent loop as `experiment -> strategy result summary -> researcher diagnosis -> response queue -> agent iteration review`. The review writes the current researcher weaknesses and the next agent-upgrade queue to:
+This runs the agent loop as `autonomous seed generation -> memory-guided generation -> experiment -> strategy result summary -> researcher diagnosis -> response queue -> agent iteration review`. The review writes the current researcher weaknesses and the next agent-upgrade queue to:
 
 ```text
 user_data/strategy_research/agent_iterations/latest_iteration_review.md

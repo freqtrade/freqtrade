@@ -130,7 +130,8 @@ user_data/strategy_research/start_manual_research.sh --research-iteration
 这条命令把你总结的路线固化为默认动作：
 
 ```text
-生成/刷新研究记忆
+生成自主 seed 策略族
+-> 生成/刷新研究记忆
 -> 生成记忆驱动策略
 -> 跑一轮 Freqtrade 回测
 -> 分析交易行为和失败归因
@@ -147,6 +148,13 @@ user_data/strategy_research/agent_iterations/latest_iteration_review.md
 user_data/strategy_research/agent_iterations/improvement_queue.json
 user_data/strategy_research/agent_iterations/improvement_queue.md
 ```
+
+该闭环的回测实验会同时包含两组策略：
+
+- `autonomous_seed`：趋势、震荡均值回归、波动突破、短动量、防守基线等探索型 seed。
+- `memory_guided`：针对历史失败 blocker 生成的修补型变体。
+
+这样可以避免 Agent 每轮只在旧失败策略上越筛越窄。
 
 只把成熟研究员决策转成可执行队列：
 
