@@ -40,6 +40,8 @@ def latest_report() -> tuple[Path, dict[str, Any]]:
 
 
 def classify_manual_layer(strategy: str) -> str:
+    if "Strong" in strategy:
+        return "strong_confirmation"
     if "Abstention" in strategy:
         return "abstention"
     if "Entry" in strategy:
