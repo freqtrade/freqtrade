@@ -24,6 +24,7 @@ rsync -a --delete \
   --exclude 'behavior_experiments/' \
   --exclude 'failure_attribution/' \
   --exclude 'mature_researcher/' \
+  --exclude 'agent_iterations/' \
   --exclude 'strategy_library/' \
   --exclude 'research_memory/' \
   --exclude 'source_discovery/' \
