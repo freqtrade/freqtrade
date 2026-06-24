@@ -587,6 +587,18 @@ def load_latest_context_source_plan() -> dict[str, Any] | None:
     return payload
 
 
+def load_latest_family_diversity_plan() -> dict[str, Any] | None:
+    path = AGENT_ROOT / "family_diversity/latest_family_diversity_plan.json"
+    if not path.exists():
+        return None
+    try:
+        payload = load_json(path)
+    except json.JSONDecodeError:
+        return None
+    payload["_path"] = str(path.relative_to(REPO_ROOT))
+    return payload
+
+
 def load_latest_strategy_lineage() -> dict[str, Any] | None:
     path = AGENT_ROOT / "strategy_library/latest_strategy_lineage.json"
     if not path.exists():
@@ -1000,6 +1012,17 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
             f"<td>{html.escape(item.get('success_gate', ''))}</td>"
             "</tr>"
         )
+    family_diversity_rows = []
+    family_diversity_plan = payload.get("family_diversity_plan") or {}
+    for item in family_diversity_plan.get("selected_strategies", []):
+        family_diversity_rows.append(
+            "<tr>"
+            f"<td>{html.escape(item.get('name', ''))}</td>"
+            f"<td>{html.escape(item.get('bucket', ''))}</td>"
+            f"<td>{html.escape(item.get('family', ''))}</td>"
+            f"<td>{html.escape(item.get('source', ''))}</td>"
+            "</tr>"
+        )
     strategy_lineage_rows = []
     strategy_lineage = payload.get("strategy_lineage") or {}
     for item in strategy_lineage.get("nodes", []):
@@ -1186,6 +1209,14 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
       <table>
         <thead><tr><th>Track</th><th>Status</th><th>Hypothesis</th><th>Success Gate</th></tr></thead>
         <tbody>{''.join(context_source_rows)}</tbody>
+      </table>
+    </section>
+    <section>
+      <h2>Family Diversity Plan</h2>
+      <p>Source: <code>{html.escape(family_diversity_plan.get('_path', ''))}</code></p>
+      <table>
+        <thead><tr><th>Strategy</th><th>Bucket</th><th>Family</th><th>Source</th></tr></thead>
+        <tbody>{''.join(family_diversity_rows)}</tbody>
       </table>
     </section>
     <section>
@@ -1620,6 +1651,26 @@ def write_report(paths: dict[str, Path], payload: dict[str, Any]) -> tuple[Path,
         )
         for item in context_source_plan["research_tracks"]:
             lines.append("| {id} | {status} | {hypothesis} | {success_gate} |".format(**item))
+    family_diversity_plan = payload.get("family_diversity_plan") or {}
+    if family_diversity_plan.get("selected_strategies"):
+        lines.extend(
+            [
+                "",
+                "## Family Diversity Plan",
+                "",
+                "| Strategy | Bucket | Family | Source |",
+                "|---|---|---|---|",
+            ]
+        )
+        for item in family_diversity_plan["selected_strategies"]:
+            lines.append(
+                "| {name} | {bucket} | {family} | {source} |".format(
+                    name=item.get("name", ""),
+                    bucket=item.get("bucket", ""),
+                    family=item.get("family", ""),
+                    source=item.get("source", ""),
+                )
+            )
     strategy_lineage = payload.get("strategy_lineage") or {}
     if strategy_lineage.get("nodes"):
         lines.extend(
@@ -1982,6 +2033,7 @@ def main() -> None:
         "mature_researcher_queue": load_latest_mature_researcher_queue(),
         "iteration_review": load_latest_iteration_review(),
         "context_source_plan": load_latest_context_source_plan(),
+        "family_diversity_plan": load_latest_family_diversity_plan(),
         "strategy_lineage": load_latest_strategy_lineage(),
         "research_memory": load_latest_research_memory(),
         "memory_guided_hypotheses": load_memory_guided_hypotheses(),

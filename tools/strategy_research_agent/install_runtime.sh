@@ -14,6 +14,7 @@ rsync -a --delete \
   --exclude 'cost_adjustments/' \
   --exclude 'cost_audits/' \
   --exclude 'context_sources/' \
+  --exclude 'family_diversity/' \
   --exclude 'matrix_summaries/' \
   --exclude 'walk_forward_summaries/' \
   --exclude 'promotion_candidates/' \
@@ -39,6 +40,7 @@ rsync -a --delete \
   --exclude 'experiments/iterative_*' \
   --exclude 'experiments/behavior_experiment_*' \
   --exclude 'experiments/memory_guided_*' \
+  --exclude 'experiments/family_diversity_*' \
   --exclude 'experiments/walk_forward_validation_experiment.json' \
   --exclude 'sources/inbox/' \
   --exclude 'sources/reviews/' \
