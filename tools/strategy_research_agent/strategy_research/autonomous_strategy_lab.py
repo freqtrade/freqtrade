@@ -127,6 +127,33 @@ def needs_seed_followups(report: dict[str, object]) -> bool:
     return rejected == len(seed_results) or too_few >= max(3, len(seed_results) // 2) or high_trade_negative
 
 
+def needs_anti_edge_followups(report: dict[str, object]) -> bool:
+    results = report.get("results")
+    if not isinstance(results, list):
+        return False
+    registry = load_json(GENERATED_REGISTRY)
+    followup_names = {
+        item.get("name")
+        for item in registry.get("strategies", [])
+        if isinstance(item, dict) and item.get("source_type") == "seed_followup"
+    }
+    if not followup_names:
+        return False
+    followup_results = [item for item in results if isinstance(item, dict) and item.get("strategy") in followup_names]
+    if not followup_results:
+        return False
+    negative = sum(
+        1
+        for item in followup_results
+        if num(item.get("total_profit_pct")) < 0 or num(item.get("profit_factor")) < 1
+    )
+    enough_sample_negative = any(
+        num(item.get("trades")) >= 200 and (num(item.get("total_profit_pct")) < 0 or num(item.get("profit_factor")) < 1)
+        for item in followup_results
+    )
+    return negative >= max(2, len(followup_results) // 2) or enough_sample_negative
+
+
 def class_block(blueprint: Blueprint) -> list[str]:
     tag = blueprint.family.lower().replace("-", "_")[:36]
     lines = [
@@ -527,6 +554,87 @@ def seed_followup_blueprints(report: dict[str, object]) -> list[Blueprint]:
     ]
 
 
+def anti_edge_followup_blueprints(report: dict[str, object]) -> list[Blueprint]:
+    if not needs_anti_edge_followups(report):
+        return []
+    return [
+        Blueprint(
+            class_name="AutoAntiEdgeMicroFadeStrategy",
+            family="anti-edge-micro-fade",
+            regime="micro_momentum",
+            direction="long_short",
+            leverage=1.5,
+            roi={"60": 0.0, "15": 0.0025, "0": 0.006},
+            stoploss=-0.006,
+            hypothesis="If sample-floor micro momentum is negative, fading short-horizon extension may capture the opposite edge.",
+            risk_notes="Explicit anti-edge test; reject quickly if cost-adjusted PF stays below 1.",
+            indicator_block=[
+                'dataframe["auto_ret_5m"] = dataframe["close"] / dataframe["close"].shift(5) - 1.0',
+                'dataframe["auto_ret_15m"] = dataframe["close"] / dataframe["close"].shift(15) - 1.0',
+                'dataframe["auto_rsi"] = ta.RSI(dataframe, timeperiod=30)',
+            ],
+            entry_block=[
+                'dataframe.loc[(dataframe["risk_allowed"] & (dataframe["auto_ret_5m"] > 0.0005) & (dataframe["auto_ret_15m"] > 0.0012) & (dataframe["auto_rsi"] > 62) & (dataframe["volume"] > 0)), ["enter_short", "enter_tag"]] = (1, "auto_anti_micro_short")',
+                'dataframe.loc[(dataframe["risk_allowed"] & (dataframe["auto_ret_5m"] < -0.0005) & (dataframe["auto_ret_15m"] < -0.0012) & (dataframe["auto_rsi"] < 38) & (dataframe["volume"] > 0)), ["enter_long", "enter_tag"]] = (1, "auto_anti_micro_long")',
+            ],
+            exit_block=[
+                'dataframe.loc[((dataframe["auto_ret_5m"] > 0.0) | dataframe["high_vol_regime"]) & (dataframe["volume"] > 0), ["exit_long", "exit_tag"]] = (1, "auto_anti_micro_long_exit")',
+                'dataframe.loc[((dataframe["auto_ret_5m"] < 0.0) | dataframe["high_vol_regime"]) & (dataframe["volume"] > 0), ["exit_short", "exit_tag"]] = (1, "auto_anti_micro_short_exit")',
+            ],
+        ),
+        Blueprint(
+            class_name="AutoCostAwareFastExitProbeStrategy",
+            family="cost-aware-fast-exit-probe",
+            regime="micro_momentum",
+            direction="long_short",
+            leverage=1.0,
+            roi={"45": 0.0, "10": 0.002, "0": 0.005},
+            stoploss=-0.0045,
+            hypothesis="If follow-up probes are negative, shorten holding time and use smaller leverage to separate signal edge from exit drag.",
+            risk_notes="Cost-aware diagnostic; useful only if trade count remains high and drawdown falls.",
+            indicator_block=[
+                'dataframe["auto_ret_3m"] = dataframe["close"] / dataframe["close"].shift(3) - 1.0',
+                'dataframe["auto_ret_10m"] = dataframe["close"] / dataframe["close"].shift(10) - 1.0',
+                'dataframe["auto_rsi"] = ta.RSI(dataframe, timeperiod=24)',
+            ],
+            entry_block=[
+                'dataframe.loc[(dataframe["risk_allowed"] & (dataframe["auto_ret_3m"] > 0.0002) & (dataframe["auto_ret_10m"] > 0.0006) & dataframe["auto_rsi"].between(45, 68) & (dataframe["volume"] > 0)), ["enter_long", "enter_tag"]] = (1, "auto_cost_fast_long")',
+                'dataframe.loc[(dataframe["risk_allowed"] & (dataframe["auto_ret_3m"] < -0.0002) & (dataframe["auto_ret_10m"] < -0.0006) & dataframe["auto_rsi"].between(32, 55) & (dataframe["volume"] > 0)), ["enter_short", "enter_tag"]] = (1, "auto_cost_fast_short")',
+            ],
+            exit_block=[
+                'dataframe.loc[((dataframe["auto_ret_3m"] < 0.0) | dataframe["high_vol_regime"]) & (dataframe["volume"] > 0), ["exit_long", "exit_tag"]] = (1, "auto_cost_fast_long_exit")',
+                'dataframe.loc[((dataframe["auto_ret_3m"] > 0.0) | dataframe["high_vol_regime"]) & (dataframe["volume"] > 0), ["exit_short", "exit_tag"]] = (1, "auto_cost_fast_short_exit")',
+            ],
+        ),
+        Blueprint(
+            class_name="AutoRangeBreakoutFadeStrategy",
+            family="range-breakout-fade",
+            regime="range",
+            direction="long_short",
+            leverage=1.5,
+            roi={"90": 0.0, "20": 0.0025, "0": 0.006},
+            stoploss=-0.006,
+            hypothesis="If direct range and breakout probes are negative, test fading range-edge breaks back toward the mean.",
+            risk_notes="Requires cost stress because it may trade frequently around bands.",
+            indicator_block=[
+                'bb = ta.BBANDS(dataframe, timeperiod=360)',
+                'dataframe["auto_bb_upper"] = bb["upperband"]',
+                'dataframe["auto_bb_middle"] = bb["middleband"]',
+                'dataframe["auto_bb_lower"] = bb["lowerband"]',
+                'dataframe["auto_rsi"] = ta.RSI(dataframe, timeperiod=45)',
+            ],
+            entry_block=[
+                'dataframe.loc[(dataframe["risk_allowed"] & dataframe["range_regime"] & (dataframe["close"] > dataframe["auto_bb_upper"]) & (dataframe["auto_rsi"] > 60) & (dataframe["volume"] > 0)), ["enter_short", "enter_tag"]] = (1, "auto_range_fade_short")',
+                'dataframe.loc[(dataframe["risk_allowed"] & dataframe["range_regime"] & (dataframe["close"] < dataframe["auto_bb_lower"]) & (dataframe["auto_rsi"] < 40) & (dataframe["volume"] > 0)), ["enter_long", "enter_tag"]] = (1, "auto_range_fade_long")',
+            ],
+            exit_block=[
+                'dataframe.loc[((dataframe["close"] >= dataframe["auto_bb_middle"]) | ~dataframe["range_regime"]) & (dataframe["volume"] > 0), ["exit_long", "exit_tag"]] = (1, "auto_range_fade_long_exit")',
+                'dataframe.loc[((dataframe["close"] <= dataframe["auto_bb_middle"]) | ~dataframe["range_regime"]) & (dataframe["volume"] > 0), ["exit_short", "exit_tag"]] = (1, "auto_range_fade_short_exit")',
+            ],
+        ),
+    ]
+
+
 def build_source(items: list[Blueprint]) -> str:
     generated_at = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     lines = common_imports(generated_at)
@@ -538,18 +646,26 @@ def build_source(items: list[Blueprint]) -> str:
 def registry_payload(items: list[Blueprint]) -> dict[str, object]:
     generated_at = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     followup_count = sum(1 for item in items if item.family.startswith(("sample-floor", "inverse-")))
+    anti_edge_count = sum(1 for item in items if item.family.startswith(("anti-edge", "cost-aware", "range-breakout-fade")))
     return {
         "generated_at_utc": generated_at,
         "generated_strategy_file": str(GENERATED_FILE.relative_to(REPO_ROOT)),
         "research_mode": "autonomous_blueprint_generation",
-        "base_seed_count": len(items) - followup_count,
+        "base_seed_count": len(items) - followup_count - anti_edge_count,
         "followup_seed_count": followup_count,
+        "anti_edge_seed_count": anti_edge_count,
         "strategies": [
             {
                 "name": item.class_name,
                 "family": f"autonomous-{item.family}",
                 "source": "autonomous_strategy_lab",
-                "source_type": "seed_followup" if item.family.startswith(("sample-floor", "inverse-")) else "base_seed",
+                "source_type": (
+                    "anti_edge_followup"
+                    if item.family.startswith(("anti-edge", "cost-aware", "range-breakout-fade"))
+                    else "seed_followup"
+                    if item.family.startswith(("sample-floor", "inverse-"))
+                    else "base_seed"
+                ),
                 "regime": item.regime,
                 "direction": item.direction,
                 "leverage_cap": item.leverage,
@@ -623,7 +739,7 @@ def ledger_markdown(payload: dict[str, object]) -> str:
 def main() -> None:
     args = parse_args()
     report = latest_report()
-    items = blueprints() + seed_followup_blueprints(report)
+    items = blueprints() + seed_followup_blueprints(report) + anti_edge_followup_blueprints(report)
     source = build_source(items)
     registry = registry_payload(items)
     experiment = experiment_payload(items, args.timerange, args.smoke_timerange)
