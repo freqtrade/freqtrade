@@ -24,6 +24,11 @@ tools/strategy_research_agent/install_runtime.sh
 
 `user_data` 继续存放本地数据、报告、dashboard、候选池、外部来源快照和私有配置，不应提交到 Git。
 
+知识层的版本化边界：
+
+- 可以提交：短知识卡、知识图谱/固化层生成脚本、workflow contract、自动化模板。
+- 不提交：B站完整字幕、PDF/书籍、网页快照全文、cookie、生成出来的 graph/report/dashboard/backtest 产物。
+
 ## 边界
 
 允许：
@@ -94,6 +99,28 @@ user_data/strategy_research/start_manual_research.sh --full
 ```bash
 user_data/strategy_research/start_manual_research.sh --strong-researcher-smoke
 ```
+
+一键重建 Agent 大脑：
+
+```bash
+user_data/strategy_research/start_manual_research.sh --agent-brain
+```
+
+这会重建知识层、知识图谱、研究记忆、知识/记忆引导假设和固化层，但不跑实盘、不读 API key、不修改 dry-run/live 配置。
+
+每周外部知识更新：
+
+```bash
+user_data/strategy_research/start_manual_research.sh --weekly-knowledge-update
+```
+
+这条命令是 Agent 的“外部迭代”入口：刷新外部资料来源、尝试更新 B 站字幕、重建知识图谱和研究记忆，并输出：
+
+```text
+user_data/strategy_research/knowledge_updates/latest_weekly_knowledge_update.md
+```
+
+它和回测驱动的“内部自迭代”互补：内部迭代回答“我哪里做错了”，外部迭代回答“外面有什么新知识需要吸收”。
 
 它会串联 source scout、strategy lineage、research memory、memory-guided hypothesis planning、memory-guided strategy generation、Freqtrade `list-strategies`、短区间 smoke backtesting、评分/失败归因、成熟研究员决策计划和 dashboard/report 刷新。这个模式仍然是 research-only，不读取私钥、不改 dry-run/live 配置、不启动交易。
 

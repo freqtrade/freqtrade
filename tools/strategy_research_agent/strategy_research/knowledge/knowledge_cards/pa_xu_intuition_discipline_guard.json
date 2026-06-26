@@ -1,0 +1,66 @@
+{
+  "id": "pa_xu_intuition_discipline_guard",
+  "title": "直觉交易会破坏计划，Agent 必须硬性执行规则",
+  "category": "psychology",
+  "concepts": [
+    "discipline",
+    "intuition_trading",
+    "plan_execution"
+  ],
+  "source_refs": [
+    "book_xu_jiacong_p224",
+    "book_xu_jiacong_p225",
+    "book_xu_jiacong_p226"
+  ],
+  "source_quality": {
+    "level": "high",
+    "usable_transcript_count": 0,
+    "low_confidence_transcript_count": 0,
+    "web_source_count": 0,
+    "book_source_count": 3
+  },
+  "knowledge": "失败交易往往来自无计划、无资金管理、扛单、报复交易和过度交易；策略 Agent 必须用硬规则替代临场直觉。",
+  "strategy_hypothesis": "将连续亏损暂停、最大回撤熔断、禁止报复加仓和过度交易限制固化为策略研究门槛。",
+  "freqtrade_translation": {
+    "strategy_family": "research_process",
+    "features": [
+      "loss_streak",
+      "drawdown",
+      "trade_frequency",
+      "cooldown"
+    ],
+    "entry_rules": [
+      "风控状态允许",
+      "未触发冷却",
+      "交易频率未超限"
+    ],
+    "exit_rules": [
+      "触发亏损/回撤/频率保护"
+    ],
+    "applicable_regimes": [
+      "all"
+    ],
+    "not_applicable_regimes": []
+  },
+  "risk_notes": [
+    "纪律规则应硬编码，不交给 LLM 临场决定。"
+  ],
+  "avoid_rules": [
+    "亏损后立刻加倍交易",
+    "信号真空期强行交易"
+  ],
+  "verification_status": {
+    "state": "knowledge_only_requires_backtest",
+    "required_checks": [
+      "freqtrade_backtesting",
+      "recursive_analysis",
+      "lookahead_analysis",
+      "regime_matrix",
+      "fee_slippage_stress",
+      "promotion_gate"
+    ],
+    "quarantined": false
+  },
+  "copyright_note": "Short local knowledge summary. Does not copy long transcript passages.",
+  "created_at_utc": "20260626T035752Z"
+}

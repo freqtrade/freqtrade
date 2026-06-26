@@ -1,0 +1,62 @@
+{
+  "id": "pa_price_action_definition_no_indicator_dependency",
+  "title": "价格行为优先观察价格本身",
+  "category": "definition",
+  "concepts": [
+    "price_action",
+    "raw_price",
+    "indicator_light"
+  ],
+  "source_refs": [
+    "investopedia_price_action_intro",
+    "phemex_crypto_price_action"
+  ],
+  "source_quality": {
+    "level": "medium",
+    "usable_transcript_count": 0,
+    "low_confidence_transcript_count": 0,
+    "web_source_count": 2,
+    "book_source_count": 0
+  },
+  "knowledge": "价格行为强调价格结构、位置、强弱和反应，指标只能作为辅助表达。",
+  "strategy_hypothesis": "策略特征优先使用结构变量，再用 EMA/ATR/ADX 做量化辅助。",
+  "freqtrade_translation": {
+    "strategy_family": "feature_design",
+    "features": [
+      "swing_high_low",
+      "range_position",
+      "candle_body",
+      "atr"
+    ],
+    "entry_rules": [
+      "结构条件先于指标条件"
+    ],
+    "exit_rules": [
+      "结构失效先于指标钝化"
+    ],
+    "applicable_regimes": [
+      "all"
+    ],
+    "not_applicable_regimes": []
+  },
+  "risk_notes": [
+    "结构变量也必须防止未来函数。"
+  ],
+  "avoid_rules": [
+    "把价格行为退化成指标堆叠"
+  ],
+  "verification_status": {
+    "state": "knowledge_only_requires_backtest",
+    "required_checks": [
+      "freqtrade_backtesting",
+      "recursive_analysis",
+      "lookahead_analysis",
+      "regime_matrix",
+      "fee_slippage_stress",
+      "promotion_gate"
+    ],
+    "quarantined": false
+  },
+  "copyright_note": "Short local knowledge summary. Does not copy long transcript passages.",
+  "created_at_utc": "20260626T035752Z"
+}

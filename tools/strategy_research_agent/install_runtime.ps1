@@ -27,6 +27,7 @@ $ExcludedTopDirs = @(
     "mature_researcher",
     "strategy_library",
     "research_memory",
+    "knowledge_updates",
     "source_discovery",
     "data_updates",
     "strategy_assessments"
@@ -48,6 +49,17 @@ $ExcludedRuntimeExperimentFiles = @(
     "experiments/walk_forward_validation_experiment.json"
 )
 $ExcludedSourceStateDirs = @("sources/inbox", "sources/reviews", "sources/translation_drafts")
+$ExcludedRuntimeStateDirs = @(
+    "knowledge/raw_sources",
+    "knowledge/graph",
+    "knowledge/index",
+    "knowledge/extracted_claims"
+)
+$ExcludedRuntimeGeneratedFiles = @(
+    "consolidation/latest_research_consolidation.json",
+    "consolidation/latest_research_consolidation.md",
+    "consolidation/agent_operating_rules.json"
+)
 $ExcludedGeneratedStrategyFiles = @(
     "autonomous_research_strategies.py",
     "iterative_research_strategies.py",
@@ -85,6 +97,14 @@ function Copy-AgentTree {
             if ($normalized -eq $excluded -or $normalized.StartsWith("$excluded/")) {
                 return
             }
+        }
+        foreach ($excluded in $ExcludedRuntimeStateDirs) {
+            if ($normalized -eq $excluded -or $normalized.StartsWith("$excluded/")) {
+                return
+            }
+        }
+        if ($ExcludedRuntimeGeneratedFiles -contains $normalized -or $normalized.StartsWith("consolidation/research_consolidation_") -or $normalized.StartsWith("knowledge/latest_")) {
+            return
         }
         if ($parts.Count -gt 0 -and $StateDirsWithJson -contains $parts[0] -and $_.Extension -eq ".json") {
             return

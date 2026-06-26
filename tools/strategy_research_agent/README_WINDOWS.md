@@ -63,6 +63,21 @@ $env:PYTHONPATH = "user_data\offline_exchange"
 .\user_data\strategy_research\run_full_research_cycle.ps1
 ```
 
+Rebuild the strategy Agent brain:
+
+```powershell
+.\.venv\Scripts\python.exe .\user_data\strategy_research\build_price_action_knowledge_layer.py
+.\.venv\Scripts\python.exe .\user_data\strategy_research\build_price_action_knowledge_graph.py
+.\.venv\Scripts\python.exe .\user_data\strategy_research\build_research_memory.py
+.\.venv\Scripts\python.exe .\user_data\strategy_research\build_research_consolidation.py
+```
+
+Run the weekly external knowledge update:
+
+```powershell
+.\.venv\Scripts\python.exe .\user_data\strategy_research\weekly_external_knowledge_update.py --with-bilibili
+```
+
 ## Install Scheduled Tasks
 
 Register two Windows Task Scheduler jobs:
@@ -76,6 +91,7 @@ Installed tasks:
 
 - `Freqtrade Strategy Research Daily`: daily at 08:30, skips aux download.
 - `Freqtrade Strategy Research Weekly Aux`: Sunday at 09:15, refreshes funding/mark aux data.
+- `Freqtrade Strategy Research Weekly Knowledge`: Monday at 10:30, refreshes external knowledge, knowledge graph, research memory, and consolidation policy.
 
 Check status:
 
@@ -96,3 +112,4 @@ Uninstall:
 - Does not read live API keys.
 - Does not expose FreqUI or REST API.
 - Does not commit generated reports, market data, backtest archives, or local secrets.
+- Does not commit raw Bilibili subtitles, PDFs, web snapshots, browser cookies, or generated knowledge reports.

@@ -1,0 +1,68 @@
+{
+  "id": "pa_true_breakout_followthrough",
+  "title": "真突破需要后续跟进",
+  "category": "pattern",
+  "concepts": [
+    "true_breakout",
+    "follow_through",
+    "momentum"
+  ],
+  "source_refs": [
+    "bilibili_p018",
+    "bilibili_p017",
+    "bilibili_p020"
+  ],
+  "source_quality": {
+    "level": "high",
+    "usable_transcript_count": 1,
+    "low_confidence_transcript_count": 2,
+    "web_source_count": 0,
+    "book_source_count": 0
+  },
+  "knowledge": "真突破通常不只是刺破，而是收盘站上/跌破关键区后继续有跟进。",
+  "strategy_hypothesis": "测试收盘突破加下一根跟进，过滤 wick-only 的假突破。",
+  "freqtrade_translation": {
+    "strategy_family": "breakout",
+    "features": [
+      "close_break_distance",
+      "next_bar_direction",
+      "volume_zscore"
+    ],
+    "entry_rules": [
+      "收盘突破",
+      "下一根跟进",
+      "成交量不萎缩"
+    ],
+    "exit_rules": [
+      "回到突破区间内退出"
+    ],
+    "applicable_regimes": [
+      "trend",
+      "volatility_expansion"
+    ],
+    "not_applicable_regimes": [
+      "low_volatility_chop",
+      "wick_only_move"
+    ]
+  },
+  "risk_notes": [
+    "突破后滑点会显著影响短周期收益。"
+  ],
+  "avoid_rules": [
+    "突破后立刻反抽回区间仍追入"
+  ],
+  "verification_status": {
+    "state": "knowledge_only_requires_backtest",
+    "required_checks": [
+      "freqtrade_backtesting",
+      "recursive_analysis",
+      "lookahead_analysis",
+      "regime_matrix",
+      "fee_slippage_stress",
+      "promotion_gate"
+    ],
+    "quarantined": false
+  },
+  "copyright_note": "Short local knowledge summary. Does not copy long transcript passages.",
+  "created_at_utc": "20260626T035752Z"
+}

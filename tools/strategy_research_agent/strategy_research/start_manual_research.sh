@@ -7,13 +7,24 @@ PYTHON="${PYTHON:-./.venv/bin/python}"
 
 usage() {
   cat <<'EOF'
-Usage: user_data/strategy_research/start_manual_research.sh [--quick|--source-scout|--strong-researcher-smoke|--research-iteration|--multi-timeframe-kline|--autonomous-smoke|--iterate-smoke|--walk-forward|--promotion-gate|--agenda|--next-agenda|--execute-next-agenda|--trade-behavior|--behavior-experiments|--behavior-variants|--failure-attribution|--mature-researcher|--mature-researcher-queue|--execute-mature-researcher|--strategy-lineage|--research-memory|--memory-guided-hypotheses|--memory-guided-strategies|--full|--full-with-aux|--preflight-only] [--extra-agent-arg ARG ...]
+Usage: user_data/strategy_research/start_manual_research.sh [--quick|--source-scout|--price-action-knowledge|--bilibili-transcripts|--knowledge-graph|--knowledge-guided-hypotheses|--agent-brain|--weekly-knowledge-update|--strong-researcher-smoke|--research-iteration|--multi-timeframe-kline|--autonomous-smoke|--iterate-smoke|--walk-forward|--promotion-gate|--agenda|--next-agenda|--execute-next-agenda|--trade-behavior|--behavior-experiments|--behavior-variants|--failure-attribution|--mature-researcher|--mature-researcher-queue|--execute-mature-researcher|--strategy-lineage|--research-memory|--memory-guided-hypotheses|--memory-guided-strategies|--full|--full-with-aux|--preflight-only] [--extra-agent-arg ARG ...]
 
 Manual entrypoint for the research-only strategy agent.
 
 Modes:
   --quick            Run preflight, then refresh report/dashboard without backtests.
   --source-scout     Build the external-source discovery and review queue.
+  --price-action-knowledge
+                     Build the local price-action knowledge base from public metadata/web snapshots and local knowledge cards.
+  --bilibili-transcripts
+                     Fetch Bilibili AI subtitles from the authenticated local browser cookie jar; does not download video.
+  --knowledge-graph
+                     Build the graph-structured price-action knowledge layer.
+  --knowledge-guided-hypotheses
+                     Build the curated price-action knowledge layer and plan hypotheses guarded by research memory.
+  --agent-brain      Rebuild knowledge graph, research memory, knowledge/memory hypotheses, and consolidation policy.
+  --weekly-knowledge-update
+                     Refresh external/source knowledge weekly layer, rebuild Agent brain, and write a weekly knowledge update report.
   --strong-researcher-smoke
                      Run the integrated research-only scout/memory/generate/smoke loop.
   --research-iteration
@@ -70,6 +81,30 @@ while [[ $# -gt 0 ]]; do
       ;;
     --source-scout)
       mode="source_scout"
+      shift
+      ;;
+    --price-action-knowledge)
+      mode="price_action_knowledge"
+      shift
+      ;;
+    --bilibili-transcripts)
+      mode="bilibili_transcripts"
+      shift
+      ;;
+    --knowledge-graph)
+      mode="knowledge_graph"
+      shift
+      ;;
+    --knowledge-guided-hypotheses)
+      mode="knowledge_guided_hypotheses"
+      shift
+      ;;
+    --agent-brain)
+      mode="agent_brain"
+      shift
+      ;;
+    --weekly-knowledge-update)
+      mode="weekly_knowledge_update"
       shift
       ;;
     --strong-researcher-smoke)
@@ -204,6 +239,55 @@ case "$mode" in
     echo "== Strategy Research Agent: external source scout =="
     "$PYTHON" user_data/strategy_research/scout_external_sources.py
     "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
+    ;;
+  price_action_knowledge)
+    echo "== Strategy Research Agent: price action knowledge base =="
+    "$PYTHON" user_data/strategy_research/build_price_action_knowledge_base.py
+    "$PYTHON" user_data/strategy_research/build_price_action_knowledge_layer.py
+    "$PYTHON" user_data/strategy_research/build_price_action_knowledge_graph.py
+    "$PYTHON" user_data/strategy_research/query_price_action_knowledge.py breakout confirmation
+    "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
+    ;;
+  bilibili_transcripts)
+    echo "== Strategy Research Agent: Bilibili transcript fetch =="
+    "$PYTHON" user_data/strategy_research/fetch_bilibili_transcripts.py
+    "$PYTHON" user_data/strategy_research/build_price_action_knowledge_base.py
+    "$PYTHON" user_data/strategy_research/build_price_action_knowledge_layer.py
+    "$PYTHON" user_data/strategy_research/build_price_action_knowledge_graph.py
+    "$PYTHON" user_data/strategy_research/query_price_action_knowledge.py scalp crypto
+    "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
+    ;;
+  knowledge_graph)
+    echo "== Strategy Research Agent: price action knowledge graph =="
+    "$PYTHON" user_data/strategy_research/build_price_action_knowledge_layer.py
+    "$PYTHON" user_data/strategy_research/build_price_action_knowledge_graph.py
+    "$PYTHON" user_data/strategy_research/query_price_action_knowledge_graph.py pinbar --limit 5
+    "$PYTHON" user_data/strategy_research/query_price_action_knowledge_graph.py scalp --limit 5
+    ;;
+  knowledge_guided_hypotheses)
+    echo "== Strategy Research Agent: knowledge-guided hypotheses =="
+    "$PYTHON" user_data/strategy_research/build_price_action_knowledge_layer.py
+    "$PYTHON" user_data/strategy_research/build_price_action_knowledge_graph.py
+    "$PYTHON" user_data/strategy_research/build_strategy_lineage.py
+    "$PYTHON" user_data/strategy_research/build_research_memory.py
+    "$PYTHON" user_data/strategy_research/plan_knowledge_guided_hypotheses.py
+    "$PYTHON" user_data/strategy_research/build_research_consolidation.py
+    "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
+    ;;
+  agent_brain)
+    echo "== Strategy Research Agent: knowledge-memory-consolidation brain =="
+    "$PYTHON" user_data/strategy_research/build_price_action_knowledge_layer.py
+    "$PYTHON" user_data/strategy_research/build_price_action_knowledge_graph.py
+    "$PYTHON" user_data/strategy_research/build_strategy_lineage.py
+    "$PYTHON" user_data/strategy_research/build_research_memory.py
+    "$PYTHON" user_data/strategy_research/plan_knowledge_guided_hypotheses.py
+    "$PYTHON" user_data/strategy_research/plan_memory_guided_hypotheses.py
+    "$PYTHON" user_data/strategy_research/build_research_consolidation.py
+    "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
+    ;;
+  weekly_knowledge_update)
+    echo "== Strategy Research Agent: weekly external knowledge update =="
+    user_data/strategy_research/run_weekly_knowledge_update.sh --with-bilibili
     ;;
   strong_researcher_smoke)
     echo "== Strategy Research Agent: strong researcher smoke =="
@@ -359,6 +443,7 @@ PY
     echo "== Strategy Research Agent: research memory =="
     "$PYTHON" user_data/strategy_research/build_strategy_lineage.py
     "$PYTHON" user_data/strategy_research/build_research_memory.py
+    "$PYTHON" user_data/strategy_research/build_research_consolidation.py
     "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
     ;;
   memory_guided_hypotheses)
@@ -366,6 +451,7 @@ PY
     "$PYTHON" user_data/strategy_research/build_strategy_lineage.py
     "$PYTHON" user_data/strategy_research/build_research_memory.py
     "$PYTHON" user_data/strategy_research/plan_memory_guided_hypotheses.py
+    "$PYTHON" user_data/strategy_research/build_research_consolidation.py
     "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
     ;;
   memory_guided_strategies)
@@ -374,6 +460,7 @@ PY
     "$PYTHON" user_data/strategy_research/build_research_memory.py
     "$PYTHON" user_data/strategy_research/plan_memory_guided_hypotheses.py
     "$PYTHON" user_data/strategy_research/generate_memory_guided_strategies.py
+    "$PYTHON" user_data/strategy_research/build_research_consolidation.py
     "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
     ;;
   full)
@@ -422,6 +509,14 @@ Lineage:    user_data/strategy_research/strategy_library/latest_strategy_lineage
 Memory:     user_data/strategy_research/research_memory/latest_research_memory.md
 MemPlan:    user_data/strategy_research/experiments/memory_guided_hypothesis_ledger.md
 MemStrat:   user_data/strategy_research/experiments/memory_guided_strategy_ledger.md
+Solidify:   user_data/strategy_research/consolidation/latest_research_consolidation.md
+AgentRules: user_data/strategy_research/consolidation/agent_operating_rules.json
 Sources:    user_data/strategy_research/source_discovery/latest_source_discovery.md
+KnowWeekly: user_data/strategy_research/knowledge_updates/latest_weekly_knowledge_update.md
+Knowledge:  user_data/strategy_research/knowledge/latest_price_action_knowledge_report.md
+Graph:      user_data/strategy_research/knowledge/graph/knowledge_graph.md
+GraphCtx:   user_data/strategy_research/knowledge/graph/strategy_agent_graph_context.json
+KnowPlan:   user_data/strategy_research/experiments/knowledge_guided_hypothesis_ledger.md
+BiliSubs:   user_data/strategy_research/knowledge/raw_sources/bilibili/bilibili_transcript_fetch_report.md
 Reports:    user_data/strategy_research/reports/
 EOF

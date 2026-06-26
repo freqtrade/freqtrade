@@ -32,6 +32,15 @@ rsync -a --delete \
   --exclude 'agent_iterations/' \
   --exclude 'strategy_library/' \
   --exclude 'research_memory/' \
+  --exclude 'knowledge/raw_sources/' \
+  --exclude 'knowledge/graph/' \
+  --exclude 'knowledge/index/' \
+  --exclude 'knowledge/extracted_claims/' \
+  --exclude 'knowledge/latest_*' \
+  --exclude 'knowledge_updates/' \
+  --exclude 'consolidation/latest_*' \
+  --exclude 'consolidation/research_consolidation_*' \
+  --exclude 'consolidation/agent_operating_rules.json' \
   --exclude 'source_discovery/' \
   --exclude 'data_updates/' \
   --exclude 'strategy_assessments/' \
@@ -80,6 +89,7 @@ chmod +x \
   "$ROOT/user_data/strategy_research/run_daily_research.sh" \
   "$ROOT/user_data/strategy_research/run_full_research_cycle.sh" \
   "$ROOT/user_data/strategy_research/run_strong_researcher_smoke.sh" \
+  "$ROOT/user_data/strategy_research/run_weekly_knowledge_update.sh" \
   "$ROOT/user_data/strategy_research/automation/install_launchd.sh" \
   "$ROOT/user_data/strategy_research/automation/uninstall_launchd.sh" \
   "$ROOT/user_data/strategy_research/automation/status_launchd.sh"
