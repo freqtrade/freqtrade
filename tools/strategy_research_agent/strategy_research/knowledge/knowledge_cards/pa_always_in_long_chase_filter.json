@@ -1,0 +1,63 @@
+{
+  "id": "pa_always_in_long_chase_filter",
+  "title": "追涨必须有趋势持续和位置过滤",
+  "category": "entry",
+  "concepts": [
+    "always_in",
+    "chase_filter",
+    "trend_continuation"
+  ],
+  "source_refs": [
+    "bilibili_p006"
+  ],
+  "source_quality": {
+    "level": "high",
+    "usable_transcript_count": 1,
+    "low_confidence_transcript_count": 0,
+    "web_source_count": 0,
+    "book_source_count": 0
+  },
+  "knowledge": "趋势里可以追随强势，但离均线太远或连续大K后追入会恶化盈亏比。",
+  "strategy_hypothesis": "测试强趋势追随，但只在回调后恢复或突破后跟进时进场。",
+  "freqtrade_translation": {
+    "strategy_family": "trend_following",
+    "features": [
+      "ema_distance",
+      "trend_strength",
+      "followthrough_return"
+    ],
+    "entry_rules": [
+      "趋势强",
+      "价格不过度远离均线",
+      "出现跟进K线"
+    ],
+    "exit_rules": [
+      "跟进失败或强度衰减退出"
+    ],
+    "applicable_regimes": [
+      "trend",
+      "volatility_expansion"
+    ],
+    "not_applicable_regimes": []
+  },
+  "risk_notes": [
+    "追涨策略必须承受假突破和滑点压力。"
+  ],
+  "avoid_rules": [
+    "连续大K末端追入"
+  ],
+  "verification_status": {
+    "state": "knowledge_only_requires_backtest",
+    "required_checks": [
+      "freqtrade_backtesting",
+      "recursive_analysis",
+      "lookahead_analysis",
+      "regime_matrix",
+      "fee_slippage_stress",
+      "promotion_gate"
+    ],
+    "quarantined": false
+  },
+  "copyright_note": "Short local knowledge summary. Does not copy long transcript passages.",
+  "created_at_utc": "20260626T035752Z"
+}

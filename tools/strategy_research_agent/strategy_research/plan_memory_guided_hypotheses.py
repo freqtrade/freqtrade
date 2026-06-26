@@ -14,6 +14,23 @@ AGENT_ROOT = REPO_ROOT / "user_data/strategy_research"
 OUTPUT_JSON = AGENT_ROOT / "experiments/memory_guided_hypothesis_plan.json"
 OUTPUT_MD = AGENT_ROOT / "experiments/memory_guided_hypothesis_ledger.md"
 OUTPUT_EXPERIMENT = AGENT_ROOT / "experiments/memory_guided_strategy_experiment.json"
+GRAPH_CONTEXT_JSON = AGENT_ROOT / "knowledge/graph/strategy_agent_graph_context.json"
+
+
+BLOCKER_TO_CONCEPTS = {
+    "weak_profit_factor": ["confirmation", "pullback", "actual_risk", "signal_score"],
+    "negative_or_missing_return": ["edge", "regime_router", "pullback", "invalidation"],
+    "loss_exit_quality": ["stoploss", "invalidation", "actual_risk", "timebox"],
+    "too_few_trades": ["signal_score", "condition_count", "entry_confirmation"],
+    "too_few_matrix_trades": ["market_cycle", "regime_router", "sessionless_market"],
+    "matrix_not_robust": ["market_cycle", "regime_router", "trend", "range"],
+    "fragile_matrix": ["market_cycle", "regime_router", "walk_forward"],
+    "negative_after_cost": ["fees", "slippage", "scalp", "funding"],
+    "stress_cost_failure": ["fees", "slippage", "microstructure"],
+    "cost_evidence_missing": ["fees", "funding", "fee_stress"],
+    "bias_checks_missing": ["review", "out_of_sample", "falsification"],
+    "lookahead_or_recursive_unverified": ["review", "out_of_sample", "falsification"],
+}
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -95,7 +112,65 @@ def success_gate(blocker: str) -> str:
     return gates.get(blocker, "scorecard improves without introducing a higher-severity failure mode.")
 
 
-def build_hypotheses(memory: dict[str, Any], lineage: dict[str, Any]) -> list[dict[str, Any]]:
+def dedupe(values: list[Any]) -> list[Any]:
+    seen = set()
+    out = []
+    for value in values:
+        key = json.dumps(value, ensure_ascii=False, sort_keys=True)
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(value)
+    return out
+
+
+def select_graph_cards(blocker: str, objective: str, graph_context: dict[str, Any], limit: int = 3) -> list[dict[str, Any]]:
+    desired = set(BLOCKER_TO_CONCEPTS.get(blocker, []))
+    text_terms = set((objective or "").lower().replace("/", " ").replace("_", " ").split())
+    scored = []
+    for card in graph_context.get("cards", []):
+        haystack = json.dumps(card, ensure_ascii=False).lower()
+        concepts = set(card.get("concepts", []))
+        score = len(desired & concepts) * 6
+        score += sum(1 for term in desired if term and term.lower() in haystack)
+        score += sum(1 for term in text_terms if len(term) > 3 and term in haystack)
+        if card.get("source_quality") == "high":
+            score += 2
+        if card.get("category") in {"risk", "crypto_adaptation"} and blocker in {
+            "negative_after_cost",
+            "stress_cost_failure",
+            "loss_exit_quality",
+        }:
+            score += 3
+        if score > 0:
+            scored.append((score, card))
+    scored.sort(key=lambda item: (-item[0], item[1].get("card_node") or item[1].get("title") or ""))
+    selected = [item[1] for item in scored[:limit]]
+    if len(selected) < limit:
+        fallback = [
+            card
+            for card in graph_context.get("cards", [])
+            if card not in selected and card.get("category") in {"entry", "risk", "crypto_adaptation"}
+        ]
+        selected.extend(fallback[: limit - len(selected)])
+    return selected[:limit]
+
+
+def knowledge_guidance(blocker: str, objective: str, graph_context: dict[str, Any]) -> dict[str, Any]:
+    selected = select_graph_cards(blocker, objective, graph_context)
+    return {
+        "source_cards": [card.get("card_node") for card in selected if card.get("card_node")],
+        "concepts": dedupe(sum((card.get("concepts", []) for card in selected), []))[:12],
+        "entry_rules": dedupe(sum((card.get("entry_rules", []) for card in selected), []))[:5],
+        "exit_rules": dedupe(sum((card.get("exit_rules", []) for card in selected), []))[:4],
+        "risk_notes": dedupe(sum((card.get("risk_notes", []) for card in selected), []))[:5],
+        "avoid_rules": dedupe(sum((card.get("avoid_rules", []) for card in selected), []))[:6],
+        "required_checks": dedupe(sum((card.get("required_checks", []) for card in selected), []))
+        or ["freqtrade_backtesting", "recursive_analysis", "lookahead_analysis", "regime_matrix", "fee_slippage_stress"],
+    }
+
+
+def build_hypotheses(memory: dict[str, Any], lineage: dict[str, Any], graph_context: dict[str, Any]) -> list[dict[str, Any]]:
     nodes = {item.get("name"): item for item in lineage.get("nodes", [])}
     avoid_rules = [item.get("memory_rule") for item in memory.get("avoid_patterns", []) if item.get("memory_rule")]
     hypotheses = []
@@ -109,18 +184,20 @@ def build_hypotheses(memory: dict[str, Any], lineage: dict[str, Any]) -> list[di
         template = risk_template(blocker)
         parent = nodes.get(strategy, {})
         hypothesis_id = f"mem_{index:02d}_{slug(strategy)}_{slug(blocker)}"
+        objective = focus.get("objective") or template["entry_change"]
         hypotheses.append(
             {
                 "hypothesis_id": hypothesis_id,
                 "strategy": strategy,
                 "root": parent.get("root") or strategy,
                 "blocker": blocker,
-                "objective": focus.get("objective") or template["entry_change"],
+                "objective": objective,
                 "memory_guidance": {
                     "avoid_rules": avoid_rules[:5],
                     "active_root_state": parent.get("recommended_state"),
                     "top_failure": parent.get("failure_attribution", {}).get("top_mode"),
                 },
+                "knowledge_guidance": knowledge_guidance(blocker, objective, graph_context) if graph_context else {},
                 "proposed_changes": template,
                 "success_gate": focus.get("success_gate") or success_gate(blocker),
                 "next_command": focus.get("next_command") or "user_data/strategy_research/start_manual_research.sh --behavior-variants",
@@ -149,7 +226,8 @@ def build_experiment(hypotheses: list[dict[str, Any]]) -> dict[str, Any]:
 def build_payload() -> dict[str, Any]:
     memory = load_json(AGENT_ROOT / "research_memory/latest_research_memory.json")
     lineage = load_json(AGENT_ROOT / "strategy_library/latest_strategy_lineage.json")
-    hypotheses = build_hypotheses(memory, lineage)
+    graph_context = load_json(GRAPH_CONTEXT_JSON)
+    hypotheses = build_hypotheses(memory, lineage, graph_context)
     return {
         "generated_at_utc": datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ"),
         "hypothesis_count": len(hypotheses),
@@ -158,6 +236,7 @@ def build_payload() -> dict[str, Any]:
         "source_artifacts": {
             "research_memory": rel(AGENT_ROOT / "research_memory/latest_research_memory.json") if memory else None,
             "strategy_lineage": rel(AGENT_ROOT / "strategy_library/latest_strategy_lineage.json") if lineage else None,
+            "knowledge_graph_context": rel(GRAPH_CONTEXT_JSON) if graph_context else None,
         },
     }
 
@@ -169,15 +248,16 @@ def write_markdown(path: Path, payload: dict[str, Any]) -> None:
         f"- Generated UTC: `{payload['generated_at_utc']}`",
         f"- Hypotheses: `{payload['hypothesis_count']}`",
         "",
-        "| ID | Strategy | Blocker | Objective | Entry Change | Risk Change | Success Gate |",
-        "|---|---|---|---|---|---|---|",
+        "| ID | Strategy | Blocker | Knowledge Cards | Objective | Entry Change | Risk Change | Success Gate |",
+        "|---|---|---|---|---|---|---|---|",
     ]
     for item in payload["hypotheses"]:
         changes = item["proposed_changes"]
         lines.append(
-            "| {hypothesis_id} | {strategy} | {blocker} | {objective} | {entry_change} | {risk_change} | {success_gate} |".format(
+            "| {hypothesis_id} | {strategy} | {blocker} | {cards} | {objective} | {entry_change} | {risk_change} | {success_gate} |".format(
                 entry_change=changes.get("entry_change"),
                 risk_change=changes.get("risk_change"),
+                cards=", ".join(item.get("knowledge_guidance", {}).get("source_cards", [])[:3]),
                 **item,
             )
         )

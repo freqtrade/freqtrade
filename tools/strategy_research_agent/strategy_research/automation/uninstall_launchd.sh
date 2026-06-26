@@ -5,6 +5,7 @@ LAUNCH_AGENTS_DIR="$HOME/Library/LaunchAgents"
 PLISTS=(
   "com.wangsen.freqtrade.strategy-research.daily.plist"
   "com.wangsen.freqtrade.strategy-research.weekly-aux.plist"
+  "com.wangsen.freqtrade.strategy-research.weekly-knowledge.plist"
 )
 
 for plist in "${PLISTS[@]}"; do

@@ -8,6 +8,7 @@ LOG_DIR="$ROOT/user_data/strategy_research/reports/automation"
 PLISTS=(
   "com.wangsen.freqtrade.strategy-research.daily.plist"
   "com.wangsen.freqtrade.strategy-research.weekly-aux.plist"
+  "com.wangsen.freqtrade.strategy-research.weekly-knowledge.plist"
 )
 
 mkdir -p "$LAUNCH_AGENTS_DIR" "$LOG_DIR"

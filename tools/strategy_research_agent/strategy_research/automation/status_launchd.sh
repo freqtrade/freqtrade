@@ -6,6 +6,7 @@ LOG_DIR="$ROOT/user_data/strategy_research/reports/automation"
 LABELS=(
   "com.wangsen.freqtrade.strategy-research.daily"
   "com.wangsen.freqtrade.strategy-research.weekly-aux"
+  "com.wangsen.freqtrade.strategy-research.weekly-knowledge"
 )
 
 for label in "${LABELS[@]}"; do

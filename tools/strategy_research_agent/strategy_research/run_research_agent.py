@@ -637,6 +637,18 @@ def load_latest_research_memory() -> dict[str, Any] | None:
     return payload
 
 
+def load_latest_research_consolidation() -> dict[str, Any] | None:
+    path = AGENT_ROOT / "consolidation/latest_research_consolidation.json"
+    if not path.exists():
+        return None
+    try:
+        payload = load_json(path)
+    except json.JSONDecodeError:
+        return None
+    payload["_path"] = str(path.relative_to(REPO_ROOT))
+    return payload
+
+
 def load_memory_guided_hypotheses() -> dict[str, Any] | None:
     path = AGENT_ROOT / "experiments/memory_guided_hypothesis_plan.json"
     if not path.exists():
@@ -663,6 +675,18 @@ def load_memory_guided_strategy_registry() -> dict[str, Any] | None:
 
 def load_latest_source_discovery() -> dict[str, Any] | None:
     path = AGENT_ROOT / "source_discovery/latest_source_discovery.json"
+    if not path.exists():
+        return None
+    try:
+        payload = load_json(path)
+    except json.JSONDecodeError:
+        return None
+    payload["_path"] = str(path.relative_to(REPO_ROOT))
+    return payload
+
+
+def load_latest_weekly_knowledge_update() -> dict[str, Any] | None:
+    path = AGENT_ROOT / "knowledge_updates/latest_weekly_knowledge_update.json"
     if not path.exists():
         return None
     try:
@@ -1065,6 +1089,21 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
             f"<td>{html.escape(item.get('source') or '')}</td>"
             "</tr>"
         )
+    weekly_knowledge = payload.get("weekly_knowledge_update") or {}
+    weekly_knowledge_rows = []
+    for key, label in [
+        ("active_knowledge_cards", "Active knowledge cards"),
+        ("source_candidates", "External source candidates"),
+        ("solidified_rules", "Solidified rules"),
+    ]:
+        weekly_knowledge_rows.append(
+            "<tr>"
+            f"<td>{html.escape(label)}</td>"
+            f"<td>{html.escape(str((weekly_knowledge.get('before') or {}).get(key, 0)))}</td>"
+            f"<td>{html.escape(str((weekly_knowledge.get('after') or {}).get(key, 0)))}</td>"
+            f"<td>{html.escape(str((weekly_knowledge.get('delta') or {}).get(key, 0)))}</td>"
+            "</tr>"
+        )
     memory_hypothesis_rows = []
     memory_hypotheses = payload.get("memory_guided_hypotheses") or {}
     for item in memory_hypotheses.get("hypotheses", []):
@@ -1077,6 +1116,18 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
             f"<td>{html.escape(item.get('objective') or '')}</td>"
             f"<td>{html.escape(changes.get('entry_change') or '')}</td>"
             f"<td>{html.escape(item.get('success_gate') or '')}</td>"
+            "</tr>"
+        )
+    consolidation_rows = []
+    consolidation = payload.get("research_consolidation") or {}
+    for item in consolidation.get("next_agent_actions", [])[:10]:
+        target = item.get("hypothesis_id") or item.get("strategy") or item.get("blocker") or ""
+        consolidation_rows.append(
+            "<tr>"
+            f"<td>{html.escape(str(item.get('priority') or ''))}</td>"
+            f"<td>{html.escape(item.get('source') or '')}</td>"
+            f"<td>{html.escape(item.get('action') or '')}</td>"
+            f"<td>{html.escape(target)}</td>"
             "</tr>"
         )
     memory_strategy_rows = []
@@ -1245,6 +1296,23 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
       <table>
         <thead><tr><th>Strategy</th><th>Blocker</th><th>Objective</th><th>Success Gate</th><th>Source</th></tr></thead>
         <tbody>{''.join(research_memory_rows)}</tbody>
+      </table>
+    </section>
+    <section>
+      <h2>外部知识周更</h2>
+      <p>Source: <code>{html.escape(weekly_knowledge.get('_path', ''))}</code> · Status: <code>{html.escape(weekly_knowledge.get('status', 'not_run'))}</code></p>
+      <table>
+        <thead><tr><th>Metric</th><th>Before</th><th>After</th><th>Delta</th></tr></thead>
+        <tbody>{''.join(weekly_knowledge_rows)}</tbody>
+      </table>
+    </section>
+    <section>
+      <h2>固化层</h2>
+      <p>Source: <code>{html.escape(consolidation.get('_path', ''))}</code></p>
+      <p>Rules: <code>{html.escape(str(consolidation.get('observed_counts', {}).get('solidified_rules', 0)))}</code> · Active Cards: <code>{html.escape(str(consolidation.get('observed_counts', {}).get('active_knowledge_cards', 0)))}</code></p>
+      <table>
+        <thead><tr><th>Priority</th><th>Source</th><th>Action</th><th>Target</th></tr></thead>
+        <tbody>{''.join(consolidation_rows)}</tbody>
       </table>
     </section>
     <section>
@@ -1732,6 +1800,59 @@ def write_report(paths: dict[str, Path], payload: dict[str, Any]) -> tuple[Path,
                     source=item.get("source") or "",
                 )
             )
+    weekly_knowledge = payload.get("weekly_knowledge_update") or {}
+    if weekly_knowledge:
+        lines.extend(
+            [
+                "",
+                "## Weekly External Knowledge Update",
+                "",
+                f"- Source: `{weekly_knowledge.get('_path', '')}`",
+                f"- Status: `{weekly_knowledge.get('status', 'not_run')}`",
+                f"- Finished UTC: `{weekly_knowledge.get('finished_at_utc', '')}`",
+                "",
+                "| Metric | Before | After | Delta |",
+                "|---|---:|---:|---:|",
+            ]
+        )
+        for key, label in [
+            ("active_knowledge_cards", "Active knowledge cards"),
+            ("source_candidates", "External source candidates"),
+            ("solidified_rules", "Solidified rules"),
+        ]:
+            lines.append(
+                "| {label} | {before} | {after} | {delta} |".format(
+                    label=label,
+                    before=(weekly_knowledge.get("before") or {}).get(key, 0),
+                    after=(weekly_knowledge.get("after") or {}).get(key, 0),
+                    delta=(weekly_knowledge.get("delta") or {}).get(key, 0),
+                )
+            )
+    consolidation = payload.get("research_consolidation") or {}
+    if consolidation.get("next_agent_actions"):
+        lines.extend(
+            [
+                "",
+                "## Research Consolidation Layer",
+                "",
+                f"- Source: `{consolidation.get('_path', '')}`",
+                f"- Solidified rules: `{consolidation.get('observed_counts', {}).get('solidified_rules', 0)}`",
+                f"- Active knowledge cards: `{consolidation.get('observed_counts', {}).get('active_knowledge_cards', 0)}`",
+                "",
+                "| Priority | Source | Action | Target |",
+                "|---:|---|---|---|",
+            ]
+        )
+        for item in consolidation["next_agent_actions"][:10]:
+            target = item.get("hypothesis_id") or item.get("strategy") or item.get("blocker") or ""
+            lines.append(
+                "| {priority} | {source} | {action} | {target} |".format(
+                    priority=item.get("priority") or "",
+                    source=item.get("source") or "",
+                    action=item.get("action") or "",
+                    target=target,
+                )
+            )
     memory_hypotheses = payload.get("memory_guided_hypotheses") or {}
     if memory_hypotheses.get("hypotheses"):
         lines.extend(
@@ -2050,6 +2171,8 @@ def main() -> None:
         "family_diversity_plan": load_latest_family_diversity_plan(),
         "strategy_lineage": load_latest_strategy_lineage(),
         "research_memory": load_latest_research_memory(),
+        "weekly_knowledge_update": load_latest_weekly_knowledge_update(),
+        "research_consolidation": load_latest_research_consolidation(),
         "memory_guided_hypotheses": load_memory_guided_hypotheses(),
         "memory_guided_strategy_registry": load_memory_guided_strategy_registry(),
         "source_discovery": load_latest_source_discovery(),

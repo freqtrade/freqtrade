@@ -11,8 +11,10 @@ $AgentRoot = Resolve-Path (Join-Path $ScriptRoot "..")
 $RepoRoot = Resolve-Path (Join-Path $AgentRoot "..\..")
 $InstallScript = Join-Path $AgentRoot "install_runtime.ps1"
 $RuntimeScript = Join-Path $RepoRoot "user_data\strategy_research\run_full_research_cycle.ps1"
+$WeeklyKnowledgeScript = Join-Path $RepoRoot "user_data\strategy_research\weekly_external_knowledge_update.py"
 $DailyTaskName = "Freqtrade Strategy Research Daily"
 $WeeklyTaskName = "Freqtrade Strategy Research Weekly Aux"
+$WeeklyKnowledgeTaskName = "Freqtrade Strategy Research Weekly Knowledge"
 
 function Install-AgentRuntime {
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $InstallScript
@@ -48,13 +50,26 @@ function Register-ResearchTasks {
         -Description "Run local Freqtrade strategy research cycle with funding/mark aux data refresh." `
         -Force | Out-Null
 
+    $weeklyKnowledgeAction = New-ScheduledTaskAction `
+        -Execute "powershell.exe" `
+        -Argument "-NoProfile -ExecutionPolicy Bypass -Command `".\.venv\Scripts\python.exe '$WeeklyKnowledgeScript' --with-bilibili`"" `
+        -WorkingDirectory $RepoRoot
+    $weeklyKnowledgeTrigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Monday -At 10:30am
+    Register-ScheduledTask `
+        -TaskName $WeeklyKnowledgeTaskName `
+        -Action $weeklyKnowledgeAction `
+        -Trigger $weeklyKnowledgeTrigger `
+        -Description "Refresh external knowledge, rebuild knowledge graph, research memory, and consolidation policy." `
+        -Force | Out-Null
+
     Write-Host "Installed Windows scheduled tasks:"
     Write-Host "- $DailyTaskName"
     Write-Host "- $WeeklyTaskName"
+    Write-Host "- $WeeklyKnowledgeTaskName"
 }
 
 function Unregister-ResearchTasks {
-    foreach ($taskName in @($DailyTaskName, $WeeklyTaskName)) {
+    foreach ($taskName in @($DailyTaskName, $WeeklyTaskName, $WeeklyKnowledgeTaskName)) {
         $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
         if ($null -ne $task) {
             Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
@@ -66,7 +81,7 @@ function Unregister-ResearchTasks {
 }
 
 function Show-ResearchTaskStatus {
-    foreach ($taskName in @($DailyTaskName, $WeeklyTaskName)) {
+    foreach ($taskName in @($DailyTaskName, $WeeklyTaskName, $WeeklyKnowledgeTaskName)) {
         $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
         if ($null -eq $task) {
             Write-Host "== $taskName =="

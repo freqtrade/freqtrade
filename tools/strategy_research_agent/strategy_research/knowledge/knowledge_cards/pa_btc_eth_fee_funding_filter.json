@@ -1,0 +1,63 @@
+{
+  "id": "pa_btc_eth_fee_funding_filter",
+  "title": "BTC/ETH 合约形态必须加费用和资金费率过滤",
+  "category": "crypto_adaptation",
+  "concepts": [
+    "BTC",
+    "ETH",
+    "funding",
+    "fee_stress"
+  ],
+  "source_refs": [
+    "bilibili_p045",
+    "phemex_crypto_price_action",
+    "kraken_technical_analysis_intro"
+  ],
+  "source_quality": {
+    "level": "high",
+    "usable_transcript_count": 1,
+    "low_confidence_transcript_count": 0,
+    "web_source_count": 2,
+    "book_source_count": 0
+  },
+  "knowledge": "形态 edge 如果很小，在合约里可能被手续费、滑点和资金费率吃掉。",
+  "strategy_hypothesis": "所有价格行为策略生成后先跑 base cost 和 stress cost 两档费用压力测试。",
+  "freqtrade_translation": {
+    "strategy_family": "crypto_risk",
+    "features": [
+      "fee_stress",
+      "funding_window",
+      "expected_move_atr"
+    ],
+    "entry_rules": [
+      "预期移动大于费用压力"
+    ],
+    "exit_rules": [
+      "资金费率/成本窗口不利时降频或禁开"
+    ],
+    "applicable_regimes": [
+      "all"
+    ],
+    "not_applicable_regimes": []
+  },
+  "risk_notes": [
+    "费用后 PF 低于 1 的策略不得保留候选。"
+  ],
+  "avoid_rules": [
+    "小目标高频策略不算成本"
+  ],
+  "verification_status": {
+    "state": "knowledge_only_requires_backtest",
+    "required_checks": [
+      "freqtrade_backtesting",
+      "recursive_analysis",
+      "lookahead_analysis",
+      "regime_matrix",
+      "fee_slippage_stress",
+      "promotion_gate"
+    ],
+    "quarantined": false
+  },
+  "copyright_note": "Short local knowledge summary. Does not copy long transcript passages.",
+  "created_at_utc": "20260626T035752Z"
+}
