@@ -1,9 +1,19 @@
-from typing import Any, Literal, NotRequired
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Literal, NotRequired
 from uuid import uuid4
 
 from typing_extensions import TypedDict
 
 from freqtrade.exchange.exchange import Exchange
+
+
+if TYPE_CHECKING:
+    from pandas import DataFrame
+
+    from freqtrade.configuration import TimeRange
+    from freqtrade.constants import Config
+    from freqtrade.optimize.backtesting import Backtesting
 
 
 class ProgressTask(TypedDict):
@@ -13,7 +23,7 @@ class ProgressTask(TypedDict):
 
 
 class JobsContainer(TypedDict):
-    category: Literal["pairlist", "download_data"]
+    category: Literal["pairlist", "download_data", "backtest"]
     is_running: bool
     status: str
     progress: float | None
@@ -22,14 +32,24 @@ class JobsContainer(TypedDict):
     error: str | None
 
 
+class BtContainer(TypedDict):
+    bt: Backtesting | None
+    data: dict[str, DataFrame]
+    timerange: TimeRange | None
+    last_config: Config
+    job_id: str | None
+
+
 class ApiBG:
     # Backtesting type: Backtesting
-    bt: dict[str, Any] = {
+    # Holds the backtesting instance and its cached data.
+    # job_id links to the job container.
+    bt: BtContainer = {
         "bt": None,
-        "data": None,
+        "data": {},
         "timerange": None,
         "last_config": {},
-        "bt_error": None,
+        "job_id": None,
     }
     bgtask_running: bool = False
     # Exchange - only available in webserver mode.

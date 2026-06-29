@@ -24,16 +24,34 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ "ubuntu-22.04", "ubuntu-24.04", "macos-14", "macos-15" , "windows-2022", "windows-2025" ]
+        os: [ "ubuntu-22.04", "ubuntu-24.04", "ubuntu-26.04", "ubuntu-24.04-arm", "macos-14", "macos-15" , "windows-2022", "windows-2025" ]
         python-version: ["3.11", "3.12", "3.13", "3.14"]
+        exclude:
+          - os: "ubuntu-22.04"
+            python-version: "3.13"
+          - os: "ubuntu-22.04"
+            python-version: "3.14"
+          # Reduce ARM runs to newer python versions
+          - os: "ubuntu-24.04-arm"
+            python-version: "3.11"
+          - os: "ubuntu-24.04-arm"
+            python-version: "3.12"
+          # ubuntu 26.04 has 3.14 as default python version
+          - os: "ubuntu-26.04"
+            python-version: "3.11"
+          - os: "ubuntu-26.04"
+            python-version: "3.12"
+          - os: "ubuntu-26.04"
+            python-version: "3.13"
+
 
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       with:
         persist-credentials: false
 
     - name: Install uv and Python 🐍
-      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
       with:
         activate-environment: true
         enable-cache: true # zizmor: ignore[cache-poisoning] - this job is not used for release builds
@@ -68,7 +86,7 @@ jobs:
       run: |
         pytest --random-order --cov=freqtrade --cov=freqtrade_client --cov-config=.coveragerc
 
-    - uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
+    - uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
       if: (runner.os == 'Linux' && matrix.python-version == '3.12' && matrix.os == 'ubuntu-24.04')
       with:
         fail_ci_if_error: true
@@ -146,7 +164,7 @@ jobs:
 
     - name: Run Pester tests (PowerShell)
       if: ${{ runner.os == 'Windows' }}
-      shell: powershell
+      shell: pwsh
       run: |
         $PSVersionTable
         Get-PSRepository | Format-List *
@@ -156,6 +174,10 @@ jobs:
         Set-PSRepository PSGallery -InstallationPolicy Trusted
         Install-Module -Name Pester -RequiredVersion 5.7.1 -Confirm:$false -Force -SkipPublisherCheck
         $Error.clear()
+
+        # Override Clear-Host globally to prevent headless console crashes
+        Function Clear-Host { }
+
         Invoke-Pester -Path "tests" -CI
         if ($Error.Length -gt 0) {exit 1}
 
@@ -171,12 +193,12 @@ jobs:
     name: "Mypy Version Check"
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       with:
         persist-credentials: false
 
     - name: Install uv and Python 🐍
-      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
       with:
         activate-environment: true
         python-version: "3.13"
@@ -191,7 +213,7 @@ jobs:
     name: "Pre-commit checks"
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       with:
         persist-credentials: false
 
@@ -206,7 +228,7 @@ jobs:
     name: "Documentation build"
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       with:
         persist-credentials: false
 
@@ -215,7 +237,7 @@ jobs:
         ./tests/test_docs.sh
 
     - name: Install uv and Python 🐍
-      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
       with:
         activate-environment: true
         python-version: "3.13"
@@ -243,12 +265,12 @@ jobs:
       matrix:
         python-version: ["3.12"]
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       with:
         persist-credentials: false
 
     - name: Install uv and Python 🐍
-      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
       with:
         activate-environment: true
         enable-cache: true # zizmor: ignore[cache-poisoning] - this job is not used for release builds
@@ -310,12 +332,12 @@ jobs:
       with:
         jobs: ${{ toJSON(needs) }}
 
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       with:
         persist-credentials: false
 
     - name: Install uv and Python 🐍
-      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
       with:
         activate-environment: true
         python-version: "${{ matrix.python-version }}"
@@ -359,7 +381,7 @@ jobs:
       id-token: write # Needed for pypa/gh-action-pypi-publish
 
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       with:
         persist-credentials: false
 
@@ -388,7 +410,7 @@ jobs:
       id-token: write # Needed for pypa/gh-action-pypi-publish
 
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       with:
         persist-credentials: false
 

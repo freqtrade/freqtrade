@@ -1000,13 +1000,15 @@ class FreqtradeBot(LoggingMixin):
         # Fee is applied twice because we make a LIMIT_BUY and LIMIT_SELL
         fee = self.exchange.get_fee(symbol=pair, taker_or_maker="maker")
         base_currency = self.exchange.get_pair_base_currency(pair)
-        open_date = datetime.now(UTC)
-
-        funding_fees = self.exchange.get_funding_fees(
-            pair=pair,
-            amount=amount + trade.amount if trade else amount,
-            is_short=is_short,
-            open_date=trade.date_last_filled_utc if trade else open_date,
+        funding_fees = (
+            self.exchange.get_funding_fees(
+                pair=pair,
+                amount=trade.amount,
+                is_short=is_short,
+                open_date=trade.date_last_filled_utc,
+            )
+            if trade
+            else 0
         )
 
         # This is a new trade
@@ -1023,7 +1025,7 @@ class FreqtradeBot(LoggingMixin):
                 fee_close=fee,
                 open_rate=enter_limit_filled_price,
                 open_rate_requested=enter_limit_requested,
-                open_date=open_date,
+                open_date=datetime.now(UTC),
                 exchange=self.exchange.id,
                 strategy=self.strategy.get_strategy_name(),
                 enter_tag=enter_tag,

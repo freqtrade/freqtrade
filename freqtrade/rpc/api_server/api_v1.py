@@ -148,6 +148,7 @@ def markets(
         "markets": exchange.get_markets(
             base_currencies=[query.base] if query.base else None,
             quote_currencies=[query.quote] if query.quote else None,
+            active_only=not query.include_inactive,
         ),
         "exchange_id": exchange.id,
     }

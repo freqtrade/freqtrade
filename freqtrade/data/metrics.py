@@ -5,6 +5,7 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
+from scipy import stats
 
 
 logger = logging.getLogger(__name__)
@@ -632,3 +633,24 @@ def calculate_sqn(trades: pd.DataFrame, starting_balance: float) -> float:
         sqn = -100.0
 
     return round(sqn, 4)
+
+
+def calculate_p_value(trades: pd.DataFrame, starting_balance: float) -> float:
+    """
+    Two-sided p-value for the null hypothesis that mean per-trade profit
+    (profit_abs / starting_balance) equals zero.
+    Returns 1.0 for fewer than 2 trades or zero-variance samples.
+
+    :param trades: DataFrame containing trades (requires column profit_abs)
+    :param starting_balance: Starting balance of the trading system
+    :return: Two-sided p-value in the range [0, 1]. Returns 1.0 (no evidence
+             against the null) when it cannot be computed - fewer than two
+             trades or zero return variance.
+    """
+    if len(trades) < 2:
+        return 1.0
+    returns = trades["profit_abs"] / starting_balance
+    if returns.std() == 0:
+        return 1.0
+    _, p_value = stats.ttest_1samp(returns, popmean=0)
+    return float(p_value)

@@ -232,6 +232,9 @@ def test_generate_backtest_stats(default_conf, testdatadir, tmp_path):
     assert strat_stats["drawdown_end_ts"] == 1510699380000
     assert strat_stats["drawdown_start_ts"] == 1510697400000
     assert strat_stats["pairlist"] == ["UNITTEST/BTC"]
+    # Statistical significance of the mean trade return
+    assert "p_value" in strat_stats
+    assert strat_stats["p_value"] == pytest.approx(0.8957701627)
 
     # Test storing stats
     filename = tmp_path / "btresult.json"
@@ -666,6 +669,8 @@ def test_text_table_add_metrics_shows_wallet_ratios(testdatadir, capsys):
         "max_drawdown_low": 0.95,
     }
 
+    strat_results["p_value"] = 0.0321
+
     text_table_add_metrics(strat_results)
     text = capsys.readouterr().out
 
@@ -673,6 +678,8 @@ def test_text_table_add_metrics_shows_wallet_ratios(testdatadir, capsys):
     assert "Sortino (daily wallet balance)" in text
     assert "Calmar (daily wallet balance)" in text
     assert "Max % of account underwater (balance)" in text
+    assert "Mean profit p-value" in text
+    assert "0.0321" in text
 
 
 def test_generate_periodic_breakdown_stats(testdatadir):

@@ -20,6 +20,8 @@ def _get_help_output(parser) -> str:
 def extract_command_partials():
     # Set terminal width to 80 columns for consistent output formatting
     os.environ["COLUMNS"] = "80"
+    # Disable color codes for consistent output with python 3.14 (which added colors to argparse)
+    os.environ["NO_COLOR"] = "1"
 
     # Import Arguments here to avoid circular imports and ensure COLUMNS is set
     from freqtrade.commands.arguments import Arguments

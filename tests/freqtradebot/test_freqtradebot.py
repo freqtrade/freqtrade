@@ -5297,6 +5297,91 @@ def test_update_funding_fees_error(mocker, default_conf, caplog):
     log_has("Could not update funding fees for open trades.", caplog)
 
 
+def test_execute_entry_funding_fees_dca(mocker, default_conf_usdt, fee) -> None:
+    """
+    On a position adjustment (DCA), funding fees must be calculated on the existing
+    position size (trade.amount) - not on the combined existing + newly added amount,
+    as the newly added amount hasn't accrued any funding fees yet.
+    """
+    patch_wallet(mocker, free=10000)
+    default_conf_usdt.update(
+        {
+            "position_adjustment_enable": True,
+            "trading_mode": "futures",
+            "margin_mode": "isolated",
+            "dry_run": False,
+            "stake_amount": 10.0,
+            "dry_run_wallet": 1000.0,
+        }
+    )
+    bid = 11
+    stake_amount = 10
+    get_funding_fees = MagicMock(return_value=0)
+    mocker.patch.multiple(
+        EXMS,
+        get_rate=MagicMock(return_value=bid),
+        fetch_ticker=MagicMock(return_value={"bid": 10, "ask": 12, "last": 11}),
+        get_min_pair_stake_amount=MagicMock(return_value=1),
+        get_fee=fee,
+        get_funding_fees=get_funding_fees,
+        get_maintenance_ratio_and_amt=MagicMock(return_value=(0.01, 0.01)),
+        get_max_leverage=MagicMock(return_value=10),
+    )
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    pair = "ETH/USDT"
+
+    # Initial buy - creates a trade with amount == 30
+    closed_buy_order = {
+        "pair": pair,
+        "ft_pair": pair,
+        "ft_order_side": "buy",
+        "side": "buy",
+        "type": "limit",
+        "status": "closed",
+        "price": bid,
+        "average": bid,
+        "cost": bid * 30,
+        "amount": 30,
+        "filled": 30,
+        "ft_is_open": False,
+        "id": "650",
+        "order_id": "650",
+    }
+    mocker.patch(f"{EXMS}.create_order", return_value=closed_buy_order)
+    mocker.patch(f"{EXMS}.fetch_order_or_stoploss_order", return_value=closed_buy_order)
+    assert freqtrade.execute_entry(pair, stake_amount)
+
+    trade = Trade.session.scalars(select(Trade)).first()
+    assert trade
+    assert trade.amount == 30
+
+    # Position adjustment (DCA) - adds 12 to the position
+    get_funding_fees.reset_mock()
+    closed_dca_order = {
+        "pair": pair,
+        "ft_pair": pair,
+        "ft_order_side": "buy",
+        "side": "buy",
+        "type": "limit",
+        "status": "closed",
+        "price": 9,
+        "average": 9,
+        "cost": 108,
+        "amount": 12,
+        "filled": 12,
+        "ft_is_open": False,
+        "id": "651",
+        "order_id": "651",
+    }
+    mocker.patch(f"{EXMS}.create_order", return_value=closed_dca_order)
+    mocker.patch(f"{EXMS}.fetch_order_or_stoploss_order", return_value=closed_dca_order)
+    assert freqtrade.execute_entry(pair, stake_amount, trade=trade)
+
+    # Funding fees must be calculated on the existing amount (30), not 30 + 12
+    assert get_funding_fees.call_count == 1
+    assert get_funding_fees.call_args[1]["amount"] == 30
+
+
 def test_position_adjust(mocker, default_conf_usdt, fee) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)

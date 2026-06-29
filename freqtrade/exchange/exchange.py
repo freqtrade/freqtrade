@@ -19,7 +19,7 @@ import ccxt
 import ccxt.pro as ccxt_pro
 from ccxt import TICK_SIZE
 from dateutil import parser
-from pandas import DataFrame, concat
+from pandas import DataFrame, Timestamp, concat
 
 from freqtrade.configuration import remove_exchange_credentials
 from freqtrade.constants import (
@@ -3963,7 +3963,14 @@ class Exchange:
         fees: float = 0
 
         if not df.empty:
-            df1 = df[(df["date"] >= open_date) & (df["date"] <= close_date)]
+            dates = df["date"]
+            unit = dates.dtype.unit
+            # Timestamps must be converted to column unit for dry/live mode
+            # where open/close dates can have microsecond precision - but the column may not have
+            # that precision.
+            lo = Timestamp(open_date).ceil(unit).as_unit(unit)
+            hi = Timestamp(close_date).floor(unit).as_unit(unit)
+            df1 = df.iloc[dates.searchsorted(lo, "left") : dates.searchsorted(hi, "right")]
             fees = sum(df1["open_fund"] * df1["open_mark"] * amount)
         if isnan(fees):
             fees = 0.0

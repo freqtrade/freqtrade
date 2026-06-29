@@ -24,7 +24,12 @@ from sqlalchemy import select
 
 from freqtrade.__init__ import __version__
 from freqtrade.enums import CandleType, RunMode, State, TradingMode
-from freqtrade.exceptions import DependencyException, ExchangeError, OperationalException
+from freqtrade.exceptions import (
+    ConfigurationError,
+    DependencyException,
+    ExchangeError,
+    OperationalException,
+)
 from freqtrade.loggers import setup_logging, setup_logging_pre
 from freqtrade.optimize.backtesting import Backtesting
 from freqtrade.persistence import CustomDataWrapper, Trade
@@ -2789,10 +2794,10 @@ def test_api_exchanges(botclient):
         "alias_for": None,
         "trade_modes": [{"trading_mode": "spot", "margin_mode": ""}],
     }
-    waves = next(x for x in response["exchanges"] if x["classname"] == "wavesexchange")
+    waves = next(x for x in response["exchanges"] if x["classname"] == "aster")
     assert waves == {
-        "classname": "wavesexchange",
-        "name": "Waves.Exchange",
+        "classname": "aster",
+        "name": "Aster",
         "valid": True,
         "supported": False,
         "dex": True,
@@ -3163,6 +3168,14 @@ def test_api_backtesting(botclient, mocker, fee, caplog, tmp_path):
 
         data["stake_amount"] = 101
 
+        mocker.patch(
+            "freqtrade.optimize.backtesting.Backtesting.backtest_one_strategy",
+            side_effect=ConfigurationError("DeadBeef22"),
+        )
+        rc = client_post(client, f"{BASE_URI}/backtest", data=data)
+        assert log_has("Backtesting encountered a configuration Error: DeadBeef22", caplog)
+
+        data["stake_amount"] = 102
         mocker.patch(
             "freqtrade.optimize.backtesting.Backtesting.backtest_one_strategy",
             side_effect=DependencyException("DeadBeef"),
@@ -3638,6 +3651,7 @@ def test_api_markets_live(botclient):
         "symbol": "XRP/USDT",
         "spot": True,
         "swap": False,
+        "active": True,
     }
 
     assert "BTC/USDT" in response["markets"]

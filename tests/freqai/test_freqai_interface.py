@@ -212,7 +212,7 @@ def test_extract_data_and_train_model_Classifiers(mocker, freqai_conf, model):
         new_timerange, "ADA/BTC", strategy, freqai.dk, data_load_timerange
     )
 
-    if "PyTorchMLPClassifier":
+    if "PyTorch" in model:
         pytorch_mlp_mtp = mock_pytorch_mlp_model_training_parameters()
         freqai_conf["freqai"]["model_training_parameters"].update(pytorch_mlp_mtp)
 
