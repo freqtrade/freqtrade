@@ -1686,6 +1686,10 @@ class FreqtradeBot(LoggingMixin):
         :param trade: Trade object.
         :return: None
         """
+        if not order_obj:
+            logger.warning(f"Order object not found for {trade}. Cannot replace order.")
+            return
+
         analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(
             trade.pair, self.strategy.timeframe
         )
@@ -1694,7 +1698,7 @@ class FreqtradeBot(LoggingMixin):
             self.strategy.timeframe, latest_candle_open_date
         )
         # Check if new candle
-        if order_obj and latest_candle_close_date > order_obj.order_date_utc:
+        if latest_candle_close_date > order_obj.order_date_utc:
             is_entry = order_obj.side == trade.entry_side
             # New candle
             proposed_rate = self.exchange.get_rate(
