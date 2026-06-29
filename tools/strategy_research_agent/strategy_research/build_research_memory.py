@@ -15,6 +15,7 @@ AGENT_ROOT = REPO_ROOT / "user_data/strategy_research"
 OUTPUT_DIR = AGENT_ROOT / "research_memory"
 LATEST_JSON = OUTPUT_DIR / "latest_research_memory.json"
 LATEST_MD = OUTPUT_DIR / "latest_research_memory.md"
+GRAPH_CONTEXT_JSON = AGENT_ROOT / "knowledge/graph/strategy_agent_graph_context.json"
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -171,33 +172,116 @@ def close_gap_instruction(gap: str) -> str:
     return "Create a focused experiment that directly tests this gap."
 
 
+def dedupe(values: list[Any]) -> list[Any]:
+    seen = set()
+    out = []
+    for value in values:
+        key = json.dumps(value, ensure_ascii=False, sort_keys=True)
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(value)
+    return out
+
+
+def build_knowledge_memory(graph_context: dict[str, Any]) -> dict[str, Any]:
+    cards = graph_context.get("cards", [])
+    concept_counts = Counter()
+    category_counts = Counter()
+    quality_counts = Counter()
+    required_checks = Counter()
+    avoid_rules: list[str] = []
+    strategy_families = Counter()
+    high_risk_cards = []
+
+    for card in cards:
+        category_counts[card.get("category") or "unknown"] += 1
+        quality_counts[card.get("source_quality") or "unknown"] += 1
+        for concept in card.get("concepts", []):
+            concept_counts[concept] += 1
+        for check in card.get("required_checks", []):
+            required_checks[check] += 1
+        avoid_rules.extend(card.get("avoid_rules", []))
+        family = infer_strategy_family(card)
+        if family:
+            strategy_families[family] += 1
+        if card.get("category") in {"risk", "crypto_adaptation"} or any(
+            keyword in json.dumps(card, ensure_ascii=False).lower()
+            for keyword in ["scalp", "leverage", "funding", "slippage", "高杠杆", "滑点", "手续费"]
+        ):
+            high_risk_cards.append(
+                {
+                    "card_node": card.get("card_node"),
+                    "title": card.get("title"),
+                    "risk_notes": card.get("risk_notes", [])[:3],
+                }
+            )
+
+    return {
+        "active_card_count": graph_context.get("active_card_count") or len(cards),
+        "policy": graph_context.get("policy", {}),
+        "category_summary": [{"category": key, "count": value} for key, value in category_counts.most_common()],
+        "source_quality_summary": [{"quality": key, "count": value} for key, value in quality_counts.most_common()],
+        "top_concepts": [{"concept": key, "count": value} for key, value in concept_counts.most_common(20)],
+        "strategy_family_summary": [
+            {"family": key, "count": value} for key, value in strategy_families.most_common(15)
+        ],
+        "required_checks": [{"check": key, "count": value} for key, value in required_checks.most_common()],
+        "knowledge_avoid_rules": dedupe(avoid_rules)[:30],
+        "high_risk_cards": high_risk_cards[:12],
+    }
+
+
+def infer_strategy_family(card: dict[str, Any]) -> str:
+    concepts = set(card.get("concepts", []))
+    text = json.dumps(card, ensure_ascii=False).lower()
+    if {"breakout", "breakout_test", "failed_breakout"} & concepts or "breakout" in text or "突破" in text:
+        return "breakout"
+    if {"pullback", "trend_bar", "counting_bars"} & concepts or "pullback" in text or "回调" in text:
+        return "pullback"
+    if {"scalp", "microstructure"} & concepts or "scalp" in text or "剥头皮" in text:
+        return "scalp"
+    if {"reversal", "wedge", "parabolic"} & concepts or "reversal" in text or "反转" in text:
+        return "reversal"
+    if {"risk", "actual_risk", "fees", "funding"} & concepts or "风险" in text:
+        return "risk_control"
+    if {"market_cycle", "regime_router"} & concepts or "震荡" in text or "趋势" in text:
+        return "regime"
+    return card.get("category") or "general"
+
+
 def build_payload() -> dict[str, Any]:
     lineage = load_json(AGENT_ROOT / "strategy_library/latest_strategy_lineage.json")
     failure = load_json(AGENT_ROOT / "failure_attribution/latest_failure_attribution.json")
     agenda = load_json(AGENT_ROOT / "research_agendas/latest_research_agenda.json")
     assessment = load_json(AGENT_ROOT / "strategy_assessments/latest_strategy_assessment.json")
+    graph_context = load_json(GRAPH_CONTEXT_JSON)
     nodes = lineage.get("nodes", [])
     failure_summary = failure.get("failure_mode_summary", [])
     payload = {
         "generated_at_utc": datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ"),
-        "memory_version": 1,
+        "memory_version": 2,
         "strategy_count": len(nodes),
         "active_roots": build_active_roots(nodes),
         "avoid_patterns": build_avoid_patterns(nodes, failure_summary),
         "next_focus": build_next_focus(agenda, nodes),
         "knowledge_gaps": build_knowledge_gaps(nodes),
+        "knowledge_memory": build_knowledge_memory(graph_context) if graph_context else {},
         "durable_rules": [
             "Never promote a strategy from a single favorable slice.",
             "Treat leverage as a risk multiplier, not a fix for weak entry timing.",
             "Prefer variants that improve trade quality and sample size together.",
             "Keep external strategies quarantined until translated into local auditable code.",
             "Do not repeat archived variants unless the new experiment changes the diagnosed failure mode.",
+            "Generate new hypotheses from active knowledge-graph cards only; quarantined cards are reference material, not strategy fuel.",
+            "Any knowledge-derived strategy must remain research-only until backtest, recursive, lookahead, regime, cost, and promotion gates pass.",
         ],
         "source_artifacts": {
             "strategy_lineage": rel(AGENT_ROOT / "strategy_library/latest_strategy_lineage.json") if lineage else None,
             "failure_attribution": rel(AGENT_ROOT / "failure_attribution/latest_failure_attribution.json") if failure else None,
             "research_agenda": rel(AGENT_ROOT / "research_agendas/latest_research_agenda.json") if agenda else None,
             "strategy_assessment": rel(AGENT_ROOT / "strategy_assessments/latest_strategy_assessment.json") if assessment else None,
+            "knowledge_graph_context": rel(GRAPH_CONTEXT_JSON) if graph_context else None,
         },
     }
     return payload
@@ -240,6 +324,28 @@ def write_markdown(path: Path, payload: dict[str, Any]) -> None:
     lines.extend(["", "## Knowledge Gaps", "", "| Gap | Count | Close By |", "|---|---:|---|"])
     for item in payload["knowledge_gaps"]:
         lines.append("| {gap} | {count} | {close_by} |".format(**item))
+    knowledge = payload.get("knowledge_memory") or {}
+    lines.extend(
+        [
+            "",
+            "## Knowledge Graph Memory",
+            "",
+            f"- Active knowledge cards: `{knowledge.get('active_card_count', 0)}`",
+            f"- Research-only: `{knowledge.get('policy', {}).get('research_only', True)}`",
+            f"- Exclude quarantined cards: `{knowledge.get('policy', {}).get('exclude_quarantined_cards', True)}`",
+            "",
+            "| Family | Count |",
+            "|---|---:|",
+        ]
+    )
+    for item in knowledge.get("strategy_family_summary", []):
+        lines.append("| {family} | {count} |".format(**item))
+    lines.extend(["", "### Knowledge Avoid Rules", ""])
+    for rule in knowledge.get("knowledge_avoid_rules", [])[:12]:
+        lines.append(f"- {rule}")
+    lines.extend(["", "### Required Checks", "", "| Check | Cards |", "|---|---:|"])
+    for item in knowledge.get("required_checks", []):
+        lines.append("| {check} | {count} |".format(**item))
     lines.extend(["", "## Durable Rules", ""])
     for rule in payload["durable_rules"]:
         lines.append(f"- {rule}")

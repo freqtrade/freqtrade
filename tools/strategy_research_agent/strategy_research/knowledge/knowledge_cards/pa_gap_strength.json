@@ -1,0 +1,65 @@
+{
+  "id": "pa_gap_strength",
+  "title": "缺口/实体缺口用于判断趋势强弱",
+  "category": "pattern",
+  "concepts": [
+    "gap",
+    "body_gap",
+    "trend_strength"
+  ],
+  "source_refs": [
+    "bilibili_p023",
+    "bilibili_p024",
+    "bilibili_p022"
+  ],
+  "source_quality": {
+    "level": "high",
+    "usable_transcript_count": 2,
+    "low_confidence_transcript_count": 1,
+    "web_source_count": 0,
+    "book_source_count": 0
+  },
+  "knowledge": "缺口或实体缺口可以表达买卖双方力量不平衡，适合作为趋势强度信号。",
+  "strategy_hypothesis": "在加密货币中用实体间隔、快速单边推进和流动性真空替代传统跳空。",
+  "freqtrade_translation": {
+    "strategy_family": "trend_strength",
+    "features": [
+      "body_gap_proxy",
+      "one_way_range",
+      "atr_expansion"
+    ],
+    "entry_rules": [
+      "强度信号出现",
+      "回调不填补缺口代理",
+      "顺势恢复"
+    ],
+    "exit_rules": [
+      "强度信号被完全回补时退出"
+    ],
+    "applicable_regimes": [
+      "trend",
+      "range"
+    ],
+    "not_applicable_regimes": []
+  },
+  "risk_notes": [
+    "加密货币没有传统开盘缺口，必须用代理特征验证。"
+  ],
+  "avoid_rules": [
+    "把交易所孤立异常价当趋势强度"
+  ],
+  "verification_status": {
+    "state": "knowledge_only_requires_backtest",
+    "required_checks": [
+      "freqtrade_backtesting",
+      "recursive_analysis",
+      "lookahead_analysis",
+      "regime_matrix",
+      "fee_slippage_stress",
+      "promotion_gate"
+    ],
+    "quarantined": false
+  },
+  "copyright_note": "Short local knowledge summary. Does not copy long transcript passages.",
+  "created_at_utc": "20260626T035752Z"
+}

@@ -1,0 +1,67 @@
+{
+  "id": "pa_endless_pullback_reversal",
+  "title": "无尽回调可能是趋势转弱信号",
+  "category": "pattern",
+  "concepts": [
+    "endless_pullback",
+    "trend_weakness",
+    "reversal"
+  ],
+  "source_refs": [
+    "bilibili_p025",
+    "bilibili_p030"
+  ],
+  "source_quality": {
+    "level": "medium",
+    "usable_transcript_count": 0,
+    "low_confidence_transcript_count": 2,
+    "web_source_count": 0,
+    "book_source_count": 0
+  },
+  "knowledge": "回调持续过久且恢复失败，说明原趋势可能转弱。",
+  "strategy_hypothesis": "测试回调时间过长和恢复失败作为禁开顺势或小反向信号。",
+  "freqtrade_translation": {
+    "strategy_family": "reversal_or_abstention",
+    "features": [
+      "pullback_duration",
+      "failed_resume_count",
+      "ema_flattening"
+    ],
+    "entry_rules": [
+      "顺势恢复多次失败",
+      "趋势斜率走平",
+      "反向确认"
+    ],
+    "exit_rules": [
+      "重新恢复原趋势时退出"
+    ],
+    "applicable_regimes": [
+      "range",
+      "exhaustion",
+      "failed_breakout"
+    ],
+    "not_applicable_regimes": [
+      "strong_unconfirmed_trend"
+    ]
+  },
+  "risk_notes": [
+    "更适合作为 abstention/filter，而非直接反手。"
+  ],
+  "avoid_rules": [
+    "把所有长回调都当反转"
+  ],
+  "verification_status": {
+    "state": "quarantined_needs_stronger_source",
+    "required_checks": [
+      "freqtrade_backtesting",
+      "recursive_analysis",
+      "lookahead_analysis",
+      "regime_matrix",
+      "fee_slippage_stress",
+      "promotion_gate"
+    ],
+    "quarantined": true
+  },
+  "copyright_note": "Short local knowledge summary. Does not copy long transcript passages.",
+  "created_at_utc": "20260626T035752Z"
+}

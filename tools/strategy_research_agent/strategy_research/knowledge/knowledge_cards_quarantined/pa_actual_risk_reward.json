@@ -1,0 +1,60 @@
+{
+  "id": "pa_actual_risk_reward",
+  "title": "实际风险比理论止损更重要",
+  "category": "risk",
+  "concepts": [
+    "actual_risk",
+    "reward_risk",
+    "stoploss"
+  ],
+  "source_refs": [
+    "bilibili_p015"
+  ],
+  "source_quality": {
+    "level": "medium",
+    "usable_transcript_count": 0,
+    "low_confidence_transcript_count": 1,
+    "web_source_count": 0,
+    "book_source_count": 0
+  },
+  "knowledge": "真实交易风险往往大于图上理论风险，包括滑点、延迟和入场后不利移动。",
+  "strategy_hypothesis": "每个形态实验都输出预期价格风险、杠杆后风险和费用压力后的盈亏比。",
+  "freqtrade_translation": {
+    "strategy_family": "risk_control",
+    "features": [
+      "expected_adverse_move",
+      "fee_stress",
+      "slippage_bps"
+    ],
+    "entry_rules": [
+      "预期收益必须覆盖费用和滑点"
+    ],
+    "exit_rules": [
+      "实际风险超过预设阈值时拒绝入场或退出"
+    ],
+    "applicable_regimes": [
+      "all"
+    ],
+    "not_applicable_regimes": []
+  },
+  "risk_notes": [
+    "50x 下 1% 价格反向约等于 50% 杠杆后亏损。"
+  ],
+  "avoid_rules": [
+    "只看裸价格止损距离"
+  ],
+  "verification_status": {
+    "state": "quarantined_needs_stronger_source",
+    "required_checks": [
+      "freqtrade_backtesting",
+      "recursive_analysis",
+      "lookahead_analysis",
+      "regime_matrix",
+      "fee_slippage_stress",
+      "promotion_gate"
+    ],
+    "quarantined": true
+  },
+  "copyright_note": "Short local knowledge summary. Does not copy long transcript passages.",
+  "created_at_utc": "20260626T035752Z"
+}

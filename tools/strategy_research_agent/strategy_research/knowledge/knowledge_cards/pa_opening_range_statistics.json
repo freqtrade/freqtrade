@@ -1,0 +1,62 @@
+{
+  "id": "pa_opening_range_statistics",
+  "title": "早盘/开盘区间需要统计而不是直觉",
+  "category": "pattern",
+  "concepts": [
+    "opening_range",
+    "session",
+    "statistics"
+  ],
+  "source_refs": [
+    "bilibili_p039",
+    "bilibili_p040",
+    "bilibili_p045"
+  ],
+  "source_quality": {
+    "level": "high",
+    "usable_transcript_count": 3,
+    "low_confidence_transcript_count": 0,
+    "web_source_count": 0,
+    "book_source_count": 0
+  },
+  "knowledge": "早盘模式强调特定交易时段的行为统计，加密货币需映射到美盘/欧盘/亚洲时段。",
+  "strategy_hypothesis": "把早盘概念转为 UTC 小时段切片，测试 BTC/ETH 在美盘前后是否有独立 edge。",
+  "freqtrade_translation": {
+    "strategy_family": "session_filter",
+    "features": [
+      "hour_of_day",
+      "session_tag",
+      "opening_range_width"
+    ],
+    "entry_rules": [
+      "只在统计优势时段启用"
+    ],
+    "exit_rules": [
+      "时段优势结束或波动收缩退出"
+    ],
+    "applicable_regimes": [
+      "time_sliced"
+    ],
+    "not_applicable_regimes": []
+  },
+  "risk_notes": [
+    "时段策略必须跨月份验证。"
+  ],
+  "avoid_rules": [
+    "把股票早盘规则无验证搬到 24h 加密市场"
+  ],
+  "verification_status": {
+    "state": "knowledge_only_requires_backtest",
+    "required_checks": [
+      "freqtrade_backtesting",
+      "recursive_analysis",
+      "lookahead_analysis",
+      "regime_matrix",
+      "fee_slippage_stress",
+      "promotion_gate"
+    ],
+    "quarantined": false
+  },
+  "copyright_note": "Short local knowledge summary. Does not copy long transcript passages.",
+  "created_at_utc": "20260626T035752Z"
+}

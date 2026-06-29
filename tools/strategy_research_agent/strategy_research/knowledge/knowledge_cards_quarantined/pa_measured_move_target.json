@@ -1,0 +1,61 @@
+{
+  "id": "pa_measured_move_target",
+  "title": "Measured Move 给止盈目标提供尺度",
+  "category": "exit",
+  "concepts": [
+    "measured_move",
+    "take_profit",
+    "target"
+  ],
+  "source_refs": [
+    "bilibili_p015"
+  ],
+  "source_quality": {
+    "level": "medium",
+    "usable_transcript_count": 0,
+    "low_confidence_transcript_count": 1,
+    "web_source_count": 0,
+    "book_source_count": 0
+  },
+  "knowledge": "止盈目标不应只用固定百分比，也可以用前一段波动或结构宽度推算。",
+  "strategy_hypothesis": "测试结构尺度止盈：突破区间宽度、前一腿长度、ATR 多倍数。",
+  "freqtrade_translation": {
+    "strategy_family": "exit_design",
+    "features": [
+      "range_height",
+      "prior_leg_size",
+      "atr"
+    ],
+    "entry_rules": [
+      "入场仍由形态确认决定"
+    ],
+    "exit_rules": [
+      "到达 measured move 或动量衰减分批退出"
+    ],
+    "applicable_regimes": [
+      "trend",
+      "range"
+    ],
+    "not_applicable_regimes": []
+  },
+  "risk_notes": [
+    "目标过远会降低胜率，需和实际风险一起评估。"
+  ],
+  "avoid_rules": [
+    "所有行情使用同一个固定 ROI"
+  ],
+  "verification_status": {
+    "state": "quarantined_needs_stronger_source",
+    "required_checks": [
+      "freqtrade_backtesting",
+      "recursive_analysis",
+      "lookahead_analysis",
+      "regime_matrix",
+      "fee_slippage_stress",
+      "promotion_gate"
+    ],
+    "quarantined": true
+  },
+  "copyright_note": "Short local knowledge summary. Does not copy long transcript passages.",
+  "created_at_utc": "20260626T035752Z"
+}

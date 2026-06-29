@@ -7,6 +7,7 @@ Runtime files are installed into `user_data/` because Freqtrade expects strategi
 ## Layout
 
 - `strategy_research/`: research agent scripts, experiment templates, source registry, launchd templates, and documentation.
+- `strategy_research/knowledge/knowledge_cards/`: short, traceable knowledge cards that are safe to version. These are summaries and testable hypotheses, not raw transcripts or book/article copies.
 - `strategies/research_generated/`: generated strategy source files that are safe to version.
 - `skills/`: Codex skills for strategy diagnosis, Freqtrade research loops, futures risk, scalping/microstructure, and promotion gates.
 - `download_binance_um_1m.py`: incremental Binance USDT-M 1m OHLCV updater.
@@ -78,6 +79,24 @@ External source discovery and review queue:
 
 ```bash
 user_data/strategy_research/start_manual_research.sh --source-scout
+```
+
+Rebuild the Agent brain from the versioned knowledge cards, local research memory, and consolidation policy:
+
+```bash
+user_data/strategy_research/start_manual_research.sh --agent-brain
+```
+
+Weekly external knowledge update:
+
+```bash
+user_data/strategy_research/start_manual_research.sh --weekly-knowledge-update
+```
+
+This refreshes external/source knowledge, optionally refreshes Bilibili subtitles without downloading video, rebuilds the knowledge graph, rebuilds research memory, refreshes the consolidation layer, and updates the dashboard/report. It writes:
+
+```text
+user_data/strategy_research/knowledge_updates/latest_weekly_knowledge_update.md
 ```
 
 Integrated strong researcher smoke loop:
@@ -222,6 +241,12 @@ Install local launchd automation:
 user_data/strategy_research/automation/install_launchd.sh
 ```
 
+The launchd templates include:
+
+- daily research cycle
+- weekly futures auxiliary-data cycle
+- weekly external knowledge update
+
 On Windows, use `README_WINDOWS.md` for the PowerShell cycle runner and Task Scheduler installation.
 
 ## Safety Boundary
@@ -246,3 +271,5 @@ On Windows, use `README_WINDOWS.md` for the PowerShell cycle runner and Task Sch
 - Research memory turns current evidence into next-focus items, avoid patterns, knowledge gaps, and durable research rules.
 - Memory-guided hypotheses convert that memory into auditable next strategy-design plans with explicit blockers and success gates.
 - Memory-guided strategy variants turn actionable non-verification plans into isolated Freqtrade subclasses.
+- The knowledge graph and knowledge-guided hypotheses use only active short knowledge cards. Raw Bilibili subtitles, PDFs, browser cookies, web snapshots, generated graph artifacts, and weekly update reports remain local runtime data and should not be committed.
+- Weekly external knowledge updates are an external iteration loop. They may create new research hypotheses, but they never promote strategies without backtesting, recursive-analysis, lookahead-analysis, regime matrix, cost stress, and promotion-gate review.
