@@ -1,0 +1,51 @@
+{
+  "generated_at_utc": "20260623T030911Z",
+  "source_data": "user_data/data/binance/futures/BTC_USDT_USDT-1m-futures.feather",
+  "method": "BTC daily close derived from local 1m futures OHLCV; windows selected by trailing 90d return and 30d realized volatility.",
+  "slices": [
+    {
+      "name": "bull",
+      "label": "BTC 90d strongest uptrend",
+      "timerange": "20241022-20250120",
+      "start_utc": "2024-10-22T00:00:00+00:00",
+      "end_utc": "2025-01-19T00:00:00+00:00",
+      "days": 90,
+      "btc_return_pct": 50.3,
+      "realized_vol_pct": 51.01,
+      "notes": "Highest BTC trailing 90d return window."
+    },
+    {
+      "name": "bear",
+      "label": "BTC 90d strongest downtrend",
+      "timerange": "20251222-20260322",
+      "start_utc": "2025-12-22T00:00:00+00:00",
+      "end_utc": "2026-03-21T00:00:00+00:00",
+      "days": 90,
+      "btc_return_pct": -22.24,
+      "realized_vol_pct": 57.21,
+      "notes": "Lowest BTC trailing 90d return window."
+    },
+    {
+      "name": "range",
+      "label": "BTC flattest lower-volatility range",
+      "timerange": "20240507-20240805",
+      "start_utc": "2024-05-07T00:00:00+00:00",
+      "end_utc": "2024-08-04T00:00:00+00:00",
+      "days": 90,
+      "btc_return_pct": -6.66,
+      "realized_vol_pct": 45.62,
+      "notes": "Low absolute BTC 90d return with lower volatility preference."
+    },
+    {
+      "name": "high_vol",
+      "label": "BTC highest realized volatility",
+      "timerange": "20260118-20260418",
+      "start_utc": "2026-01-18T00:00:00+00:00",
+      "end_utc": "2026-04-17T00:00:00+00:00",
+      "days": 90,
+      "btc_return_pct": -17.71,
+      "realized_vol_pct": 60.25,
+      "notes": "Highest BTC trailing 30d annualized realized volatility window."
+    }
+  ]
+}

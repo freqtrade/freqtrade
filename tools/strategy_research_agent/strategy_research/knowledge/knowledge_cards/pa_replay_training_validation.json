@@ -1,0 +1,61 @@
+{
+  "id": "pa_replay_training_validation",
+  "title": "回放训练可转为 walk-forward 思路",
+  "category": "training",
+  "concepts": [
+    "replay",
+    "walk_forward",
+    "out_of_sample"
+  ],
+  "source_refs": [
+    "brooks_trading_course_books",
+    "brooks_trading_course_home"
+  ],
+  "source_quality": {
+    "level": "medium",
+    "usable_transcript_count": 0,
+    "low_confidence_transcript_count": 0,
+    "web_source_count": 2,
+    "book_source_count": 0
+  },
+  "knowledge": "回放训练的重点是按时间顺序决策，避免事后看答案。",
+  "strategy_hypothesis": "把知识生成策略放入 walk-forward，不允许用全样本调完再宣称有效。",
+  "freqtrade_translation": {
+    "strategy_family": "validation",
+    "features": [
+      "train_window",
+      "test_window",
+      "decision_time"
+    ],
+    "entry_rules": [
+      "只使用当时可见数据"
+    ],
+    "exit_rules": [
+      "样本外失败则降级"
+    ],
+    "applicable_regimes": [
+      "all"
+    ],
+    "not_applicable_regimes": []
+  },
+  "risk_notes": [
+    "lookahead/recursive 分析是硬门槛。"
+  ],
+  "avoid_rules": [
+    "看完整行情后反推规则"
+  ],
+  "verification_status": {
+    "state": "knowledge_only_requires_backtest",
+    "required_checks": [
+      "freqtrade_backtesting",
+      "recursive_analysis",
+      "lookahead_analysis",
+      "regime_matrix",
+      "fee_slippage_stress",
+      "promotion_gate"
+    ],
+    "quarantined": false
+  },
+  "copyright_note": "Short local knowledge summary. Does not copy long transcript passages.",
+  "created_at_utc": "20260626T035752Z"
+}

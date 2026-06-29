@@ -1,0 +1,65 @@
+{
+  "id": "pa_xu_pyramid_only_after_profit",
+  "title": "金字塔加仓只能顺势盈利加，不允许亏损摊薄",
+  "category": "risk",
+  "concepts": [
+    "pyramiding",
+    "add_to_winner",
+    "no_averaging_down"
+  ],
+  "source_refs": [
+    "book_xu_jiacong_p199",
+    "book_xu_jiacong_p201"
+  ],
+  "source_quality": {
+    "level": "high",
+    "usable_transcript_count": 0,
+    "low_confidence_transcript_count": 0,
+    "web_source_count": 0,
+    "book_source_count": 2
+  },
+  "knowledge": "金字塔加仓只适合强单边行情，核心是移动止损控制风险和用既得利润博取后续收益。",
+  "strategy_hypothesis": "在 Freqtrade 研究中，加仓实验只允许盈利后顺势加仓，禁止亏损时摊薄成本。",
+  "freqtrade_translation": {
+    "strategy_family": "risk_control",
+    "features": [
+      "unrealized_profit",
+      "trend_strength",
+      "moved_stop",
+      "add_position_count"
+    ],
+    "entry_rules": [
+      "已有仓位盈利",
+      "趋势强度继续",
+      "止损已上移或风险不扩大"
+    ],
+    "exit_rules": [
+      "趋势强度衰减或移动止损触发"
+    ],
+    "applicable_regimes": [
+      "all"
+    ],
+    "not_applicable_regimes": []
+  },
+  "risk_notes": [
+    "先在 dry-run/回测验证；高杠杆下默认不启用真实加仓。"
+  ],
+  "avoid_rules": [
+    "亏损加仓",
+    "震荡行情加仓"
+  ],
+  "verification_status": {
+    "state": "knowledge_only_requires_backtest",
+    "required_checks": [
+      "freqtrade_backtesting",
+      "recursive_analysis",
+      "lookahead_analysis",
+      "regime_matrix",
+      "fee_slippage_stress",
+      "promotion_gate"
+    ],
+    "quarantined": false
+  },
+  "copyright_note": "Short local knowledge summary. Does not copy long transcript passages.",
+  "created_at_utc": "20260626T035752Z"
+}

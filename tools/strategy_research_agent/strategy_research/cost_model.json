@@ -1,0 +1,33 @@
+{
+  "market": "crypto",
+  "instrument": "Binance USDT-M futures",
+  "base_fee": 0.0005,
+  "stress_fee": 0.001,
+  "slippage_scenarios": [
+    {
+      "name": "none",
+      "round_trip_slippage_bps": 0,
+      "notes": "No slippage. Useful only as a clean baseline."
+    },
+    {
+      "name": "conservative_btc_eth",
+      "round_trip_slippage_bps": 4,
+      "notes": "Simple BTC/ETH futures stress assumption; not derived from live order book fills."
+    },
+    {
+      "name": "high_vol_stress",
+      "round_trip_slippage_bps": 10,
+      "notes": "Stress assumption for high-volatility or degraded execution windows."
+    }
+  ],
+  "funding_policy": {
+    "source": "Binance static fundingRate monthly archive",
+    "status": "downloaded_where_available",
+    "notes": "Strategy-level funding PnL requires trade exposure alignment; raw data audit is available first."
+  },
+  "mark_price_policy": {
+    "source": "Binance static markPriceKlines monthly archive",
+    "status": "downloaded_where_available",
+    "notes": "Mark price basis is audited versus local OHLCV close; Freqtrade backtests still use OHLCV unless explicitly adapted."
+  }
+}

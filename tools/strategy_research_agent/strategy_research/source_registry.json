@@ -1,0 +1,97 @@
+{
+  "sources": [
+    {
+      "id": "local_btc_eth_strategy_library",
+      "trust_level": "A",
+      "kind": "internal_strategy_library",
+      "title": "Local BTC/ETH spot and futures strategy library",
+      "location": "user_data/strategies",
+      "license": "local_private_research",
+      "status": "approved_for_isolated_research",
+      "allowed_actions": [
+        "read",
+        "generate_variants",
+        "backtest"
+      ],
+      "blocked_actions": [
+        "live_trade",
+        "modify_live_config"
+      ],
+      "notes": "Internal migrated and generated BTC/ETH strategies. Live promotion always requires manual approval."
+    },
+    {
+      "id": "seed_rsi_ema_pullback_note",
+      "trust_level": "B",
+      "kind": "research_note",
+      "title": "RSI EMA Pullback Note",
+      "location": "user_data/strategy_research/sources/seed/rsi_ema_pullback_note.md",
+      "license": "local_private_research",
+      "status": "quarantined_for_review",
+      "snapshot": {
+        "path": "user_data/strategy_research/sources/seed/rsi_ema_pullback_note.md",
+        "bytes": 501,
+        "truncated": false,
+        "content_type": "text/markdown"
+      },
+      "allowed_actions": [
+        "read",
+        "summarize",
+        "translate_to_isolated_strategy"
+      ],
+      "blocked_actions": [
+        "install_dependencies",
+        "run_external_code",
+        "import_external_code",
+        "live_trade",
+        "modify_live_config"
+      ],
+      "review_requirements": [
+        "license_review",
+        "future_leakage_review",
+        "overfit_story_review",
+        "local_btc_eth_reproducibility_check"
+      ],
+      "notes": "Local seed note used to verify the external-source review and translation workflow.",
+      "review_status": "approved_for_translation_draft",
+      "last_reviewed_at_utc": "20260623T030042Z"
+    },
+    {
+      "id": "freqtrade-official-sample-strategy-49665aee345b",
+      "trust_level": "B",
+      "kind": "github_file",
+      "title": "Freqtrade official sample strategy",
+      "location": "https://raw.githubusercontent.com/freqtrade/freqtrade/stable/freqtrade/templates/sample_strategy.py",
+      "author": "freqtrade",
+      "license": "GPL-3.0",
+      "status": "quarantined_for_review",
+      "registered_at_utc": "20260623T030012Z",
+      "snapshot": {
+        "path": "user_data/strategy_research/sources/inbox/freqtrade-official-sample-strategy-49665aee345b.snapshot",
+        "bytes": 17167,
+        "truncated": false,
+        "content_type": "text/plain; charset=utf-8"
+      },
+      "allowed_actions": [
+        "read",
+        "summarize",
+        "translate_to_isolated_strategy"
+      ],
+      "blocked_actions": [
+        "install_dependencies",
+        "run_external_code",
+        "import_external_code",
+        "live_trade",
+        "modify_live_config"
+      ],
+      "review_requirements": [
+        "license_review",
+        "future_leakage_review",
+        "overfit_story_review",
+        "local_btc_eth_reproducibility_check"
+      ],
+      "notes": "External sources are untrusted. They may inspire isolated research strategies but must not be executed directly.",
+      "review_status": "approved_for_translation_draft",
+      "last_reviewed_at_utc": "20260623T030042Z"
+    }
+  ]
+}

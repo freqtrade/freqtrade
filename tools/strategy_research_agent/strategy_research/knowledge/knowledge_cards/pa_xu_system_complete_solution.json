@@ -1,0 +1,62 @@
+{
+  "id": "pa_xu_system_complete_solution",
+  "title": "交易系统必须覆盖入场、止损、止盈、仓位和执行",
+  "category": "training",
+  "concepts": [
+    "trading_system",
+    "execution_plan",
+    "risk_process"
+  ],
+  "source_refs": [
+    "book_xu_jiacong_p047",
+    "book_xu_jiacong_p056"
+  ],
+  "source_quality": {
+    "level": "high",
+    "usable_transcript_count": 0,
+    "low_confidence_transcript_count": 0,
+    "web_source_count": 0,
+    "book_source_count": 2
+  },
+  "knowledge": "裸K形态不能单独成为系统，必须和周期、风险承受、仓位、止损止盈和执行纪律组成完整方案。",
+  "strategy_hypothesis": "Agent 生成任何价格行为策略时，必须同时输出入场、失效、止损、止盈、仓位和不适用场景。",
+  "freqtrade_translation": {
+    "strategy_family": "research_process",
+    "features": [
+      "signal_definition",
+      "risk_budget",
+      "exit_rule",
+      "position_size"
+    ],
+    "entry_rules": [
+      "策略必须有完整交易系统字段"
+    ],
+    "exit_rules": [
+      "缺少失效或仓位规则则拒绝实验"
+    ],
+    "applicable_regimes": [
+      "all"
+    ],
+    "not_applicable_regimes": []
+  },
+  "risk_notes": [
+    "系统完整性是研究门槛，不是盈利保证。"
+  ],
+  "avoid_rules": [
+    "只用形态信号生成裸策略"
+  ],
+  "verification_status": {
+    "state": "knowledge_only_requires_backtest",
+    "required_checks": [
+      "freqtrade_backtesting",
+      "recursive_analysis",
+      "lookahead_analysis",
+      "regime_matrix",
+      "fee_slippage_stress",
+      "promotion_gate"
+    ],
+    "quarantined": false
+  },
+  "copyright_note": "Short local knowledge summary. Does not copy long transcript passages.",
+  "created_at_utc": "20260626T035752Z"
+}

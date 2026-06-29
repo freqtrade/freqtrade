@@ -1,0 +1,66 @@
+{
+  "id": "pa_market_cycle_strategy_router",
+  "title": "市场周期决定策略族",
+  "category": "definition",
+  "concepts": [
+    "market_cycle",
+    "trend",
+    "range",
+    "regime_router"
+  ],
+  "source_refs": [
+    "bilibili_p010",
+    "investopedia_price_action_intro",
+    "phemex_crypto_price_action"
+  ],
+  "source_quality": {
+    "level": "high",
+    "usable_transcript_count": 1,
+    "low_confidence_transcript_count": 0,
+    "web_source_count": 2,
+    "book_source_count": 0
+  },
+  "knowledge": "趋势、震荡、过渡段不能用同一套入场逻辑。先分行情，再选策略族。",
+  "strategy_hypothesis": "构建 regime router：趋势用回调/突破，震荡用边界反转，过渡段降频。",
+  "freqtrade_translation": {
+    "strategy_family": "regime_filter",
+    "features": [
+      "adx",
+      "ema_spread",
+      "range_width",
+      "atr_percentile"
+    ],
+    "entry_rules": [
+      "先判定 regime",
+      "只启用匹配策略族"
+    ],
+    "exit_rules": [
+      "regime 翻转时退出或禁开新仓"
+    ],
+    "applicable_regimes": [
+      "trend",
+      "range"
+    ],
+    "not_applicable_regimes": []
+  },
+  "risk_notes": [
+    "行情切换期是短周期策略回撤高发区。"
+  ],
+  "avoid_rules": [
+    "同一套策略同时吃趋势和震荡"
+  ],
+  "verification_status": {
+    "state": "knowledge_only_requires_backtest",
+    "required_checks": [
+      "freqtrade_backtesting",
+      "recursive_analysis",
+      "lookahead_analysis",
+      "regime_matrix",
+      "fee_slippage_stress",
+      "promotion_gate"
+    ],
+    "quarantined": false
+  },
+  "copyright_note": "Short local knowledge summary. Does not copy long transcript passages.",
+  "created_at_utc": "20260626T035752Z"
+}

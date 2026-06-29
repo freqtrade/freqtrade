@@ -1,0 +1,62 @@
+{
+  "id": "pa_ninety_minute_rule_timebox",
+  "title": "90分钟定理启发持仓时间盒",
+  "category": "exit",
+  "concepts": [
+    "timebox",
+    "ninety_minute_rule",
+    "session_duration"
+  ],
+  "source_refs": [
+    "brooks_trading_course_books",
+    "brooks_trading_course_home"
+  ],
+  "source_quality": {
+    "level": "medium",
+    "usable_transcript_count": 0,
+    "low_confidence_transcript_count": 0,
+    "web_source_count": 2,
+    "book_source_count": 0
+  },
+  "knowledge": "价格行为里的时间窗口可用于限制持仓和避免无效持仓。",
+  "strategy_hypothesis": "短周期策略设置持仓时间盒：如果 MFE 没发展，主动退出。",
+  "freqtrade_translation": {
+    "strategy_family": "exit_design",
+    "features": [
+      "minutes_in_trade",
+      "mfe_progress",
+      "session_elapsed"
+    ],
+    "entry_rules": [
+      "入场仍由形态决定"
+    ],
+    "exit_rules": [
+      "固定时间内未发展则退出"
+    ],
+    "applicable_regimes": [
+      "trend",
+      "range"
+    ],
+    "not_applicable_regimes": []
+  },
+  "risk_notes": [
+    "时间退出需要和 ROI/stoploss 同时测试。"
+  ],
+  "avoid_rules": [
+    "亏损单无限等待"
+  ],
+  "verification_status": {
+    "state": "knowledge_only_requires_backtest",
+    "required_checks": [
+      "freqtrade_backtesting",
+      "recursive_analysis",
+      "lookahead_analysis",
+      "regime_matrix",
+      "fee_slippage_stress",
+      "promotion_gate"
+    ],
+    "quarantined": false
+  },
+  "copyright_note": "Short local knowledge summary. Does not copy long transcript passages.",
+  "created_at_utc": "20260626T035752Z"
+}

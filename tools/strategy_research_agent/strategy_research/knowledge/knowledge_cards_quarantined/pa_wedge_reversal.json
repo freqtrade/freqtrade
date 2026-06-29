@@ -1,0 +1,66 @@
+{
+  "id": "pa_wedge_reversal",
+  "title": "楔形反转需要多次推进衰竭",
+  "category": "pattern",
+  "concepts": [
+    "wedge",
+    "reversal",
+    "exhaustion"
+  ],
+  "source_refs": [
+    "bilibili_p025"
+  ],
+  "source_quality": {
+    "level": "medium",
+    "usable_transcript_count": 0,
+    "low_confidence_transcript_count": 1,
+    "web_source_count": 0,
+    "book_source_count": 0
+  },
+  "knowledge": "楔形反转强调多次推进但动量衰竭，不是随便三段就反向。",
+  "strategy_hypothesis": "测试三次推进、波动收敛、反向突破小结构的反转策略。",
+  "freqtrade_translation": {
+    "strategy_family": "reversal",
+    "features": [
+      "push_count",
+      "momentum_divergence",
+      "range_contraction"
+    ],
+    "entry_rules": [
+      "三次推进",
+      "动量衰竭",
+      "反向确认"
+    ],
+    "exit_rules": [
+      "反向突破失败退出"
+    ],
+    "applicable_regimes": [
+      "range",
+      "exhaustion",
+      "failed_breakout"
+    ],
+    "not_applicable_regimes": [
+      "strong_unconfirmed_trend"
+    ]
+  },
+  "risk_notes": [
+    "反转策略需要更小仓位和更严格失效。"
+  ],
+  "avoid_rules": [
+    "强趋势加速期猜顶摸底"
+  ],
+  "verification_status": {
+    "state": "quarantined_needs_stronger_source",
+    "required_checks": [
+      "freqtrade_backtesting",
+      "recursive_analysis",
+      "lookahead_analysis",
+      "regime_matrix",
+      "fee_slippage_stress",
+      "promotion_gate"
+    ],
+    "quarantined": true
+  },
+  "copyright_note": "Short local knowledge summary. Does not copy long transcript passages.",
+  "created_at_utc": "20260626T035752Z"
+}
