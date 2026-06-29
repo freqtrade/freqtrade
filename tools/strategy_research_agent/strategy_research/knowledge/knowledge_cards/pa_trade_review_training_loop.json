@@ -1,0 +1,61 @@
+{
+  "id": "pa_trade_review_training_loop",
+  "title": "复盘训练是策略研究的数据来源",
+  "category": "training",
+  "concepts": [
+    "review",
+    "training",
+    "case_library"
+  ],
+  "source_refs": [
+    "brooks_trading_course_books",
+    "brooks_trading_course_home"
+  ],
+  "source_quality": {
+    "level": "medium",
+    "usable_transcript_count": 0,
+    "low_confidence_transcript_count": 0,
+    "web_source_count": 2,
+    "book_source_count": 0
+  },
+  "knowledge": "复盘不是写感想，而是提炼可复用形态、失败条件和执行错误。",
+  "strategy_hypothesis": "Agent 每次回测后把失败模式写入经验记忆，下一轮假设必须读取。",
+  "freqtrade_translation": {
+    "strategy_family": "research_process",
+    "features": [
+      "failure_mode",
+      "lesson_tag",
+      "next_experiment"
+    ],
+    "entry_rules": [
+      "策略生成前读取相关失败教训"
+    ],
+    "exit_rules": [
+      "重复失败模式进入冷却"
+    ],
+    "applicable_regimes": [
+      "all"
+    ],
+    "not_applicable_regimes": []
+  },
+  "risk_notes": [
+    "记忆层必须防止幸存者偏差。"
+  ],
+  "avoid_rules": [
+    "重复跑同类失败策略"
+  ],
+  "verification_status": {
+    "state": "knowledge_only_requires_backtest",
+    "required_checks": [
+      "freqtrade_backtesting",
+      "recursive_analysis",
+      "lookahead_analysis",
+      "regime_matrix",
+      "fee_slippage_stress",
+      "promotion_gate"
+    ],
+    "quarantined": false
+  },
+  "copyright_note": "Short local knowledge summary. Does not copy long transcript passages.",
+  "created_at_utc": "20260626T035752Z"
+}

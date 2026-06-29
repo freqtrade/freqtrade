@@ -1,0 +1,66 @@
+{
+  "id": "pa_second_leg_trap",
+  "title": "第二段陷阱用于识别追随失败",
+  "category": "pattern",
+  "concepts": [
+    "second_leg",
+    "trap",
+    "failed_continuation"
+  ],
+  "source_refs": [
+    "bilibili_p018"
+  ],
+  "source_quality": {
+    "level": "high",
+    "usable_transcript_count": 1,
+    "low_confidence_transcript_count": 0,
+    "web_source_count": 0,
+    "book_source_count": 0
+  },
+  "knowledge": "第二段延续失败时，追随者再次被套，容易形成反向移动。",
+  "strategy_hypothesis": "测试两段推进后动量衰减和收回关键位的反向策略。",
+  "freqtrade_translation": {
+    "strategy_family": "trap_reversal",
+    "features": [
+      "leg_count",
+      "leg2_momentum",
+      "close_back_inside"
+    ],
+    "entry_rules": [
+      "第二段推进失败",
+      "反向确认",
+      "位置接近关键区"
+    ],
+    "exit_rules": [
+      "反向跟进失败时退出"
+    ],
+    "applicable_regimes": [
+      "range",
+      "exhaustion",
+      "failed_breakout"
+    ],
+    "not_applicable_regimes": [
+      "strong_unconfirmed_trend"
+    ]
+  },
+  "risk_notes": [
+    "需要避免把正常趋势第二腿误判为陷阱。"
+  ],
+  "avoid_rules": [
+    "在第二段仍加速时提前反向"
+  ],
+  "verification_status": {
+    "state": "knowledge_only_requires_backtest",
+    "required_checks": [
+      "freqtrade_backtesting",
+      "recursive_analysis",
+      "lookahead_analysis",
+      "regime_matrix",
+      "fee_slippage_stress",
+      "promotion_gate"
+    ],
+    "quarantined": false
+  },
+  "copyright_note": "Short local knowledge summary. Does not copy long transcript passages.",
+  "created_at_utc": "20260626T035752Z"
+}

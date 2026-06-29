@@ -1,0 +1,64 @@
+{
+  "id": "pa_xu_signal_score_min_rr",
+  "title": "信号研判必须同时看位置、空间和最小盈亏比",
+  "category": "risk",
+  "concepts": [
+    "signal_score",
+    "reward_risk",
+    "profit_space"
+  ],
+  "source_refs": [
+    "book_xu_jiacong_p105",
+    "book_xu_jiacong_p221"
+  ],
+  "source_quality": {
+    "level": "high",
+    "usable_transcript_count": 0,
+    "low_confidence_transcript_count": 0,
+    "web_source_count": 0,
+    "book_source_count": 2
+  },
+  "knowledge": "符合外观的信号不一定可交易，若入场后止损空间过大或盈利空间不足，应等待回调或降低仓位。",
+  "strategy_hypothesis": "在价格行为策略中加入最低预期 R 值和可承受止损过滤，过滤位置不好但形态好看的信号。",
+  "freqtrade_translation": {
+    "strategy_family": "risk_control",
+    "features": [
+      "risk_distance_atr",
+      "target_distance_atr",
+      "expected_r_multiple",
+      "stake_adjustment"
+    ],
+    "entry_rules": [
+      "信号通过位置过滤",
+      "预期 R 值达标",
+      "账户风险可承受"
+    ],
+    "exit_rules": [
+      "信号失效或 R 值恶化"
+    ],
+    "applicable_regimes": [
+      "all"
+    ],
+    "not_applicable_regimes": []
+  },
+  "risk_notes": [
+    "回测中的固定 ROI 需要和结构目标分开评估。"
+  ],
+  "avoid_rules": [
+    "只看形态外观不看止损距离"
+  ],
+  "verification_status": {
+    "state": "knowledge_only_requires_backtest",
+    "required_checks": [
+      "freqtrade_backtesting",
+      "recursive_analysis",
+      "lookahead_analysis",
+      "regime_matrix",
+      "fee_slippage_stress",
+      "promotion_gate"
+    ],
+    "quarantined": false
+  },
+  "copyright_note": "Short local knowledge summary. Does not copy long transcript passages.",
+  "created_at_utc": "20260626T035752Z"
+}

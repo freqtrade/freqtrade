@@ -1,0 +1,62 @@
+{
+  "id": "pa_intraday_position_management",
+  "title": "日内策略目标和仓位必须一起设计",
+  "category": "risk",
+  "concepts": [
+    "intraday",
+    "position_sizing",
+    "target"
+  ],
+  "source_refs": [
+    "bilibili_p036",
+    "bilibili_p015",
+    "bilibili_p030"
+  ],
+  "source_quality": {
+    "level": "high",
+    "usable_transcript_count": 1,
+    "low_confidence_transcript_count": 2,
+    "web_source_count": 0,
+    "book_source_count": 0
+  },
+  "knowledge": "日内交易的目标、仓位和最大亏损必须成套设计。",
+  "strategy_hypothesis": "短周期策略按账户风险而非信号强弱决定 stake，并记录当日暂停条件。",
+  "freqtrade_translation": {
+    "strategy_family": "risk_control",
+    "features": [
+      "stake_fraction",
+      "daily_drawdown",
+      "trade_count_today"
+    ],
+    "entry_rules": [
+      "当日风险预算未超限"
+    ],
+    "exit_rules": [
+      "达到当日回撤或连续亏损阈值暂停"
+    ],
+    "applicable_regimes": [
+      "all"
+    ],
+    "not_applicable_regimes": []
+  },
+  "risk_notes": [
+    "频繁交易下费用和情绪风险更高。"
+  ],
+  "avoid_rules": [
+    "亏损后加倍下注"
+  ],
+  "verification_status": {
+    "state": "knowledge_only_requires_backtest",
+    "required_checks": [
+      "freqtrade_backtesting",
+      "recursive_analysis",
+      "lookahead_analysis",
+      "regime_matrix",
+      "fee_slippage_stress",
+      "promotion_gate"
+    ],
+    "quarantined": false
+  },
+  "copyright_note": "Short local knowledge summary. Does not copy long transcript passages.",
+  "created_at_utc": "20260626T035752Z"
+}

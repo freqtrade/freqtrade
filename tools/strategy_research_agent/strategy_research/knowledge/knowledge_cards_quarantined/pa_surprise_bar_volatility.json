@@ -1,0 +1,62 @@
+{
+  "id": "pa_surprise_bar_volatility",
+  "title": "惊喜K线代表波动和预期差",
+  "category": "pattern",
+  "concepts": [
+    "surprise_bar",
+    "volatility_expansion",
+    "expectation_shift"
+  ],
+  "source_refs": [
+    "bilibili_p020"
+  ],
+  "source_quality": {
+    "level": "medium",
+    "usable_transcript_count": 0,
+    "low_confidence_transcript_count": 1,
+    "web_source_count": 0,
+    "book_source_count": 0
+  },
+  "knowledge": "异常大K线可能代表预期差，但在短周期也可能只是噪音或流动性冲击。",
+  "strategy_hypothesis": "测试惊喜K线后是否需要等待回调/跟进，而不是直接追第一根。",
+  "freqtrade_translation": {
+    "strategy_family": "momentum",
+    "features": [
+      "body_zscore",
+      "range_zscore",
+      "followthrough_return"
+    ],
+    "entry_rules": [
+      "大K线出现",
+      "下一根跟进或回调不深"
+    ],
+    "exit_rules": [
+      "没有跟进时快速退出"
+    ],
+    "applicable_regimes": [
+      "trend",
+      "volatility_expansion"
+    ],
+    "not_applicable_regimes": []
+  },
+  "risk_notes": [
+    "高波动时滑点和止损扩大。"
+  ],
+  "avoid_rules": [
+    "大K线末端无条件追入"
+  ],
+  "verification_status": {
+    "state": "quarantined_needs_stronger_source",
+    "required_checks": [
+      "freqtrade_backtesting",
+      "recursive_analysis",
+      "lookahead_analysis",
+      "regime_matrix",
+      "fee_slippage_stress",
+      "promotion_gate"
+    ],
+    "quarantined": true
+  },
+  "copyright_note": "Short local knowledge summary. Does not copy long transcript passages.",
+  "created_at_utc": "20260626T035752Z"
+}

@@ -1,0 +1,62 @@
+{
+  "id": "pa_counterparty_multiple_explanations",
+  "title": "对手盘和多解性要求反证",
+  "category": "definition",
+  "concepts": [
+    "counterparty",
+    "multiple_explanations",
+    "falsification"
+  ],
+  "source_refs": [
+    "bilibili_p033",
+    "investopedia_price_action_intro",
+    "phemex_crypto_price_action"
+  ],
+  "source_quality": {
+    "level": "high",
+    "usable_transcript_count": 1,
+    "low_confidence_transcript_count": 0,
+    "web_source_count": 2,
+    "book_source_count": 0
+  },
+  "knowledge": "同一走势可有多种解释，策略研究必须保留反证路径。",
+  "strategy_hypothesis": "每个知识生成假设同时生成反向解释和拒绝条件。",
+  "freqtrade_translation": {
+    "strategy_family": "research_process",
+    "features": [
+      "alternative_explanation",
+      "invalidation_rule",
+      "regime_tag"
+    ],
+    "entry_rules": [
+      "主假设和反假设都被记录"
+    ],
+    "exit_rules": [
+      "反证触发时停止该策略族"
+    ],
+    "applicable_regimes": [
+      "all"
+    ],
+    "not_applicable_regimes": []
+  },
+  "risk_notes": [
+    "解释越漂亮越要防止过拟合。"
+  ],
+  "avoid_rules": [
+    "单一路径解释所有行情"
+  ],
+  "verification_status": {
+    "state": "knowledge_only_requires_backtest",
+    "required_checks": [
+      "freqtrade_backtesting",
+      "recursive_analysis",
+      "lookahead_analysis",
+      "regime_matrix",
+      "fee_slippage_stress",
+      "promotion_gate"
+    ],
+    "quarantined": false
+  },
+  "copyright_note": "Short local knowledge summary. Does not copy long transcript passages.",
+  "created_at_utc": "20260626T035752Z"
+}

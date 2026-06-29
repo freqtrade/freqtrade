@@ -1,0 +1,67 @@
+{
+  "id": "pa_breakout_test_retest",
+  "title": "突破回测比瞬间突破更适合作确认",
+  "category": "entry",
+  "concepts": [
+    "breakout_test",
+    "retest",
+    "confirmation"
+  ],
+  "source_refs": [
+    "brooks_trading_course_books",
+    "brooks_trading_course_home"
+  ],
+  "source_quality": {
+    "level": "medium",
+    "usable_transcript_count": 0,
+    "low_confidence_transcript_count": 0,
+    "web_source_count": 2,
+    "book_source_count": 0
+  },
+  "knowledge": "突破后回测不破，可以把原阻力/支撑转为确认区域。",
+  "strategy_hypothesis": "测试突破、回踩、拒绝回到区间内后的二次入场。",
+  "freqtrade_translation": {
+    "strategy_family": "breakout_retest",
+    "features": [
+      "breakout_level",
+      "retest_distance",
+      "rejection_candle"
+    ],
+    "entry_rules": [
+      "先突破",
+      "回测关键位",
+      "拒绝回区间"
+    ],
+    "exit_rules": [
+      "回测失败并收回区间退出"
+    ],
+    "applicable_regimes": [
+      "trend",
+      "volatility_expansion"
+    ],
+    "not_applicable_regimes": [
+      "low_volatility_chop",
+      "wick_only_move"
+    ]
+  },
+  "risk_notes": [
+    "回测确认会减少交易次数，但可改善位置。"
+  ],
+  "avoid_rules": [
+    "刚刺破关键位立即追单"
+  ],
+  "verification_status": {
+    "state": "knowledge_only_requires_backtest",
+    "required_checks": [
+      "freqtrade_backtesting",
+      "recursive_analysis",
+      "lookahead_analysis",
+      "regime_matrix",
+      "fee_slippage_stress",
+      "promotion_gate"
+    ],
+    "quarantined": false
+  },
+  "copyright_note": "Short local knowledge summary. Does not copy long transcript passages.",
+  "created_at_utc": "20260626T035752Z"
+}
