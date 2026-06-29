@@ -21,6 +21,7 @@ LATEST_QUEUE_MD = REPORT_DIR / "latest_response_queue.md"
 LATEST_RECEIPT_JSON = REPORT_DIR / "latest_response_execution.json"
 LATEST_RECEIPT_MD = REPORT_DIR / "latest_response_execution.md"
 EXECUTION_HISTORY_JSONL = REPORT_DIR / "response_execution_history.jsonl"
+EXPERIMENT_DIR = AGENT_ROOT / "experiments"
 
 
 @dataclass
@@ -118,14 +119,54 @@ def append_history(payload: dict[str, Any]) -> None:
         handle.write(json.dumps(payload, ensure_ascii=False) + "\n")
 
 
-def command_for(strategy: str, experiment: str) -> tuple[list[str], bool, str]:
+def experiment_contains_strategy(path: Path, strategy: str) -> bool:
+    try:
+        payload = load_json(path)
+    except json.JSONDecodeError:
+        return False
+    strategies = payload.get("strategies", [])
+    if not isinstance(strategies, list):
+        return False
+    return strategy in {str(item) for item in strategies}
+
+
+def find_strategy_experiment(strategy: str) -> Path | None:
+    if not strategy or not EXPERIMENT_DIR.exists():
+        return None
+    for path in sorted(EXPERIMENT_DIR.glob("*_experiment.json")):
+        if experiment_contains_strategy(path, strategy):
+            return path
+    return None
+
+
+def validate_command(command: list[str], safe: bool, skip_reason: str | None) -> tuple[bool, str | None]:
+    if not safe:
+        return safe, skip_reason
+    for index, token in enumerate(command):
+        if token != "--experiment" or index + 1 >= len(command):
+            continue
+        experiment_path = REPO_ROOT / command[index + 1]
+        if not experiment_path.exists():
+            return False, f"missing experiment file: {rel(experiment_path)}"
+    return safe, skip_reason
+
+
+def command_for(strategy: str, experiment: str) -> tuple[list[str], bool, str, str | None]:
     if experiment == "fee_sensitivity_grid":
+        experiment_path = find_strategy_experiment(strategy)
+        if not experiment_path:
+            return (
+                [],
+                False,
+                "medium",
+                f"no existing experiment contains strategy: {strategy}",
+            )
         return (
             [
                 "./.venv/bin/python",
                 "user_data/strategy_research/run_research_agent.py",
                 "--experiment",
-                "user_data/strategy_research/experiments/short_cycle_scalping_experiment.json",
+                rel(experiment_path),
                 "--strategy",
                 strategy,
                 "--timerange",
@@ -135,45 +176,52 @@ def command_for(strategy: str, experiment: str) -> tuple[list[str], bool, str]:
             ],
             True,
             "medium",
+            None,
         )
     if experiment == "entry_delay_confirmation":
         return (
             ["user_data/strategy_research/start_manual_research.sh", "--behavior-experiments"],
             True,
             "short",
+            None,
         )
     if experiment == "time_stop_exit_grid":
         return (
             ["user_data/strategy_research/start_manual_research.sh", "--behavior-variants"],
             True,
             "short",
+            None,
         )
     if experiment == "low_leverage_edge_grid":
         return (
             ["user_data/strategy_research/start_manual_research.sh", "--memory-guided-hypotheses"],
             True,
             "short",
+            None,
         )
     if experiment == "inverse_signal_retest":
         return (
             ["user_data/strategy_research/start_manual_research.sh", "--memory-guided-hypotheses"],
             True,
             "short",
+            None,
         )
     if experiment == "single_condition_relaxation":
         return (
             ["user_data/strategy_research/start_manual_research.sh", "--memory-guided-hypotheses"],
             True,
             "short",
+            None,
         )
     if experiment == "walk_forward_validation":
-        return (["user_data/strategy_research/start_manual_research.sh", "--walk-forward"], True, "long")
+        return (["user_data/strategy_research/start_manual_research.sh", "--walk-forward"], True, "long", None)
     if experiment in {"recursive_analysis", "lookahead_analysis", "regime_matrix", "stress_cost_validation"}:
-        return (["user_data/strategy_research/start_manual_research.sh", "--promotion-gate"], True, "short")
+        return (["user_data/strategy_research/start_manual_research.sh", "--promotion-gate"], True, "short", None)
     return (
         ["user_data/strategy_research/start_manual_research.sh", "--mature-researcher"],
         False,
         "short",
+        f"no command mapping for experiment: {experiment}",
     )
 
 
@@ -203,7 +251,8 @@ def build_queue(decisions: dict[str, Any], cooldown_hours: float = 6.0) -> list[
     for decision in decisions.get("top_decisions", []):
         experiments = decision.get("next_experiments", [])
         for rank, experiment in enumerate(experiments[:3]):
-            command, safe, runtime = command_for(decision.get("strategy", ""), experiment)
+            command, safe, runtime, skip_reason = command_for(decision.get("strategy", ""), experiment)
+            safe, skip_reason = validate_command(command, safe, skip_reason)
             key = queue_key(decision.get("strategy", ""), experiment, command)
             if key in seen_keys:
                 continue
@@ -214,7 +263,6 @@ def build_queue(decisions: dict[str, Any], cooldown_hours: float = 6.0) -> list[
                 default=None,
             )
             cooldown_until = last + timedelta(hours=cooldown_hours) if last else None
-            skip_reason = None
             safe_now = safe
             if safe and cooldown_items:
                 safe_now = False
