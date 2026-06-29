@@ -2105,8 +2105,8 @@ class FreqtradeBot(LoggingMixin):
         proposed_limit_rate = limit
         custom_exit_price = limit
 
-        current_profit = trade.calc_profit_ratio(limit)
         if order_type == "limit" and not skip_custom_exit_price:
+            current_profit = trade.calc_profit_ratio(limit)
             custom_exit_price = strategy_safe_wrapper(
                 self.strategy.custom_exit_price, default_retval=proposed_limit_rate
             )(
