@@ -1878,16 +1878,17 @@ class FreqtradeBot(LoggingMixin):
         if order["status"] not in constants.NON_OPEN_EXCHANGE_STATES:
             filled_val: float = order.get("filled", 0.0) or 0.0
             filled_stake = filled_val * trade.open_rate
-            minstake = self.exchange.get_min_pair_stake_amount(
-                trade.pair, trade.open_rate, self.strategy.stoploss
-            )
 
-            if filled_val > 0 and minstake and filled_stake < minstake:
-                logger.warning(
-                    f"Order {order_id} for {trade.pair} not cancelled, "
-                    f"as the filled amount of {filled_val} would result in an unexitable trade."
+            if filled_val > 0:
+                minstake = self.exchange.get_min_pair_stake_amount(
+                    trade.pair, trade.open_rate, self.strategy.stoploss
                 )
-                return False
+                if minstake and filled_stake < minstake:
+                    logger.warning(
+                        f"Order {order_id} for {trade.pair} not cancelled, "
+                        f"as the filled amount of {filled_val} would result in an unexitable trade."
+                    )
+                    return False
             corder = self.exchange.cancel_order_with_result(order_id, trade.pair, trade.amount)
             order_obj.ft_cancel_reason = reason
             # if replacing, retry fetching the order 3 times if the status is not what we need
@@ -1961,12 +1962,12 @@ class FreqtradeBot(LoggingMixin):
             filled_amt: float = order.get("filled", 0.0) or 0.0
             # Filled val is in quote currency (after leverage)
             filled_rem_stake = trade.stake_amount - (filled_amt * trade.open_rate / trade.leverage)
-            minstake = self.exchange.get_min_pair_stake_amount(
-                trade.pair, trade.open_rate, self.strategy.stoploss
-            )
             # Double-check remaining amount
             if filled_amt > 0:
                 reason = constants.CANCEL_REASON["PARTIALLY_FILLED"]
+                minstake = self.exchange.get_min_pair_stake_amount(
+                    trade.pair, trade.open_rate, self.strategy.stoploss
+                )
                 if minstake and filled_rem_stake < minstake:
                     logger.warning(
                         f"Order {order_id} for {trade.pair} not cancelled, as "
