@@ -182,6 +182,14 @@ user_data/strategy_research/start_manual_research.sh --research-iteration
 -> 写入下一轮 Agent 升级队列
 ```
 
+其中“跑一轮 Freqtrade 回测”之后必须经过 post-run attribution gate，不能直接进入下一轮策略生成。这个 gate 是同一个 Agent 的环节，不是另一个 Agent：
+
+```bash
+user_data/strategy_research/start_manual_research.sh --post-run-attribution
+```
+
+它会复用交易行为诊断、失败归因、成熟研究员决策、响应队列、研究记忆和固化层，明确判断这轮结果到底是信号 edge、入场时机、出场质量、费用/资金费率、固定 50x 风控放大、regime 依赖还是样本有效性的问题。
+
 复盘输出：
 
 ```text

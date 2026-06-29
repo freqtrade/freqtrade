@@ -17,7 +17,7 @@ The current improvement is to integrate those existing parts into one stronger r
 3. Read the consolidation layer to enforce hard research boundaries and required validation gates.
 4. Convert knowledge-guided and memory-guided hypotheses into measurable event definitions.
 5. Run or read an event study before generating concrete strategy classes.
-6. Only events with forward-distribution evidence may pass into the existing self-iteration loop: isolated strategy generation, backtesting, diagnosis, improvement planning, and promotion-gate review.
+6. Only events with forward-distribution evidence may pass into the existing self-iteration loop: isolated strategy generation, backtesting, post-run attribution, improvement planning, and promotion-gate review.
 
 ## Event Study Gate
 
@@ -32,6 +32,24 @@ Concrete strategy generation is not the first research step. The Agent must firs
 
 If an event does not clear the edge gate, the Agent may only use it as a counterexample, redesign input, or negative-control experiment. It must not turn that event into another strategy class just because the knowledge card sounds plausible.
 
+## Post-Run Attribution Gate
+
+Every strategy research round that runs backtests must end with post-run attribution before it updates research memory, mature researcher queues, or the next experiment plan.
+
+The attribution gate is part of the same Agent, not a separate Agent. It must reuse the same knowledge graph, research memory, event-study evidence, backtest outputs, exported trades, and promotion blockers. Splitting attribution into a separate Agent is not allowed unless the workflow still treats the result as the same mandatory gate.
+
+The gate must classify the result into explicit failure or edge buckets:
+
+- signal edge: whether the entry event had forward-distribution expectancy before leverage;
+- entry timing: whether MAE/MFE shows entries were late, early, or structurally adverse;
+- exit quality: whether ROI, stoploss, time exits, or invalidation rules cut winners or held losers;
+- cost and funding drag: whether fee, slippage, spread, or funding stress erased gross edge;
+- fixed 50x risk amplification: whether the configured futures risk口径 magnified a weak signal rather than revealing edge;
+- regime dependency: whether results depend on BTC lead, volatility, trend/range, funding, session, or pair-specific structure;
+- sample validity: whether trade count, window coverage, and robustness are enough to justify another experiment.
+
+No next experiment queue item may be created from a backtest round unless the attribution gate states what failed, what survived, and which single mechanism the next run is testing.
+
 ## Durable Rule
 
 Do not describe the Agent as missing materials, knowledge, or self-iteration. Those already exist. The accurate framing is:
@@ -40,7 +58,7 @@ Do not describe the Agent as missing materials, knowledge, or self-iteration. Th
 
 The active research rule is:
 
-> Knowledge proposes events. Event studies test edge. Only edge candidates become strategies.
+> Knowledge proposes events. Event studies test edge. Only edge candidates become strategies. Backtests must then be attributed before memory or next experiments change.
 
 ## Safety Boundary
 
