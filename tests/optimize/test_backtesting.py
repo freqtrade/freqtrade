@@ -24,7 +24,7 @@ from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import timeframe_to_next_date, timeframe_to_prev_date
 from freqtrade.exchange.exchange_utils import DECIMAL_PLACES, TICK_SIZE
 from freqtrade.optimize.backtest_caching import get_backtest_metadata_filename, get_strategy_run_id
-from freqtrade.optimize.backtesting import Backtesting
+from freqtrade.optimize.backtesting import HEADERS, Backtesting
 from freqtrade.persistence import LocalTrade, Trade
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.util import dt_now, dt_utc
@@ -375,8 +375,9 @@ def test_get_pair_precision_bt(default_conf, mocker) -> None:
     assert ex_mock.call_count == 2
 
 
-def test_backtest_abort(default_conf, mocker, testdatadir) -> None:
+def test_backtest_abort(default_conf, mocker) -> None:
     patch_exchange(mocker)
+    default_conf["runmode"] = RunMode.BACKTEST
     backtesting = Backtesting(default_conf)
     backtesting.check_abort()
 
@@ -386,7 +387,7 @@ def test_backtest_abort(default_conf, mocker, testdatadir) -> None:
         backtesting.check_abort()
     # abort flag resets
     assert backtesting.abort is False
-    assert backtesting.progress.progress == 0
+    assert backtesting.progress.tasks[backtesting._progress_task].completed == 0
 
 
 def test_backtesting_start(default_conf, mocker, caplog) -> None:
@@ -752,6 +753,65 @@ def test_backtest__check_trade_exit(default_conf, mocker) -> None:
 
     res = backtesting._check_trade_exit(trade, row, row[0].to_pydatetime())
     assert res is None
+
+
+def test_get_detail_data(default_conf, mocker) -> None:
+    # get_detail_data returns the detail candles whose "date" falls in the half-open
+    # window (current, current + timeframe_td) of the current main candle, with the
+    # signal/tag columns filled from the main row. A boolean mask over the detail
+    # frame is used here as an independent oracle for that window, exercised across
+    # interior, boundary, empty, and out-of-range inputs.
+    patch_exchange(mocker)
+    default_conf["timeframe"] = "1h"
+    default_conf["timeframe_detail"] = "1m"
+    backtesting = Backtesting(default_conf)
+    backtesting._set_strategy(backtesting.strategylist[0])
+    backtesting.timeframe_td = timedelta(hours=1)
+    pair = "UNITTEST/BTC"
+
+    # 4h of 1m candles starting at 04:00 (04:00 .. 07:59).
+    detail = generate_test_data("1m", 240, "2020-01-01 04:00:00+00:00")
+    backtesting.detail_data[pair] = detail
+
+    def make_row(ts):
+        # date, O, H, L, C, enter_long, exit_long, enter_short, exit_short,
+        # enter_tag, exit_tag
+        return [ts, 200.0, 201.5, 195.0, 201.0, 1, 0, 0, 0, "ent", "ext"]
+
+    def mask_oracle(ts):
+        """Reference window selection via a boolean mask over the detail frame."""
+        end = ts + backtesting.timeframe_td
+        sub = detail.loc[(detail["date"] >= ts) & (detail["date"] < end)].copy()
+        if len(sub) == 0:
+            return None
+        sub.loc[:, "enter_long"] = 1
+        sub.loc[:, "exit_long"] = 0
+        sub.loc[:, "enter_short"] = 0
+        sub.loc[:, "exit_short"] = 0
+        sub.loc[:, "enter_tag"] = "ent"
+        sub.loc[:, "exit_tag"] = "ext"
+        return sub[HEADERS].values.tolist()
+
+    test_times = [
+        pd.Timestamp("2020-01-01 03:00", tz="UTC"),  # before all data -> None
+        pd.Timestamp("2020-01-01 04:00", tz="UTC"),  # aligned to first detail row
+        pd.Timestamp("2020-01-01 05:00", tz="UTC"),  # interior, full 60-row window
+        pd.Timestamp("2020-01-01 06:30", tz="UTC"),  # interior, offset from data start
+        pd.Timestamp("2020-01-01 07:30", tz="UTC"),  # straddles end of data (30 rows)
+        pd.Timestamp("2020-01-01 08:00", tz="UTC"),  # exactly at end -> None
+        pd.Timestamp("2020-01-01 09:00", tz="UTC"),  # after all data -> None
+    ]
+    for ts in test_times:
+        assert backtesting.get_detail_data(pair, make_row(ts)) == mask_oracle(ts)
+
+    # Boundary: a candle whose date == exit_candle_end must be excluded.
+    res = backtesting.get_detail_data(pair, make_row(pd.Timestamp("2020-01-01 04:00", tz="UTC")))
+    assert res is not None
+    assert len(res) == 60
+    assert res[-1][0] == pd.Timestamp("2020-01-01 04:59", tz="UTC")  # not 05:00
+    # Signal columns are taken from the row, not the detail frame.
+    assert res[0][HEADERS.index("enter_long")] == 1
+    assert res[0][HEADERS.index("enter_tag")] == "ent"
 
 
 def test_backtest_one(default_conf, mocker, testdatadir) -> None:

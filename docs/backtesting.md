@@ -229,6 +229,7 @@ A backtesting result will look like that:
 │ Sortino (closed trades)                │ 2.57                                      │
 │ Calmar (closed trades)                 │ 43.03                                     │
 │ SQN                                    │ 0.71                                      │
+│ Mean profit p-value                    │ 0.4768                                    │
 │ Profit factor                          │ 1.30                                      │
 │ Expectancy (Ratio)                     │ 0.74 (0.04)                               │
 │ Avg. daily profit                      │ 1.844 USDT                                │
@@ -362,6 +363,7 @@ It contains key metrics about the performance of your strategy on backtesting da
 │ Sortino (closed trades)                │ 2.57                                      │
 │ Calmar (closed trades)                 │ 43.03                                     │
 │ SQN                                    │ 0.71                                      │
+│ Mean profit p-value                    │ 0.4768                                    │
 │ Profit factor                          │ 1.30                                      │
 │ Expectancy (Ratio)                     │ 0.74 (0.04)                               │
 │ Avg. daily profit                      │ 1.844 USDT                                │
@@ -424,6 +426,7 @@ It contains key metrics about the performance of your strategy on backtesting da
 - `Sortino (closed trades)`: Annualized Sortino ratio including only closed trades (ignoring open trades with profits or losses).
 - `Calmar (closed trades)`: Annualized Calmar ratio including only closed trades (ignoring open trades with profits or losses).
 - `SQN`: System Quality Number (SQN) - by Van Tharp.
+- `Mean profit p-value`: Two-sided p-value of a one-sample Student's t-test against the null hypothesis that the mean per-trade return is zero - in short, "is the average profit distinguishable from noise?". A small value (the usual bar is below `0.05`) means the observed edge is unlikely to be down to chance. Its underlying t-statistic is identical to `SQN`. See the note below for how to read it in practice.
 - `Profit factor`: Sum of the profits of all winning trades divided by the sum of the losses of all losing trades.
 - `Expectancy (Ratio)`: Expectancy ratio, which is the average profit or loss per trade. A negative expectancy ratio means that your strategy is not profitable.
 - `Avg. daily profit`: Average profit per day, calculated as `(Total Profit / Backtest Days)`.
@@ -454,6 +457,11 @@ It contains key metrics about the performance of your strategy on backtesting da
 - `Sharpe (wallet balance)` Annualized Sharpe ratio calculation including unrealized profits.
 - `Sortino (wallet balance)` Annualized Sortino ratio calculation including unrealized profits.
 - `Calmar (wallet balance)` Annualized Calmar ratio calculation including unrealized profits.
+
+??? Note "Reading the mean profit p-value"
+    Think of the p-value as the answer to one question: *if the strategy truly had no edge, how often would pure chance still hand you an average per-trade result at least this far from zero?* A value of `0.4768` therefore means roughly a 48% chance of a swing this large turning up from randomness alone - in other words the average profit is not distinguishable from luck. The lower the p-value, the less likely the result is a fluke, and a common rule of thumb is to treat anything below `0.05` (a 5% chance) as "statistically significant".
+
+    Two things keep this honest. The test assumes trades are independent and identically distributed, which real strategies rarely are (trades overlap and cluster in time), so the figure is an *optimistic* lower bound - the true uncertainty is usually larger. And because backtesting and hyperopt evaluate many strategies, some will score a low p-value by chance alone, so a small value only tells you a result is hard to explain by noise; it is not by itself proof of a genuine edge.
 
 !!! Tip "Wallet based Metrics"
     The metrics under the "Wallet based Metrics" section are calculated based on the unrealized balance, which includes the capital tied in open trades. This provides a more comprehensive view of the strategy's performance, as it accounts for both realized and unrealized profits and losses.

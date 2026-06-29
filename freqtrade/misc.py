@@ -8,7 +8,7 @@ from collections.abc import Iterator, Mapping
 from io import StringIO
 from pathlib import Path
 from typing import Any, TextIO
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 
 import pandas as pd
 import rapidjson
@@ -202,10 +202,10 @@ def parse_db_uri_for_logging(uri: str):
     :param uri: DB URI to parse for logging
     """
     parsed_db_uri = urlparse(uri)
-    if not parsed_db_uri.netloc:  # No need for censoring as no password was provided
+    if parsed_db_uri.password is None:  # No need for censoring as no password was provided
         return uri
-    pwd = parsed_db_uri.netloc.split(":")[1].split("@")[0]
-    return parsed_db_uri.geturl().replace(f":{pwd}@", ":*****@")
+    netloc = parsed_db_uri.netloc.replace(f":{parsed_db_uri.password}@", ":*****@", 1)
+    return urlunparse(parsed_db_uri._replace(netloc=netloc))
 
 
 def dataframe_to_json(dataframe: pd.DataFrame) -> str:

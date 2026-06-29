@@ -70,7 +70,8 @@ logger = logging.getLogger(__name__)
 # 2.46: Add prepend_data to download-data endpoint
 # 2.47: Add Strategy parameters
 # 2.48: add /backtest/history/wallets endpoint
-API_VERSION = 2.48
+# 2.49: Add /lookahead_analysis and /recursive_analysis endpoints and background job deletion
+API_VERSION = 2.49
 
 # Public API, requires no auth.
 router_public = APIRouter()
@@ -148,6 +149,7 @@ def markets(
         "markets": exchange.get_markets(
             base_currencies=[query.base] if query.base else None,
             quote_currencies=[query.quote] if query.quote else None,
+            active_only=not query.include_inactive,
         ),
         "exchange_id": exchange.id,
     }

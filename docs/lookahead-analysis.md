@@ -26,6 +26,10 @@ This is done by not looking at the strategy code itself, but at changed indicato
 
 These are set to avoid users accidentally generating false positives.
 
+!!! Tip "Running lookahead-analysis via freqUI"
+    `lookahead-analysis` can also be ran through freqUI when running freqtrade in [webserver mode](utils.md#webserver-mode).
+    As the analysis can run for a while, it is executed as a background task.
+
 ## Lookahead-analysis command reference
 
 --8<-- "commands/lookahead-analysis.md"

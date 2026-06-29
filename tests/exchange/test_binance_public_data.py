@@ -1,8 +1,6 @@
-import asyncio
 import datetime
 import io
 import re
-import sys
 import zipfile
 from datetime import timedelta
 
@@ -23,14 +21,6 @@ from freqtrade.exchange.binance_public_data import (
 )
 from freqtrade.util.datetime_helpers import dt_ts, dt_utc
 from ft_client.test_client.test_rest_client import log_has_re
-
-
-@pytest.fixture(scope="module")
-def event_loop_policy(request):
-    if sys.platform == "win32":
-        return asyncio.WindowsSelectorEventLoopPolicy()
-    else:
-        return asyncio.DefaultEventLoopPolicy()
 
 
 class MockResponse:

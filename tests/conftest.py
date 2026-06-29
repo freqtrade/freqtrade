@@ -533,6 +533,9 @@ def patch_torch_initlogs(mocker) -> None:
 
         module_name = "torch"
         mocked_module = types.ModuleType(module_name)
+        # SciPy's array-API dispatch probes ``torch.Tensor`` to classify inputs;
+        # expose a dummy so scipy.stats stays importable/usable under the mock.
+        mocked_module.Tensor = type("Tensor", (), {})
         sys.modules[module_name] = mocked_module
     else:
         try:

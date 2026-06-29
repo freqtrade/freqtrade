@@ -1,4 +1,5 @@
 import logging
+from abc import abstractmethod
 from copy import deepcopy
 from datetime import UTC, datetime
 from typing import Any
@@ -6,6 +7,7 @@ from typing import Any
 from pandas import DataFrame
 
 from freqtrade.configuration import TimeRange
+from freqtrade.util import CustomProgress
 
 
 logger = logging.getLogger(__name__)
@@ -59,6 +61,6 @@ class BaseAnalysis:
 
         self.prepare_data(self.full_varHolder, self.local_config["pairs"])
 
-    def start(self) -> None:
-        # first make a single backtest
-        self.fill_full_varholder()
+    @abstractmethod
+    def start(self, progress: CustomProgress) -> None:
+        """Start the analysis."""

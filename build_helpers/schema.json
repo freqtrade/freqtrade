@@ -184,6 +184,17 @@
       "description": "Enable recursive strategy search.",
       "type": "boolean"
     },
+    "strategy": {
+      "description": "Strategy class name (must be available in the user directory under strategies). Additional search paths can be added via strategy_path.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "strategy_path": {
+      "description": "Additional lookup path for strategy classes.",
+      "type": "string"
+    },
     "user_data_dir": {
       "description": "Path to the user data directory."
     },
@@ -618,6 +629,17 @@
     "log_config": {
       "description": "Logging configuration.",
       "$ref": "#/definitions/logging"
+    },
+    "freqaimodel": {
+      "description": "FreqAI model class name (must be available in the user directory under freqaimodels). Additional search paths can be added via freqaimodel_path.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "freqaimodel_path": {
+      "description": "Additional lookup path for FreqAI model classes.",
+      "type": "string"
     },
     "freqai": {
       "description": "FreqAI configuration.",

@@ -39,7 +39,7 @@ from freqtrade.exchange.common import (
     calculate_backoff,
 )
 from freqtrade.resolvers.exchange_resolver import ExchangeResolver
-from freqtrade.util import dt_now, dt_ts
+from freqtrade.util import dt_now, dt_ts, dt_utc
 from tests.conftest import (
     EXMS,
     generate_test_data_raw,
@@ -5398,28 +5398,35 @@ def test_get_max_leverage_from_margin(default_conf, mocker, pair, nominal_value,
 @pytest.mark.parametrize(
     "size,funding_rate,mark_price,funding_fee",
     [
-        (10, 0.0001, 2.0, 0.002),
-        (10, 0.0002, 2.0, 0.004),
-        (10, 0.0002, 2.5, 0.005),
+        (10, 0.0001, 1.0, 0.002),
+        (10, 0.0002, 1.0, 0.004),
+        (10, 0.0002, 1.25, 0.005),
         (10, 0.0002, nan, 0.0),
     ],
 )
 def test_calculate_funding_fees(default_conf, mocker, size, funding_rate, mark_price, funding_fee):
     exchange = get_patched_exchange(mocker, default_conf)
-    prior_date = timeframe_to_prev_date("1h", datetime.now(UTC) - timedelta(hours=1))
-    trade_date = timeframe_to_prev_date("1h", datetime.now(UTC))
+    # Include microseconds to ensure it's not problematic.
+    now_dt = dt_utc(2026, 4, 3, 12, 5, 0, 12345)
+    trade_date = timeframe_to_prev_date("1h", now_dt)
+    prior_date = timeframe_to_prev_date("1h", trade_date - timedelta(hours=1))
+    prior2_date = timeframe_to_prev_date("1h", now_dt - timedelta(hours=2))
     funding_rates = DataFrame(
         [
-            {"date": prior_date, "open": funding_rate},  # Line not used.
+            {"date": prior2_date, "open": funding_rate},  # Line not used.
+            {"date": prior_date, "open": funding_rate},
             {"date": trade_date, "open": funding_rate},
         ]
     )
     mark_rates = DataFrame(
         [
+            {"date": prior2_date, "open": mark_price},
             {"date": prior_date, "open": mark_price},
             {"date": trade_date, "open": mark_price},
         ]
     )
+    funding_rates["date"] = funding_rates["date"].dt.as_unit("ms")
+    mark_rates["date"] = mark_rates["date"].dt.as_unit("ms")
     df = exchange.combine_funding_and_mark(funding_rates, mark_rates)
 
     assert (
@@ -5427,8 +5434,8 @@ def test_calculate_funding_fees(default_conf, mocker, size, funding_rate, mark_p
             df,
             amount=size,
             is_short=True,
-            open_date=trade_date,
-            close_date=trade_date,
+            open_date=now_dt - timedelta(hours=1, minutes=30),
+            close_date=now_dt,
         )
         == funding_fee
     )

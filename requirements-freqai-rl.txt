@@ -8,4 +8,4 @@ gymnasium==1.2.3
 stable-baselines3==2.8.0; sys_platform != 'darwin' or platform_machine != 'x86_64'
 sb3-contrib==2.8.0; sys_platform != 'darwin' or platform_machine != 'x86_64'
 # Progress bar for stable-baselines3 and sb3-contrib
-tqdm==4.67.3
+tqdm==4.68.3

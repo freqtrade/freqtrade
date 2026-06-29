@@ -18,6 +18,7 @@ from freqtrade.data.metrics import (
     calculate_market_change,
     calculate_max_drawdown,
     calculate_max_drawdown_from_balance,
+    calculate_p_value,
     calculate_sharpe,
     calculate_sharpe_from_balance,
     calculate_sortino,
@@ -440,6 +441,56 @@ def test_calculate_sqn_cases(profits, starting_balance, expected_sqn, descriptio
 
     assert isinstance(sqn, float)
     assert pytest.approx(sqn, rel=1e-4) == expected_sqn
+
+
+def test_calculate_p_value_edge_cases():
+    # Fewer than two trades -> not computable, returns "no evidence" default.
+    assert calculate_p_value(DataFrame({"profit_abs": []}), 100) == 1.0
+    assert calculate_p_value(DataFrame({"profit_abs": [1.0]}), 100) == 1.0
+
+    # Zero variance (all identical returns) -> not computable.
+    assert calculate_p_value(DataFrame({"profit_abs": [1.0, 1.0, 1.0]}), 100) == 1.0
+
+    # p-value is always within [0, 1].
+    p_value = calculate_p_value(DataFrame({"profit_abs": [1.0, -0.5, 2.0, -1.0]}), 100)
+    assert 0.0 <= p_value <= 1.0
+
+
+def test_calculate_p_value_scale_invariance():
+    # The t-statistic, and hence the p-value, is invariant to the stake scale.
+    profits = [1.0, -0.5, 2.0, -1.0, 0.5, 1.5, -0.5, 1.0]
+    trades = DataFrame({"profit_abs": profits})
+    p_small = calculate_p_value(trades, starting_balance=10)
+    p_large = calculate_p_value(trades, starting_balance=100_000)
+    assert pytest.approx(p_small, rel=1e-9) == p_large
+
+
+def test_calculate_p_value_matches_reference():
+    """
+    calculate_p_value must match scipy.stats.ttest_1samp, the canonical
+    reference, computed live for each case.
+    """
+    from scipy import stats
+
+    cases = [
+        [0.01, -0.005, 0.02, 0.015, -0.01],
+        [0.05, 0.04, 0.06, 0.045, 0.055],
+        [-0.01, -0.02, -0.015, -0.005, -0.025],
+        [0.001, -0.001, 0.001, -0.001],
+    ]
+    starting_balance = 1000.0
+    for returns in cases:
+        trades = DataFrame({"profit_abs": [r * starting_balance for r in returns]})
+        result = calculate_p_value(trades, starting_balance)
+        _, expected = stats.ttest_1samp(returns, popmean=0)
+        assert abs(result - float(expected)) < 1e-10
+
+
+def test_calculate_p_value_zero_mean():
+    # A strategy whose average trade is exactly break-even has a t-statistic of
+    # zero -> p-value of exactly 1.0 (entirely indistinguishable from noise).
+    trades = DataFrame({"profit_abs": [1.0, -1.0, 2.0, -2.0]})
+    assert calculate_p_value(trades, starting_balance=100) == 1.0
 
 
 @pytest.mark.parametrize(

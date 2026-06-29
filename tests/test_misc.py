@@ -205,6 +205,26 @@ def test_plural() -> None:
             "mysql+pymysql://user:*****@some_mariadb/dbname?charset=utf8mb4",
         ),
         (
+            "postgresql+psycopg://scott:p%40ss@host/dbname",
+            "postgresql+psycopg://scott:*****@host/dbname",
+        ),
+        (
+            "postgresql+psycopg://scott:pa:ss@host/dbname",
+            "postgresql+psycopg://scott:*****@host/dbname",
+        ),
+        (
+            "postgresql+psycopg://scott:scott@[::1]:5432/dbname",
+            "postgresql+psycopg://scott:*****@[::1]:5432/dbname",
+        ),
+        (
+            "postgresql+psycopg://scott@host/dbname",
+            "postgresql+psycopg://scott@host/dbname",
+        ),
+        (
+            "postgresql+psycopg://host/dbname",
+            "postgresql+psycopg://host/dbname",
+        ),
+        (
             "sqlite:////freqtrade/user_data/tradesv3.sqlite",
             "sqlite:////freqtrade/user_data/tradesv3.sqlite",
         ),

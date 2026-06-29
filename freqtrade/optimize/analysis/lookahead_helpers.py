@@ -10,7 +10,12 @@ from freqtrade.constants import Config
 from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.analysis.lookahead import LookaheadAnalysis
 from freqtrade.resolvers import StrategyResolver
-from freqtrade.util import get_dry_run_wallet, print_rich_table
+from freqtrade.util import (
+    CustomProgress,
+    get_dry_run_wallet,
+    get_progress_tracker,
+    print_rich_table,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -202,11 +207,13 @@ class LookaheadAnalysisSubFunctions:
         return config
 
     @staticmethod
-    def initialize_single_lookahead_analysis(config: Config, strategy_obj: dict[str, Any]):
+    def initialize_single_lookahead_analysis(
+        config: Config, strategy_obj: dict[str, Any], progress: CustomProgress
+    ):
         logger.info(f"Bias test of {Path(strategy_obj['location']).name} started.")
         start = time.perf_counter()
         current_instance = LookaheadAnalysis(config, strategy_obj)
-        current_instance.start()
+        current_instance.start(progress)
         elapsed = time.perf_counter() - start
         logger.info(
             f"Checking look ahead bias via backtests "
@@ -235,15 +242,25 @@ class LookaheadAnalysisSubFunctions:
             strategy_list = [config["strategy"]]
 
         # check if strategies can be properly loaded, only check them if they can be.
-        for strat in strategy_list:
-            for strategy_obj in strategy_objs:
-                if strategy_obj["name"] == strat and strategy_obj not in strategy_list:
-                    lookaheadAnalysis_instances.append(
-                        LookaheadAnalysisSubFunctions.initialize_single_lookahead_analysis(
-                            config, strategy_obj
+        with get_progress_tracker() as progress:
+            strategy_task = (
+                progress.add_task("Lookahead analysis", total=len(strategy_list))
+                if len(strategy_list) > 1
+                else None
+            )
+            for strat in strategy_list:
+                for strategy_obj in strategy_objs:
+                    if strategy_obj["name"] == strat and strategy_obj not in strategy_list:
+                        if strategy_task is not None:
+                            progress.update(strategy_task, description=f"Analyzing {strat}")
+                        lookaheadAnalysis_instances.append(
+                            LookaheadAnalysisSubFunctions.initialize_single_lookahead_analysis(
+                                config, strategy_obj, progress
+                            )
                         )
-                    )
-                    break
+                        break
+                if strategy_task is not None:
+                    progress.update(strategy_task, advance=1)
 
         # report the results
         if lookaheadAnalysis_instances:

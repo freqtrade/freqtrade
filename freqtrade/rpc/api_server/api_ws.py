@@ -39,7 +39,7 @@ async def channel_reader(channel: WebSocketChannel, rpc: RPC):
             logger.exception(f"Error processing request from {channel}")
             response = WSErrorMessage(data="Error processing request")
 
-            await channel.send(response.dict(exclude_none=True))
+            await channel.send(response.model_dump(exclude_none=True))
 
 
 async def channel_broadcaster(channel: WebSocketChannel, message_stream: MessageStream):
@@ -73,7 +73,7 @@ async def _process_consumer_request(request: dict[str, Any], channel: WebSocketC
         logger.error(f"Invalid request from {channel}: {e}")
         response = WSErrorMessage(data=f"Invalid request type: {request.get('type')}")
 
-        await channel.send(response.dict(exclude_none=True))
+        await channel.send(response.model_dump(exclude_none=True))
         return
 
     type_, data = websocket_request.type, websocket_request.data
