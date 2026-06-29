@@ -18,6 +18,7 @@ DEFAULT_RULES = AGENT_ROOT / "consolidation/agent_operating_rules.default.json"
 REQUIRED_GATES = [
     "event_study_edge_check",
     "freqtrade_backtesting",
+    "post_run_attribution",
     "recursive_analysis",
     "lookahead_analysis",
     "regime_matrix",
@@ -119,6 +120,11 @@ def validate_rules(path: Path, checks: list[GateCheck]) -> dict[str, Any]:
         add(checks, "prompt_contract", "ok", "knowledge/memory/consolidation load rule present")
     else:
         add(checks, "prompt_contract", "fail", "missing mandatory load-before-strategy contract")
+    has_attribution_rule = any("post-run attribution" in str(rule).lower() for rule in prompt_contract)
+    if has_attribution_rule:
+        add(checks, "post_run_attribution_contract", "ok", "mandatory after-backtest attribution rule present")
+    else:
+        add(checks, "post_run_attribution_contract", "fail", "missing mandatory after-backtest attribution rule")
     return rules
 
 

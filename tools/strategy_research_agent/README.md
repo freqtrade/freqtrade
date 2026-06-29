@@ -193,6 +193,14 @@ Build cross-evidence failure attribution:
 user_data/strategy_research/start_manual_research.sh --failure-attribution
 ```
 
+Run the mandatory post-backtest attribution gate and refresh research memory:
+
+```bash
+user_data/strategy_research/start_manual_research.sh --post-run-attribution
+```
+
+This is the same Strategy Research Agent, not a separate Agent. It must run after every backtest-driven strategy research round before the next experiment queue changes. The gate separates signal edge, entry timing, exit quality, cost/funding drag, fixed 50x risk amplification, regime dependency, and sample validity.
+
 Build strategy library lineage from registries and research evidence:
 
 ```bash

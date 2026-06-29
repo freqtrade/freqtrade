@@ -11,6 +11,7 @@
   "hard_boundaries": [
     "No knowledge-derived hypothesis can enter candidate/watchlist pools before full evidence gates.",
     "No OHLCV or L2-inspired hypothesis can generate a strategy class before an event study shows edge_candidate, unless the run is explicitly labeled counterexample or negative-control.",
+    "No backtest round can feed the next experiment queue until post-run attribution has identified signal, timing, exit, cost, risk, regime, and sample-size failure modes.",
     "No strategy reaches dry-run review without manual approval after promotion gate.",
     "Live trading is outside this agent flow.",
     "Dry-run/live config files must not be modified by this consolidation layer."
@@ -18,6 +19,7 @@
   "required_gates": [
     "event_study_edge_check",
     "freqtrade_backtesting",
+    "post_run_attribution",
     "recursive_analysis",
     "lookahead_analysis",
     "regime_matrix",
@@ -31,6 +33,8 @@
     "Load knowledge graph context, research memory, and this consolidation policy before generating strategies.",
     "Before generating a concrete strategy class, define a measurable event and run or read event-study evidence for samples, forward returns, win rate, and MFE/MAE.",
     "If no event has verdict=edge_candidate, produce event redesigns, data-collection tasks, or negative-control studies instead of another strategy class.",
+    "After every backtest or strategy research round, run post-run attribution before updating research memory, mature researcher queues, or next experiments.",
+    "Post-run attribution must separate signal edge, entry timing, exit quality, cost/funding drag, fixed 50x risk amplification, regime dependency, and sample validity.",
     "Use at most 1-3 active knowledge cards per hypothesis.",
     "If memory avoid rules conflict with a knowledge card, downgrade to counterexample or redesign-only.",
     "Always define measurable entry, exit, invalidation, applicable regime, hostile regime, and validation requirements.",

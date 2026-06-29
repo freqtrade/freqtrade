@@ -7,7 +7,7 @@ PYTHON="${PYTHON:-./.venv/bin/python}"
 
 usage() {
   cat <<'EOF'
-Usage: user_data/strategy_research/start_manual_research.sh [--quick|--source-scout|--price-action-knowledge|--bilibili-transcripts|--knowledge-graph|--knowledge-guided-hypotheses|--event-study|--agent-brain|--weekly-knowledge-update|--strong-researcher-smoke|--research-iteration|--multi-timeframe-kline|--walk-forward|--promotion-gate|--agenda|--next-agenda|--execute-next-agenda|--trade-behavior|--behavior-experiments|--behavior-variants|--failure-attribution|--mature-researcher|--mature-researcher-queue|--execute-mature-researcher|--strategy-lineage|--research-memory|--memory-guided-hypotheses|--memory-guided-strategies|--full|--full-with-aux|--preflight-only] [--extra-agent-arg ARG ...]
+Usage: user_data/strategy_research/start_manual_research.sh [--quick|--source-scout|--price-action-knowledge|--bilibili-transcripts|--knowledge-graph|--knowledge-guided-hypotheses|--event-study|--agent-brain|--weekly-knowledge-update|--strong-researcher-smoke|--research-iteration|--multi-timeframe-kline|--walk-forward|--promotion-gate|--agenda|--next-agenda|--execute-next-agenda|--trade-behavior|--behavior-experiments|--behavior-variants|--failure-attribution|--post-run-attribution|--mature-researcher|--mature-researcher-queue|--execute-mature-researcher|--strategy-lineage|--research-memory|--memory-guided-hypotheses|--memory-guided-strategies|--full|--full-with-aux|--preflight-only] [--extra-agent-arg ARG ...]
 
 Manual entrypoint for the research-only strategy agent.
 
@@ -45,6 +45,8 @@ Modes:
                      Generate strategy variants from behavior experiment plans.
   --failure-attribution
                      Build cross-evidence strategy failure attribution.
+  --post-run-attribution
+                     Run the mandatory after-backtest attribution gate and refresh memory.
   --mature-researcher
                      Build the senior researcher diagnosis and next-experiment decision plan.
   --mature-researcher-queue
@@ -162,6 +164,10 @@ while [[ $# -gt 0 ]]; do
       mode="failure_attribution"
       shift
       ;;
+    --post-run-attribution)
+      mode="post_run_attribution"
+      shift
+      ;;
     --mature-researcher)
       mode="mature_researcher"
       shift
@@ -236,6 +242,25 @@ run_agent_brain() {
   "$PYTHON" user_data/strategy_research/build_research_memory.py
   "$PYTHON" user_data/strategy_research/plan_knowledge_guided_hypotheses.py
   "$PYTHON" user_data/strategy_research/plan_memory_guided_hypotheses.py
+  "$PYTHON" user_data/strategy_research/build_research_consolidation.py
+}
+
+run_post_run_attribution() {
+  echo "== Strategy Research Agent: post-run attribution gate =="
+  "$PYTHON" user_data/strategy_research/build_strategy_lineage.py
+  "$PYTHON" user_data/strategy_research/build_research_memory.py
+  if ! "$PYTHON" user_data/strategy_research/analyze_trade_behavior.py; then
+    echo "WARN: trade behavior diagnostics unavailable; continuing post-run attribution with failure evidence."
+  fi
+  if [[ -f user_data/strategy_research/entry_quality_review.py ]]; then
+    if ! "$PYTHON" user_data/strategy_research/entry_quality_review.py; then
+      echo "WARN: entry quality review unavailable; continuing post-run attribution with failure evidence."
+    fi
+  fi
+  "$PYTHON" user_data/strategy_research/attribute_strategy_failures.py
+  "$PYTHON" user_data/strategy_research/mature_researcher.py
+  "$PYTHON" user_data/strategy_research/mature_researcher_queue.py
+  "$PYTHON" user_data/strategy_research/build_research_memory.py
   "$PYTHON" user_data/strategy_research/build_research_consolidation.py
 }
 
@@ -317,12 +342,8 @@ case "$mode" in
       --experiment user_data/strategy_research/experiments/manual_strong_confirmation_experiment.json \
       --timerange 20260101-20260201 \
       ${extra_args[@]+"${extra_args[@]}"}
-    "$PYTHON" user_data/strategy_research/analyze_trade_behavior.py
-    "$PYTHON" user_data/strategy_research/entry_quality_review.py
     "$PYTHON" user_data/strategy_research/manual_research_review.py
-    "$PYTHON" user_data/strategy_research/attribute_strategy_failures.py
-    "$PYTHON" user_data/strategy_research/mature_researcher.py
-    "$PYTHON" user_data/strategy_research/mature_researcher_queue.py
+    run_post_run_attribution
     "$PYTHON" user_data/strategy_research/agent_iteration_review.py
     "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
     ;;
@@ -342,7 +363,7 @@ case "$mode" in
       --experiment user_data/strategy_research/experiments/multi_timeframe_kline_5m_experiment.json \
       --timerange 20260101-20260201 \
       ${extra_args[@]+"${extra_args[@]}"}
-    "$PYTHON" user_data/strategy_research/entry_quality_review.py
+    run_post_run_attribution
     "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
     ;;
   walk_forward)
@@ -360,6 +381,7 @@ print(index["latest_report"]["path"])
 PY
 )
     "$PYTHON" user_data/strategy_research/walk_forward_validator.py summarize --report "$walk_forward_report"
+    run_post_run_attribution
     "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
     ;;
   promotion_gate)
@@ -401,6 +423,10 @@ PY
   failure_attribution)
     echo "== Strategy Research Agent: failure attribution =="
     "$PYTHON" user_data/strategy_research/attribute_strategy_failures.py
+    "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
+    ;;
+  post_run_attribution)
+    run_post_run_attribution
     "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
     ;;
   mature_researcher)
