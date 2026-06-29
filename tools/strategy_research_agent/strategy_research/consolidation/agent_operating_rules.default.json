@@ -10,11 +10,13 @@
   "research_only": true,
   "hard_boundaries": [
     "No knowledge-derived hypothesis can enter candidate/watchlist pools before full evidence gates.",
+    "No OHLCV or L2-inspired hypothesis can generate a strategy class before an event study shows edge_candidate, unless the run is explicitly labeled counterexample or negative-control.",
     "No strategy reaches dry-run review without manual approval after promotion gate.",
     "Live trading is outside this agent flow.",
     "Dry-run/live config files must not be modified by this consolidation layer."
   ],
   "required_gates": [
+    "event_study_edge_check",
     "freqtrade_backtesting",
     "recursive_analysis",
     "lookahead_analysis",
@@ -27,6 +29,8 @@
     "The Agent already has materials, a knowledge graph, and a self-iteration loop; frame future work as deeper integration, not as building those from zero.",
     "The Agent has two iteration loops: internal self-iteration from backtest evidence and external knowledge iteration from the weekly knowledge update layer.",
     "Load knowledge graph context, research memory, and this consolidation policy before generating strategies.",
+    "Before generating a concrete strategy class, define a measurable event and run or read event-study evidence for samples, forward returns, win rate, and MFE/MAE.",
+    "If no event has verdict=edge_candidate, produce event redesigns, data-collection tasks, or negative-control studies instead of another strategy class.",
     "Use at most 1-3 active knowledge cards per hypothesis.",
     "If memory avoid rules conflict with a knowledge card, downgrade to counterexample or redesign-only.",
     "Always define measurable entry, exit, invalidation, applicable regime, hostile regime, and validation requirements.",

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -19,6 +20,14 @@ AGENT_ROOT = REPO_ROOT / "user_data/strategy_research"
 DEFAULT_CONFIG = AGENT_ROOT / "agent_config.json"
 DEFAULT_REGISTRY = AGENT_ROOT / "strategy_registry.json"
 WORKFLOW_GATE = AGENT_ROOT / "enforce_agent_workflow_gate.py"
+LEVERAGE_SOURCE_PATHS = [
+    REPO_ROOT / "user_data/strategies",
+    AGENT_ROOT,
+]
+LEVERAGE_METHOD_RE = re.compile(r"def\s+leverage\s*\([^)]*\)\s*->\s*float:\s*(.*?)(?=\n    def |\nclass |\Z)", re.DOTALL)
+LEVERAGE_RETURN_RE = re.compile(
+    r"return\s+(?:min\(\s*)?([0-9]+(?:\.[0-9]+)?)(?:\s*,\s*max_leverage\s*\))?"
+)
 
 
 @dataclass
@@ -105,6 +114,75 @@ def check_agent_config(checks: list[Check]) -> dict[str, Any] | None:
     return config
 
 
+def check_fixed_risk_policy(checks: list[Check], config: dict[str, Any] | None) -> None:
+    if not config:
+        return
+    scope = config.get("research_scope", {})
+    analysis = config.get("analysis", {})
+    policy = config.get("risk_policy", {})
+    expected_roi = {"0": 0.30, "120": 1.00, "240": 0.60}
+
+    if scope.get("allowed_markets") == ["Binance USDT-M futures"]:
+        add(checks, "risk_policy:market_scope", "ok", "Futures-only market scope.")
+    else:
+        add(checks, "risk_policy:market_scope", "fail", f"Unexpected markets: {scope.get('allowed_markets')}")
+
+    if analysis.get("default_leverage") == 50 and analysis.get("default_leverage_grid") == [50]:
+        add(checks, "risk_policy:leverage", "ok", "default_leverage=50 and grid=[50].")
+    else:
+        add(
+            checks,
+            "risk_policy:leverage",
+            "fail",
+            f"default_leverage={analysis.get('default_leverage')} grid={analysis.get('default_leverage_grid')}",
+        )
+
+    if policy.get("market_type") == "futures" and policy.get("margin_mode") == "isolated":
+        add(checks, "risk_policy:margin", "ok", "futures isolated.")
+    else:
+        add(checks, "risk_policy:margin", "fail", f"market_type={policy.get('market_type')} margin={policy.get('margin_mode')}")
+
+    if policy.get("default_leverage") == 50:
+        add(checks, "risk_policy:default_leverage", "ok", "risk_policy default_leverage=50.")
+    else:
+        add(checks, "risk_policy:default_leverage", "fail", f"default_leverage={policy.get('default_leverage')}")
+
+    if policy.get("minimal_roi") == expected_roi:
+        add(checks, "risk_policy:minimal_roi", "ok", "minimal_roi fixed at 0:0.30, 120:1.00, 240:0.60.")
+    else:
+        add(checks, "risk_policy:minimal_roi", "fail", f"minimal_roi={policy.get('minimal_roi')}")
+
+    if policy.get("stoploss") == -0.60:
+        add(checks, "risk_policy:stoploss", "ok", "stoploss=-0.60.")
+    else:
+        add(checks, "risk_policy:stoploss", "fail", f"stoploss={policy.get('stoploss')}")
+
+
+def check_strategy_leverage_overrides(checks: list[Check]) -> None:
+    offenders: list[str] = []
+    scanned = 0
+    for root in LEVERAGE_SOURCE_PATHS:
+        if not root.exists():
+            continue
+        for path in root.rglob("*.py"):
+            if "__pycache__" in path.parts:
+                continue
+            text = path.read_text(encoding="utf-8", errors="ignore")
+            matches: list[str] = []
+            for method in LEVERAGE_METHOD_RE.findall(text):
+                matches.extend(LEVERAGE_RETURN_RE.findall(method))
+            if not matches:
+                continue
+            scanned += 1
+            for value in matches:
+                if float(value) != 50.0:
+                    offenders.append(f"{rel(path)} returns {value}x")
+    if offenders:
+        add(checks, "risk_policy:strategy_leverage_overrides", "fail", "; ".join(offenders[:20]))
+    else:
+        add(checks, "risk_policy:strategy_leverage_overrides", "ok", f"All scanned leverage overrides are 50x ({scanned} files).")
+
+
 def check_workflow_gate(checks: list[Check]) -> None:
     if not WORKFLOW_GATE.exists():
         add(checks, "strategy_agent_gate", "fail", f"Missing {rel(WORKFLOW_GATE)}")
@@ -179,8 +257,6 @@ def check_outputs(checks: list[Check]) -> None:
         "dashboard": AGENT_ROOT / "dashboard/index.html",
         "assessment": AGENT_ROOT / "strategy_assessments/latest_strategy_assessment.md",
         "matrix_summary": AGENT_ROOT / "matrix_summaries/latest_matrix_summary.md",
-        "autonomous_hypotheses": AGENT_ROOT / "experiments/autonomous_hypothesis_ledger.md",
-        "retired_seed_family": AGENT_ROOT / "experiments/retired_seed_family_ledger.md",
         "context_source_plan": AGENT_ROOT / "context_sources/latest_context_source_plan.md",
         "manual_trade_playbook": AGENT_ROOT / "manual_playbook/latest_manual_trade_playbook.md",
         "manual_direction_plan": AGENT_ROOT / "manual_playbook/latest_manual_direction_plan.md",
@@ -189,11 +265,6 @@ def check_outputs(checks: list[Check]) -> None:
         "manual_strong_confirmation_plan": AGENT_ROOT / "manual_playbook/latest_manual_strong_confirmation_plan.md",
         "multi_timeframe_kline_plan": AGENT_ROOT / "manual_playbook/latest_multi_timeframe_kline_plan.md",
         "manual_research_review": AGENT_ROOT / "manual_playbook/latest_manual_research_review.md",
-        "family_diversity_plan": AGENT_ROOT / "family_diversity/latest_family_diversity_plan.md",
-        "sample_expansion_plan": AGENT_ROOT / "sample_expansion/latest_sample_expansion_plan.md",
-        "entry_quality_review": AGENT_ROOT / "entry_quality/latest_entry_quality_review.md",
-        "entry_quality_directed_plan": AGENT_ROOT / "entry_quality/latest_directed_experiment_plan.md",
-        "iterative_hypotheses": AGENT_ROOT / "experiments/iterative_hypothesis_ledger.md",
         "walk_forward_summary": AGENT_ROOT / "walk_forward_summaries/latest_walk_forward_summary.md",
         "promotion_report": AGENT_ROOT / "promotion_reports/latest_promotion_report.md",
         "research_agenda": AGENT_ROOT / "research_agendas/latest_research_agenda.md",
@@ -208,6 +279,7 @@ def check_outputs(checks: list[Check]) -> None:
         "agent_improvement_queue": AGENT_ROOT / "agent_iterations/improvement_queue.json",
         "strategy_lineage": AGENT_ROOT / "strategy_library/latest_strategy_lineage.md",
         "research_memory": AGENT_ROOT / "research_memory/latest_research_memory.md",
+        "event_study": AGENT_ROOT / "event_studies/latest_event_study.md",
         "memory_guided_hypotheses": AGENT_ROOT / "experiments/memory_guided_hypothesis_ledger.md",
         "memory_guided_strategy_ledger": AGENT_ROOT / "experiments/memory_guided_strategy_ledger.md",
         "source_discovery": AGENT_ROOT / "source_discovery/latest_source_discovery.md",
@@ -242,7 +314,9 @@ def main() -> int:
     args = parse_args()
     checks: list[Check] = []
     check_python(checks)
-    check_agent_config(checks)
+    config = check_agent_config(checks)
+    check_fixed_risk_policy(checks, config)
+    check_strategy_leverage_overrides(checks)
     check_workflow_gate(checks)
     registry = check_registry(checks)
     check_data(checks, registry)

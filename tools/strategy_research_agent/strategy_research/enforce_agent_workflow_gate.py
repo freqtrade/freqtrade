@@ -16,6 +16,7 @@ AGENT_ROOT = REPO_ROOT / "user_data/strategy_research"
 RUNTIME_RULES = AGENT_ROOT / "consolidation/agent_operating_rules.json"
 DEFAULT_RULES = AGENT_ROOT / "consolidation/agent_operating_rules.default.json"
 REQUIRED_GATES = [
+    "event_study_edge_check",
     "freqtrade_backtesting",
     "recursive_analysis",
     "lookahead_analysis",

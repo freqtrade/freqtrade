@@ -58,23 +58,30 @@ user_data/strategy_research/start_manual_research.sh --quick
 
 这会先运行预检，再刷新报告和 dashboard，但不会重新跑大回测。
 
-自主生成策略假设并跑短区间 smoke：
+知识/记忆驱动生成策略并跑短区间 smoke：
 
 ```bash
-user_data/strategy_research/start_manual_research.sh --autonomous-smoke
+user_data/strategy_research/start_manual_research.sh --memory-guided-strategies
 ```
 
-它会调用 `autonomous_strategy_lab.py`，从本地可审计蓝图生成多家族策略候选、策略注册表、实验定义和假设台账，然后用 Freqtrade 官方回测系统跑短区间 smoke。
+它会先刷新策略谱系、研究记忆和记忆引导假设，再生成隔离策略文件和实验定义。旧的固定蓝图入口已移除。
 
-根据上一轮自主策略失败结果生成 V2 并跑短区间 smoke：
+生成具体策略前，应先做事件研究，证明入场事件本身有 forward-distribution edge：
 
 ```bash
-user_data/strategy_research/start_manual_research.sh --iterate-smoke
+user_data/strategy_research/start_manual_research.sh --event-study
 ```
 
-它会调用 `strategy_iteration_engine.py`，读取最新自主 smoke 报告，把“交易太少 / PF 低 / 负收益”等失败原因转成下一版策略假设，并写入迭代台账。
+输出：
 
-对当前迭代策略跑固定窗口 walk-forward：
+```text
+user_data/strategy_research/event_studies/latest_event_study.json
+user_data/strategy_research/event_studies/latest_event_study.md
+```
+
+该步骤检查可测量入场事件的样本数、未来收益、胜率和 MFE/MAE。没有 `edge_candidate` 的事件只能用于反例、重设计或 negative-control，不能直接生成新策略。
+
+对当前 memory-guided 策略跑固定窗口 walk-forward：
 
 ```bash
 user_data/strategy_research/start_manual_research.sh --walk-forward
@@ -184,12 +191,7 @@ user_data/strategy_research/agent_iterations/improvement_queue.json
 user_data/strategy_research/agent_iterations/improvement_queue.md
 ```
 
-该闭环的回测实验会同时包含两组策略：
-
-- `autonomous_seed`：趋势、震荡均值回归、波动突破、短动量、防守基线等探索型 seed。
-- `memory_guided`：针对历史失败 blocker 生成的修补型变体。
-
-这样可以避免 Agent 每轮只在旧失败策略上越筛越窄。
+该闭环的回测实验使用 `memory_guided` 策略组；策略生成不得回退到旧固定蓝图。
 
 只把成熟研究员决策转成可执行队列：
 
@@ -358,54 +360,32 @@ https://raw.githubusercontent.com/freqtrade/freqtrade/stable/freqtrade/templates
 
 该来源只被抓取为隔离快照、审查并转译为本地研究策略；没有安装依赖、没有 import 外部代码、没有运行外部源码。
 
-## 自主策略实验室
+## Memory-Guided 策略实验室
 
-生成本地自主策略假设：
+生成本地 memory-guided 策略假设和隔离策略：
 
 ```bash
-./.venv/bin/python user_data/strategy_research/autonomous_strategy_lab.py
+user_data/strategy_research/start_manual_research.sh --memory-guided-hypotheses
+user_data/strategy_research/start_manual_research.sh --memory-guided-strategies
 ```
 
 输出：
 
 ```text
-user_data/strategies/research_generated/autonomous_research_strategies.py
-user_data/strategy_research/experiments/autonomous_strategy_registry.json
-user_data/strategy_research/experiments/autonomous_strategy_experiment.json
-user_data/strategy_research/experiments/autonomous_hypothesis_ledger.md
+user_data/strategies/research_generated/memory_guided_research_strategies.py
+user_data/strategy_research/experiments/memory_guided_strategy_registry.json
+user_data/strategy_research/experiments/memory_guided_strategy_experiment.json
+user_data/strategy_research/experiments/memory_guided_strategy_ledger.md
 ```
 
-当前蓝图覆盖趋势回踩、震荡均值回归、波动压缩突破、失败反弹做空、微动量确认和防御型低杠杆基线。它的目标是让 Agent 主动提出可回测假设，而不是只复跑手工策略。
-
-## 失败驱动迭代
-
-从最新自主 smoke 结果生成第二代策略：
-
-```bash
-./.venv/bin/python user_data/strategy_research/strategy_iteration_engine.py
-```
-
-输出：
-
-```text
-user_data/strategies/research_generated/iterative_research_strategies.py
-user_data/strategy_research/experiments/iterative_strategy_registry.json
-user_data/strategy_research/experiments/iterative_strategy_experiment.json
-user_data/strategy_research/experiments/iterative_hypothesis_ledger.md
-```
-
-迭代规则：
-
-- 交易太少：放宽入场容忍度，但保留市场状态过滤。
-- PF 低或负收益：降低杠杆、加强确认、加快退出。
-- 高频亏损：不加杠杆，先收紧触发条件。
+生成前必须读取知识图谱、研究记忆和固化规则；策略不得自行覆盖固定 futures 50x 风控口径。
 
 ## Walk-Forward 稳健性验证
 
 构建固定窗口实验：
 
 ```bash
-./.venv/bin/python user_data/strategy_research/walk_forward_validator.py build --source iterative --limit 6
+./.venv/bin/python user_data/strategy_research/walk_forward_validator.py build --source memory_guided --limit 6
 ```
 
 运行实验：
