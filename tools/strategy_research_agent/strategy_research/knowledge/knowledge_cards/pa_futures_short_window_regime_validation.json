@@ -1,0 +1,95 @@
+{
+  "id": "pa_futures_short_window_regime_validation",
+  "title": "高杠杆合约策略应短窗口找 edge，长历史做 regime 验证",
+  "category": "research_process",
+  "concepts": [
+    "futures",
+    "high_leverage",
+    "regime_validation",
+    "rolling_windows",
+    "backtest_interpretation",
+    "short_cycle_entry_timeframe"
+  ],
+  "source_refs": [
+    "local_research_attribution_20260629_eth_hourly_breakout_short",
+    "user_research_judgment_20260629"
+  ],
+  "source_quality": {
+    "level": "local_hypothesis",
+    "usable_transcript_count": 0,
+    "low_confidence_transcript_count": 0,
+    "web_source_count": 0,
+    "book_source_count": 0
+  },
+  "knowledge": "高杠杆合约策略不应主要用多年总回测收益判断优劣。市场结构变化快，长期汇总会把趋势、震荡、高波动、低波动、流动性变化和极端插针混在一起，掩盖策略真正适用和失效的 regime。",
+  "strategy_hypothesis": "对 50x 合约策略，固定用最近 60 天作为主验证窗口，最近 30 天作为当前适配窗口，最近 5 个 24h session 作为新鲜度/失效检查。具体入场必须使用 3m、5m 或 15m K 线；1h 只能作为背景/确认条件。月度、季度或更长历史只做灾难场景、regime map 和失败归因，而不是直接优化长期总收益。",
+  "freqtrade_translation": {
+    "strategy_family": "research_process",
+    "features": [
+      "sixty_day_score",
+      "thirty_day_score",
+      "five_day_freshness",
+      "short_cycle_entry_timeframe",
+      "rolling_window_matrix",
+      "regime_tag",
+      "failure_attribution",
+      "stress_window_drawdown"
+    ],
+    "entry_rules": [
+      "策略生成后先声明目标 regime 和目标持仓周期",
+      "60 天窗口作为主评分",
+      "30 天窗口作为当前 regime 适配评分",
+      "5 天窗口只做新鲜度和失效检查，不得单独证明策略有效",
+      "主入场周期必须是 3m、5m 或 15m；1h 只能作为背景确认"
+    ],
+    "exit_rules": [
+      "长期历史只用于识别失效窗口、连续亏损和灾难回撤",
+      "如果策略只在一个窗口盈利，标记为 regime-dependent 而非 stable edge"
+    ],
+    "applicable_regimes": [
+      "all_futures_research"
+    ],
+    "not_applicable_regimes": []
+  },
+  "risk_notes": [
+    "50x 策略的长期总收益不是独立充分证据；必须同时看分窗口 PF、最大回撤、连续亏损、费用压力和失败归因。",
+    "如果 5 天窗口出现灾难性回撤、连续亏损或异常止损簇，即使 30/60 天表现好也不得推广。",
+    "1h 入场会错过高杠杆合约的一小时内波动机会；不得作为新 50x 策略的主入场粒度。",
+    "近期窗口权重可以更高，但不能绕过 lookahead、recursive、cost stress、walk-forward 和 promotion gate。"
+  ],
+  "validation_evidence": [
+    {
+      "date": "2026-06-29",
+      "report": "user_data/strategy_research/reports/agent_research_20260629T112034Z.md",
+      "attribution": "user_data/strategy_research/event_studies/futures_short_window_regime_validation/short_window_regime_attribution_20260629.md",
+      "finding": "ETH 1h breakdown short had one weak local BTC-gated slice but failed recent 30d/90d and H1 map, supporting short-window regime mapping before promotion."
+    },
+    {
+      "date": "2026-06-29",
+      "report": "user_data/strategy_research/reports/agent_research_20260629T113159Z.md",
+      "attribution": "user_data/strategy_research/event_studies/futures_short_window_regime_validation/fixed_60_30_5_attribution_20260629.md",
+      "finding": "Fixed 60d/30d/5d protocol downgraded weak BTC-gated 60d evidence because 30d failed and 5d had no fresh tradable signal."
+    }
+  ],
+  "avoid_rules": [
+    "用多年总回测曲线直接优化高杠杆策略参数",
+    "因为一个半年窗口盈利就把策略当作稳定 edge",
+    "把长历史平均收益当作当前 regime 可交易证据",
+    "用 5 天收益单独证明策略有效",
+    "用 1h 或更高周期作为 50x 策略主入场 K 线"
+  ],
+  "verification_status": {
+    "state": "pending_validation",
+    "required_checks": [
+      "freqtrade_backtesting",
+      "rolling_window_regime_matrix",
+      "failure_attribution",
+      "fee_slippage_stress",
+      "walk_forward_validation",
+      "promotion_gate"
+    ],
+    "quarantined": false
+  },
+  "copyright_note": "Original local research hypothesis and workflow rule. Does not copy external source text.",
+  "created_at_utc": "20260629T095000Z"
+}

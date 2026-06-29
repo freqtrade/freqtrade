@@ -7,7 +7,7 @@ PYTHON="${PYTHON:-./.venv/bin/python}"
 
 usage() {
   cat <<'EOF'
-Usage: user_data/strategy_research/start_manual_research.sh [--quick|--source-scout|--price-action-knowledge|--bilibili-transcripts|--knowledge-graph|--knowledge-guided-hypotheses|--event-study|--agent-brain|--weekly-knowledge-update|--strong-researcher-smoke|--research-iteration|--multi-timeframe-kline|--walk-forward|--promotion-gate|--agenda|--next-agenda|--execute-next-agenda|--trade-behavior|--behavior-experiments|--behavior-variants|--failure-attribution|--post-run-attribution|--mature-researcher|--mature-researcher-queue|--execute-mature-researcher|--strategy-lineage|--research-memory|--memory-guided-hypotheses|--memory-guided-strategies|--full|--full-with-aux|--preflight-only] [--extra-agent-arg ARG ...]
+Usage: user_data/strategy_research/start_manual_research.sh [--quick|--source-scout|--price-action-knowledge|--bilibili-transcripts|--knowledge-graph|--knowledge-guided-hypotheses|--factor-research|--factor-to-strategy|--event-study|--agent-brain|--weekly-knowledge-update|--strong-researcher-smoke|--research-iteration|--multi-timeframe-kline|--walk-forward|--promotion-gate|--agenda|--next-agenda|--execute-next-agenda|--trade-behavior|--behavior-experiments|--behavior-variants|--failure-attribution|--post-run-attribution|--mature-researcher|--mature-researcher-queue|--execute-mature-researcher|--strategy-lineage|--research-memory|--memory-guided-hypotheses|--memory-guided-strategies|--full|--full-with-aux|--preflight-only] [--extra-agent-arg ARG ...]
 
 Manual entrypoint for the research-only strategy agent.
 
@@ -22,6 +22,9 @@ Modes:
                      Build the graph-structured price-action knowledge layer.
   --knowledge-guided-hypotheses
                      Build the curated price-action knowledge layer and plan hypotheses guarded by research memory.
+  --factor-research  Mine 3m/5m/15m futures OHLCV factors before event study or strategy generation.
+  --factor-to-strategy
+                     Convert factor edge candidates into guarded event-study hypotheses; does not generate strategy classes directly.
   --event-study      Test measurable entry events before strategy generation.
   --agent-brain      Rebuild knowledge graph, research memory, knowledge/memory hypotheses, and consolidation policy.
   --weekly-knowledge-update
@@ -98,6 +101,14 @@ while [[ $# -gt 0 ]]; do
       ;;
     --knowledge-guided-hypotheses)
       mode="knowledge_guided_hypotheses"
+      shift
+      ;;
+    --factor-research)
+      mode="factor_research"
+      shift
+      ;;
+    --factor-to-strategy)
+      mode="factor_to_strategy"
       shift
       ;;
     --event-study)
@@ -234,12 +245,23 @@ if [[ "$mode" == "preflight_only" ]]; then
   exit 0
 fi
 
+run_optional_script() {
+  local script_path="$1"
+  if [[ -f "$script_path" ]]; then
+    "$PYTHON" "$script_path"
+  else
+    echo "WARN: optional script unavailable: $script_path"
+  fi
+}
+
 run_agent_brain() {
   echo "== Strategy Research Agent: agent brain prerequisite =="
   "$PYTHON" user_data/strategy_research/build_price_action_knowledge_layer.py
   "$PYTHON" user_data/strategy_research/build_price_action_knowledge_graph.py
-  "$PYTHON" user_data/strategy_research/build_strategy_lineage.py
+  run_optional_script user_data/strategy_research/build_strategy_lineage.py
   "$PYTHON" user_data/strategy_research/build_research_memory.py
+  "$PYTHON" user_data/strategy_research/factor_research.py
+  "$PYTHON" user_data/strategy_research/factor_to_strategy_plan.py
   "$PYTHON" user_data/strategy_research/plan_knowledge_guided_hypotheses.py
   "$PYTHON" user_data/strategy_research/plan_memory_guided_hypotheses.py
   "$PYTHON" user_data/strategy_research/build_research_consolidation.py
@@ -247,7 +269,7 @@ run_agent_brain() {
 
 run_post_run_attribution() {
   echo "== Strategy Research Agent: post-run attribution gate =="
-  "$PYTHON" user_data/strategy_research/build_strategy_lineage.py
+  run_optional_script user_data/strategy_research/build_strategy_lineage.py
   "$PYTHON" user_data/strategy_research/build_research_memory.py
   if ! "$PYTHON" user_data/strategy_research/analyze_trade_behavior.py; then
     echo "WARN: trade behavior diagnostics unavailable; continuing post-run attribution with failure evidence."
@@ -262,6 +284,14 @@ run_post_run_attribution() {
   "$PYTHON" user_data/strategy_research/mature_researcher_queue.py
   "$PYTHON" user_data/strategy_research/build_research_memory.py
   "$PYTHON" user_data/strategy_research/build_research_consolidation.py
+}
+
+refresh_dashboard_if_available() {
+  if [[ -f user_data/strategy_research/run_research_agent.py && -f user_data/strategy_research/run_strategy_research.py ]]; then
+    "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
+  else
+    echo "WARN: dashboard refresh skipped; run_research_agent dependencies are unavailable in runtime."
+  fi
 }
 
 case "$mode" in
@@ -307,6 +337,25 @@ case "$mode" in
     "$PYTHON" user_data/strategy_research/plan_knowledge_guided_hypotheses.py
     "$PYTHON" user_data/strategy_research/build_research_consolidation.py
     "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
+    ;;
+  factor_research)
+    echo "== Strategy Research Agent: factor research =="
+    "$PYTHON" user_data/strategy_research/build_price_action_knowledge_layer.py
+    "$PYTHON" user_data/strategy_research/build_price_action_knowledge_graph.py
+    "$PYTHON" user_data/strategy_research/build_research_memory.py
+    "$PYTHON" user_data/strategy_research/factor_research.py
+    "$PYTHON" user_data/strategy_research/build_research_consolidation.py
+    refresh_dashboard_if_available
+    ;;
+  factor_to_strategy)
+    echo "== Strategy Research Agent: factor-to-strategy guarded plan =="
+    "$PYTHON" user_data/strategy_research/build_price_action_knowledge_layer.py
+    "$PYTHON" user_data/strategy_research/build_price_action_knowledge_graph.py
+    "$PYTHON" user_data/strategy_research/build_research_memory.py
+    "$PYTHON" user_data/strategy_research/factor_research.py
+    "$PYTHON" user_data/strategy_research/factor_to_strategy_plan.py
+    "$PYTHON" user_data/strategy_research/build_research_consolidation.py
+    refresh_dashboard_if_available
     ;;
   event_study)
     echo "== Strategy Research Agent: event study edge check =="
@@ -525,6 +574,8 @@ MultiTF:    user_data/strategy_research/manual_playbook/latest_multi_timeframe_k
 Resample:   user_data/strategy_research/data_updates/latest_resampled_timeframes.md
 Lineage:    user_data/strategy_research/strategy_library/latest_strategy_lineage.md
 Memory:     user_data/strategy_research/research_memory/latest_research_memory.md
+Factors:    user_data/strategy_research/factors/latest_factor_research.md
+FactorPlan: user_data/strategy_research/factors/latest_factor_strategy_plan.md
 EventStudy:user_data/strategy_research/event_studies/latest_event_study.md
 MemPlan:    user_data/strategy_research/experiments/memory_guided_hypothesis_ledger.md
 MemStrat:   user_data/strategy_research/experiments/memory_guided_strategy_ledger.md

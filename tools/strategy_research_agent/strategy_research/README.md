@@ -66,7 +66,35 @@ user_data/strategy_research/start_manual_research.sh --memory-guided-strategies
 
 它会先刷新策略谱系、研究记忆和记忆引导假设，再生成隔离策略文件和实验定义。旧的固定蓝图入口已移除。
 
-生成具体策略前，应先做事件研究，证明入场事件本身有 forward-distribution edge：
+生成具体策略前，应先做因子研究。因子研究是同一个 Agent 的前置模块，不是另一个 Agent；它会用本地 `3m`、`5m`、`15m` Binance USDT-M futures K 线检查 forward return、MFE、MAE、样本量、方向和时间粒度：
+
+```bash
+user_data/strategy_research/start_manual_research.sh --factor-research
+```
+
+输出：
+
+```text
+user_data/strategy_research/factors/latest_factor_research.json
+user_data/strategy_research/factors/latest_factor_research.md
+```
+
+只有通过因子门槛的行，才可以进入 factor-to-strategy 计划；该计划仍然只生成 event-study 假设，不直接生成策略类：
+
+```bash
+user_data/strategy_research/start_manual_research.sh --factor-to-strategy
+```
+
+输出：
+
+```text
+user_data/strategy_research/factors/latest_factor_strategy_plan.json
+user_data/strategy_research/factors/latest_factor_strategy_plan.md
+```
+
+如果因子研究没有 `edge_candidate`，Agent 只能重设计因子、做 negative-control 或改进数据，不能因为知识卡听起来合理就直接写新策略。
+
+因子通过后，应继续做事件研究，证明入场事件本身有 forward-distribution edge：
 
 ```bash
 user_data/strategy_research/start_manual_research.sh --event-study

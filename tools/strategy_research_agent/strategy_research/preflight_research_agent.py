@@ -279,6 +279,8 @@ def check_outputs(checks: list[Check]) -> None:
         "agent_improvement_queue": AGENT_ROOT / "agent_iterations/improvement_queue.json",
         "strategy_lineage": AGENT_ROOT / "strategy_library/latest_strategy_lineage.md",
         "research_memory": AGENT_ROOT / "research_memory/latest_research_memory.md",
+        "factor_research": AGENT_ROOT / "factors/latest_factor_research.md",
+        "factor_strategy_plan": AGENT_ROOT / "factors/latest_factor_strategy_plan.md",
         "event_study": AGENT_ROOT / "event_studies/latest_event_study.md",
         "memory_guided_hypotheses": AGENT_ROOT / "experiments/memory_guided_hypothesis_ledger.md",
         "memory_guided_strategy_ledger": AGENT_ROOT / "experiments/memory_guided_strategy_ledger.md",

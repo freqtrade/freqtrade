@@ -32,6 +32,8 @@ WEEKLY_KNOWLEDGE_UPDATE_JSON = AGENT_ROOT / "knowledge_updates/latest_weekly_kno
 
 
 REQUIRED_GATES = [
+    "factor_research",
+    "factor_to_strategy_plan",
     "event_study_edge_check",
     "freqtrade_backtesting",
     "post_run_attribution",
@@ -42,6 +44,21 @@ REQUIRED_GATES = [
     "walk_forward_validation",
     "promotion_gate",
 ]
+TIMEFRAME_POLICY = {
+    "allowed_primary_entry_timeframes": ["3m", "5m", "15m"],
+    "background_confirmation_timeframes": ["1h"],
+    "forbidden_primary_entry_timeframes": ["1h", "4h", "1d"],
+    "rule": "For fixed 50x futures research, 1h can only be used as background/regime/confirmation, not as the primary entry timeframe.",
+}
+FACTOR_RESEARCH_POLICY = {
+    "same_agent_subflow": True,
+    "runs_before_event_study": True,
+    "runs_before_strategy_generation": True,
+    "allowed_primary_timeframes": ["3m", "5m", "15m"],
+    "latest_factor_report": "user_data/strategy_research/factors/latest_factor_research.json",
+    "latest_factor_strategy_plan": "user_data/strategy_research/factors/latest_factor_strategy_plan.json",
+    "rule": "Knowledge and memory propose research directions; factor research tests forward-return/MFE/MAE evidence; only factor edge candidates may become event-study hypotheses before strategy generation.",
+}
 
 
 def now_utc() -> str:
@@ -140,6 +157,11 @@ def build_solidified_rules(memory: dict[str, Any], graph_context: dict[str, Any]
                 "type": "hard_boundary",
                 "rule": "Do not increase leverage to compensate for weak signal edge.",
             },
+            {
+                "source": "system_policy",
+                "type": "hard_boundary",
+                "rule": "Do not generate fixed-50x strategy classes directly from knowledge cards or memory without factor or event-study evidence, unless the run is explicitly labeled negative-control.",
+            },
         ]
     )
     return dedupe(rules)
@@ -219,8 +241,10 @@ def build_payload() -> dict[str, Any]:
         "required_gates": gates,
         "promotion_boundaries": [
             "No knowledge-derived hypothesis can enter candidate/watchlist pools before full evidence gates.",
+            "No fixed-50x strategy class can be generated directly from external knowledge or memory; factor research must first test forward-return, MFE/MAE, sample size, and side-specific expectancy unless the run is explicitly labeled negative-control.",
             "No OHLCV or L2-inspired hypothesis can generate a strategy class before an event study shows edge_candidate, unless the run is explicitly labeled counterexample or negative-control.",
             "No backtest round can feed the next experiment queue until post-run attribution has identified signal, timing, exit, cost, risk, regime, and sample-size failure modes.",
+            "No new fixed-50x futures strategy may use 1h or higher candles as its primary entry timeframe; use 3m/5m/15m for entry and 1h only for background confirmation.",
             "No strategy reaches dry-run review without manual approval after promotion gate.",
             "Live trading is outside this agent flow.",
             "Dry-run/live config files must not be modified by this consolidation layer.",
@@ -230,10 +254,14 @@ def build_payload() -> dict[str, Any]:
             "The Agent already has materials, a knowledge graph, and a self-iteration loop; frame future work as deeper integration, not as building those from zero.",
             "The Agent has two iteration loops: internal self-iteration from backtest evidence and external knowledge iteration from the weekly knowledge update layer.",
             "Load knowledge graph context, research memory, and this consolidation policy before generating strategies.",
+            "Run factor research as the same Agent's front-door evidence layer before event-study planning or strategy synthesis.",
+            "Convert only factor rows with sufficient sample, after-fee expectancy, win rate, and MFE/MAE evidence into factor-to-strategy event hypotheses.",
             "Before generating a concrete strategy class, define a measurable event and run or read event-study evidence for samples, forward returns, win rate, and MFE/MAE.",
+            "If factor research has no edge_candidate rows, do not generate another strategy class from theory; redesign factors, run negative controls, or improve data.",
             "If no event has verdict=edge_candidate, produce event redesigns, data-collection tasks, or negative-control studies instead of another strategy class.",
             "After every backtest or strategy research round, run post-run attribution before updating research memory, mature researcher queues, or next experiments.",
             "Post-run attribution must separate signal edge, entry timing, exit quality, cost/funding drag, fixed 50x risk amplification, regime dependency, and sample validity.",
+            "For fixed 50x futures strategy generation, primary entry timeframe must be one of 3m, 5m, or 15m; 1h is background confirmation only.",
             "Use at most 1-3 active knowledge cards per hypothesis.",
             "If memory avoid rules conflict with a knowledge card, downgrade to counterexample or redesign-only.",
             "Always define measurable entry, exit, invalidation, applicable regime, hostile regime, and validation requirements.",
@@ -247,6 +275,8 @@ def build_payload() -> dict[str, Any]:
             "promotion_report": rel(PROMOTION_JSON) if promotion else None,
             "weekly_knowledge_update": rel(WEEKLY_KNOWLEDGE_UPDATE_JSON) if weekly_update else None,
             "workflow_contract": rel(WORKFLOW_CONTRACT_MD) if WORKFLOW_CONTRACT_MD.exists() else None,
+            "factor_research": FACTOR_RESEARCH_POLICY["latest_factor_report"],
+            "factor_strategy_plan": FACTOR_RESEARCH_POLICY["latest_factor_strategy_plan"],
         },
         "observed_counts": {
             "active_knowledge_cards": graph_context.get("active_card_count", 0),
@@ -271,6 +301,8 @@ def build_operating_rules(payload: dict[str, Any]) -> dict[str, Any]:
             rel(WEEKLY_KNOWLEDGE_UPDATE_JSON),
         ],
         "research_only": True,
+        "timeframe_policy": TIMEFRAME_POLICY,
+        "factor_research_policy": FACTOR_RESEARCH_POLICY,
         "hard_boundaries": payload["promotion_boundaries"],
         "required_gates": payload["required_gates"],
         "blocked_patterns": payload["blocked_patterns"],

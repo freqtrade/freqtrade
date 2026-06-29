@@ -16,6 +16,8 @@ AGENT_ROOT = REPO_ROOT / "user_data/strategy_research"
 RUNTIME_RULES = AGENT_ROOT / "consolidation/agent_operating_rules.json"
 DEFAULT_RULES = AGENT_ROOT / "consolidation/agent_operating_rules.default.json"
 REQUIRED_GATES = [
+    "factor_research",
+    "factor_to_strategy_plan",
     "event_study_edge_check",
     "freqtrade_backtesting",
     "post_run_attribution",
@@ -26,6 +28,8 @@ REQUIRED_GATES = [
     "walk_forward_validation",
     "promotion_gate",
 ]
+ALLOWED_PRIMARY_ENTRY_TIMEFRAMES = {"3m", "5m", "15m"}
+FORBIDDEN_PRIMARY_ENTRY_TIMEFRAMES = {"1h", "4h", "1d"}
 
 
 @dataclass
@@ -125,6 +129,63 @@ def validate_rules(path: Path, checks: list[GateCheck]) -> dict[str, Any]:
         add(checks, "post_run_attribution_contract", "ok", "mandatory after-backtest attribution rule present")
     else:
         add(checks, "post_run_attribution_contract", "fail", "missing mandatory after-backtest attribution rule")
+    has_factor_rule = any("factor research" in str(rule).lower() for rule in prompt_contract)
+    if has_factor_rule:
+        add(checks, "factor_research_contract", "ok", "mandatory factor-before-strategy contract present")
+    else:
+        add(checks, "factor_research_contract", "fail", "missing mandatory factor-before-strategy contract")
+    factor_policy = rules.get("factor_research_policy") or {}
+    if factor_policy.get("same_agent_subflow") is not True:
+        add(checks, "factor_research_policy:same_agent", "fail", "factor research must be same-agent subflow")
+    else:
+        add(checks, "factor_research_policy:same_agent", "ok", "factor research is same-agent subflow")
+    if factor_policy.get("runs_before_strategy_generation") is not True:
+        add(checks, "factor_research_policy:before_strategy", "fail", "factor research must run before strategy generation")
+    else:
+        add(checks, "factor_research_policy:before_strategy", "ok", "factor research runs before strategy generation")
+    factor_timeframes = set(factor_policy.get("allowed_primary_timeframes") or [])
+    if factor_timeframes != ALLOWED_PRIMARY_ENTRY_TIMEFRAMES:
+        add(
+            checks,
+            "factor_research_policy:timeframes",
+            "fail",
+            f"expected {sorted(ALLOWED_PRIMARY_ENTRY_TIMEFRAMES)}, got {sorted(factor_timeframes)}",
+        )
+    else:
+        add(checks, "factor_research_policy:timeframes", "ok", "factor layer locked to 3m/5m/15m")
+    policy = rules.get("timeframe_policy") or {}
+    allowed = set(policy.get("allowed_primary_entry_timeframes") or [])
+    forbidden = set(policy.get("forbidden_primary_entry_timeframes") or [])
+    background = set(policy.get("background_confirmation_timeframes") or [])
+    if allowed != ALLOWED_PRIMARY_ENTRY_TIMEFRAMES:
+        add(
+            checks,
+            "timeframe_policy:allowed_primary_entry",
+            "fail",
+            f"expected {sorted(ALLOWED_PRIMARY_ENTRY_TIMEFRAMES)}, got {sorted(allowed)}",
+        )
+    else:
+        add(checks, "timeframe_policy:allowed_primary_entry", "ok", "primary entry locked to 3m/5m/15m")
+    if not FORBIDDEN_PRIMARY_ENTRY_TIMEFRAMES.issubset(forbidden):
+        add(
+            checks,
+            "timeframe_policy:forbidden_primary_entry",
+            "fail",
+            f"missing forbidden {sorted(FORBIDDEN_PRIMARY_ENTRY_TIMEFRAMES - forbidden)}",
+        )
+    elif allowed & forbidden:
+        add(
+            checks,
+            "timeframe_policy:forbidden_primary_entry",
+            "fail",
+            f"entry timeframes also forbidden: {sorted(allowed & forbidden)}",
+        )
+    else:
+        add(checks, "timeframe_policy:forbidden_primary_entry", "ok", "1h/4h/1d blocked as primary entry")
+    if "1h" not in background:
+        add(checks, "timeframe_policy:background_confirmation", "fail", "1h must be background/confirmation only")
+    else:
+        add(checks, "timeframe_policy:background_confirmation", "ok", "1h allowed only as background confirmation")
     return rules
 
 
