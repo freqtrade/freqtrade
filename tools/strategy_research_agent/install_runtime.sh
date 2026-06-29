@@ -7,9 +7,11 @@ SOURCE_ROOT="$ROOT/tools/strategy_research_agent"
 mkdir -p "$ROOT/user_data/strategy_research"
 mkdir -p "$ROOT/user_data/strategies/research_generated"
 
-rsync -a --delete \
+rsync -a \
   --exclude '__pycache__' \
   --exclude 'reports/' \
+  --exclude 'agent_config.json' \
+  --exclude 'strategy_registry.json' \
   --exclude 'dashboard/' \
   --exclude 'cost_adjustments/' \
   --exclude 'cost_audits/' \
@@ -67,25 +69,29 @@ rsync -a --delete \
   "$SOURCE_ROOT/strategy_research/" \
   "$ROOT/user_data/strategy_research/"
 
-rsync -a --delete \
-  --exclude '__pycache__' \
-  --exclude 'autonomous_research_strategies.py' \
-  --exclude 'iterative_research_strategies.py' \
-  --exclude 'behavior_experiment_strategies.py' \
-  --exclude 'memory_guided_research_strategies.py' \
-  --exclude 'sample_expansion_strategies.py' \
-  --exclude 'entry_quality_strategies.py' \
-  --exclude 'manual_direction_strategies.py' \
-  --exclude 'manual_entry_confirmation_strategies.py' \
-  --exclude 'manual_abstention_strategies.py' \
-  --exclude 'manual_strong_confirmation_strategies.py' \
-  --exclude 'multi_timeframe_kline_strategies.py' \
-  "$SOURCE_ROOT/strategies/research_generated/" \
-  "$ROOT/user_data/strategies/research_generated/"
+if [[ -d "$SOURCE_ROOT/strategies/research_generated" ]]; then
+  rsync -a --delete \
+    --exclude '__pycache__' \
+    --exclude 'autonomous_research_strategies.py' \
+    --exclude 'iterative_research_strategies.py' \
+    --exclude 'behavior_experiment_strategies.py' \
+    --exclude 'memory_guided_research_strategies.py' \
+    --exclude 'sample_expansion_strategies.py' \
+    --exclude 'entry_quality_strategies.py' \
+    --exclude 'manual_direction_strategies.py' \
+    --exclude 'manual_entry_confirmation_strategies.py' \
+    --exclude 'manual_abstention_strategies.py' \
+    --exclude 'manual_strong_confirmation_strategies.py' \
+    --exclude 'multi_timeframe_kline_strategies.py' \
+    "$SOURCE_ROOT/strategies/research_generated/" \
+    "$ROOT/user_data/strategies/research_generated/"
+fi
 
-cp "$SOURCE_ROOT/download_binance_um_1m.py" "$ROOT/user_data/download_binance_um_1m.py"
+if [[ -f "$SOURCE_ROOT/download_binance_um_1m.py" ]]; then
+  cp "$SOURCE_ROOT/download_binance_um_1m.py" "$ROOT/user_data/download_binance_um_1m.py"
+fi
 
-chmod +x \
+for executable in \
   "$ROOT/user_data/strategy_research/run_daily_research.sh" \
   "$ROOT/user_data/strategy_research/run_full_research_cycle.sh" \
   "$ROOT/user_data/strategy_research/run_strong_researcher_smoke.sh" \
@@ -93,5 +99,10 @@ chmod +x \
   "$ROOT/user_data/strategy_research/automation/install_launchd.sh" \
   "$ROOT/user_data/strategy_research/automation/uninstall_launchd.sh" \
   "$ROOT/user_data/strategy_research/automation/status_launchd.sh"
+do
+  if [[ -f "$executable" ]]; then
+    chmod +x "$executable"
+  fi
+done
 
 echo "Installed strategy research agent runtime files into user_data/."

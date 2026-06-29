@@ -32,6 +32,16 @@ Concrete strategy generation is not the first research step. The Agent must firs
 
 If an event does not clear the edge gate, the Agent may only use it as a counterexample, redesign input, or negative-control experiment. It must not turn that event into another strategy class just because the knowledge card sounds plausible.
 
+## Timeframe Contract
+
+For 50x Binance USDT-M futures research, concrete strategy entry must use short-cycle K-line granularity:
+
+- Allowed primary entry timeframes: `3m`, `5m`, `15m`.
+- `1h` may only be used as a background, regime, or confirmation timeframe.
+- `1h`, `4h`, and `1d` must not be used as the primary entry timeframe for new 50x strategy classes.
+
+If an event study is based on `1h` candles, the Agent may only use it as regime context or as a negative/control study until the entry trigger is translated to `3m`, `5m`, or `15m`.
+
 ## Post-Run Attribution Gate
 
 Every strategy research round that runs backtests must end with post-run attribution before it updates research memory, mature researcher queues, or the next experiment plan.
@@ -59,6 +69,29 @@ Do not describe the Agent as missing materials, knowledge, or self-iteration. Th
 The active research rule is:
 
 > Knowledge proposes events. Event studies test edge. Only edge candidates become strategies. Backtests must then be attributed before memory or next experiments change.
+
+## Factor Research Gate
+
+Factor research is a required front-door stage inside the same Agent, not a
+separate Agent. Its job is to stop the workflow from turning knowledge cards or
+research memory directly into strategy classes.
+
+The fixed sequence is:
+
+1. Knowledge graph and research memory propose research directions.
+2. Factor research scores `3m`, `5m`, and `15m` Binance USDT-M futures OHLCV
+   factors against forward return, MFE, MAE, sample count, side, and timeframe.
+3. Factor-to-strategy planning converts only factor rows with sufficient sample,
+   after-fee expectancy, win rate, and MFE/MAE evidence into event-study
+   hypotheses.
+4. Event study tests those hypotheses as measurable entry events.
+5. Only event edge candidates may become concrete Freqtrade strategy classes,
+   unless the run is explicitly labeled as a negative-control or redesign study.
+
+The Agent must not say "external knowledge generated this strategy" unless the
+factor/event evidence chain exists. External knowledge can inspire what to test;
+the factor layer decides whether there is enough local market evidence to turn
+it into a strategy hypothesis.
 
 ## Safety Boundary
 
