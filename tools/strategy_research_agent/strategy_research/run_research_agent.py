@@ -31,8 +31,6 @@ DEFAULT_REGISTRY = AGENT_ROOT / "strategy_registry.json"
 DEFAULT_EXPERIMENT = AGENT_ROOT / "experiments/btc_eth_futures_core_matrix.json"
 GENERATED_VARIANT_REGISTRY = AGENT_ROOT / "experiments/generated_variant_registry.json"
 SOURCE_TRANSLATED_REGISTRY = AGENT_ROOT / "experiments/source_translated_registry.json"
-AUTONOMOUS_STRATEGY_REGISTRY = AGENT_ROOT / "experiments/autonomous_strategy_registry.json"
-ITERATIVE_STRATEGY_REGISTRY = AGENT_ROOT / "experiments/iterative_strategy_registry.json"
 BEHAVIOR_EXPERIMENT_REGISTRY = AGENT_ROOT / "experiments/behavior_experiment_strategy_registry.json"
 MEMORY_GUIDED_REGISTRY = AGENT_ROOT / "experiments/memory_guided_strategy_registry.json"
 CONTEXT_SOURCE_REGISTRY = AGENT_ROOT / "context_sources/context_source_strategy_registry.json"
@@ -41,8 +39,6 @@ MANUAL_ENTRY_REGISTRY = AGENT_ROOT / "experiments/manual_entry_confirmation_stra
 MANUAL_ABSTENTION_REGISTRY = AGENT_ROOT / "experiments/manual_abstention_strategy_registry.json"
 MANUAL_STRONG_CONFIRMATION_REGISTRY = AGENT_ROOT / "experiments/manual_strong_confirmation_strategy_registry.json"
 MULTI_TIMEFRAME_KLINE_REGISTRY = AGENT_ROOT / "experiments/multi_timeframe_kline_strategy_registry.json"
-SAMPLE_EXPANSION_REGISTRY = AGENT_ROOT / "experiments/sample_expansion_strategy_registry.json"
-ENTRY_QUALITY_REGISTRY = AGENT_ROOT / "experiments/entry_quality_strategy_registry.json"
 LOOKAHEAD_CONFIG_OVERRIDE = AGENT_ROOT / "config_lookahead_pricing_override.json"
 
 
@@ -80,6 +76,27 @@ def parse_args() -> argparse.Namespace:
 def load_json(path: Path) -> dict[str, Any]:
     with path.open("r", encoding="utf-8") as handle:
         return json.load(handle)
+
+
+def resolve_experiment_path(path: Path) -> Path:
+    if path.exists() or path != DEFAULT_EXPERIMENT:
+        return path
+
+    for candidate in (
+        MEMORY_GUIDED_REGISTRY.with_name("memory_guided_strategy_experiment.json"),
+        AGENT_ROOT / "experiments/knowledge_guided_strategy_experiment.json",
+    ):
+        if not candidate.exists():
+            continue
+        try:
+            payload = load_json(candidate)
+        except json.JSONDecodeError:
+            continue
+        if payload.get("strategies"):
+            print(f"Default experiment missing; using {candidate.relative_to(REPO_ROOT)}.")
+            return candidate
+
+    return path
 
 
 def ensure_workspace(config: dict[str, Any]) -> dict[str, Path]:
@@ -294,8 +311,6 @@ def strategy_metadata(registry: dict[str, Any]) -> dict[str, dict[str, Any]]:
     for path in [
         GENERATED_VARIANT_REGISTRY,
         SOURCE_TRANSLATED_REGISTRY,
-        AUTONOMOUS_STRATEGY_REGISTRY,
-        ITERATIVE_STRATEGY_REGISTRY,
         BEHAVIOR_EXPERIMENT_REGISTRY,
         MEMORY_GUIDED_REGISTRY,
         CONTEXT_SOURCE_REGISTRY,
@@ -304,8 +319,6 @@ def strategy_metadata(registry: dict[str, Any]) -> dict[str, dict[str, Any]]:
         MANUAL_ABSTENTION_REGISTRY,
         MANUAL_STRONG_CONFIRMATION_REGISTRY,
         MULTI_TIMEFRAME_KLINE_REGISTRY,
-        SAMPLE_EXPANSION_REGISTRY,
-        ENTRY_QUALITY_REGISTRY,
     ]:
         if path.exists():
             generated = load_json(path)
@@ -2049,6 +2062,7 @@ def main() -> None:
     args = parse_args()
     config = load_json(args.config)
     registry = load_json(args.registry)
+    args.experiment = resolve_experiment_path(args.experiment)
     experiment = load_json(args.experiment)
     paths = ensure_workspace(config)
 
