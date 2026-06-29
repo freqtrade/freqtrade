@@ -18,6 +18,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 AGENT_ROOT = REPO_ROOT / "user_data/strategy_research"
 DEFAULT_CONFIG = AGENT_ROOT / "agent_config.json"
 DEFAULT_REGISTRY = AGENT_ROOT / "strategy_registry.json"
+WORKFLOW_GATE = AGENT_ROOT / "enforce_agent_workflow_gate.py"
 
 
 @dataclass
@@ -102,6 +103,30 @@ def check_agent_config(checks: list[Check]) -> dict[str, Any] | None:
     else:
         add(checks, "safety_flags", "ok", "Research-only flags are locked down.")
     return config
+
+
+def check_workflow_gate(checks: list[Check]) -> None:
+    if not WORKFLOW_GATE.exists():
+        add(checks, "strategy_agent_gate", "fail", f"Missing {rel(WORKFLOW_GATE)}")
+        return
+    completed = subprocess.run(
+        [str(REPO_ROOT / ".venv/bin/python"), str(WORKFLOW_GATE), "--json"],
+        cwd=REPO_ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    if completed.returncode != 0:
+        add(checks, "strategy_agent_gate", "fail", completed.stdout[-2000:].strip())
+        return
+    try:
+        payload = json.loads(completed.stdout)
+    except json.JSONDecodeError as exc:
+        add(checks, "strategy_agent_gate", "fail", f"Invalid gate output: {exc}")
+        return
+    required = payload.get("must_load_before_research", [])
+    add(checks, "strategy_agent_gate", "ok", f"Loaded {len(required)} fixed workflow artifacts.")
 
 
 def check_registry(checks: list[Check]) -> dict[str, Any] | None:
@@ -218,6 +243,7 @@ def main() -> int:
     checks: list[Check] = []
     check_python(checks)
     check_agent_config(checks)
+    check_workflow_gate(checks)
     registry = check_registry(checks)
     check_data(checks, registry)
     check_outputs(checks)

@@ -226,9 +226,23 @@ done
 echo "== Strategy Research Agent: preflight =="
 "$PYTHON" user_data/strategy_research/preflight_research_agent.py
 
+echo "== Strategy Research Agent: fixed workflow gate =="
+"$PYTHON" user_data/strategy_research/enforce_agent_workflow_gate.py
+
 if [[ "$mode" == "preflight_only" ]]; then
   exit 0
 fi
+
+run_agent_brain() {
+  echo "== Strategy Research Agent: agent brain prerequisite =="
+  "$PYTHON" user_data/strategy_research/build_price_action_knowledge_layer.py
+  "$PYTHON" user_data/strategy_research/build_price_action_knowledge_graph.py
+  "$PYTHON" user_data/strategy_research/build_strategy_lineage.py
+  "$PYTHON" user_data/strategy_research/build_research_memory.py
+  "$PYTHON" user_data/strategy_research/plan_knowledge_guided_hypotheses.py
+  "$PYTHON" user_data/strategy_research/plan_memory_guided_hypotheses.py
+  "$PYTHON" user_data/strategy_research/build_research_consolidation.py
+}
 
 case "$mode" in
   quick)
@@ -276,13 +290,7 @@ case "$mode" in
     ;;
   agent_brain)
     echo "== Strategy Research Agent: knowledge-memory-consolidation brain =="
-    "$PYTHON" user_data/strategy_research/build_price_action_knowledge_layer.py
-    "$PYTHON" user_data/strategy_research/build_price_action_knowledge_graph.py
-    "$PYTHON" user_data/strategy_research/build_strategy_lineage.py
-    "$PYTHON" user_data/strategy_research/build_research_memory.py
-    "$PYTHON" user_data/strategy_research/plan_knowledge_guided_hypotheses.py
-    "$PYTHON" user_data/strategy_research/plan_memory_guided_hypotheses.py
-    "$PYTHON" user_data/strategy_research/build_research_consolidation.py
+    run_agent_brain
     "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
     ;;
   weekly_knowledge_update)
@@ -418,6 +426,7 @@ PY
     ;;
   mature_researcher)
     echo "== Strategy Research Agent: mature researcher decision plan =="
+    run_agent_brain
     "$PYTHON" user_data/strategy_research/analyze_strategy_research.py
     "$PYTHON" user_data/strategy_research/attribute_strategy_failures.py
     "$PYTHON" user_data/strategy_research/mature_researcher.py
@@ -426,11 +435,19 @@ PY
     ;;
   mature_researcher_queue)
     echo "== Strategy Research Agent: mature researcher response queue =="
+    run_agent_brain
+    "$PYTHON" user_data/strategy_research/analyze_strategy_research.py
+    "$PYTHON" user_data/strategy_research/attribute_strategy_failures.py
+    "$PYTHON" user_data/strategy_research/mature_researcher.py
     "$PYTHON" user_data/strategy_research/mature_researcher_queue.py
     "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
     ;;
   execute_mature_researcher)
     echo "== Strategy Research Agent: execute mature researcher response =="
+    run_agent_brain
+    "$PYTHON" user_data/strategy_research/analyze_strategy_research.py
+    "$PYTHON" user_data/strategy_research/attribute_strategy_failures.py
+    "$PYTHON" user_data/strategy_research/mature_researcher.py
     "$PYTHON" user_data/strategy_research/mature_researcher_queue.py --execute-next
     "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
     ;;

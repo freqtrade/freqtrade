@@ -88,6 +88,14 @@ user_data/strategy_research/start_manual_research.sh --walk-forward
 user_data/strategy_research/start_manual_research.sh --preflight-only
 ```
 
+所有策略研究入口都会先执行固定工作流门禁：
+
+```bash
+user_data/strategy_research/enforce_agent_workflow_gate.py
+```
+
+这个 gate 会读取 `consolidation/agent_operating_rules.json`，如果运行区还没生成则回退到版本化默认规则 `consolidation/agent_operating_rules.default.json`。它必须成功加载知识图谱上下文、研究记忆、固化层、workflow contract 和每周知识更新，才允许继续做任何策略假设、回测、诊断或 mature researcher 队列执行。
+
 真正跑完整研究循环：
 
 ```bash
