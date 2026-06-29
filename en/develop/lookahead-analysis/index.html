@@ -2044,6 +2044,11 @@ This is done by not looking at the strategy code itself, but at changed indicato
 <li><code>order_types</code> are forced to be "market" (late entries) unless <code>--lookahead-allow-limit-orders</code> is set.</li>
 </ul>
 <p>These are set to avoid users accidentally generating false positives.</p>
+<div class="admonition tip">
+<p class="admonition-title">Running lookahead-analysis via freqUI</p>
+<p><code>lookahead-analysis</code> can also be ran through freqUI when running freqtrade in <a href="../utils/#webserver-mode">webserver mode</a>.
+As the analysis can run for a while, it is executed as a background task.</p>
+</div>
 <h2 id="lookahead-analysis-command-reference">Lookahead-analysis command reference<a class="headerlink" href="#lookahead-analysis-command-reference" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="go">usage: freqtrade lookahead-analysis [-h] [-v] [--no-color] [--logfile FILE]</span>
 <span class="go">                                    [-V] [-c PATH] [-d PATH] [--userdir PATH]</span>

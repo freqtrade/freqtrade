@@ -1574,6 +1574,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#running-recursive-analysis-via-the-rest-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running recursive-analysis via the REST API
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1954,6 +1965,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#running-recursive-analysis-via-the-rest-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running recursive-analysis via the REST API
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1996,6 +2018,11 @@ This does not backtest the strategy itself, but rather only calculates the indic
 <li><code>--cache</code> is forced to "none" to avoid loading previous indicators calculation automatically.</li>
 </ul>
 <p>In addition to the recursive formula check, this command also carries out a simple lookahead bias check on the indicator values only. For a full lookahead check, use <a href="../lookahead-analysis/">Lookahead-analysis</a>.</p>
+<div class="admonition tip">
+<p class="admonition-title">Running recursive-analysis via freqUI</p>
+<p><code>recursive-analysis</code> can also be ran through freqUI when running freqtrade in <a href="../utils/#webserver-mode">webserver mode</a>.
+As the analysis can run for a while, it is executed as a background task.</p>
+</div>
 <h2 id="recursive-analysis-command-reference">Recursive-analysis command reference<a class="headerlink" href="#recursive-analysis-command-reference" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="go">usage: freqtrade recursive-analysis [-h] [-v] [--no-color] [--logfile FILE]</span>
 <span class="go">                                    [-V] [-c PATH] [-d PATH] [--userdir PATH]</span>
@@ -2083,6 +2110,15 @@ This does not backtest the strategy itself, but rather only calculates the indic
 <li>The ideal scenario is that indicators will have no variance (or at least very close to 0%) despite the startup candle being varied. In reality, indicators such as EMA are using a recursive formula to calculate indicator values, so the goal is not necessarily to have zero percentage variance, but to have the variance low enough (and therefore <code>startup_candle_count</code> high enough) that the recursion inherent in the indicator will not have any real impact on trading decisions.</li>
 <li><code>recursive-analysis</code> will only run calculations on <code>populate_indicators</code> and <code>@informative</code> decorator(s). If you put any indicator calculation on <code>populate_entry_trend</code> or <code>populate_exit_trend</code>, it won't be calculated.</li>
 </ul>
+<h2 id="running-recursive-analysis-via-the-rest-api">Running recursive-analysis via the REST API<a class="headerlink" href="#running-recursive-analysis-via-the-rest-api" title="Permanent link">&para;</a></h2>
+<p><code>recursive-analysis</code> can also be triggered through the REST API when running freqtrade in <a href="../utils/#webserver-mode">webserver mode</a>.
+As the analysis can run for a while, it is executed as a background task.</p>
+<ol>
+<li><code>POST /api/v1/recursive_analysis</code> with a JSON body containing at least <code>strategy</code> and <code>timerange</code> (optional: <code>timeframe</code>, <code>startup_candle</code>). Pairs are taken from the webserver configuration. This returns a <code>job_id</code>.</li>
+<li>Poll <code>GET /api/v1/background/{job_id}</code> to follow the progress.</li>
+<li>Once finished, fetch the result via <code>GET /api/v1/recursive_analysis/{job_id}</code>.</li>
+</ol>
+<p>Only one analysis (lookahead or recursive) can run at a time.</p>
 
 
 
