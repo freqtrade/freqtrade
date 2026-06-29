@@ -1687,7 +1687,6 @@ class FreqtradeBot(LoggingMixin):
         :return: None
         """
         if not order_obj:
-            logger.warning(f"Order object not found for {trade}. Cannot replace order.")
             return
 
         analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(
