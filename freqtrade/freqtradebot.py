@@ -2506,8 +2506,6 @@ class FreqtradeBot(LoggingMixin):
         Necessary for exchanges which charge fees in base currency (e.g. binance)
         :return: Absolute fee to apply for this order or None
         """
-        # Init variables
-        order_amount = safe_value_fallback(order, "filled", "amount")
         # Only run for closed orders
         if (
             trade.fee_updated(order.get("side", "")) or order["status"] == "open"
@@ -2515,7 +2513,8 @@ class FreqtradeBot(LoggingMixin):
         ):
             return None
 
-        trade_base_currency = self.exchange.get_pair_base_currency(trade.pair)
+        order_amount = safe_value_fallback(order, "filled", "amount")
+
         # use fee from order-dict if possible
         if self.exchange.order_has_fee(order):
             fee_cost, fee_currency, fee_rate = self.exchange.extract_cost_curr_rate(
@@ -2530,6 +2529,7 @@ class FreqtradeBot(LoggingMixin):
                 # These are most likely caused by a parsing bug in ccxt
                 # due to multiple trades (https://github.com/ccxt/ccxt/issues/8025)
                 trade.update_fee(fee_cost, fee_currency, fee_rate, order.get("side", ""))
+                trade_base_currency = self.exchange.get_pair_base_currency(trade.pair)
                 if trade_base_currency == fee_currency:
                     # Apply fee to amount
                     return self.apply_fee_conditional(
