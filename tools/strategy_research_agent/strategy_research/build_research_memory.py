@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from strategy_taxonomy import infer_family_from_card, taxonomy_summary
+
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 AGENT_ROOT = REPO_ROOT / "user_data/strategy_research"
@@ -16,6 +18,7 @@ OUTPUT_DIR = AGENT_ROOT / "research_memory"
 LATEST_JSON = OUTPUT_DIR / "latest_research_memory.json"
 LATEST_MD = OUTPUT_DIR / "latest_research_memory.md"
 GRAPH_CONTEXT_JSON = AGENT_ROOT / "knowledge/graph/strategy_agent_graph_context.json"
+MANUAL_LESSONS_DIR = OUTPUT_DIR / "manual_lessons"
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -23,6 +26,19 @@ def load_json(path: Path) -> dict[str, Any]:
         return {}
     with path.open("r", encoding="utf-8") as handle:
         return json.load(handle)
+
+
+def load_manual_lessons() -> list[dict[str, Any]]:
+    if not MANUAL_LESSONS_DIR.exists():
+        return []
+    lessons = []
+    for path in sorted(MANUAL_LESSONS_DIR.glob("*.json")):
+        item = load_json(path)
+        if not item:
+            continue
+        item.setdefault("source_file", rel(path))
+        lessons.append(item)
+    return lessons
 
 
 def rel(path: Path) -> str:
@@ -233,21 +249,7 @@ def build_knowledge_memory(graph_context: dict[str, Any]) -> dict[str, Any]:
 
 
 def infer_strategy_family(card: dict[str, Any]) -> str:
-    concepts = set(card.get("concepts", []))
-    text = json.dumps(card, ensure_ascii=False).lower()
-    if {"breakout", "breakout_test", "failed_breakout"} & concepts or "breakout" in text or "突破" in text:
-        return "breakout"
-    if {"pullback", "trend_bar", "counting_bars"} & concepts or "pullback" in text or "回调" in text:
-        return "pullback"
-    if {"scalp", "microstructure"} & concepts or "scalp" in text or "剥头皮" in text:
-        return "scalp"
-    if {"reversal", "wedge", "parabolic"} & concepts or "reversal" in text or "反转" in text:
-        return "reversal"
-    if {"risk", "actual_risk", "fees", "funding"} & concepts or "风险" in text:
-        return "risk_control"
-    if {"market_cycle", "regime_router"} & concepts or "震荡" in text or "趋势" in text:
-        return "regime"
-    return card.get("category") or "general"
+    return infer_family_from_card(card)
 
 
 def build_payload() -> dict[str, Any]:
@@ -256,6 +258,7 @@ def build_payload() -> dict[str, Any]:
     agenda = load_json(AGENT_ROOT / "research_agendas/latest_research_agenda.json")
     assessment = load_json(AGENT_ROOT / "strategy_assessments/latest_strategy_assessment.json")
     graph_context = load_json(GRAPH_CONTEXT_JSON)
+    manual_lessons = load_manual_lessons()
     nodes = lineage.get("nodes", [])
     failure_summary = failure.get("failure_mode_summary", [])
     payload = {
@@ -267,15 +270,20 @@ def build_payload() -> dict[str, Any]:
         "next_focus": build_next_focus(agenda, nodes),
         "knowledge_gaps": build_knowledge_gaps(nodes),
         "knowledge_memory": build_knowledge_memory(graph_context) if graph_context else {},
+        "strategy_taxonomy": taxonomy_summary(),
+        "manual_lessons": manual_lessons,
         "durable_rules": [
             "Never promote a strategy from a single favorable slice.",
             "Treat leverage as a risk multiplier, not a fix for weak entry timing.",
             "Prefer variants that improve trade quality and sample size together.",
+            "Every futures strategy hypothesis must declare a canonical strategy family and regime contract before strategy code is generated.",
+            "Post-run attribution must be grouped by strategy family as well as by individual strategy class.",
             "Keep external strategies quarantined until translated into local auditable code.",
             "Do not repeat archived variants unless the new experiment changes the diagnosed failure mode.",
             "Generate new hypotheses from active knowledge-graph cards only; quarantined cards are reference material, not strategy fuel.",
             "Any knowledge-derived strategy must remain research-only until backtest, recursive, lookahead, regime, cost, and promotion gates pass.",
-        ],
+        ]
+        + [lesson["memory_rule"] for lesson in manual_lessons if lesson.get("memory_rule")],
         "source_artifacts": {
             "strategy_lineage": rel(AGENT_ROOT / "strategy_library/latest_strategy_lineage.json") if lineage else None,
             "failure_attribution": rel(AGENT_ROOT / "failure_attribution/latest_failure_attribution.json") if failure else None,
@@ -340,12 +348,50 @@ def write_markdown(path: Path, payload: dict[str, Any]) -> None:
     )
     for item in knowledge.get("strategy_family_summary", []):
         lines.append("| {family} | {count} |".format(**item))
+    lines.extend(
+        [
+            "",
+            "## Strategy Taxonomy",
+            "",
+            "| Code | Family | Direction | Allowed Regimes | Disabled Regimes |",
+            "|---|---|---|---|---|",
+        ]
+    )
+    for item in payload.get("strategy_taxonomy", []):
+        lines.append(
+            "| {code} | {name} | {direction} | {allowed} | {disabled} |".format(
+                code=item.get("code") or "",
+                name=item.get("name") or item.get("id") or "",
+                direction=item.get("direction") or "",
+                allowed=", ".join(item.get("allowed_regimes", [])),
+                disabled=", ".join(item.get("disabled_regimes", [])),
+            )
+        )
     lines.extend(["", "### Knowledge Avoid Rules", ""])
     for rule in knowledge.get("knowledge_avoid_rules", [])[:12]:
         lines.append(f"- {rule}")
     lines.extend(["", "### Required Checks", "", "| Check | Cards |", "|---|---:|"])
     for item in knowledge.get("required_checks", []):
         lines.append("| {check} | {count} |".format(**item))
+    lines.extend(
+        [
+            "",
+            "## Manual Evidence Lessons",
+            "",
+            "| Lesson | Evidence | Memory Rule | Next Test |",
+            "|---|---|---|---|",
+        ]
+    )
+    for item in payload.get("manual_lessons", []):
+        evidence = ", ".join(item.get("evidence", [])[:3])
+        lines.append(
+            "| {lesson} | {evidence} | {memory_rule} | {next_test} |".format(
+                lesson=item.get("lesson") or "",
+                evidence=evidence,
+                memory_rule=item.get("memory_rule") or "",
+                next_test=item.get("next_test") or "",
+            )
+        )
     lines.extend(["", "## Durable Rules", ""])
     for rule in payload["durable_rules"]:
         lines.append(f"- {rule}")

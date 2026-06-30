@@ -14,6 +14,8 @@ from typing import Any
 
 import pandas as pd
 
+from strategy_taxonomy import REQUIRED_TAXONOMY_IDS, STRATEGY_TAXONOMY
+
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 AGENT_ROOT = REPO_ROOT / "user_data/strategy_research"
@@ -207,6 +209,25 @@ def check_workflow_gate(checks: list[Check]) -> None:
     add(checks, "strategy_agent_gate", "ok", f"Loaded {len(required)} fixed workflow artifacts.")
 
 
+def check_strategy_taxonomy(checks: list[Check]) -> None:
+    missing = sorted(REQUIRED_TAXONOMY_IDS - set(STRATEGY_TAXONOMY))
+    if missing:
+        add(checks, "strategy_taxonomy", "fail", "Missing taxonomy families: " + ", ".join(missing))
+        return
+    directions = {item.get("direction") for item in STRATEGY_TAXONOMY.values()}
+    required_directions = {"long", "short", "long_or_short", "no_trade"}
+    missing_directions = sorted(required_directions - directions)
+    if missing_directions:
+        add(checks, "strategy_taxonomy", "fail", "Missing taxonomy directions: " + ", ".join(missing_directions))
+        return
+    add(
+        checks,
+        "strategy_taxonomy",
+        "ok",
+        f"{len(STRATEGY_TAXONOMY)} strategy families with explicit regime contracts.",
+    )
+
+
 def check_registry(checks: list[Check]) -> dict[str, Any] | None:
     if not DEFAULT_REGISTRY.exists():
         add(checks, "strategy_registry", "fail", f"Missing {rel(DEFAULT_REGISTRY)}")
@@ -320,6 +341,7 @@ def main() -> int:
     check_fixed_risk_policy(checks, config)
     check_strategy_leverage_overrides(checks)
     check_workflow_gate(checks)
+    check_strategy_taxonomy(checks)
     registry = check_registry(checks)
     check_data(checks, registry)
     check_outputs(checks)

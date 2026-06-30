@@ -8,6 +8,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from strategy_taxonomy import classify_strategy_family, family_contract, taxonomy_summary
+
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 AGENT_ROOT = REPO_ROOT / "user_data/strategy_research"
@@ -185,12 +187,25 @@ def build_hypotheses(memory: dict[str, Any], lineage: dict[str, Any], graph_cont
         parent = nodes.get(strategy, {})
         hypothesis_id = f"mem_{index:02d}_{slug(strategy)}_{slug(blocker)}"
         objective = focus.get("objective") or template["entry_change"]
+        family = classify_strategy_family(
+            strategy,
+            blocker,
+            objective,
+            parent.get("root"),
+            parent.get("failure_attribution", {}).get("top_mode"),
+        )
+        contract = family_contract(family)
         hypotheses.append(
             {
                 "hypothesis_id": hypothesis_id,
                 "strategy": strategy,
                 "root": parent.get("root") or strategy,
                 "blocker": blocker,
+                "strategy_family": family,
+                "strategy_family_code": contract["family_code"],
+                "strategy_family_name": contract["family_name"],
+                "strategy_family_direction": contract["direction"],
+                "regime_contract": contract,
                 "objective": objective,
                 "memory_guidance": {
                     "avoid_rules": avoid_rules[:5],
@@ -201,7 +216,7 @@ def build_hypotheses(memory: dict[str, Any], lineage: dict[str, Any], graph_cont
                 "proposed_changes": template,
                 "success_gate": focus.get("success_gate") or success_gate(blocker),
                 "next_command": focus.get("next_command") or "user_data/strategy_research/start_manual_research.sh --behavior-variants",
-                "risk_notes": "Research-only plan. Do not raise leverage or promote without passing scorecard, matrix, walk-forward, cost, and bias gates.",
+                "risk_notes": "Research-only plan. Strategy family and regime contract are mandatory before code generation. Do not raise leverage or promote without passing scorecard, matrix, walk-forward, cost, and bias gates.",
             }
         )
     return hypotheses[:8]
@@ -216,9 +231,14 @@ def build_experiment(hypotheses: list[dict[str, Any]]) -> dict[str, Any]:
         "fee": 0.0006,
         "strategies": [item["strategy"] for item in hypotheses],
         "hypothesis_ids": [item["hypothesis_id"] for item in hypotheses],
+        "strategy_families": sorted({item["strategy_family"] for item in hypotheses}),
+        "strategy_family_contract_required": True,
+        "family_attribution_required": True,
         "notes": [
             "This experiment file is a planning handoff, not a runnable generated-strategy registry.",
             "Concrete strategy code must be generated in an isolated research file before running Freqtrade backtesting.",
+            "Every generated strategy must declare one canonical strategy family and regime contract first.",
+            "Attribution must be reported by strategy family as well as by strategy class.",
         ],
     }
 
@@ -233,10 +253,12 @@ def build_payload() -> dict[str, Any]:
         "hypothesis_count": len(hypotheses),
         "hypotheses": hypotheses,
         "experiment": build_experiment(hypotheses),
+        "strategy_taxonomy": taxonomy_summary(),
         "source_artifacts": {
             "research_memory": rel(AGENT_ROOT / "research_memory/latest_research_memory.json") if memory else None,
             "strategy_lineage": rel(AGENT_ROOT / "strategy_library/latest_strategy_lineage.json") if lineage else None,
             "knowledge_graph_context": rel(GRAPH_CONTEXT_JSON) if graph_context else None,
+            "strategy_taxonomy": "user_data/strategy_research/strategy_taxonomy.py",
         },
     }
 
@@ -248,16 +270,15 @@ def write_markdown(path: Path, payload: dict[str, Any]) -> None:
         f"- Generated UTC: `{payload['generated_at_utc']}`",
         f"- Hypotheses: `{payload['hypothesis_count']}`",
         "",
-        "| ID | Strategy | Blocker | Knowledge Cards | Objective | Entry Change | Risk Change | Success Gate |",
-        "|---|---|---|---|---|---|---|---|",
+        "| ID | Family | Direction | Strategy | Blocker | Allowed Regimes | Disabled Regimes | Objective | Success Gate |",
+        "|---|---|---|---|---|---|---|---|---|",
     ]
     for item in payload["hypotheses"]:
         changes = item["proposed_changes"]
         lines.append(
-            "| {hypothesis_id} | {strategy} | {blocker} | {cards} | {objective} | {entry_change} | {risk_change} | {success_gate} |".format(
-                entry_change=changes.get("entry_change"),
-                risk_change=changes.get("risk_change"),
-                cards=", ".join(item.get("knowledge_guidance", {}).get("source_cards", [])[:3]),
+            "| {hypothesis_id} | {strategy_family} | {strategy_family_direction} | {strategy} | {blocker} | {allowed} | {disabled} | {objective} | {success_gate} |".format(
+                allowed=", ".join(item["regime_contract"]["allowed_regimes"]),
+                disabled=", ".join(item["regime_contract"]["disabled_regimes"]),
                 **item,
             )
         )
@@ -268,6 +289,8 @@ def write_markdown(path: Path, payload: dict[str, Any]) -> None:
             "",
             "- This ledger plans strategy research; it does not create live-trading code.",
             "- Concrete variants must be generated into isolated research strategy files before backtesting.",
+            "- Every concrete variant must declare one canonical strategy family and regime contract before generation.",
+            "- Every post-run attribution must aggregate by strategy family, not only by strategy class.",
             "- Every hypothesis inherits avoid rules from research memory to reduce repeated failure loops.",
         ]
     )

@@ -8,6 +8,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from strategy_taxonomy import family_contract, infer_family_from_card, taxonomy_summary
+
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 AGENT_ROOT = REPO_ROOT / "user_data/strategy_research"
@@ -116,24 +118,7 @@ def choose_cards(cards: list[dict[str, Any]], blocker: str, avoid_rules: list[st
 
 
 def strategy_family(card: dict[str, Any]) -> str:
-    trans = card.get("freqtrade_translation") or {}
-    if trans.get("strategy_family"):
-        return trans["strategy_family"]
-    concepts = set(card.get("concepts", []))
-    text = json.dumps(card, ensure_ascii=False).lower()
-    if {"breakout", "breakout_test", "failed_breakout"} & concepts or "breakout" in text or "突破" in text:
-        return "breakout"
-    if {"pullback", "trend_bar", "counting_bars"} & concepts or "pullback" in text or "回调" in text:
-        return "pullback"
-    if {"scalp", "microstructure"} & concepts or "scalp" in text or "剥头皮" in text:
-        return "scalp"
-    if {"reversal", "wedge", "parabolic"} & concepts or "reversal" in text or "反转" in text:
-        return "reversal"
-    if {"risk", "actual_risk", "fees", "funding"} & concepts or "风险" in text:
-        return "risk_control"
-    if {"market_cycle", "regime_router"} & concepts or "震荡" in text or "趋势" in text:
-        return "regime"
-    return card.get("category") or "general"
+    return infer_family_from_card(card)
 
 
 def card_id(card: dict[str, Any]) -> str:
@@ -146,6 +131,7 @@ def card_id(card: dict[str, Any]) -> str:
 def hypothesis_from_cards(index: int, blocker: str, selected: list[dict[str, Any]], avoid_rules: list[str]) -> dict[str, Any]:
     primary = selected[0]
     family = strategy_family(primary)
+    contract = family_contract(family)
     conflict = any(family.lower() in str(rule or "").lower() for rule in avoid_rules)
     status = "counterexample_or_variant_only" if conflict else "research_hypothesis"
     entry_rules = []
@@ -174,12 +160,20 @@ def hypothesis_from_cards(index: int, blocker: str, selected: list[dict[str, Any
         "blocker_addressed": blocker,
         "source_cards": [card_id(card) for card in selected],
         "source_graph_nodes": [card.get("card_node") for card in selected if card.get("card_node")],
+        "strategy_family": family,
+        "strategy_family_code": contract["family_code"],
+        "strategy_family_name": contract["family_name"],
+        "strategy_family_direction": contract["direction"],
+        "regime_contract": contract,
         "concepts": dedupe(concepts)[:12],
         "trading_idea": primary["strategy_hypothesis"],
         "quantified_entry_rules": dedupe(entry_rules)[:5],
         "quantified_exit_or_invalidation_rules": dedupe(exit_rules)[:4],
-        "applicable_regimes": dedupe(sum(((card.get("freqtrade_translation") or {}).get("applicable_regimes", []) for card in selected), []))[:5],
-        "not_applicable_regimes": dedupe(not_applicable)[:5],
+        "applicable_regimes": dedupe(
+            sum(((card.get("freqtrade_translation") or {}).get("applicable_regimes", []) for card in selected), [])
+            or contract["allowed_regimes"]
+        )[:5],
+        "not_applicable_regimes": dedupe(not_applicable or contract["disabled_regimes"])[:5],
         "freqtrade_feature_suggestions": dedupe(features)[:10],
         "backtest_requirements": dedupe(required_checks)
         or [
@@ -198,6 +192,8 @@ def hypothesis_from_cards(index: int, blocker: str, selected: list[dict[str, Any
             "uses_active_graph_cards_only": True,
             "does_not_promote_to_candidate_pool": True,
             "must_pass_required_checks": True,
+            "must_declare_strategy_family_before_generation": True,
+            "must_attribute_results_by_strategy_family": True,
         },
     }
 
@@ -240,7 +236,9 @@ def build_payload() -> dict[str, Any]:
             "knowledge_index": rel(INDEX_JSON),
             "knowledge_graph_context": rel(GRAPH_CONTEXT_JSON) if GRAPH_CONTEXT_JSON.exists() else None,
             "research_memory": rel(MEMORY_JSON) if memory else None,
+            "strategy_taxonomy": "user_data/strategy_research/strategy_taxonomy.py",
         },
+        "strategy_taxonomy": taxonomy_summary(),
         "knowledge_summary": {
             "card_count": index.get("card_count"),
             "claim_count": index.get("claim_count"),
@@ -253,6 +251,9 @@ def build_payload() -> dict[str, Any]:
             "timeranges": ["20260101-20260401", "20260401-20260622", "20260101-20260622"],
             "fee": 0.0006,
             "hypothesis_ids": [item["hypothesis_id"] for item in hypotheses],
+            "strategy_families": sorted({item["strategy_family"] for item in hypotheses}),
+            "strategy_family_contract_required": True,
+            "family_attribution_required": True,
             "promotion_policy": "research_only_no_live_no_dryrun_promotion",
         },
     }
@@ -266,18 +267,20 @@ def write_markdown(payload: dict[str, Any]) -> None:
         f"- Hypotheses: `{payload['hypothesis_count']}`",
         f"- Knowledge cards: `{payload['knowledge_summary'].get('card_count')}`",
         "",
-        "| ID | Status | Blocker | Source Cards | Trading Idea | Entry Rules | Guardrail |",
-        "|---|---|---|---|---|---|---|",
+        "| ID | Family | Direction | Status | Blocker | Allowed Regimes | Disabled Regimes | Trading Idea | Guardrail |",
+        "|---|---|---|---|---|---|---|---|---|",
     ]
     for item in payload["hypotheses"]:
         lines.append(
-            "| {hypothesis_id} | {status} | {blocker_addressed} | {cards} | {idea} | {entry} | {guardrail} |".format(
+            "| {hypothesis_id} | {family} | {direction} | {status} | {blocker_addressed} | {allowed} | {disabled} | {idea} | {guardrail} |".format(
                 hypothesis_id=item["hypothesis_id"],
+                family=item["strategy_family"],
+                direction=item["strategy_family_direction"],
                 status=item["status"],
                 blocker_addressed=item["blocker_addressed"],
-                cards=", ".join(item["source_cards"]),
+                allowed=", ".join(item["regime_contract"]["allowed_regimes"]),
+                disabled=", ".join(item["regime_contract"]["disabled_regimes"]),
                 idea=item["trading_idea"],
-                entry="; ".join(item["quantified_entry_rules"][:3]),
                 guardrail=item["memory_guardrail"]["decision"],
             )
         )
@@ -287,6 +290,8 @@ def write_markdown(payload: dict[str, Any]) -> None:
             "## Policy",
             "",
             "- This file only creates research hypotheses; it does not create live trading code.",
+            "- Every generated strategy must first declare one canonical strategy family and regime contract.",
+            "- Post-run attribution must aggregate evidence by strategy family, not only by individual strategy class.",
             "- Any generated strategy must pass backtesting, recursive-analysis, lookahead-analysis, regime matrix, fee/slippage stress, and promotion gate.",
             "- If research memory conflicts with a knowledge card family, the output is downgraded to a variant/counterexample experiment.",
         ]
