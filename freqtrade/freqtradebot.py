@@ -1675,7 +1675,7 @@ class FreqtradeBot(LoggingMixin):
             )
             trade.delete()
 
-    def replace_order(self, order: CcxtOrder, order_obj: Order | None, trade: Trade) -> None:
+    def replace_order(self, order: CcxtOrder, order_obj: Order, trade: Trade) -> None:
         """
         Check if current analyzed entry order should be replaced or simply cancelled.
         To simply cancel the existing order(no replacement) adjust_order_price() should return None
@@ -1686,9 +1686,6 @@ class FreqtradeBot(LoggingMixin):
         :param trade: Trade object.
         :return: None
         """
-        if not order_obj:
-            return
-
         analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(
             trade.pair, self.strategy.timeframe
         )

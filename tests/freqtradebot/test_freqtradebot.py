@@ -1896,22 +1896,6 @@ def test_manage_open_orders_entry(
     assert freqtrade.strategy.adjust_entry_price.call_count == 0
 
 
-def test_replace_order_without_order_obj_returns(default_conf_usdt, mocker, caplog) -> None:
-    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
-    dataframe_mock = mocker.patch.object(freqtrade.dataprovider, "get_analyzed_dataframe")
-    get_rate_mock = mocker.patch.object(freqtrade.exchange, "get_rate")
-    handle_replace_order_mock = mocker.patch.object(freqtrade, "handle_replace_order")
-
-    caplog.clear()
-    result = freqtrade.replace_order({"id": "unknown-order"}, None, MagicMock())
-
-    assert result is None
-    assert not caplog.records
-    dataframe_mock.assert_not_called()
-    get_rate_mock.assert_not_called()
-    handle_replace_order_mock.assert_not_called()
-
-
 @pytest.mark.parametrize("is_short", [False, True])
 def test_adjust_entry_cancel(
     default_conf_usdt,
