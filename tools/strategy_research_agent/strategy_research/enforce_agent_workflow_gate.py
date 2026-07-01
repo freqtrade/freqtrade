@@ -26,6 +26,7 @@ REQUIRED_GATES = [
     "regime_matrix",
     "fee_slippage_stress",
     "walk_forward_validation",
+    "family_risk_gate",
     "promotion_gate",
 ]
 ALLOWED_PRIMARY_ENTRY_TIMEFRAMES = {"3m", "5m", "15m"}

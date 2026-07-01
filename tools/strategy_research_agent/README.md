@@ -151,10 +151,17 @@ Walk-forward validation across fixed calendar windows:
 user_data/strategy_research/start_manual_research.sh --walk-forward
 ```
 
-Promotion gate for manual dry-run review readiness:
+Promotion gate for manual dry-run review readiness. This is a strategy-family
+risk gate, not a naked all-regime strategy gate:
 
 ```bash
 user_data/strategy_research/start_manual_research.sh --promotion-gate
+```
+
+Equivalent explicit entrypoint:
+
+```bash
+user_data/strategy_research/start_manual_research.sh --family-risk-gate
 ```
 
 Build the next research agenda from promotion blockers:
@@ -267,6 +274,7 @@ On Windows, use `README_WINDOWS.md` for the PowerShell cycle runner and Task Sch
 - Iterated strategies must record the failed parent strategy, previous metrics, and the reason for the change.
 - Walk-forward validation must reject strategies that only work in one favorable calendar window.
 - Promotion gate only records readiness for manual dry-run review; it never starts dry-run/live trading.
+- Promotion is evaluated by strategy family: target-regime edge may be specialized, but hostile-regime losses must be contained by router, cooldown, drawdown, and consecutive-loss circuit breakers.
 - Research agenda turns promotion blockers into auditable next experiments and commands.
 - Agenda execution is allowlisted; the default `--next-agenda` mode writes a receipt without running a command.
 - External source scouting queues untrusted online/open-source material for bounded snapshot, review, and isolated translation.

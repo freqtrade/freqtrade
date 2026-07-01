@@ -462,6 +462,16 @@ user_data/strategy_research/walk_forward_summaries/latest_walk_forward_summary.m
 user_data/strategy_research/start_manual_research.sh --promotion-gate
 ```
 
+`--promotion-gate` is implemented as a family-level risk gate.  It does not
+require every high-leverage crypto strategy to be a market-agnostic all-regime
+strategy.  It checks whether each strategy family has target-regime edge and
+whether hostile-regime losses are contained by router/cooldown/drawdown/loss
+streak circuit breakers.  The explicit alias is:
+
+```bash
+user_data/strategy_research/start_manual_research.sh --family-risk-gate
+```
+
 输出：
 
 ```text

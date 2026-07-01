@@ -122,7 +122,7 @@ def check_fixed_risk_policy(checks: list[Check], config: dict[str, Any] | None) 
     scope = config.get("research_scope", {})
     analysis = config.get("analysis", {})
     policy = config.get("risk_policy", {})
-    expected_roi = {"0": 0.30, "120": 1.00, "240": 0.60}
+    expected_roi = {"0": 1.20, "180": 1.50, "360": 1.00}
 
     if scope.get("allowed_markets") == ["Binance USDT-M futures"]:
         add(checks, "risk_policy:market_scope", "ok", "Futures-only market scope.")
@@ -150,7 +150,7 @@ def check_fixed_risk_policy(checks: list[Check], config: dict[str, Any] | None) 
         add(checks, "risk_policy:default_leverage", "fail", f"default_leverage={policy.get('default_leverage')}")
 
     if policy.get("minimal_roi") == expected_roi:
-        add(checks, "risk_policy:minimal_roi", "ok", "minimal_roi fixed at 0:0.30, 120:1.00, 240:0.60.")
+        add(checks, "risk_policy:minimal_roi", "ok", "minimal_roi fixed at 0:1.20, 180:1.50, 360:1.00.")
     else:
         add(checks, "risk_policy:minimal_roi", "fail", f"minimal_roi={policy.get('minimal_roi')}")
 

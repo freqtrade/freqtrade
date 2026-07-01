@@ -7,7 +7,7 @@ PYTHON="${PYTHON:-./.venv/bin/python}"
 
 usage() {
   cat <<'EOF'
-Usage: user_data/strategy_research/start_manual_research.sh [--quick|--source-scout|--price-action-knowledge|--bilibili-transcripts|--knowledge-graph|--knowledge-guided-hypotheses|--factor-research|--factor-to-strategy|--event-study|--agent-brain|--weekly-knowledge-update|--strong-researcher-smoke|--research-iteration|--multi-timeframe-kline|--walk-forward|--promotion-gate|--agenda|--next-agenda|--execute-next-agenda|--trade-behavior|--behavior-experiments|--behavior-variants|--failure-attribution|--post-run-attribution|--mature-researcher|--mature-researcher-queue|--execute-mature-researcher|--strategy-lineage|--research-memory|--memory-guided-hypotheses|--memory-guided-strategies|--full|--full-with-aux|--preflight-only] [--extra-agent-arg ARG ...]
+Usage: user_data/strategy_research/start_manual_research.sh [--quick|--source-scout|--price-action-knowledge|--bilibili-transcripts|--knowledge-graph|--knowledge-guided-hypotheses|--factor-research|--factor-to-strategy|--event-study|--agent-brain|--weekly-knowledge-update|--strong-researcher-smoke|--research-iteration|--multi-timeframe-kline|--walk-forward|--promotion-gate|--family-risk-gate|--agenda|--next-agenda|--execute-next-agenda|--trade-behavior|--behavior-experiments|--behavior-variants|--failure-attribution|--post-run-attribution|--mature-researcher|--mature-researcher-queue|--execute-mature-researcher|--strategy-lineage|--research-memory|--memory-guided-hypotheses|--memory-guided-strategies|--full|--full-with-aux|--preflight-only] [--extra-agent-arg ARG ...]
 
 Manual entrypoint for the research-only strategy agent.
 
@@ -36,7 +36,9 @@ Modes:
   --multi-timeframe-kline
                      Build 3m/5m data and test 1m composite, native 3m, and native 5m kline strategies.
   --walk-forward     Run fixed-window validation for current memory-guided strategies.
-  --promotion-gate   Evaluate promotion readiness and refresh report/dashboard.
+  --promotion-gate   Evaluate all-family promotion readiness with family-level risk controls and refresh report/dashboard.
+  --family-risk-gate
+                     Same gate as promotion-gate: strategy-family router + circuit-breaker dry-run readiness simulation.
   --agenda           Build the next research agenda from promotion blockers.
   --next-agenda      Select the next safe agenda item and write a dry-run receipt.
   --execute-next-agenda
@@ -145,6 +147,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --promotion-gate)
       mode="promotion_gate"
+      shift
+      ;;
+    --family-risk-gate)
+      mode="family_risk_gate"
       shift
       ;;
     --agenda)
@@ -435,8 +441,14 @@ PY
     ;;
   promotion_gate)
     echo "== Strategy Research Agent: promotion gate =="
-    "$PYTHON" user_data/strategy_research/promotion_gate.py
-    "$PYTHON" user_data/strategy_research/research_agenda.py
+    "$PYTHON" user_data/strategy_research/family_risk_gate.py ${extra_args[@]+"${extra_args[@]}"}
+    run_optional_script user_data/strategy_research/research_agenda.py
+    "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
+    ;;
+  family_risk_gate)
+    echo "== Strategy Research Agent: family risk gate =="
+    "$PYTHON" user_data/strategy_research/family_risk_gate.py ${extra_args[@]+"${extra_args[@]}"}
+    run_optional_script user_data/strategy_research/research_agenda.py
     "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
     ;;
   agenda)
