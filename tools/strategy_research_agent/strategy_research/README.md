@@ -128,6 +128,23 @@ It sources `~/.freqtrade_telegram_env`, runs a Binance futures ccxt preflight
 through the active proxy/VPN environment, and refuses to start if the futures
 data path is unavailable. A running process or UI pong is not enough.
 
+Before the helper starts the bot, it also runs:
+
+```bash
+user_data/strategy_research/dryrun_strategy_risk_preflight.py
+```
+
+The same check can be run manually for all registry candidates:
+
+```bash
+user_data/strategy_research/start_manual_research.sh --dryrun-risk-preflight
+```
+
+This preflight loads the strategy through Freqtrade, compares strategy-defined
+values with config overrides, and blocks dry-run startup if the final effective
+contract is not futures/isolated/50x with fixed ROI, fixed stoploss,
+exchange-side stoploss, callable custom exits, and the three-stoploss guard.
+
 Important runtime safety settings:
 
 - `ccxt_config.requests_trust_env=true`

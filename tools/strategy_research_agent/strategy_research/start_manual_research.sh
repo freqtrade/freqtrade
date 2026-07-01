@@ -7,7 +7,7 @@ PYTHON="${PYTHON:-./.venv/bin/python}"
 
 usage() {
   cat <<'EOF'
-Usage: user_data/strategy_research/start_manual_research.sh [--quick|--source-scout|--price-action-knowledge|--bilibili-transcripts|--knowledge-graph|--knowledge-guided-hypotheses|--factor-research|--factor-to-strategy|--event-study|--agent-brain|--weekly-knowledge-update|--walk-forward|--promotion-gate|--family-risk-gate|--trade-behavior|--failure-attribution|--post-run-attribution|--mature-researcher|--mature-researcher-queue|--execute-mature-researcher|--strategy-lineage|--research-memory|--memory-guided-hypotheses|--memory-guided-strategies|--preflight-only] [--extra-agent-arg ARG ...]
+Usage: user_data/strategy_research/start_manual_research.sh [--quick|--source-scout|--price-action-knowledge|--bilibili-transcripts|--knowledge-graph|--knowledge-guided-hypotheses|--factor-research|--factor-to-strategy|--event-study|--agent-brain|--weekly-knowledge-update|--walk-forward|--promotion-gate|--family-risk-gate|--dryrun-risk-preflight|--trade-behavior|--failure-attribution|--post-run-attribution|--mature-researcher|--mature-researcher-queue|--execute-mature-researcher|--strategy-lineage|--research-memory|--memory-guided-hypotheses|--memory-guided-strategies|--preflight-only] [--extra-agent-arg ARG ...]
 
 Manual entrypoint for the research-only strategy agent.
 
@@ -33,6 +33,8 @@ Modes:
   --promotion-gate   Evaluate all-family promotion readiness with family-level risk controls and refresh report/dashboard.
   --family-risk-gate
                      Same gate as promotion-gate: strategy-family router + circuit-breaker dry-run readiness simulation.
+  --dryrun-risk-preflight
+                     Verify callable strategy risk hooks, config overrides, and final effective dry-run risk settings.
   --trade-behavior  Analyze exported trades for behavior-level diagnostics.
   --failure-attribution
                      Build cross-evidence strategy failure attribution.
@@ -119,6 +121,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --family-risk-gate)
       mode="family_risk_gate"
+      shift
+      ;;
+    --dryrun-risk-preflight)
+      mode="dryrun_risk_preflight"
       shift
       ;;
     --trade-behavior)
@@ -360,6 +366,10 @@ PY
     run_promotion_experience_update
     "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
     ;;
+  dryrun_risk_preflight)
+    echo "== Strategy Research Agent: dry-run strategy risk preflight =="
+    "$PYTHON" user_data/strategy_research/dryrun_strategy_risk_preflight.py --all-registry ${extra_args[@]+"${extra_args[@]}"}
+    ;;
   trade_behavior)
     echo "== Strategy Research Agent: trade behavior analysis =="
     "$PYTHON" user_data/strategy_research/analyze_trade_behavior.py
@@ -441,6 +451,7 @@ MemStrat:   user_data/strategy_research/experiments/memory_guided_strategy_ledge
 Walk-Fwd:   user_data/strategy_research/walk_forward_summaries/latest_walk_forward_summary.md
 Promotion:  user_data/strategy_research/promotion_reports/latest_promotion_report.md
 FamilyGate: user_data/strategy_research/family_risk_gate/latest_family_risk_gate.md
+DryRisk:    user_data/strategy_research/reports/latest_dryrun_strategy_risk_preflight.md
 Behavior:   user_data/strategy_research/trade_behavior/latest_trade_behavior.md
 Failures:   user_data/strategy_research/failure_attribution/latest_failure_attribution.md
 Researcher: user_data/strategy_research/mature_researcher/latest_researcher_decision.md

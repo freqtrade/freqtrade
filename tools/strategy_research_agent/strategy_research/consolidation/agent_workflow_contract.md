@@ -113,9 +113,16 @@ Every futures dry-run or live-review candidate must satisfy:
   `BTC/USDT:USDT` 15m candles before the bot starts.
 - Preflight failure blocks startup or promotion. A bot that is `RUNNING` but
   cannot fetch futures OHLCV is considered unsafe, not healthy.
+- Startup must run the dry-run strategy risk preflight before the network
+  preflight. It must verify that strategy hooks are callable through Freqtrade,
+  config overrides are explicit, and the final effective values still satisfy
+  the fixed futures risk contract.
 - Exchange-side stoploss must be configured before live review:
   `order_types.stoploss=market`, `order_types.stoploss_on_exchange=true`, and
   futures `stoploss_price_type=mark`.
+- The strategy risk preflight must block dry-run review if ROI, stoploss,
+  50x leverage, 8h losing-trade custom exit, exchange-side stoploss, or the
+  three-stoploss StoplossGuard cannot be loaded by Freqtrade.
 - Live review requires a tiny-size operational test proving that a filled
   position receives an exchange-side stop order. Dry-run can validate config
   parsing, but it cannot prove the real exchange order exists.
