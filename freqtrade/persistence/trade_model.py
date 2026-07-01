@@ -7,6 +7,7 @@ from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from functools import cached_property
 from math import isclose
 from typing import Any, ClassVar, Optional, Self, cast
 
@@ -528,7 +529,7 @@ class LocalTrade:
             return min(filled_date)
         return None
 
-    @property
+    @cached_property
     def open_date_utc(self):
         return self.open_date.replace(tzinfo=UTC)
 
@@ -542,28 +543,28 @@ class LocalTrade:
     def close_date_utc(self):
         return self.close_date.replace(tzinfo=UTC) if self.close_date else None
 
-    @property
-    def entry_side(self) -> str:
+    @cached_property
+    def entry_side(self) -> BuySell:
         if self.is_short:
             return "sell"
         else:
             return "buy"
 
-    @property
+    @cached_property
     def exit_side(self) -> BuySell:
         if self.is_short:
             return "buy"
         else:
             return "sell"
 
-    @property
+    @cached_property
     def trade_direction(self) -> LongShort:
         if self.is_short:
             return "short"
         else:
             return "long"
 
-    @property
+    @cached_property
     def safe_base_currency(self) -> str:
         """
         Compatibility layer for asset - which can be empty for old trades.
@@ -573,7 +574,7 @@ class LocalTrade:
         except IndexError:
             return ""
 
-    @property
+    @cached_property
     def safe_quote_currency(self) -> str:
         """
         Compatibility layer for asset - which can be empty for old trades.
