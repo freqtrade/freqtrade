@@ -8,6 +8,7 @@ PID_FILE="${ROOT_DIR}/user_data/run/freqtrade_futures_dryrun_a1.pid"
 LOG_FILE="${ROOT_DIR}/user_data/logs/freqtrade_futures_dryrun_a1.log"
 NOHUP_LOG="${ROOT_DIR}/user_data/logs/freqtrade_futures_dryrun_a1.nohup.log"
 PREFLIGHT="${ROOT_DIR}/user_data/strategy_research/runtime/preflight_futures_runtime.py"
+RISK_PREFLIGHT="${ROOT_DIR}/user_data/strategy_research/dryrun_strategy_risk_preflight.py"
 ACTION="${1:-start}"
 
 mkdir -p "${ROOT_DIR}/user_data/run" "${ROOT_DIR}/user_data/logs"
@@ -96,6 +97,11 @@ if [[ ! -f "${PREFLIGHT}" ]]; then
     echo "missing runtime preflight: ${PREFLIGHT}" >&2
     exit 1
 fi
+if [[ ! -f "${RISK_PREFLIGHT}" ]]; then
+    echo "missing dry-run risk preflight: ${RISK_PREFLIGHT}" >&2
+    exit 1
+fi
+"${ROOT_DIR}/.venv/bin/python" "${RISK_PREFLIGHT}" --config "${CONFIG_FILE}"
 "${ROOT_DIR}/.venv/bin/python" "${PREFLIGHT}" --pair "BTC/USDT:USDT" --timeframe "15m"
 
 "${ROOT_DIR}/.venv/bin/python" - "${ROOT_DIR}" "${PID_FILE}" "${NOHUP_LOG}" <<'PY'

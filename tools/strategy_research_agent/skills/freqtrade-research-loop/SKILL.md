@@ -68,6 +68,7 @@ Never:
    user_data/strategy_research/start_manual_research.sh --walk-forward
    user_data/strategy_research/start_manual_research.sh --family-risk-gate
    user_data/strategy_research/start_manual_research.sh --promotion-gate
+   user_data/strategy_research/start_manual_research.sh --dryrun-risk-preflight
    ```
 
 8. **Refresh dashboard**
@@ -83,6 +84,13 @@ Never:
 - `dryrun_candidate`: only after explicit promotion gates and manual review.
 
 Promotion/family-risk gate results are research evidence even when they fail. After either gate runs, the workflow must rebuild strategy lineage, research memory, and consolidation before refreshing the dashboard.
+
+Before starting any dry-run helper, run the dry-run strategy risk preflight. It
+loads the strategy through Freqtrade, lists config overrides, and blocks startup
+unless final effective values still match the fixed futures contract: isolated
+50x, ROI `{"0":1.20,"180":1.50,"360":1.00}`, stoploss `-0.60`, exchange-side
+market stoploss on mark price, callable `custom_exit()` time-stop, and
+StoplossGuard `trade_limit=3`.
 
 ## Completion Gate
 

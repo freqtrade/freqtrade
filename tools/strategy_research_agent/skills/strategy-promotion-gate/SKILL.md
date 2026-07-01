@@ -64,6 +64,8 @@ Before dry-run review:
 - walk-forward not dependent on one lucky window
 - stress fee/slippage/funding evidence acceptable
 - strategy source is local or safely translated, not directly executed external code
+- dry-run strategy risk preflight passes after Freqtrade loads the strategy and
+  applies config overrides
 
 For scalping, add:
 - stress-fee survival
@@ -75,6 +77,9 @@ For futures, add:
 - margin/account loss math
 - liquidation distance awareness
 - circuit breakers
+- final effective runtime contract: futures isolated, 50x callback, fixed ROI,
+  fixed stoploss, exchange-side mark-price stoploss, callable time-stop custom
+  exit, and three-stoploss StoplossGuard
 
 ## Hard Blocks
 
@@ -94,6 +99,7 @@ Use when available:
 
 ```bash
 user_data/strategy_research/start_manual_research.sh --promotion-gate
+user_data/strategy_research/start_manual_research.sh --dryrun-risk-preflight
 user_data/strategy_research/start_manual_research.sh --walk-forward
 user_data/strategy_research/start_manual_research.sh --mature-researcher
 user_data/strategy_research/start_manual_research.sh --preflight-only

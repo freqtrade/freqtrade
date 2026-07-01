@@ -28,6 +28,7 @@ REQUIRED_GATES = [
     "walk_forward_validation",
     "family_risk_gate",
     "promotion_gate",
+    "dryrun_strategy_risk_preflight",
 ]
 ALLOWED_PRIMARY_ENTRY_TIMEFRAMES = {"3m", "5m", "15m"}
 FORBIDDEN_PRIMARY_ENTRY_TIMEFRAMES = {"1h", "4h", "1d"}
