@@ -4,10 +4,9 @@ Focuses on the filtering logic for closed orders with filled amount.
 """
 
 import pytest
-from datetime import datetime, UTC
 
-from freqtrade.constants import NON_OPEN_EXCHANGE_STATES, CANCELED_EXCHANGE_STATES
-from freqtrade.persistence import LocalTrade, Order, Trade, init_db
+from freqtrade.constants import NON_OPEN_EXCHANGE_STATES
+from freqtrade.persistence import Order, Trade
 from tests.conftest import create_mock_trades
 
 
@@ -16,7 +15,8 @@ from tests.conftest import create_mock_trades
 def test_select_order_only_filled_parameter(fee, is_short):
     """
     Test select_order with only_filled=True parameter.
-    - Skip orders when is_open=False and only_filled=True and (not o.filled or status not in NON_OPEN_EXCHANGE_STATES)
+    - Skip orders when is_open=False and only_filled=True and (not o.filled or
+        status not in NON_OPEN_EXCHANGE_STATES)
     """
     create_mock_trades(fee, is_short)
     trades = Trade.get_trades().all()
