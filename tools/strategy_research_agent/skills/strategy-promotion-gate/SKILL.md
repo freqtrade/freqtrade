@@ -26,6 +26,30 @@ Use when the user asks:
 | dryrun_candidate | Passed gates and ready for manual dry-run review |
 | live_candidate | Requires explicit human approval after dry-run evidence |
 
+## Live-Review PR Boundary
+
+If dry-run evidence supports live review, prepare a secret-free candidate PR.
+Do not commit local bot runtime state.
+
+Allowed in the PR:
+
+- strategy source code
+- registry/candidate status such as `dryrun_candidate` or `live_review_candidate`
+- promotion and family-risk gate summary evidence
+- dry-run/live config templates with no secrets
+- live-review checklist
+- rollback and emergency-stop runbook
+
+Never commit:
+
+- API keys or exchange secrets
+- Telegram token or chat_id
+- running process state
+- trade/runtime sqlite databases
+- full local dashboards, bulky backtest exports, or unsanitized private reports
+
+Live activation remains a separate manual approval step.
+
 ## Required Gates
 
 Before dry-run review:

@@ -139,3 +139,26 @@ Important runtime safety settings:
 Before live review, config parsing is not enough. A tiny-size exchange-side
 operation must verify that a filled futures position receives an exchange-side
 stop order.
+
+## Live-Review Candidate PR Boundary
+
+If a dry-run passes, do not commit the running bot state. Open a secret-free
+live-review candidate PR instead.
+
+Versioned artifacts may include:
+
+- strategy source code
+- registry/candidate status such as `dryrun_candidate` or `live_review_candidate`
+- promotion and family-risk gate summary evidence
+- dry-run/live config templates with no secrets
+- live-review checklist
+- rollback and emergency-stop runbook
+
+Local-only artifacts must not be committed:
+
+- API keys, exchange secrets, Telegram token, or chat_id
+- running process state
+- trade/runtime sqlite databases
+- full local dashboards, bulky backtest exports, and unsanitized private reports
+
+Live activation always remains a separate manual approval step.

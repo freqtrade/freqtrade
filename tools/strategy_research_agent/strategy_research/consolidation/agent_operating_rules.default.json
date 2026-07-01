@@ -53,6 +53,26 @@
     ],
     "rule": "A running process or UI pong is not enough. Futures runtime is healthy only when the ccxt futures data path works through the active VPN/proxy and exchange-side stoploss is configured as a network-failure backstop."
   },
+  "live_review_repository_policy": {
+    "scope": "dry-run strategies that are being considered for live review",
+    "versioned_artifacts": [
+      "strategy source code",
+      "registry or candidate status marking the strategy as dryrun_candidate or live_review_candidate",
+      "promotion and family-risk gate summary evidence",
+      "secret-free dry-run/live config templates",
+      "live-review checklist",
+      "rollback and emergency-stop runbook"
+    ],
+    "local_only_artifacts": [
+      "API keys and exchange secrets",
+      "Telegram token and chat_id",
+      "running process state",
+      "trade/runtime sqlite databases",
+      "full local dashboards and bulky backtest exports",
+      "private local reports unless explicitly sanitized"
+    ],
+    "rule": "A successful dry-run is not committed as local runtime state. Only a secret-free, auditable live-review candidate package may enter the repository, and live activation remains a separate manual approval step."
+  },
   "hard_boundaries": [
     "No knowledge-derived hypothesis can enter candidate/watchlist pools before full evidence gates.",
     "No fixed-50x strategy class can be generated directly from external knowledge or memory; factor research must first test forward-return, MFE/MAE, sample size, and side-specific expectancy unless the run is explicitly labeled negative-control.",
@@ -62,6 +82,8 @@
     "No Binance USDT-M futures dry-run or live-review startup may proceed if ccxt Binance futures preflight cannot fetch current futures data through the active runtime environment.",
     "No futures strategy may enter live review with stoploss_on_exchange disabled or without an explicit exchange-side stoploss verification plan.",
     "No strategy reaches dry-run review without manual approval after promotion gate.",
+    "No dry-run runtime state, private token, local trade database, or unsanitized full dashboard/report may be committed as live-review evidence.",
+    "A dry-run that passes review may only enter the repository as a secret-free live-review candidate package: strategy source, candidate registry status, promotion/family-risk evidence summary, config template, checklist, and rollback/emergency-stop runbook.",
     "Live trading is outside this agent flow.",
     "Dry-run/live config files must not be modified by this consolidation layer."
   ],
@@ -96,6 +118,7 @@
     "If memory avoid rules conflict with a knowledge card, downgrade to counterexample or redesign-only.",
     "Always define measurable entry, exit, invalidation, applicable regime, hostile regime, and validation requirements.",
     "For any dry-run or live-review discussion, report runtime safety status separately from strategy evidence: VPN/proxy-aware ccxt futures preflight, stoploss_on_exchange configuration, and exchange-side stop verification plan.",
+    "If a dry-run passes, prepare a live-review candidate PR with only secret-free reproducible artifacts; never commit local bot state, API credentials, Telegram credentials, runtime databases, or unsanitized full local reports.",
     "Never claim profitability from theory; only validated backtest evidence can update queues."
   ]
 }
