@@ -1,0 +1,115 @@
+{
+  "$schema": "https://schema.freqtrade.io/schema.json",
+  "max_open_trades": 1,
+  "stake_currency": "USDT",
+  "stake_amount": 50,
+  "dry_run": true,
+  "dry_run_wallet": 1000,
+  "tradable_balance_ratio": 0.50,
+  "fiat_display_currency": "USD",
+  "trading_mode": "futures",
+  "margin_mode": "isolated",
+  "cancel_open_orders_on_exit": false,
+  "timeframe": "15m",
+  "liquidation_buffer": 0.10,
+  "futures_funding_rate": 0,
+  "unfilledtimeout": {
+    "entry": 10,
+    "exit": 10,
+    "exit_timeout_count": 0,
+    "unit": "minutes"
+  },
+  "entry_pricing": {
+    "price_side": "same",
+    "use_order_book": true,
+    "order_book_top": 1,
+    "price_last_balance": 0.0,
+    "check_depth_of_market": {
+      "enabled": false,
+      "bids_to_ask_delta": 1
+    }
+  },
+  "exit_pricing": {
+    "price_side": "same",
+    "use_order_book": true,
+    "order_book_top": 1
+  },
+  "order_types": {
+    "entry": "limit",
+    "exit": "limit",
+    "emergency_exit": "market",
+    "force_entry": "market",
+    "force_exit": "market",
+    "stoploss": "market",
+    "stoploss_on_exchange": true,
+    "stoploss_on_exchange_interval": 60,
+    "stoploss_price_type": "mark"
+  },
+  "exchange": {
+    "name": "binance",
+    "key": "",
+    "secret": "",
+    "ccxt_config": {
+      "requests_trust_env": true,
+      "timeout": 30000,
+      "options": {
+        "defaultType": "future",
+        "fetchMarkets": {
+          "types": [
+            "linear"
+          ]
+        }
+      }
+    },
+    "ccxt_async_config": {
+      "aiohttp_trust_env": true,
+      "timeout": 30000,
+      "options": {
+        "defaultType": "future",
+        "fetchMarkets": {
+          "types": [
+            "linear"
+          ]
+        }
+      }
+    },
+    "pair_whitelist": [
+      "BTC/USDT:USDT",
+      "ETH/USDT:USDT"
+    ],
+    "pair_blacklist": []
+  },
+  "pairlists": [
+    {
+      "method": "StaticPairList",
+      "allow_inactive": true
+    }
+  ],
+  "telegram": {
+    "enabled": false,
+    "token": "",
+    "chat_id": ""
+  },
+  "api_server": {
+    "enabled": true,
+    "listen_ip_address": "127.0.0.1",
+    "listen_port": 8081,
+    "verbosity": "error",
+    "enable_openapi": false,
+    "jwt_secret_key": "CHANGE_ME",
+    "CORS_origins": [],
+    "username": "freqtrader",
+    "password": "CHANGE_ME",
+    "ws_token": "CHANGE_ME"
+  },
+  "bot_name": "freqtrade-futures-dryrun",
+  "db_url": "sqlite:///user_data/tradesv3_futures_dryrun.sqlite",
+  "strategy": "A1NoChaseRouter",
+  "strategy_path": "user_data/strategies/research_generated",
+  "initial_state": "running",
+  "force_entry_enable": false,
+  "internals": {
+    "process_throttle_secs": 5,
+    "heartbeat_interval": 60
+  }
+}

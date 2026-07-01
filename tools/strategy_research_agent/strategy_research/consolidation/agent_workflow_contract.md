@@ -96,3 +96,29 @@ it into a strategy hypothesis.
 ## Safety Boundary
 
 This workflow is research-only. It must not start live trading, read exchange API keys, modify dry-run/live config, or promote a theory-derived strategy without evidence gates.
+
+## Futures Runtime Safety Gate
+
+For Binance USDT-M futures, a process heartbeat, UI `pong`, or Telegram startup
+message is not enough to call dry-run or live review healthy. The Agent must
+separate strategy evidence from runtime safety.
+
+Every futures dry-run or live-review candidate must satisfy:
+
+- The runtime config must allow ccxt to use the active VPN/proxy environment:
+  `ccxt_config.requests_trust_env=true` and
+  `ccxt_async_config.aiohttp_trust_env=true`.
+- Startup must run a ccxt Binance futures preflight using the same Python
+  environment as Freqtrade. It must fetch exchange time and at least two
+  `BTC/USDT:USDT` 15m candles before the bot starts.
+- Preflight failure blocks startup or promotion. A bot that is `RUNNING` but
+  cannot fetch futures OHLCV is considered unsafe, not healthy.
+- Exchange-side stoploss must be configured before live review:
+  `order_types.stoploss=market`, `order_types.stoploss_on_exchange=true`, and
+  futures `stoploss_price_type=mark`.
+- Live review requires a tiny-size operational test proving that a filled
+  position receives an exchange-side stop order. Dry-run can validate config
+  parsing, but it cannot prove the real exchange order exists.
+
+This gate applies to all strategy families, not only A1. It exists because 50x
+futures runtime failure can turn a network problem into an unmanaged position.

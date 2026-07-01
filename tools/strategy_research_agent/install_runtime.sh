@@ -96,6 +96,8 @@ for executable in \
   "$ROOT/user_data/strategy_research/run_full_research_cycle.sh" \
   "$ROOT/user_data/strategy_research/run_strong_researcher_smoke.sh" \
   "$ROOT/user_data/strategy_research/run_weekly_knowledge_update.sh" \
+  "$ROOT/user_data/strategy_research/runtime/start_futures_dryrun.sh" \
+  "$ROOT/user_data/strategy_research/runtime/preflight_futures_runtime.py" \
   "$ROOT/user_data/strategy_research/automation/install_launchd.sh" \
   "$ROOT/user_data/strategy_research/automation/uninstall_launchd.sh" \
   "$ROOT/user_data/strategy_research/automation/status_launchd.sh"
@@ -104,5 +106,20 @@ do
     chmod +x "$executable"
   fi
 done
+
+if [[ -f "$ROOT/user_data/strategy_research/runtime/start_futures_dryrun.sh" ]] \
+  && [[ ! -f "$ROOT/user_data/start_futures_dryrun.sh" ]]; then
+  cp "$ROOT/user_data/strategy_research/runtime/start_futures_dryrun.sh" \
+    "$ROOT/user_data/start_futures_dryrun.sh"
+  chmod +x "$ROOT/user_data/start_futures_dryrun.sh"
+  echo "Installed user_data/start_futures_dryrun.sh from runtime template."
+fi
+
+if [[ -f "$ROOT/user_data/strategy_research/runtime/config_futures_dryrun.template.json" ]] \
+  && [[ ! -f "$ROOT/user_data/config_futures_dryrun.json" ]]; then
+  cp "$ROOT/user_data/strategy_research/runtime/config_futures_dryrun.template.json" \
+    "$ROOT/user_data/config_futures_dryrun.json"
+  echo "Installed user_data/config_futures_dryrun.json from runtime template; replace CHANGE_ME fields before use."
+fi
 
 echo "Installed strategy research agent runtime files into user_data/."

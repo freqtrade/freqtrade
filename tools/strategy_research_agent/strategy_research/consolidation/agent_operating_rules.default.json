@@ -37,12 +37,30 @@
     ],
     "rule": "For fixed 50x futures research, 1h can only be used as background/regime/confirmation, not as the primary entry timeframe."
   },
+  "futures_runtime_safety_policy": {
+    "scope": "all Binance USDT-M futures dry-run and live-review candidates",
+    "required_network_controls": [
+      "ccxt_config.requests_trust_env=true",
+      "ccxt_async_config.aiohttp_trust_env=true",
+      "startup must run a ccxt Binance futures preflight that fetches exchange time and at least two BTC/USDT:USDT 15m candles",
+      "preflight failure blocks bot startup or live-review promotion"
+    ],
+    "required_exchange_stop_controls": [
+      "order_types.stoploss=market",
+      "order_types.stoploss_on_exchange=true",
+      "order_types.stoploss_price_type=mark",
+      "live review must verify on the exchange that a filled test position receives an exchange-side stop order"
+    ],
+    "rule": "A running process or UI pong is not enough. Futures runtime is healthy only when the ccxt futures data path works through the active VPN/proxy and exchange-side stoploss is configured as a network-failure backstop."
+  },
   "hard_boundaries": [
     "No knowledge-derived hypothesis can enter candidate/watchlist pools before full evidence gates.",
     "No fixed-50x strategy class can be generated directly from external knowledge or memory; factor research must first test forward-return, MFE/MAE, sample size, and side-specific expectancy unless the run is explicitly labeled negative-control.",
     "No OHLCV or L2-inspired hypothesis can generate a strategy class before an event study shows edge_candidate, unless the run is explicitly labeled counterexample or negative-control.",
     "No backtest round can feed the next experiment queue until post-run attribution has identified signal, timing, exit, cost, risk, regime, and sample-size failure modes.",
     "No new fixed-50x futures strategy may use 1h or higher candles as its primary entry timeframe; use 3m/5m/15m for entry and 1h only for background confirmation.",
+    "No Binance USDT-M futures dry-run or live-review startup may proceed if ccxt Binance futures preflight cannot fetch current futures data through the active runtime environment.",
+    "No futures strategy may enter live review with stoploss_on_exchange disabled or without an explicit exchange-side stoploss verification plan.",
     "No strategy reaches dry-run review without manual approval after promotion gate.",
     "Live trading is outside this agent flow.",
     "Dry-run/live config files must not be modified by this consolidation layer."
@@ -58,7 +76,9 @@
     "regime_matrix",
     "fee_slippage_stress",
     "walk_forward_validation",
-    "promotion_gate"
+    "promotion_gate",
+    "futures_runtime_preflight",
+    "exchange_side_stoploss_gate"
   ],
   "prompt_contract": [
     "The Agent already has materials, a knowledge graph, and a self-iteration loop; frame future work as deeper integration, not as building those from zero.",
@@ -75,6 +95,7 @@
     "Use at most 1-3 active knowledge cards per hypothesis.",
     "If memory avoid rules conflict with a knowledge card, downgrade to counterexample or redesign-only.",
     "Always define measurable entry, exit, invalidation, applicable regime, hostile regime, and validation requirements.",
+    "For any dry-run or live-review discussion, report runtime safety status separately from strategy evidence: VPN/proxy-aware ccxt futures preflight, stoploss_on_exchange configuration, and exchange-side stop verification plan.",
     "Never claim profitability from theory; only validated backtest evidence can update queues."
   ]
 }

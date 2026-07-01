@@ -131,6 +131,55 @@ user_data/strategy_research/enforce_agent_workflow_gate.py
 
 这个 gate 会读取 `consolidation/agent_operating_rules.json`，如果运行区还没生成则回退到版本化默认规则 `consolidation/agent_operating_rules.default.json`。它必须成功加载知识图谱上下文、研究记忆、固化层、workflow contract 和每周知识更新，才允许继续做任何策略假设、回测、诊断或 mature researcher 队列执行。
 
+## Futures dry-run runtime safety
+
+Binance USDT-M futures dry-run/live-review is not considered healthy just
+because the process is running or the UI returns `pong`. The runtime must also
+prove that Freqtrade's ccxt async data path can reach Binance futures through
+the active VPN/proxy environment.
+
+Versioned runtime helpers live under:
+
+```text
+user_data/strategy_research/runtime/
+```
+
+After installing the runtime, the local dry-run launcher is:
+
+```bash
+user_data/start_futures_dryrun.sh start
+user_data/start_futures_dryrun.sh status
+user_data/start_futures_dryrun.sh restart
+user_data/start_futures_dryrun.sh stop
+```
+
+The launcher sources `~/.freqtrade_telegram_env`, runs a Binance futures ccxt
+preflight, and refuses to start the bot if it cannot fetch current futures data.
+The preflight can also be run directly:
+
+```bash
+.venv/bin/python user_data/strategy_research/runtime/preflight_futures_runtime.py
+```
+
+The dry-run config template is:
+
+```text
+user_data/strategy_research/runtime/config_futures_dryrun.template.json
+```
+
+It intentionally keeps secrets and API credentials blank. The important safety
+settings are:
+
+- `ccxt_config.requests_trust_env=true`
+- `ccxt_async_config.aiohttp_trust_env=true`
+- `order_types.stoploss=market`
+- `order_types.stoploss_on_exchange=true`
+- `order_types.stoploss_price_type=mark`
+
+Before live review, dry-run config parsing is not enough. A tiny-size exchange
+operation must confirm that a filled position receives an exchange-side stop
+order.
+
 真正跑完整研究循环：
 
 ```bash
