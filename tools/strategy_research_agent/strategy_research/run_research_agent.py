@@ -1578,6 +1578,12 @@ def write_report(paths: dict[str, Path], payload: dict[str, Any]) -> tuple[Path,
         )
         for item in promotion_report["verdicts"]:
             row = dict(item)
+            row.setdefault("strategy", item.get("strategy_name") or item.get("name") or "")
+            row.setdefault("verdict", item.get("state") or item.get("status") or "")
+            row.setdefault(
+                "ready_for_manual_dryrun_review",
+                item.get("ready") if "ready" in item else item.get("dryrun_ready", False),
+            )
             row["blocks"] = ", ".join(item.get("blocks", []))
             row["next_actions"] = "; ".join(item.get("next_actions", []))
             lines.append(

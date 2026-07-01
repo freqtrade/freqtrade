@@ -338,7 +338,7 @@ case "$mode" in
     echo "== Strategy Research Agent: knowledge-guided hypotheses =="
     "$PYTHON" user_data/strategy_research/build_price_action_knowledge_layer.py
     "$PYTHON" user_data/strategy_research/build_price_action_knowledge_graph.py
-    "$PYTHON" user_data/strategy_research/build_strategy_lineage.py
+    run_optional_script user_data/strategy_research/build_strategy_lineage.py
     "$PYTHON" user_data/strategy_research/build_research_memory.py
     "$PYTHON" user_data/strategy_research/plan_knowledge_guided_hypotheses.py
     "$PYTHON" user_data/strategy_research/build_research_consolidation.py
@@ -389,7 +389,7 @@ case "$mode" in
     "$PYTHON" user_data/strategy_research/generate_manual_abstention_strategies.py
     "$PYTHON" user_data/strategy_research/generate_manual_strong_confirmation_strategies.py
     "$PYTHON" user_data/strategy_research/plan_context_sources.py
-    "$PYTHON" user_data/strategy_research/build_strategy_lineage.py
+    run_optional_script user_data/strategy_research/build_strategy_lineage.py
     "$PYTHON" user_data/strategy_research/build_research_memory.py
     "$PYTHON" user_data/strategy_research/plan_memory_guided_hypotheses.py
     "$PYTHON" user_data/strategy_research/generate_memory_guided_strategies.py
@@ -519,19 +519,19 @@ PY
     ;;
   strategy_lineage)
     echo "== Strategy Research Agent: strategy lineage =="
-    "$PYTHON" user_data/strategy_research/build_strategy_lineage.py
+    run_optional_script user_data/strategy_research/build_strategy_lineage.py
     "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
     ;;
   research_memory)
     echo "== Strategy Research Agent: research memory =="
-    "$PYTHON" user_data/strategy_research/build_strategy_lineage.py
+    run_optional_script user_data/strategy_research/build_strategy_lineage.py
     "$PYTHON" user_data/strategy_research/build_research_memory.py
     "$PYTHON" user_data/strategy_research/build_research_consolidation.py
     "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
     ;;
   memory_guided_hypotheses)
     echo "== Strategy Research Agent: memory-guided hypotheses =="
-    "$PYTHON" user_data/strategy_research/build_strategy_lineage.py
+    run_optional_script user_data/strategy_research/build_strategy_lineage.py
     "$PYTHON" user_data/strategy_research/build_research_memory.py
     "$PYTHON" user_data/strategy_research/plan_memory_guided_hypotheses.py
     "$PYTHON" user_data/strategy_research/build_research_consolidation.py
@@ -539,7 +539,7 @@ PY
     ;;
   memory_guided_strategies)
     echo "== Strategy Research Agent: memory-guided strategies =="
-    "$PYTHON" user_data/strategy_research/build_strategy_lineage.py
+    run_optional_script user_data/strategy_research/build_strategy_lineage.py
     "$PYTHON" user_data/strategy_research/build_research_memory.py
     "$PYTHON" user_data/strategy_research/plan_memory_guided_hypotheses.py
     "$PYTHON" user_data/strategy_research/generate_memory_guided_strategies.py
