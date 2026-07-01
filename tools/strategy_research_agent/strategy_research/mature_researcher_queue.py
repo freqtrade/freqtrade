@@ -15,6 +15,7 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parents[2]
 AGENT_ROOT = REPO_ROOT / "user_data/strategy_research"
 DECISION_PATH = AGENT_ROOT / "mature_researcher/latest_researcher_decision.json"
+STRATEGY_REGISTRY_PATH = AGENT_ROOT / "strategy_registry.json"
 REPORT_DIR = AGENT_ROOT / "mature_researcher"
 LATEST_QUEUE_JSON = REPORT_DIR / "latest_response_queue.json"
 LATEST_QUEUE_MD = REPORT_DIR / "latest_response_queue.md"
@@ -117,6 +118,21 @@ def append_history(payload: dict[str, Any]) -> None:
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     with EXECUTION_HISTORY_JSONL.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(payload, ensure_ascii=False) + "\n")
+
+
+def load_current_registry_strategies() -> set[str]:
+    payload = load_json(STRATEGY_REGISTRY_PATH)
+    strategies = payload.get("strategies", [])
+    current: set[str] = set()
+    if not isinstance(strategies, list):
+        return current
+    for item in strategies:
+        if not isinstance(item, dict):
+            continue
+        name = item.get("strategy") or item.get("strategy_name") or item.get("name")
+        if name:
+            current.add(str(name))
+    return current
 
 
 def experiment_contains_strategy(path: Path, strategy: str) -> bool:
@@ -247,13 +263,17 @@ def build_queue(decisions: dict[str, Any], cooldown_hours: float = 6.0) -> list[
     history = load_execution_history()
     recent_24h = recent_history_by_key(history, now, 24.0)
     cooldown_recent = recent_history_by_key(history, now, cooldown_hours)
+    current_strategies = load_current_registry_strategies()
     seen_keys: set[str] = set()
     for decision in decisions.get("top_decisions", []):
+        strategy = str(decision.get("strategy", ""))
+        if current_strategies and strategy not in current_strategies:
+            continue
         experiments = decision.get("next_experiments", [])
         for rank, experiment in enumerate(experiments[:3]):
-            command, safe, runtime, skip_reason = command_for(decision.get("strategy", ""), experiment)
+            command, safe, runtime, skip_reason = command_for(strategy, experiment)
             safe, skip_reason = validate_command(command, safe, skip_reason)
-            key = queue_key(decision.get("strategy", ""), experiment, command)
+            key = queue_key(strategy, experiment, command)
             if key in seen_keys:
                 continue
             seen_keys.add(key)
@@ -271,7 +291,7 @@ def build_queue(decisions: dict[str, Any], cooldown_hours: float = 6.0) -> list[
                 QueueItem(
                     key=key,
                     priority=int(decision.get("priority", 0)) * 10 - rank,
-                    strategy=decision.get("strategy", ""),
+                    strategy=strategy,
                     experiment=experiment,
                     objective=objective_for(decision.get("diagnosis", ""), experiment),
                     command=command,
