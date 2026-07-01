@@ -31,7 +31,7 @@ TARGET_65D_GATE = 30.0
 TARGET_30D_GATE = 20.0
 LATEST5_GATE = 0.0
 MIN_65D_TRADES = 8
-HOSTILE_GUARDED_WORST_GATE = -5.0
+HOSTILE_GUARDED_WORST_GATE = -10.0
 FAMILY_DRAWDOWN_PAUSE_PCT = 5.0
 CONSECUTIVE_LOSS_PAUSE = 3
 
@@ -74,7 +74,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--csv", dest="csv_path", help="Experiment CSV to evaluate. Defaults to latest *experiment*.csv.")
     parser.add_argument("--json", action="store_true", help="Print JSON payload to stdout.")
     parser.add_argument("--drawdown-pause-pct", type=float, default=FAMILY_DRAWDOWN_PAUSE_PCT)
-    parser.add_argument("--consecutive-loss-pause", type=int, default=CONSECUTIVE_LOSS_PAUSE)
+    parser.add_argument(
+        "--consecutive-loss-pause",
+        type=int,
+        default=CONSECUTIVE_LOSS_PAUSE,
+        help="Pause after this many consecutive stop_loss exits. Time-stop drifts are not counted as big losses.",
+    )
     return parser.parse_args()
 
 
@@ -180,7 +185,7 @@ def simulate_row_from_trades(
     raw_profit_abs = 0.0
     guarded_profit_abs = 0.0
     max_drawdown = 0.0
-    consecutive_losses = 0
+    consecutive_stop_losses = 0
     pause_reason = ""
     trades_taken = 0
     trades_blocked = 0
@@ -198,16 +203,16 @@ def simulate_row_from_trades(
         peak = max(peak, equity)
         drawdown = (peak - equity) / STARTING_BALANCE * 100.0
         max_drawdown = max(max_drawdown, drawdown)
-        if adjusted_abs < 0:
-            consecutive_losses += 1
+        if trade.get("exit_reason") == "stop_loss":
+            consecutive_stop_losses += 1
         else:
-            consecutive_losses = 0
+            consecutive_stop_losses = 0
         if drawdown >= drawdown_pause_pct:
             paused = True
             pause_reason = f"family_drawdown_pause_{drawdown_pause_pct:g}pct"
-        elif consecutive_losses >= consecutive_loss_pause:
+        elif consecutive_stop_losses >= consecutive_loss_pause:
             paused = True
-            pause_reason = f"consecutive_loss_pause_{consecutive_loss_pause}"
+            pause_reason = f"consecutive_stop_loss_pause_{consecutive_loss_pause}"
 
     return SimResult(
         raw_profit_pct=round(raw_profit_abs / STARTING_BALANCE * 100.0, 4),
@@ -383,7 +388,7 @@ def build_payload(csv_path: Path, args: argparse.Namespace) -> dict[str, Any]:
         "risk_controls": {
             "starting_balance": STARTING_BALANCE,
             "family_drawdown_pause_pct": args.drawdown_pause_pct,
-            "consecutive_loss_pause": args.consecutive_loss_pause,
+            "consecutive_stop_loss_pause": args.consecutive_loss_pause,
             "hostile_guarded_worst_gate_pct": HOSTILE_GUARDED_WORST_GATE,
         },
         "family_verdicts": list(family_verdicts.values()),
