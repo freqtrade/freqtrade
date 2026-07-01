@@ -55,7 +55,12 @@ The gate requires these fixed artifacts to be loadable:
 12. Run fee/slippage/funding stress through the promotion/family gate.
 13. Run family risk gate.
 14. Run promotion gate.
-15. Update strategy lineage, research memory, dashboard, and registry.
+15. Update strategy lineage, research memory, consolidation, dashboard, and registry.
+
+Family-risk and promotion gate results are research evidence even when they
+fail. A failed gate must still rebuild lineage, research memory, and
+consolidation before the dashboard/report refresh so blockers become durable
+experience for the next loop.
 
 ## Supported Entrypoints
 

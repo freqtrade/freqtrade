@@ -236,6 +236,13 @@ run_post_run_attribution() {
   "$PYTHON" user_data/strategy_research/build_research_consolidation.py
 }
 
+run_promotion_experience_update() {
+  echo "== Strategy Research Agent: promotion experience update =="
+  run_optional_script user_data/strategy_research/build_strategy_lineage.py
+  "$PYTHON" user_data/strategy_research/build_research_memory.py
+  "$PYTHON" user_data/strategy_research/build_research_consolidation.py
+}
+
 refresh_dashboard_if_available() {
   if [[ -f user_data/strategy_research/run_research_agent.py && -f user_data/strategy_research/run_strategy_research.py ]]; then
     "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
@@ -343,12 +350,14 @@ PY
     echo "== Strategy Research Agent: promotion gate =="
     "$PYTHON" user_data/strategy_research/family_risk_gate.py ${extra_args[@]+"${extra_args[@]}"}
     run_optional_script user_data/strategy_research/research_agenda.py
+    run_promotion_experience_update
     "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
     ;;
   family_risk_gate)
     echo "== Strategy Research Agent: family risk gate =="
     "$PYTHON" user_data/strategy_research/family_risk_gate.py ${extra_args[@]+"${extra_args[@]}"}
     run_optional_script user_data/strategy_research/research_agenda.py
+    run_promotion_experience_update
     "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
     ;;
   trade_behavior)
