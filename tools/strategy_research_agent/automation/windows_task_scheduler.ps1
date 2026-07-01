@@ -10,10 +10,7 @@ $ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $AgentRoot = Resolve-Path (Join-Path $ScriptRoot "..")
 $RepoRoot = Resolve-Path (Join-Path $AgentRoot "..\..")
 $InstallScript = Join-Path $AgentRoot "install_runtime.ps1"
-$RuntimeScript = Join-Path $RepoRoot "user_data\strategy_research\run_full_research_cycle.ps1"
 $WeeklyKnowledgeScript = Join-Path $RepoRoot "user_data\strategy_research\weekly_external_knowledge_update.py"
-$DailyTaskName = "Freqtrade Strategy Research Daily"
-$WeeklyTaskName = "Freqtrade Strategy Research Weekly Aux"
 $WeeklyKnowledgeTaskName = "Freqtrade Strategy Research Weekly Knowledge"
 
 function Install-AgentRuntime {
@@ -25,30 +22,6 @@ function Install-AgentRuntime {
 
 function Register-ResearchTasks {
     Install-AgentRuntime
-
-    $dailyAction = New-ScheduledTaskAction `
-        -Execute "powershell.exe" `
-        -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$RuntimeScript`" -SkipAuxFetch" `
-        -WorkingDirectory $RepoRoot
-    $dailyTrigger = New-ScheduledTaskTrigger -Daily -At 8:30am
-    Register-ScheduledTask `
-        -TaskName $DailyTaskName `
-        -Action $dailyAction `
-        -Trigger $dailyTrigger `
-        -Description "Run local Freqtrade strategy research cycle without aux data download." `
-        -Force | Out-Null
-
-    $weeklyAction = New-ScheduledTaskAction `
-        -Execute "powershell.exe" `
-        -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$RuntimeScript`"" `
-        -WorkingDirectory $RepoRoot
-    $weeklyTrigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Sunday -At 9:15am
-    Register-ScheduledTask `
-        -TaskName $WeeklyTaskName `
-        -Action $weeklyAction `
-        -Trigger $weeklyTrigger `
-        -Description "Run local Freqtrade strategy research cycle with funding/mark aux data refresh." `
-        -Force | Out-Null
 
     $weeklyKnowledgeAction = New-ScheduledTaskAction `
         -Execute "powershell.exe" `
@@ -63,13 +36,11 @@ function Register-ResearchTasks {
         -Force | Out-Null
 
     Write-Host "Installed Windows scheduled tasks:"
-    Write-Host "- $DailyTaskName"
-    Write-Host "- $WeeklyTaskName"
     Write-Host "- $WeeklyKnowledgeTaskName"
 }
 
 function Unregister-ResearchTasks {
-    foreach ($taskName in @($DailyTaskName, $WeeklyTaskName, $WeeklyKnowledgeTaskName)) {
+    foreach ($taskName in @($WeeklyKnowledgeTaskName)) {
         $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
         if ($null -ne $task) {
             Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
@@ -81,7 +52,7 @@ function Unregister-ResearchTasks {
 }
 
 function Show-ResearchTaskStatus {
-    foreach ($taskName in @($DailyTaskName, $WeeklyTaskName, $WeeklyKnowledgeTaskName)) {
+    foreach ($taskName in @($WeeklyKnowledgeTaskName)) {
         $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
         if ($null -eq $task) {
             Write-Host "== $taskName =="

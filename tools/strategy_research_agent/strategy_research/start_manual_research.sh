@@ -7,7 +7,7 @@ PYTHON="${PYTHON:-./.venv/bin/python}"
 
 usage() {
   cat <<'EOF'
-Usage: user_data/strategy_research/start_manual_research.sh [--quick|--source-scout|--price-action-knowledge|--bilibili-transcripts|--knowledge-graph|--knowledge-guided-hypotheses|--factor-research|--factor-to-strategy|--event-study|--agent-brain|--weekly-knowledge-update|--strong-researcher-smoke|--research-iteration|--multi-timeframe-kline|--walk-forward|--promotion-gate|--family-risk-gate|--agenda|--next-agenda|--execute-next-agenda|--trade-behavior|--behavior-experiments|--behavior-variants|--failure-attribution|--post-run-attribution|--mature-researcher|--mature-researcher-queue|--execute-mature-researcher|--strategy-lineage|--research-memory|--memory-guided-hypotheses|--memory-guided-strategies|--full|--full-with-aux|--preflight-only] [--extra-agent-arg ARG ...]
+Usage: user_data/strategy_research/start_manual_research.sh [--quick|--source-scout|--price-action-knowledge|--bilibili-transcripts|--knowledge-graph|--knowledge-guided-hypotheses|--factor-research|--factor-to-strategy|--event-study|--agent-brain|--weekly-knowledge-update|--walk-forward|--promotion-gate|--family-risk-gate|--trade-behavior|--failure-attribution|--post-run-attribution|--mature-researcher|--mature-researcher-queue|--execute-mature-researcher|--strategy-lineage|--research-memory|--memory-guided-hypotheses|--memory-guided-strategies|--preflight-only] [--extra-agent-arg ARG ...]
 
 Manual entrypoint for the research-only strategy agent.
 
@@ -29,25 +29,11 @@ Modes:
   --agent-brain      Rebuild knowledge graph, research memory, knowledge/memory hypotheses, and consolidation policy.
   --weekly-knowledge-update
                      Refresh external/source knowledge weekly layer, rebuild Agent brain, and write a weekly knowledge update report.
-  --strong-researcher-smoke
-                     Run the integrated research-only scout/memory/generate/smoke loop.
-  --research-iteration
-                     Run the fixed experiment -> agent diagnosis -> improvement queue loop.
-  --multi-timeframe-kline
-                     Build 3m/5m data and test 1m composite, native 3m, and native 5m kline strategies.
   --walk-forward     Run fixed-window validation for current memory-guided strategies.
   --promotion-gate   Evaluate all-family promotion readiness with family-level risk controls and refresh report/dashboard.
   --family-risk-gate
                      Same gate as promotion-gate: strategy-family router + circuit-breaker dry-run readiness simulation.
-  --agenda           Build the next research agenda from promotion blockers.
-  --next-agenda      Select the next safe agenda item and write a dry-run receipt.
-  --execute-next-agenda
-                     Execute the next safe non-long agenda item and write a receipt.
   --trade-behavior  Analyze exported trades for behavior-level diagnostics.
-  --behavior-experiments
-                     Plan follow-up experiments from behavior diagnostics.
-  --behavior-variants
-                     Generate strategy variants from behavior experiment plans.
   --failure-attribution
                      Build cross-evidence strategy failure attribution.
   --post-run-attribution
@@ -66,8 +52,6 @@ Modes:
                      Plan next strategy hypotheses from research memory.
   --memory-guided-strategies
                      Generate isolated strategy variants from memory-guided hypotheses.
-  --full            Run preflight, update 1m OHLCV, run matrix backtests, skip aux fetch.
-  --full-with-aux   Same as --full, but also fetch funding/mark aux data.
   --preflight-only  Only check environment, data, outputs, and safety flags.
 
 Safety:
@@ -125,22 +109,6 @@ while [[ $# -gt 0 ]]; do
       mode="weekly_knowledge_update"
       shift
       ;;
-    --strong-researcher-smoke)
-      mode="strong_researcher_smoke"
-      shift
-      ;;
-    --research-iteration)
-      mode="research_iteration"
-      shift
-      ;;
-    --multi-timeframe-kline)
-      mode="multi_timeframe_kline"
-      shift
-      ;;
-    --full)
-      mode="full"
-      shift
-      ;;
     --walk-forward)
       mode="walk_forward"
       shift
@@ -153,28 +121,8 @@ while [[ $# -gt 0 ]]; do
       mode="family_risk_gate"
       shift
       ;;
-    --agenda)
-      mode="agenda"
-      shift
-      ;;
-    --next-agenda)
-      mode="next_agenda"
-      shift
-      ;;
-    --execute-next-agenda)
-      mode="execute_next_agenda"
-      shift
-      ;;
     --trade-behavior)
       mode="trade_behavior"
-      shift
-      ;;
-    --behavior-experiments)
-      mode="behavior_experiments"
-      shift
-      ;;
-    --behavior-variants)
-      mode="behavior_variants"
       shift
       ;;
     --failure-attribution)
@@ -211,10 +159,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     --memory-guided-strategies)
       mode="memory_guided_strategies"
-      shift
-      ;;
-    --full-with-aux)
-      mode="full_with_aux"
       shift
       ;;
     --preflight-only)
@@ -377,53 +321,9 @@ case "$mode" in
     echo "== Strategy Research Agent: weekly external knowledge update =="
     user_data/strategy_research/run_weekly_knowledge_update.sh --with-bilibili
     ;;
-  strong_researcher_smoke)
-    echo "== Strategy Research Agent: strong researcher smoke =="
-    user_data/strategy_research/run_strong_researcher_smoke.sh
-    ;;
-  research_iteration)
-    echo "== Strategy Research Agent: research iteration loop =="
-    "$PYTHON" user_data/strategy_research/plan_manual_trade_playbook.py
-    "$PYTHON" user_data/strategy_research/generate_manual_direction_strategies.py
-    "$PYTHON" user_data/strategy_research/generate_manual_entry_confirmation_strategies.py
-    "$PYTHON" user_data/strategy_research/generate_manual_abstention_strategies.py
-    "$PYTHON" user_data/strategy_research/generate_manual_strong_confirmation_strategies.py
-    "$PYTHON" user_data/strategy_research/plan_context_sources.py
-    run_optional_script user_data/strategy_research/build_strategy_lineage.py
-    "$PYTHON" user_data/strategy_research/build_research_memory.py
-    "$PYTHON" user_data/strategy_research/plan_memory_guided_hypotheses.py
-    "$PYTHON" user_data/strategy_research/generate_memory_guided_strategies.py
-    "$PYTHON" user_data/strategy_research/run_research_agent.py \
-      --experiment user_data/strategy_research/experiments/manual_strong_confirmation_experiment.json \
-      --timerange 20260101-20260201 \
-      ${extra_args[@]+"${extra_args[@]}"}
-    "$PYTHON" user_data/strategy_research/manual_research_review.py
-    run_post_run_attribution
-    "$PYTHON" user_data/strategy_research/agent_iteration_review.py
-    "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
-    ;;
-  multi_timeframe_kline)
-    echo "== Strategy Research Agent: multi-timeframe kline lab =="
-    "$PYTHON" user_data/strategy_research/build_resampled_futures_timeframes.py
-    "$PYTHON" user_data/strategy_research/generate_multi_timeframe_kline_strategies.py
-    "$PYTHON" user_data/strategy_research/run_research_agent.py \
-      --experiment user_data/strategy_research/experiments/multi_timeframe_kline_1m_experiment.json \
-      --timerange 20260101-20260201 \
-      ${extra_args[@]+"${extra_args[@]}"}
-    "$PYTHON" user_data/strategy_research/run_research_agent.py \
-      --experiment user_data/strategy_research/experiments/multi_timeframe_kline_3m_experiment.json \
-      --timerange 20260101-20260201 \
-      ${extra_args[@]+"${extra_args[@]}"}
-    "$PYTHON" user_data/strategy_research/run_research_agent.py \
-      --experiment user_data/strategy_research/experiments/multi_timeframe_kline_5m_experiment.json \
-      --timerange 20260101-20260201 \
-      ${extra_args[@]+"${extra_args[@]}"}
-    run_post_run_attribution
-    "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
-    ;;
   walk_forward)
     echo "== Strategy Research Agent: walk-forward validation =="
-    "$PYTHON" user_data/strategy_research/walk_forward_validator.py build --source memory_guided --limit 6
+    "$PYTHON" user_data/strategy_research/walk_forward_validator.py build --source base --limit 6
     "$PYTHON" user_data/strategy_research/run_research_agent.py \
       --experiment user_data/strategy_research/experiments/walk_forward_validation_experiment.json \
       ${extra_args[@]+"${extra_args[@]}"}
@@ -451,34 +351,9 @@ PY
     run_optional_script user_data/strategy_research/research_agenda.py
     "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
     ;;
-  agenda)
-    echo "== Strategy Research Agent: research agenda =="
-    "$PYTHON" user_data/strategy_research/research_agenda.py
-    "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
-    ;;
-  next_agenda)
-    echo "== Strategy Research Agent: next agenda dry-run =="
-    "$PYTHON" user_data/strategy_research/agenda_executor.py
-    "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
-    ;;
-  execute_next_agenda)
-    echo "== Strategy Research Agent: execute next agenda =="
-    "$PYTHON" user_data/strategy_research/agenda_executor.py --execute
-    "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
-    ;;
   trade_behavior)
     echo "== Strategy Research Agent: trade behavior analysis =="
     "$PYTHON" user_data/strategy_research/analyze_trade_behavior.py
-    "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
-    ;;
-  behavior_experiments)
-    echo "== Strategy Research Agent: behavior-driven experiments =="
-    "$PYTHON" user_data/strategy_research/plan_behavior_experiments.py
-    "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
-    ;;
-  behavior_variants)
-    echo "== Strategy Research Agent: behavior experiment strategy variants =="
-    "$PYTHON" user_data/strategy_research/generate_behavior_experiment_strategies.py
     "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
     ;;
   failure_attribution)
@@ -546,44 +421,21 @@ PY
     "$PYTHON" user_data/strategy_research/build_research_consolidation.py
     "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
     ;;
-  full)
-    echo "== Strategy Research Agent: full research cycle, aux fetch skipped =="
-    user_data/strategy_research/run_full_research_cycle.sh --skip-aux-fetch
-    ;;
-  full_with_aux)
-    echo "== Strategy Research Agent: full research cycle with aux fetch =="
-    user_data/strategy_research/run_full_research_cycle.sh
-    ;;
 esac
 
 cat <<'EOF'
 == Strategy Research Agent: outputs ==
 Dashboard:  user_data/strategy_research/dashboard/index.html
 Assessment: user_data/strategy_research/strategy_assessments/latest_strategy_assessment.md
-Matrix:     user_data/strategy_research/matrix_summaries/latest_matrix_summary.md
 MemPlan:    user_data/strategy_research/experiments/memory_guided_hypothesis_ledger.md
 MemStrat:   user_data/strategy_research/experiments/memory_guided_strategy_ledger.md
 Walk-Fwd:   user_data/strategy_research/walk_forward_summaries/latest_walk_forward_summary.md
 Promotion:  user_data/strategy_research/promotion_reports/latest_promotion_report.md
-Agenda:     user_data/strategy_research/research_agendas/latest_research_agenda.md
-AgendaRun:  user_data/strategy_research/agenda_runs/latest_agenda_run.md
+FamilyGate: user_data/strategy_research/family_risk_gate/latest_family_risk_gate.md
 Behavior:   user_data/strategy_research/trade_behavior/latest_trade_behavior.md
-BehaviorEx: user_data/strategy_research/behavior_experiments/latest_behavior_experiment_plan.md
-BehaviorVar:user_data/strategy_research/experiments/behavior_experiment_hypothesis_ledger.md
 Failures:   user_data/strategy_research/failure_attribution/latest_failure_attribution.md
 Researcher: user_data/strategy_research/mature_researcher/latest_researcher_decision.md
 ResearchQ:  user_data/strategy_research/mature_researcher/latest_response_queue.md
-IterReview: user_data/strategy_research/agent_iterations/latest_iteration_review.md
-ImproveQ:   user_data/strategy_research/agent_iterations/improvement_queue.json
-Context:    user_data/strategy_research/context_sources/latest_context_source_plan.md
-ManualPB:   user_data/strategy_research/manual_playbook/latest_manual_trade_playbook.md
-ManualDir:  user_data/strategy_research/manual_playbook/latest_manual_direction_plan.md
-ManualEnt:  user_data/strategy_research/manual_playbook/latest_manual_entry_confirmation_plan.md
-ManualAbs:  user_data/strategy_research/manual_playbook/latest_manual_abstention_plan.md
-ManualStr:  user_data/strategy_research/manual_playbook/latest_manual_strong_confirmation_plan.md
-ManualRev:  user_data/strategy_research/manual_playbook/latest_manual_research_review.md
-MultiTF:    user_data/strategy_research/manual_playbook/latest_multi_timeframe_kline_plan.md
-Resample:   user_data/strategy_research/data_updates/latest_resampled_timeframes.md
 Lineage:    user_data/strategy_research/strategy_library/latest_strategy_lineage.md
 Memory:     user_data/strategy_research/research_memory/latest_research_memory.md
 Factors:    user_data/strategy_research/factors/latest_factor_research.md

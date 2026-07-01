@@ -196,19 +196,19 @@ def command_for(strategy: str, experiment: str) -> tuple[list[str], bool, str, s
         )
     if experiment == "entry_delay_confirmation":
         return (
-            ["user_data/strategy_research/start_manual_research.sh", "--behavior-experiments"],
+            ["user_data/strategy_research/start_manual_research.sh", "--memory-guided-hypotheses"],
             True,
             "short",
             None,
         )
     if experiment == "time_stop_exit_grid":
         return (
-            ["user_data/strategy_research/start_manual_research.sh", "--behavior-variants"],
+            ["user_data/strategy_research/start_manual_research.sh", "--memory-guided-hypotheses"],
             True,
             "short",
             None,
         )
-    if experiment == "low_leverage_edge_grid":
+    if experiment == "fixed_50x_signal_edge_check":
         return (
             ["user_data/strategy_research/start_manual_research.sh", "--memory-guided-hypotheses"],
             True,
@@ -246,8 +246,8 @@ def objective_for(diagnosis: str, experiment: str) -> str:
         return "验证该策略在更高手续费压力下是否还有净 edge。"
     if experiment == "inverse_signal_retest":
         return "测试原信号是否更像反向指标，而不是继续调高杠杆。"
-    if experiment == "low_leverage_edge_grid":
-        return "先在低杠杆下证明信号本身有正期望。"
+    if experiment == "fixed_50x_signal_edge_check":
+        return "在固定 50x 合约口径下证明信号本身有正期望。"
     if experiment == "entry_delay_confirmation":
         return "测试延迟和确认是否能改善入场后的不利波动。"
     if experiment == "time_stop_exit_grid":

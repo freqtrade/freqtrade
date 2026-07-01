@@ -166,19 +166,19 @@ def build_decision(
             evidence=evidence,
             response_plan=[
                 "停止用更高杠杆放大该信号。",
-                "先固定 1x/3x/5x 低杠杆，验证信号本身是否能 PF>1。",
-                "自动测试反向信号、延迟入场、成交费压力和短持仓退出。",
+                "在固定 50x 合约口径下验证信号本身是否能形成净 edge。",
+                "自动测试反向信号、确认入场、成交费压力和短持仓退出。",
                 "若 fee stress 后仍 PF<1，整类 K 线 scalping 降级为研究失败样本。",
             ],
             next_experiments=[
                 "inverse_signal_retest",
-                "low_leverage_edge_grid",
+                "fixed_50x_signal_edge_check",
                 "fee_sensitivity_grid",
                 "entry_delay_confirmation",
                 "time_stop_exit_grid",
             ],
             next_command="user_data/strategy_research/start_manual_research.sh --mature-researcher",
-            success_gate="1x/3x/5x base-fee and stress-fee PF > 1.05, drawdown < 12%, and >=300 trades.",
+            success_gate="Fixed-50x base-fee and stress-fee adjusted return remains positive, drawdown stays within family gate, and sample size clears the current gate.",
             promotion_block="Do not promote high-frequency strategies until net expectancy is positive after fee/slippage stress.",
         )
 
@@ -200,7 +200,7 @@ def build_decision(
                 "inverse_by_direction",
                 "volatility_floor_filter",
             ],
-            next_command="user_data/strategy_research/start_manual_research.sh --behavior-experiments",
+            next_command="user_data/strategy_research/start_manual_research.sh --memory-guided-hypotheses",
             success_gate="At least one isolated direction has positive adjusted return and no hostile regime cluster.",
             promotion_block="Do not promote combined long/short strategies when both lanes are independently negative.",
         )
@@ -222,7 +222,7 @@ def build_decision(
                 "price_moves_in_favor_before_entry",
                 "mfe_mae_before_after_comparison",
             ],
-            next_command="user_data/strategy_research/start_manual_research.sh --behavior-experiments",
+            next_command="user_data/strategy_research/start_manual_research.sh --memory-guided-hypotheses",
             success_gate="avg_mae_pct falls and PF improves without reducing trades below the evaluation floor.",
             promotion_block="Do not promote strategies whose entries show persistent adverse excursion dominance.",
         )
@@ -244,7 +244,7 @@ def build_decision(
                 "slippage_stress_grid",
                 "min_edge_per_trade_filter",
             ],
-            next_command="user_data/strategy_research/run_full_research_cycle.sh --skip-aux-fetch",
+            next_command="user_data/strategy_research/start_manual_research.sh --promotion-gate",
             success_gate="Adjusted return remains positive after stress cost and funding estimate.",
             promotion_block="Do not promote cost-negative strategies even if base-fee backtest is positive.",
         )

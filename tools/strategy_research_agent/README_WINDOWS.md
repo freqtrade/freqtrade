@@ -47,20 +47,18 @@ Set `CODEX_AGENT_SKILLS_DIR` first if you want a different target.
 
 ## Run Manually
 
-Refresh with local data only:
+Run the current preflight:
 
 ```powershell
-$env:PYTHONPATH = "user_data\offline_exchange"
-.\user_data\strategy_research\run_full_research_cycle.ps1 -SkipAuxFetch
+.\.venv\Scripts\python.exe .\user_data\strategy_research\preflight_research_agent.py
+.\.venv\Scripts\python.exe .\user_data\strategy_research\enforce_agent_workflow_gate.py
 ```
 
-This generates autonomous research hypotheses, runs a short smoke backtest for them, generates failure-driven V2 iterations, smoke-tests those iterations, runs fixed-window walk-forward validation, then runs the existing base/stress matrix checks.
-
-Refresh with Binance funding/mark auxiliary data:
+Refresh the report/dashboard without rerunning backtests:
 
 ```powershell
 $env:PYTHONPATH = "user_data\offline_exchange"
-.\user_data\strategy_research\run_full_research_cycle.ps1
+.\.venv\Scripts\python.exe .\user_data\strategy_research\run_research_agent.py --skip-backtests
 ```
 
 Rebuild the strategy Agent brain:

@@ -14,15 +14,12 @@ $ExcludedTopDirs = @(
     "dashboard",
     "cost_adjustments",
     "cost_audits",
-    "matrix_summaries",
     "walk_forward_summaries",
     "promotion_candidates",
     "promotion_blocks",
     "promotion_reports",
-    "research_agendas",
-    "agenda_runs",
+    "family_risk_gate",
     "trade_behavior",
-    "behavior_experiments",
     "failure_attribution",
     "mature_researcher",
     "strategy_library",
@@ -34,15 +31,9 @@ $ExcludedTopDirs = @(
 )
 $StateDirsWithJson = @("candidates", "rejected", "watchlist")
 $ExcludedRuntimeExperimentFiles = @(
-    "experiments/autonomous_hypothesis_ledger.md",
-    "experiments/autonomous_strategy_experiment.json",
-    "experiments/autonomous_strategy_registry.json",
     "experiments/iterative_hypothesis_ledger.md",
     "experiments/iterative_strategy_experiment.json",
     "experiments/iterative_strategy_registry.json",
-    "experiments/behavior_experiment_hypothesis_ledger.md",
-    "experiments/behavior_experiment_strategy_experiment.json",
-    "experiments/behavior_experiment_strategy_registry.json",
     "experiments/memory_guided_hypothesis_ledger.md",
     "experiments/memory_guided_hypothesis_plan.json",
     "experiments/memory_guided_strategy_experiment.json",
@@ -61,9 +52,7 @@ $ExcludedRuntimeGeneratedFiles = @(
     "consolidation/agent_operating_rules.json"
 )
 $ExcludedGeneratedStrategyFiles = @(
-    "autonomous_research_strategies.py",
     "iterative_research_strategies.py",
-    "behavior_experiment_strategies.py",
     "memory_guided_research_strategies.py"
 )
 

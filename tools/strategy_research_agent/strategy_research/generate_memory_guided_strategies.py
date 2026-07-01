@@ -19,7 +19,6 @@ GENERATED_FILE = GENERATED_DIR / "memory_guided_research_strategies.py"
 REGISTRY_PATH = AGENT_ROOT / "experiments/memory_guided_strategy_registry.json"
 EXPERIMENT_PATH = AGENT_ROOT / "experiments/memory_guided_strategy_experiment.json"
 LEDGER_PATH = AGENT_ROOT / "experiments/memory_guided_strategy_ledger.md"
-AUTONOMOUS_REGISTRY_PATH = AGENT_ROOT / "experiments/autonomous_strategy_registry.json"
 VERIFICATION_ONLY_BLOCKERS = {"bias_checks_missing", "lookahead_or_recursive_unverified"}
 
 
@@ -33,13 +32,6 @@ def parse_args() -> argparse.Namespace:
 
 
 def load_json(path: Path) -> dict[str, Any]:
-    with path.open("r", encoding="utf-8") as handle:
-        return json.load(handle)
-
-
-def load_json_if_exists(path: Path) -> dict[str, Any]:
-    if not path.exists():
-        return {}
     with path.open("r", encoding="utf-8") as handle:
         return json.load(handle)
 
@@ -119,15 +111,14 @@ def variant_source(item: dict[str, Any], class_name: str) -> list[str]:
         f"class {class_name}({base}):",
         f"    \"\"\"Memory-guided variant for blocker: {blocker}.\"\"\"",
         "",
+        '    minimal_roi = {"0": 1.20, "180": 1.50, "360": 1.00}',
+        "    stoploss = -0.60",
+        "",
+        "    def leverage(self, pair, current_time, current_rate, proposed_leverage, max_leverage, side, **kwargs):",
+        "        return min(50.0, max_leverage)",
+        "",
     ]
     if blocker in {"cost_evidence_missing", "cost_not_estimated", "negative_after_cost", "stress_cost_failure"}:
-        lines.extend(
-            [
-                '    minimal_roi = {"240": 0.0, "60": 0.012, "0": 0.024}',
-                "    stoploss = -0.065",
-                "",
-            ]
-        )
         lines.extend(
             filter_method(
                 [
@@ -155,13 +146,6 @@ def variant_source(item: dict[str, Any], class_name: str) -> list[str]:
             )
         )
     elif blocker in {"walk_forward_not_passed", "loss_exit_quality", "weak_profit_factor"}:
-        lines.extend(
-            [
-                '    minimal_roi = {"180": 0.0, "45": 0.009, "0": 0.017}',
-                "    stoploss = -0.055",
-                "",
-            ]
-        )
         lines.extend(
             filter_method(
                 [
@@ -221,20 +205,14 @@ def build_source(hypotheses: list[dict[str, Any]]) -> tuple[str, list[dict[str, 
 
 
 def build_experiment(registry: list[dict[str, Any]], timerange: str, smoke_timerange: str) -> dict[str, Any]:
-    autonomous = load_json_if_exists(AUTONOMOUS_REGISTRY_PATH)
-    seed_strategies = [
-        item["name"]
-        for item in autonomous.get("strategies", [])
-        if item.get("name")
-    ]
     memory_strategies = [item["name"] for item in registry]
-    strategies = list(dict.fromkeys(seed_strategies + memory_strategies))
+    strategies = list(dict.fromkeys(memory_strategies))
     return {
-        "id": "research_iteration_strategy_lab",
-        "title": "Research iteration seed and memory-guided strategy variants",
+        "id": "memory_guided_strategy_lab",
+        "title": "Memory-guided strategy variants",
         "profile_ref": "strategy_registry.json",
         "strategy_path": "user_data/strategies/research_generated",
-        "timeframes": ["1m"],
+        "timeframes": ["15m"],
         "timeranges": [timerange],
         "matrix": {
             "timeranges": [
@@ -245,13 +223,12 @@ def build_experiment(registry: list[dict[str, Any]], timerange: str, smoke_timer
         "fee": 0.0005,
         "strategies": strategies,
         "strategy_groups": {
-            "autonomous_seed": seed_strategies,
             "memory_guided": memory_strategies,
         },
         "checks": {"backtesting": True, "recursive_analysis": False, "lookahead_analysis": False},
         "notes": [
-            "Generated from autonomous seed families plus memory-guided hypotheses.",
-            "The seed group preserves exploration breadth when memory-guided variants become too sparse.",
+            "Generated only from memory-guided hypotheses after research memory and knowledge graph are rebuilt.",
+            "Generated classes explicitly lock ROI, stoploss, and 50x leverage to the current futures risk policy.",
             "Verification-only blockers are skipped by the code generator.",
             "Promotion requires scorecard, matrix, walk-forward, cost, and bias checks.",
         ],
@@ -294,7 +271,6 @@ def main() -> None:
         "generated_strategy_file": rel(GENERATED_FILE),
         "research_mode": "memory_guided_strategy_generation",
         "strategies": registry_entries,
-        "seed_strategy_source": rel(AUTONOMOUS_REGISTRY_PATH) if AUTONOMOUS_REGISTRY_PATH.exists() else None,
         "skipped_hypotheses": skipped,
     }
     experiment = build_experiment(registry_entries, args.timerange, args.smoke_timerange)

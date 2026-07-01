@@ -18,7 +18,7 @@ SUMMARY_DIR = AGENT_ROOT / "walk_forward_summaries"
 LATEST_SUMMARY_JSON = SUMMARY_DIR / "latest_walk_forward_summary.json"
 LATEST_SUMMARY_MD = SUMMARY_DIR / "latest_walk_forward_summary.md"
 ITERATIVE_REGISTRY = AGENT_ROOT / "experiments/iterative_strategy_registry.json"
-AUTONOMOUS_REGISTRY = AGENT_ROOT / "experiments/autonomous_strategy_registry.json"
+MEMORY_GUIDED_REGISTRY = AGENT_ROOT / "experiments/memory_guided_strategy_registry.json"
 BASE_REGISTRY = AGENT_ROOT / "strategy_registry.json"
 
 
@@ -37,8 +37,8 @@ def parse_args() -> argparse.Namespace:
     build = sub.add_parser("build", help="Build a walk-forward experiment JSON.")
     build.add_argument(
         "--source",
-        choices=["iterative", "autonomous", "base", "all"],
-        default="iterative",
+        choices=["memory_guided", "iterative", "base", "all"],
+        default="base",
         help="Strategy universe for the walk-forward experiment.",
     )
     build.add_argument("--limit", type=int, default=6)
@@ -63,10 +63,10 @@ def registry_names(path: Path) -> list[str]:
 
 def strategy_universe(source: str, limit: int) -> list[str]:
     names: list[str] = []
+    if source in {"memory_guided", "all"}:
+        names.extend(registry_names(MEMORY_GUIDED_REGISTRY))
     if source in {"iterative", "all"}:
         names.extend(registry_names(ITERATIVE_REGISTRY))
-    if source in {"autonomous", "all"}:
-        names.extend(registry_names(AUTONOMOUS_REGISTRY))
     if source in {"base", "all"}:
         names.extend(registry_names(BASE_REGISTRY))
     deduped = list(dict.fromkeys(names))
@@ -82,7 +82,7 @@ def build_experiment(source: str, limit: int) -> dict[str, Any]:
         "title": "Walk-forward validation across fixed half-year windows",
         "profile_ref": "strategy_registry.json",
         "strategy_path": "user_data/strategies/research_generated",
-        "timeframes": ["1m"],
+        "timeframes": ["15m"],
         "timeranges": ["20240101-20260622"],
         "matrix": {"timeranges": WINDOWS},
         "fee": 0.0005,

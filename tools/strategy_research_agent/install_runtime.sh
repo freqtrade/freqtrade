@@ -93,8 +93,6 @@ fi
 
 for executable in \
   "$ROOT/user_data/strategy_research/run_daily_research.sh" \
-  "$ROOT/user_data/strategy_research/run_full_research_cycle.sh" \
-  "$ROOT/user_data/strategy_research/run_strong_researcher_smoke.sh" \
   "$ROOT/user_data/strategy_research/run_weekly_knowledge_update.sh" \
   "$ROOT/user_data/strategy_research/runtime/start_futures_dryrun.sh" \
   "$ROOT/user_data/strategy_research/runtime/preflight_futures_runtime.py" \

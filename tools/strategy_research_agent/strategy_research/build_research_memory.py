@@ -148,7 +148,7 @@ def build_next_focus(agenda: dict[str, Any], nodes: list[dict[str, Any]]) -> lis
                     "blocker": item.get("failure_attribution", {}).get("top_mode"),
                     "objective": first_action(item),
                     "success_gate": item.get("success_gate") or "Improve evidence without violating safety gates.",
-                    "next_command": "user_data/strategy_research/start_manual_research.sh --behavior-experiments",
+                    "next_command": "user_data/strategy_research/start_manual_research.sh --memory-guided-hypotheses",
                     "source": "strategy_lineage",
                 }
             )

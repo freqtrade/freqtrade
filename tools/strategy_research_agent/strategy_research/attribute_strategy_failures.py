@@ -189,13 +189,12 @@ def build_payload() -> dict[str, Any]:
     assessment = load_json(AGENT_ROOT / "strategy_assessments/latest_strategy_assessment.json")
     promotion = load_json(AGENT_ROOT / "promotion_reports/latest_promotion_report.json")
     behavior = load_json(AGENT_ROOT / "trade_behavior/latest_trade_behavior.json")
-    experiment_plan = load_json(AGENT_ROOT / "behavior_experiments/latest_behavior_experiment_plan.json")
 
     scorecards = index_by(assessment.get("scorecards", []))
     promotions = index_by(promotion.get("verdicts", []))
     behaviors = index_by(behavior.get("summaries", []))
-    plans_by_strategy = group_plans(experiment_plan.get("plans", []))
-    strategies = sorted(set(scorecards) | set(promotions) | set(behaviors) | set(plans_by_strategy))
+    plans_by_strategy: dict[str, list[dict[str, Any]]] = {}
+    strategies = sorted(set(scorecards) | set(promotions) | set(behaviors))
     attributions = [
         asdict(
             attribute_one(
@@ -224,7 +223,6 @@ def build_payload() -> dict[str, Any]:
             "strategy_assessment": rel(AGENT_ROOT / "strategy_assessments/latest_strategy_assessment.json"),
             "promotion_report": rel(AGENT_ROOT / "promotion_reports/latest_promotion_report.json"),
             "trade_behavior": rel(AGENT_ROOT / "trade_behavior/latest_trade_behavior.json"),
-            "behavior_experiment_plan": rel(AGENT_ROOT / "behavior_experiments/latest_behavior_experiment_plan.json"),
         },
     }
 

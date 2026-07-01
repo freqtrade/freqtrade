@@ -63,12 +63,6 @@ Override with `CODEX_AGENT_SKILLS_DIR` when needed.
 
 ## Run
 
-Manual research cycle:
-
-```bash
-user_data/strategy_research/start_manual_research.sh --full
-```
-
 Quick manual refresh without rerunning backtests:
 
 ```bash
@@ -99,23 +93,10 @@ This refreshes external/source knowledge, optionally refreshes Bilibili subtitle
 user_data/strategy_research/knowledge_updates/latest_weekly_knowledge_update.md
 ```
 
-Integrated strong researcher smoke loop:
+Rebuild the Agent brain prerequisites:
 
 ```bash
-user_data/strategy_research/start_manual_research.sh --strong-researcher-smoke
-```
-
-Fixed research iteration loop:
-
-```bash
-user_data/strategy_research/start_manual_research.sh --research-iteration
-```
-
-This runs the agent loop as `autonomous seed generation -> memory-guided generation -> experiment -> strategy result summary -> researcher diagnosis -> response queue -> agent iteration review`. The review writes the current researcher weaknesses and the next agent-upgrade queue to:
-
-```text
-user_data/strategy_research/agent_iterations/latest_iteration_review.md
-user_data/strategy_research/agent_iterations/improvement_queue.json
+user_data/strategy_research/start_manual_research.sh --agent-brain
 ```
 
 Build senior researcher diagnoses and next-experiment decisions:
@@ -132,18 +113,6 @@ user_data/strategy_research/start_manual_research.sh --execute-mature-researcher
 ```
 
 The response queue records execution history and skips duplicate `strategy + experiment + command` items inside its cooldown window, so long research loops rotate instead of repeatedly executing the same action.
-
-Autonomous hypothesis generation plus short smoke backtests:
-
-```bash
-user_data/strategy_research/start_manual_research.sh --autonomous-smoke
-```
-
-Failure-driven V2 generation plus short smoke backtests:
-
-```bash
-user_data/strategy_research/start_manual_research.sh --iterate-smoke
-```
 
 Walk-forward validation across fixed calendar windows:
 
@@ -164,34 +133,10 @@ Equivalent explicit entrypoint:
 user_data/strategy_research/start_manual_research.sh --family-risk-gate
 ```
 
-Build the next research agenda from promotion blockers:
-
-```bash
-user_data/strategy_research/start_manual_research.sh --agenda
-```
-
-Select the next agenda item without executing it:
-
-```bash
-user_data/strategy_research/start_manual_research.sh --next-agenda
-```
-
 Analyze exported trades for behavior-level diagnostics:
 
 ```bash
 user_data/strategy_research/start_manual_research.sh --trade-behavior
-```
-
-Plan follow-up experiments from behavior diagnostics:
-
-```bash
-user_data/strategy_research/start_manual_research.sh --behavior-experiments
-```
-
-Generate strategy variants from behavior experiment plans:
-
-```bash
-user_data/strategy_research/start_manual_research.sh --behavior-variants
 ```
 
 Build cross-evidence failure attribution:
@@ -238,12 +183,6 @@ Preflight only:
 user_data/strategy_research/start_manual_research.sh --preflight-only
 ```
 
-Lower-level full cycle:
-
-```bash
-user_data/strategy_research/run_full_research_cycle.sh --skip-aux-fetch
-```
-
 Refresh report/dashboard without rerunning backtests:
 
 ```bash
@@ -258,8 +197,6 @@ user_data/strategy_research/automation/install_launchd.sh
 
 The launchd templates include:
 
-- daily research cycle
-- weekly futures auxiliary-data cycle
 - weekly external knowledge update
 
 On Windows, use `README_WINDOWS.md` for the PowerShell cycle runner and Task Scheduler installation.
@@ -270,20 +207,15 @@ On Windows, use `README_WINDOWS.md` for the PowerShell cycle runner and Task Sch
 - No live trading startup.
 - No live API key access.
 - No generated reports, market data, or local credentials should be committed.
-- Autonomous strategies are generated from auditable local blueprints, not opaque external code.
-- Iterated strategies must record the failed parent strategy, previous metrics, and the reason for the change.
+- Generated strategies must come from knowledge graph, research memory, factor/event evidence, and explicit strategy-family contracts.
+- Memory-guided variants must lock the current futures risk policy: isolated USDT-M futures, 50x cap, ROI `{"0":1.20,"180":1.50,"360":1.00}`, and stoploss `-0.60`.
 - Walk-forward validation must reject strategies that only work in one favorable calendar window.
 - Promotion gate only records readiness for manual dry-run review; it never starts dry-run/live trading.
 - Promotion is evaluated by strategy family: target-regime edge may be specialized, but hostile-regime losses must be contained by router, cooldown, drawdown, and consecutive stop-loss circuit breakers.
-- Research agenda turns promotion blockers into auditable next experiments and commands.
-- Agenda execution is allowlisted; the default `--next-agenda` mode writes a receipt without running a command.
 - External source scouting queues untrusted online/open-source material for bounded snapshot, review, and isolated translation.
-- Strong researcher smoke runs source scouting, lineage, memory, hypothesis planning, strategy generation, Freqtrade discovery, smoke backtesting, and report refresh in one research-only loop.
 - Trade behavior analysis explains wins, losses, long/short skew, stop-loss exits, and entry excursion quality.
-- Behavior-driven experiment planning turns those diagnostics into concrete next variants to test.
-- Behavior variants turn experiment plans into isolated, auditable Freqtrade strategy subclasses.
-- Failure attribution combines scorecards, promotion blockers, trade behavior, and experiment plans into ranked root causes.
-- Strategy lineage links base strategies, generated variants, behavior experiments, candidate pools, promotion blockers, and failure modes into a reusable research library.
+- Failure attribution combines scorecards, promotion blockers, and trade behavior into ranked root causes.
+- Strategy lineage links base strategies, generated variants, candidate pools, promotion blockers, and failure modes into a reusable research library.
 - Research memory turns current evidence into next-focus items, avoid patterns, knowledge gaps, and durable research rules.
 - Memory-guided hypotheses convert that memory into auditable next strategy-design plans with explicit blockers and success gates.
 - Memory-guided strategy variants turn actionable non-verification plans into isolated Freqtrade subclasses.

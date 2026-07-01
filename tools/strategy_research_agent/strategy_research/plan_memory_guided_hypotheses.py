@@ -215,7 +215,7 @@ def build_hypotheses(memory: dict[str, Any], lineage: dict[str, Any], graph_cont
                 "knowledge_guidance": knowledge_guidance(blocker, objective, graph_context) if graph_context else {},
                 "proposed_changes": template,
                 "success_gate": focus.get("success_gate") or success_gate(blocker),
-                "next_command": focus.get("next_command") or "user_data/strategy_research/start_manual_research.sh --behavior-variants",
+                "next_command": focus.get("next_command") or "user_data/strategy_research/start_manual_research.sh --memory-guided-strategies",
                 "risk_notes": "Research-only plan. Strategy family and regime contract are mandatory before code generation. Do not raise leverage or promote without passing scorecard, matrix, walk-forward, cost, and bias gates.",
             }
         )
@@ -226,7 +226,7 @@ def build_experiment(hypotheses: list[dict[str, Any]]) -> dict[str, Any]:
     return {
         "id": "memory_guided_strategy_research",
         "description": "Memory-guided strategy hypotheses. Generate concrete strategy variants from these plans before backtesting.",
-        "timeframes": ["1m"],
+        "timeframes": ["15m"],
         "timeranges": ["20240101-20260622"],
         "fee": 0.0006,
         "strategies": [item["strategy"] for item in hypotheses],

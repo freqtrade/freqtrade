@@ -31,14 +31,8 @@ DEFAULT_REGISTRY = AGENT_ROOT / "strategy_registry.json"
 DEFAULT_EXPERIMENT = AGENT_ROOT / "experiments/btc_eth_futures_core_matrix.json"
 GENERATED_VARIANT_REGISTRY = AGENT_ROOT / "experiments/generated_variant_registry.json"
 SOURCE_TRANSLATED_REGISTRY = AGENT_ROOT / "experiments/source_translated_registry.json"
-BEHAVIOR_EXPERIMENT_REGISTRY = AGENT_ROOT / "experiments/behavior_experiment_strategy_registry.json"
 MEMORY_GUIDED_REGISTRY = AGENT_ROOT / "experiments/memory_guided_strategy_registry.json"
 CONTEXT_SOURCE_REGISTRY = AGENT_ROOT / "context_sources/context_source_strategy_registry.json"
-MANUAL_DIRECTION_REGISTRY = AGENT_ROOT / "experiments/manual_direction_strategy_registry.json"
-MANUAL_ENTRY_REGISTRY = AGENT_ROOT / "experiments/manual_entry_confirmation_strategy_registry.json"
-MANUAL_ABSTENTION_REGISTRY = AGENT_ROOT / "experiments/manual_abstention_strategy_registry.json"
-MANUAL_STRONG_CONFIRMATION_REGISTRY = AGENT_ROOT / "experiments/manual_strong_confirmation_strategy_registry.json"
-MULTI_TIMEFRAME_KLINE_REGISTRY = AGENT_ROOT / "experiments/multi_timeframe_kline_strategy_registry.json"
 LOOKAHEAD_CONFIG_OVERRIDE = AGENT_ROOT / "config_lookahead_pricing_override.json"
 
 
@@ -311,14 +305,8 @@ def strategy_metadata(registry: dict[str, Any]) -> dict[str, dict[str, Any]]:
     for path in [
         GENERATED_VARIANT_REGISTRY,
         SOURCE_TRANSLATED_REGISTRY,
-        BEHAVIOR_EXPERIMENT_REGISTRY,
         MEMORY_GUIDED_REGISTRY,
         CONTEXT_SOURCE_REGISTRY,
-        MANUAL_DIRECTION_REGISTRY,
-        MANUAL_ENTRY_REGISTRY,
-        MANUAL_ABSTENTION_REGISTRY,
-        MANUAL_STRONG_CONFIRMATION_REGISTRY,
-        MULTI_TIMEFRAME_KLINE_REGISTRY,
     ]:
         if path.exists():
             generated = load_json(path)
@@ -506,44 +494,8 @@ def load_latest_promotion_report() -> dict[str, Any] | None:
     return payload
 
 
-def load_latest_research_agenda() -> dict[str, Any] | None:
-    path = AGENT_ROOT / "research_agendas/latest_research_agenda.json"
-    if not path.exists():
-        return None
-    try:
-        payload = load_json(path)
-    except json.JSONDecodeError:
-        return None
-    payload["_path"] = str(path.relative_to(REPO_ROOT))
-    return payload
-
-
-def load_latest_agenda_run() -> dict[str, Any] | None:
-    path = AGENT_ROOT / "agenda_runs/latest_agenda_run.json"
-    if not path.exists():
-        return None
-    try:
-        payload = load_json(path)
-    except json.JSONDecodeError:
-        return None
-    payload["_path"] = str(path.relative_to(REPO_ROOT))
-    return payload
-
-
 def load_latest_trade_behavior() -> dict[str, Any] | None:
     path = AGENT_ROOT / "trade_behavior/latest_trade_behavior.json"
-    if not path.exists():
-        return None
-    try:
-        payload = load_json(path)
-    except json.JSONDecodeError:
-        return None
-    payload["_path"] = str(path.relative_to(REPO_ROOT))
-    return payload
-
-
-def load_latest_behavior_experiment_plan() -> dict[str, Any] | None:
-    path = AGENT_ROOT / "behavior_experiments/latest_behavior_experiment_plan.json"
     if not path.exists():
         return None
     try:
@@ -580,30 +532,6 @@ def load_latest_mature_researcher() -> dict[str, Any] | None:
 
 def load_latest_mature_researcher_queue() -> dict[str, Any] | None:
     path = AGENT_ROOT / "mature_researcher/latest_response_queue.json"
-    if not path.exists():
-        return None
-    try:
-        payload = load_json(path)
-    except json.JSONDecodeError:
-        return None
-    payload["_path"] = str(path.relative_to(REPO_ROOT))
-    return payload
-
-
-def load_latest_iteration_review() -> dict[str, Any] | None:
-    path = AGENT_ROOT / "agent_iterations/latest_iteration_review.json"
-    if not path.exists():
-        return None
-    try:
-        payload = load_json(path)
-    except json.JSONDecodeError:
-        return None
-    payload["_path"] = str(path.relative_to(REPO_ROOT))
-    return payload
-
-
-def load_latest_context_source_plan() -> dict[str, Any] | None:
-    path = AGENT_ROOT / "context_sources/latest_context_source_plan.json"
     if not path.exists():
         return None
     try:
@@ -936,33 +864,6 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
             f"<td>{html.escape('; '.join(item.get('next_actions', [])))}</td>"
             "</tr>"
         )
-    agenda_rows = []
-    research_agenda = payload.get("research_agenda") or {}
-    for item in research_agenda.get("top_priorities", []):
-        agenda_rows.append(
-            "<tr>"
-            f"<td>{item.get('priority')}</td>"
-            f"<td>{html.escape(item.get('strategy', ''))}</td>"
-            f"<td>{html.escape(item.get('blocker', ''))}</td>"
-            f"<td>{html.escape(item.get('objective', ''))}</td>"
-            f"<td><code>{html.escape(item.get('next_command', ''))}</code></td>"
-            f"<td>{html.escape(item.get('success_gate', ''))}</td>"
-            "</tr>"
-        )
-    agenda_run = payload.get("agenda_run") or {}
-    agenda_run_item = agenda_run.get("selected_item") or {}
-    agenda_run_rows = []
-    if agenda_run:
-        agenda_run_rows.append(
-            "<tr>"
-            f"<td>{html.escape(agenda_run.get('status', ''))}</td>"
-            f"<td>{html.escape(agenda_run.get('mode', ''))}</td>"
-            f"<td>{html.escape(agenda_run_item.get('strategy', ''))}</td>"
-            f"<td>{html.escape(agenda_run_item.get('blocker', ''))}</td>"
-            f"<td><code>{html.escape(agenda_run.get('command') or '')}</code></td>"
-            f"<td>{agenda_run.get('returncode')}</td>"
-            "</tr>"
-        )
     trade_behavior_rows = []
     trade_behavior = payload.get("trade_behavior") or {}
     for item in trade_behavior.get("summaries", []):
@@ -980,18 +881,6 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
             f"<td>{item.get('avg_mfe_pct')}</td>"
             f"<td>{item.get('avg_mae_pct')}</td>"
             f"<td>{html.escape('; '.join(item.get('diagnostics', [])))}</td>"
-            "</tr>"
-        )
-    behavior_experiment_rows = []
-    behavior_experiments = payload.get("behavior_experiments") or {}
-    for item in behavior_experiments.get("plans", []):
-        behavior_experiment_rows.append(
-            "<tr>"
-            f"<td>{item.get('priority')}</td>"
-            f"<td>{html.escape(item.get('strategy', ''))}</td>"
-            f"<td>{html.escape(item.get('experiment_id', ''))}</td>"
-            f"<td>{html.escape(item.get('hypothesis', ''))}</td>"
-            f"<td>{html.escape(item.get('success_gate', ''))}</td>"
             "</tr>"
         )
     failure_attribution_rows = []
@@ -1037,30 +926,6 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
             f"<td>{html.escape(item.get('skip_reason') or '')}</td>"
             f"<td>{html.escape(item.get('expected_runtime', ''))}</td>"
             f"<td><code>{html.escape(' '.join(item.get('command', [])))}</code></td>"
-            "</tr>"
-        )
-    iteration_issue_rows = []
-    iteration_review = payload.get("iteration_review") or {}
-    for item in iteration_review.get("agent_issues", [])[:10]:
-        iteration_issue_rows.append(
-            "<tr>"
-            f"<td>{item.get('priority')}</td>"
-            f"<td>{html.escape(item.get('issue_id', ''))}</td>"
-            f"<td>{html.escape(item.get('status', ''))}</td>"
-            f"<td>{html.escape(item.get('diagnosis', ''))}</td>"
-            f"<td>{html.escape(item.get('proposed_upgrade', ''))}</td>"
-            f"<td>{html.escape(item.get('success_gate', ''))}</td>"
-            "</tr>"
-        )
-    context_source_rows = []
-    context_source_plan = payload.get("context_source_plan") or {}
-    for item in context_source_plan.get("research_tracks", []):
-        context_source_rows.append(
-            "<tr>"
-            f"<td>{html.escape(item.get('id', ''))}</td>"
-            f"<td>{html.escape(item.get('status', ''))}</td>"
-            f"<td>{html.escape(item.get('hypothesis', ''))}</td>"
-            f"<td>{html.escape(item.get('success_gate', ''))}</td>"
             "</tr>"
         )
     family_diversity_rows = []
@@ -1231,28 +1096,10 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
       </table>
     </section>
     <section>
-      <h2>研究议程</h2>
-      <table>
-        <thead><tr><th>Priority</th><th>Strategy</th><th>Blocker</th><th>Objective</th><th>Next Command</th><th>Success Gate</th></tr></thead>
-        <tbody>{''.join(agenda_rows)}</tbody>
-      </table>
-      <table>
-        <thead><tr><th>Status</th><th>Mode</th><th>Strategy</th><th>Blocker</th><th>Command</th><th>Return Code</th></tr></thead>
-        <tbody>{''.join(agenda_run_rows)}</tbody>
-      </table>
-    </section>
-    <section>
       <h2>交易行为分析</h2>
       <table>
         <thead><tr><th>Strategy</th><th>Trades</th><th>Win %</th><th>Profit Abs</th><th>PF</th><th>Payoff</th><th>Avg Dur</th><th>Long/Short</th><th>Stop Losses</th><th>MFE %</th><th>MAE %</th><th>Diagnostics</th></tr></thead>
         <tbody>{''.join(trade_behavior_rows)}</tbody>
-      </table>
-    </section>
-    <section>
-      <h2>行为驱动实验计划</h2>
-      <table>
-        <thead><tr><th>Priority</th><th>Strategy</th><th>Experiment</th><th>Hypothesis</th><th>Success Gate</th></tr></thead>
-        <tbody>{''.join(behavior_experiment_rows)}</tbody>
       </table>
     </section>
     <section>
@@ -1271,22 +1118,6 @@ def render_dashboard(paths: dict[str, Path], payload: dict[str, Any]) -> Path:
       <table>
         <thead><tr><th>Priority</th><th>Strategy</th><th>Experiment</th><th>Objective</th><th>Safe</th><th>Attempts 24h</th><th>Last</th><th>Cooldown Until</th><th>Skip Reason</th><th>Runtime</th><th>Command</th></tr></thead>
         <tbody>{''.join(mature_queue_rows)}</tbody>
-      </table>
-    </section>
-    <section>
-      <h2>Agent 迭代复盘</h2>
-      <p>Source: <code>{html.escape(iteration_review.get('_path', ''))}</code></p>
-      <table>
-        <thead><tr><th>Priority</th><th>Issue</th><th>Status</th><th>Diagnosis</th><th>Proposed Upgrade</th><th>Success Gate</th></tr></thead>
-        <tbody>{''.join(iteration_issue_rows)}</tbody>
-      </table>
-    </section>
-    <section>
-      <h2>Context Source Plan</h2>
-      <p>Source: <code>{html.escape(context_source_plan.get('_path', ''))}</code></p>
-      <table>
-        <thead><tr><th>Track</th><th>Status</th><th>Hypothesis</th><th>Success Gate</th></tr></thead>
-        <tbody>{''.join(context_source_rows)}</tbody>
       </table>
     </section>
     <section>
@@ -1591,43 +1422,6 @@ def write_report(paths: dict[str, Path], payload: dict[str, Any]) -> tuple[Path,
                     **row
                 )
             )
-    research_agenda = payload.get("research_agenda") or {}
-    if research_agenda.get("top_priorities"):
-        lines.extend(
-            [
-                "",
-                "## Research Agenda",
-                "",
-                "| Priority | Strategy | Blocker | Objective | Next Command | Success Gate |",
-                "|---:|---|---|---|---|---|",
-            ]
-        )
-        for item in research_agenda["top_priorities"]:
-            lines.append(
-                "| {priority} | {strategy} | {blocker} | {objective} | `{next_command}` | {success_gate} |".format(
-                    **item
-                )
-            )
-    agenda_run = payload.get("agenda_run") or {}
-    if agenda_run:
-        item = agenda_run.get("selected_item") or {}
-        lines.extend(
-            [
-                "",
-                "## Agenda Run",
-                "",
-                "| Status | Mode | Strategy | Blocker | Command | Return Code |",
-                "|---|---|---|---|---|---:|",
-                "| {status} | {mode} | {strategy} | {blocker} | `{command}` | {returncode} |".format(
-                    status=agenda_run.get("status"),
-                    mode=agenda_run.get("mode"),
-                    strategy=item.get("strategy", ""),
-                    blocker=item.get("blocker", ""),
-                    command=agenda_run.get("command") or "",
-                    returncode=agenda_run.get("returncode"),
-                ),
-            ]
-        )
     trade_behavior = payload.get("trade_behavior") or {}
     if trade_behavior.get("summaries"):
         lines.extend(
@@ -1645,23 +1439,6 @@ def write_report(paths: dict[str, Path], payload: dict[str, Any]) -> tuple[Path,
             lines.append(
                 "| {strategy} | {trades} | {win_rate_pct} | {total_profit_abs} | {profit_factor} | {payoff_ratio} | {avg_duration_min} | {long_trades}/{short_trades} | {stop_loss_trades} | {avg_mfe_pct} | {avg_mae_pct} | {diagnostics} |".format(
                     **row
-                )
-            )
-    behavior_experiments = payload.get("behavior_experiments") or {}
-    if behavior_experiments.get("plans"):
-        lines.extend(
-            [
-                "",
-                "## Behavior-Driven Experiment Plan",
-                "",
-                "| Priority | Strategy | Experiment | Hypothesis | Success Gate |",
-                "|---:|---|---|---|---|",
-            ]
-        )
-        for item in behavior_experiments["plans"]:
-            lines.append(
-                "| {priority} | {strategy} | {experiment_id} | {hypothesis} | {success_gate} |".format(
-                    **item
                 )
             )
     failure_attribution = payload.get("failure_attribution") or {}
@@ -1722,36 +1499,6 @@ def write_report(paths: dict[str, Path], payload: dict[str, Any]) -> tuple[Path,
                     **row,
                 )
             )
-    iteration_review = payload.get("iteration_review") or {}
-    if iteration_review.get("agent_issues"):
-        lines.extend(
-            [
-                "",
-                "## Agent Iteration Review",
-                "",
-                "| Priority | Issue | Status | Diagnosis | Proposed Upgrade | Success Gate |",
-                "|---:|---|---|---|---|---|",
-            ]
-        )
-        for item in iteration_review["agent_issues"][:10]:
-            lines.append(
-                "| {priority} | {issue_id} | {status} | {diagnosis} | {proposed_upgrade} | {success_gate} |".format(
-                    **item
-                )
-            )
-    context_source_plan = payload.get("context_source_plan") or {}
-    if context_source_plan.get("research_tracks"):
-        lines.extend(
-            [
-                "",
-                "## Context Source Plan",
-                "",
-                "| Track | Status | Hypothesis | Success Gate |",
-                "|---|---|---|---|",
-            ]
-        )
-        for item in context_source_plan["research_tracks"]:
-            lines.append("| {id} | {status} | {hypothesis} | {success_gate} |".format(**item))
     family_diversity_plan = payload.get("family_diversity_plan") or {}
     if family_diversity_plan.get("selected_strategies"):
         lines.extend(
@@ -2179,15 +1926,10 @@ def main() -> None:
         "strategy_assessment": load_latest_strategy_assessment(),
         "walk_forward_summary": load_latest_walk_forward_summary(),
         "promotion_report": load_latest_promotion_report(),
-        "research_agenda": load_latest_research_agenda(),
-        "agenda_run": load_latest_agenda_run(),
         "trade_behavior": load_latest_trade_behavior(),
-        "behavior_experiments": load_latest_behavior_experiment_plan(),
         "failure_attribution": load_latest_failure_attribution(),
         "mature_researcher": load_latest_mature_researcher(),
         "mature_researcher_queue": load_latest_mature_researcher_queue(),
-        "iteration_review": load_latest_iteration_review(),
-        "context_source_plan": load_latest_context_source_plan(),
         "family_diversity_plan": load_latest_family_diversity_plan(),
         "strategy_lineage": load_latest_strategy_lineage(),
         "research_memory": load_latest_research_memory(),
