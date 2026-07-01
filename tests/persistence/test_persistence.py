@@ -1,5 +1,6 @@
 # pragma pylint: disable=missing-docstring, C0103
 from datetime import UTC, datetime, timedelta
+from functools import cached_property
 from types import FunctionType
 
 import pytest
@@ -2164,7 +2165,7 @@ def test_Trade_object_idem():
         if (
             not item.startswith("__")
             and item not in EXCLUDES2
-            and type(getattr(LocalTrade, item)) not in (property, FunctionType)
+            and type(getattr(LocalTrade, item)) not in (property, cached_property, FunctionType)
         ):
             assert item in trade
 
