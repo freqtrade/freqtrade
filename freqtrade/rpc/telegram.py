@@ -7,6 +7,7 @@ This module manage Telegram communication
 import asyncio
 import json
 import logging
+import os
 import re
 from collections.abc import Callable, Coroutine
 from copy import deepcopy
@@ -245,7 +246,12 @@ class Telegram(RPCHandler):
                 logger.info(f"using custom keyboard from config.json: {self._keyboard}")
 
     def _init_telegram_app(self):
-        return Application.builder().token(self._config["telegram"]["token"]).build()
+        builder = Application.builder().token(self._config["telegram"]["token"])
+        proxy_url = os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY")
+        proxy_url = proxy_url or os.environ.get("https_proxy") or os.environ.get("http_proxy")
+        if proxy_url:
+            builder = builder.proxy(proxy_url).get_updates_proxy(proxy_url)
+        return builder.build()
 
     def _init(self) -> None:
         """
