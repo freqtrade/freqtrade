@@ -1,7 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-cd "$(dirname "$0")/../.."
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [[ -d "$SCRIPT_DIR/../../user_data/strategy_research" && -d "$SCRIPT_DIR/../../.venv" ]]; then
+  cd "$SCRIPT_DIR/../.."
+elif [[ -d "$SCRIPT_DIR/../../../user_data/strategy_research" && -d "$SCRIPT_DIR/../../../.venv" ]]; then
+  cd "$SCRIPT_DIR/../../.."
+else
+  echo "Could not locate freqtrade repo root from $SCRIPT_DIR" >&2
+  exit 2
+fi
 
 PYTHON="${PYTHON:-./.venv/bin/python}"
 
