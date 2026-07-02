@@ -416,6 +416,55 @@ def test__send_msg(default_conf, mocker, caplog):
     assert log_has("Could not call webhook url. Exception: ", caplog)
 
 
+def test_send_msg_webhook_per_event_url(default_conf, mocker):
+    default_conf["webhook"] = get_webhook_dict()
+    default_conf["webhook"]["webhookstatus"]["url"] = "https://example.com/status-only"
+    msg_mock = MagicMock()
+    mocker.patch("freqtrade.rpc.webhook.Webhook._send_msg", msg_mock)
+    webhook = Webhook(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
+
+    # Per-event "url" is used, and stripped out of the outgoing payload.
+    msg = {"type": RPCMessageType.STATUS, "status": "running"}
+    webhook.send_msg(msg)
+    assert msg_mock.call_count == 1
+    payload, url = msg_mock.call_args[0]
+    assert url == "https://example.com/status-only"
+    assert "url" not in payload
+
+    # Event types without a per-event "url" fall back to the top-level webhook url.
+    msg_mock.reset_mock()
+    msg2 = {
+        "type": RPCMessageType.ENTRY_CANCEL,
+        "exchange": "Binance",
+        "pair": "ETH/BTC",
+        "leverage": 1.0,
+        "direction": "Long",
+        "limit": 0.005,
+        "stake_amount": 0.8,
+        "stake_amount_fiat": 500,
+        "stake_currency": "BTC",
+        "fiat_currency": "EUR",
+    }
+    webhook.send_msg(msg2)
+    _payload2, url2 = msg_mock.call_args[0]
+    assert url2 == default_conf["webhook"]["url"]
+
+
+def test__send_msg_per_event_url(default_conf, mocker):
+    default_conf["webhook"] = get_webhook_dict()
+    webhook = Webhook(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
+    msg = {"value1": "DEADBEEF"}
+    post = MagicMock()
+    mocker.patch("freqtrade.rpc.webhook.post", post)
+
+    webhook._send_msg(msg, "https://example.com/override")
+    assert post.call_args[0] == ("https://example.com/override",)
+
+    post.reset_mock()
+    webhook._send_msg(msg)
+    assert post.call_args[0] == (default_conf["webhook"]["url"],)
+
+
 def test__send_msg_with_json_format(default_conf, mocker, caplog):
     default_conf["webhook"] = get_webhook_dict()
     default_conf["webhook"]["format"] = "json"

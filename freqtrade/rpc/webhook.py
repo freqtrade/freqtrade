@@ -104,16 +104,20 @@ class Webhook(RPCHandler):
                 logger.debug("Message type '%s' not configured for webhooks", msg["type"])
                 return
 
-            payload = self.recursive_format(valuedict, msg)
-            self._send_msg(payload)
+            # Allow per-event URL override — strip "url" before formatting
+            # so it doesn't end up in the POST body.
+            url = valuedict.get("url", self._url)
+            payload = self.recursive_format({k: v for k, v in valuedict.items() if k != "url"}, msg)
+            self._send_msg(payload, url)
         except KeyError as exc:
             logger.exception(
                 "Problem calling Webhook. Please check your webhook configuration. Exception: %s",
                 exc,
             )
 
-    def _send_msg(self, payload: dict) -> None:
+    def _send_msg(self, payload: dict, url: str | None = None) -> None:
         """do the actual call to the webhook"""
+        target_url = url if url is not None else self._url
 
         success = False
         attempts = 0
@@ -127,12 +131,12 @@ class Webhook(RPCHandler):
 
             try:
                 if self._format == "form":
-                    response = post(self._url, data=payload, timeout=self._timeout)
+                    response = post(target_url, data=payload, timeout=self._timeout)
                 elif self._format == "json":
-                    response = post(self._url, json=payload, timeout=self._timeout)
+                    response = post(target_url, json=payload, timeout=self._timeout)
                 elif self._format == "raw":
                     response = post(
-                        self._url,
+                        target_url,
                         data=payload["data"],
                         headers={"Content-Type": "text/plain"},
                         timeout=self._timeout,
