@@ -247,10 +247,30 @@ class Telegram(RPCHandler):
 
     def _init_telegram_app(self):
         builder = Application.builder().token(self._config["telegram"]["token"])
-        proxy_url = os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY")
+        proxy_url = os.environ.get("FREQTRADE_TELEGRAM_PROXY_URL")
+        proxy_url = proxy_url or os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY")
         proxy_url = proxy_url or os.environ.get("https_proxy") or os.environ.get("http_proxy")
         if proxy_url:
             builder = builder.proxy(proxy_url).get_updates_proxy(proxy_url)
+        builder = (
+            builder.connection_pool_size(int(os.environ.get("FREQTRADE_TELEGRAM_POOL_SIZE", "16")))
+            .pool_timeout(float(os.environ.get("FREQTRADE_TELEGRAM_POOL_TIMEOUT", "30")))
+            .get_updates_connection_pool_size(
+                int(os.environ.get("FREQTRADE_TELEGRAM_GET_UPDATES_POOL_SIZE", "16"))
+            )
+            .get_updates_pool_timeout(
+                float(os.environ.get("FREQTRADE_TELEGRAM_GET_UPDATES_POOL_TIMEOUT", "30"))
+            )
+            .get_updates_connect_timeout(
+                float(os.environ.get("FREQTRADE_TELEGRAM_GET_UPDATES_CONNECT_TIMEOUT", "10"))
+            )
+            .get_updates_read_timeout(
+                float(os.environ.get("FREQTRADE_TELEGRAM_GET_UPDATES_READ_TIMEOUT", "45"))
+            )
+            .get_updates_write_timeout(
+                float(os.environ.get("FREQTRADE_TELEGRAM_GET_UPDATES_WRITE_TIMEOUT", "10"))
+            )
+        )
         return builder.build()
 
     def _init(self) -> None:

@@ -29,19 +29,74 @@ stop_bot() {
     pid="$(current_pid)"
     if is_running "${pid}"; then
         kill "${pid}"
-        sleep 2
+        for _ in {1..10}; do
+            sleep 1
+            if ! is_running "${pid}"; then
+                break
+            fi
+        done
         if is_running "${pid}"; then
-            kill -TERM "${pid}"
+            echo "dry-run did not stop after SIGTERM; sending SIGKILL: pid=${pid}" >&2
+            kill -KILL "${pid}"
             sleep 1
         fi
         if is_running "${pid}"; then
-            echo "failed to stop dry-run: pid=${pid}" >&2
+            echo "failed to stop dry-run after SIGKILL: pid=${pid}" >&2
             exit 1
         fi
+        rm -f "${PID_FILE}"
         echo "stopped futures dry-run: pid=${pid}"
     else
         echo "futures dry-run is not running"
+        rm -f "${PID_FILE}"
     fi
+}
+
+preflight_telegram() {
+    "${ROOT_DIR}/.venv/bin/python" - <<'PY'
+import json
+import os
+import sys
+import urllib.parse
+import urllib.request
+
+token = os.environ.get("FREQTRADE__TELEGRAM__TOKEN") or os.environ.get("TELEGRAM_BOT_TOKEN")
+chat_id = os.environ.get("FREQTRADE__TELEGRAM__CHAT_ID") or os.environ.get("TELEGRAM_CHAT_ID")
+
+if not token and not chat_id:
+    print("telegram preflight skipped: token/chat_id not configured")
+    raise SystemExit(0)
+if not token or not chat_id:
+    print("telegram preflight failed: token or chat_id missing", file=sys.stderr)
+    raise SystemExit(1)
+
+base = f"https://api.telegram.org/bot{token}"
+
+
+def fetch(method: str, params: dict[str, str] | None = None) -> dict:
+    url = f"{base}/{method}"
+    data = None
+    if params:
+        data = urllib.parse.urlencode(params).encode()
+    with urllib.request.urlopen(url, data=data, timeout=15) as response:
+        return json.loads(response.read().decode())
+
+
+try:
+    me = fetch("getMe")
+    chat = fetch("getChat", {"chat_id": chat_id})
+except Exception as exc:
+    print(f"telegram preflight failed: {type(exc).__name__}: {str(exc)[:240]}", file=sys.stderr)
+    raise SystemExit(1)
+
+if not me.get("ok") or not chat.get("ok"):
+    print("telegram preflight failed: Telegram API returned ok=false", file=sys.stderr)
+    raise SystemExit(1)
+
+username = me.get("result", {}).get("username", "<unknown>")
+chat_type = chat.get("result", {}).get("type", "<unknown>")
+print(f"telegram preflight ok: bot=@{username}, chat_type={chat_type}")
+PY
 }
 
 case "${ACTION}" in
@@ -103,6 +158,7 @@ if [[ ! -f "${RISK_PREFLIGHT}" ]]; then
 fi
 "${ROOT_DIR}/.venv/bin/python" "${RISK_PREFLIGHT}" --config "${CONFIG_FILE}"
 "${ROOT_DIR}/.venv/bin/python" "${PREFLIGHT}" --pair "BTC/USDT:USDT" --timeframe "15m"
+preflight_telegram
 
 "${ROOT_DIR}/.venv/bin/python" - "${ROOT_DIR}" "${PID_FILE}" "${NOHUP_LOG}" <<'PY'
 import os

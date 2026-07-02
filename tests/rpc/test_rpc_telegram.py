@@ -180,6 +180,53 @@ def test_telegram_init(default_conf, mocker, caplog) -> None:
     assert log_has(message_str, caplog)
 
 
+def test_telegram_init_app_uses_proxy_and_pool_settings(default_conf, mocker):
+    mocker.patch("freqtrade.rpc.telegram.Telegram._start_thread", MagicMock())
+    mocker.patch.dict(
+        "os.environ",
+        {
+            "FREQTRADE_TELEGRAM_PROXY_URL": "http://127.0.0.1:7897",
+            "FREQTRADE_TELEGRAM_POOL_SIZE": "21",
+            "FREQTRADE_TELEGRAM_POOL_TIMEOUT": "31",
+            "FREQTRADE_TELEGRAM_GET_UPDATES_POOL_SIZE": "22",
+            "FREQTRADE_TELEGRAM_GET_UPDATES_POOL_TIMEOUT": "32",
+            "FREQTRADE_TELEGRAM_GET_UPDATES_CONNECT_TIMEOUT": "12",
+            "FREQTRADE_TELEGRAM_GET_UPDATES_READ_TIMEOUT": "46",
+            "FREQTRADE_TELEGRAM_GET_UPDATES_WRITE_TIMEOUT": "13",
+        },
+    )
+    builder = MagicMock()
+    for method in (
+        "token",
+        "proxy",
+        "get_updates_proxy",
+        "connection_pool_size",
+        "pool_timeout",
+        "get_updates_connection_pool_size",
+        "get_updates_pool_timeout",
+        "get_updates_connect_timeout",
+        "get_updates_read_timeout",
+        "get_updates_write_timeout",
+    ):
+        getattr(builder, method).return_value = builder
+    app = MagicMock()
+    builder.build.return_value = app
+    mocker.patch("freqtrade.rpc.telegram.Application.builder", return_value=builder)
+
+    telegram = Telegram(RPC(get_patched_freqtradebot(mocker, default_conf)), default_conf)
+
+    assert telegram._init_telegram_app() == app
+    builder.proxy.assert_called_once_with("http://127.0.0.1:7897")
+    builder.get_updates_proxy.assert_called_once_with("http://127.0.0.1:7897")
+    builder.connection_pool_size.assert_called_once_with(21)
+    builder.pool_timeout.assert_called_once_with(31.0)
+    builder.get_updates_connection_pool_size.assert_called_once_with(22)
+    builder.get_updates_pool_timeout.assert_called_once_with(32.0)
+    builder.get_updates_connect_timeout.assert_called_once_with(12.0)
+    builder.get_updates_read_timeout.assert_called_once_with(46.0)
+    builder.get_updates_write_timeout.assert_called_once_with(13.0)
+
+
 async def test_telegram_startup(default_conf, mocker, caplog) -> None:
     app_mock = MagicMock()
     app_mock.initialize = AsyncMock()
