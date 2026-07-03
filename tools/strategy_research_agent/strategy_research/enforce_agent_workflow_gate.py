@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from regime_window_builder import check_manifest_status
+
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 AGENT_ROOT = REPO_ROOT / "user_data/strategy_research"
@@ -29,6 +31,10 @@ REQUIRED_GATES = [
     "family_risk_gate",
     "promotion_gate",
     "dryrun_strategy_risk_preflight",
+]
+REQUIRED_REGIME_ARTIFACTS = [
+    "user_data/strategy_research/regime_windows/latest_regime_windows.json",
+    "user_data/strategy_research/regime_windows/regime_inference_quarantine.json",
 ]
 ALLOWED_PRIMARY_ENTRY_TIMEFRAMES = {"3m", "5m", "15m"}
 FORBIDDEN_PRIMARY_ENTRY_TIMEFRAMES = {"1h", "4h", "1d"}
@@ -114,6 +120,11 @@ def validate_rules(path: Path, checks: list[GateCheck]) -> dict[str, Any]:
         add(checks, "must_load_before_research", "ok", f"{len(must_load)} required artifacts")
         for path_text in must_load:
             validate_artifact(str(path_text), checks)
+        missing_regime = [path_text for path_text in REQUIRED_REGIME_ARTIFACTS if path_text not in must_load]
+        if missing_regime:
+            add(checks, "must_load_before_research:regime", "fail", "missing " + ", ".join(missing_regime))
+        else:
+            add(checks, "must_load_before_research:regime", "ok", "regime manifest and quarantine are mandatory")
     gates = set(rules.get("required_gates", []))
     missing_gates = [gate for gate in REQUIRED_GATES if gate not in gates]
     if missing_gates:
@@ -188,6 +199,8 @@ def validate_rules(path: Path, checks: list[GateCheck]) -> dict[str, Any]:
         add(checks, "timeframe_policy:background_confirmation", "fail", "1h must be background/confirmation only")
     else:
         add(checks, "timeframe_policy:background_confirmation", "ok", "1h allowed only as background confirmation")
+    for item in check_manifest_status():
+        add(checks, f"regime:{item.name}", item.status, item.detail)
     return rules
 
 

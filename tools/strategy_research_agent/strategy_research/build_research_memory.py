@@ -19,6 +19,22 @@ LATEST_JSON = OUTPUT_DIR / "latest_research_memory.json"
 LATEST_MD = OUTPUT_DIR / "latest_research_memory.md"
 GRAPH_CONTEXT_JSON = AGENT_ROOT / "knowledge/graph/strategy_agent_graph_context.json"
 MANUAL_LESSONS_DIR = OUTPUT_DIR / "manual_lessons"
+REGIME_QUARANTINE_JSON = AGENT_ROOT / "regime_windows/regime_inference_quarantine.json"
+LEGACY_REGIME_TOKENS = [
+    "bull_home",
+    "range_home",
+    "bear_home",
+    "bear_hostile",
+    "high_vol_hostile",
+    "bull_20241022_20250120",
+    "range_20240507_20240805",
+    "bear_20251222_20260322",
+    "high_vol_20260118_20260418",
+    "20241022-20250120",
+    "20240507-20240805",
+    "20251222-20260322",
+    "20260118-20260418",
+]
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -37,6 +53,12 @@ def load_manual_lessons() -> list[dict[str, Any]]:
         if not item:
             continue
         item.setdefault("source_file", rel(path))
+        text = json.dumps(item, ensure_ascii=False)
+        tokens = sorted({token for token in LEGACY_REGIME_TOKENS if token in text})
+        if tokens:
+            item["quarantine_status"] = "needs_regime_relabel"
+            item["quarantine_reason"] = "legacy_hardcoded_regime_window"
+            item["legacy_regime_tokens"] = tokens
         lessons.append(item)
     return lessons
 
@@ -128,6 +150,8 @@ def memory_rule_for_mode(mode: str) -> str:
 def build_next_focus(agenda: dict[str, Any], nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
     focus = []
     for item in agenda.get("top_priorities", [])[:8]:
+        if has_legacy_regime_token(item):
+            continue
         focus.append(
             {
                 "strategy": item.get("strategy"),
@@ -141,6 +165,8 @@ def build_next_focus(agenda: dict[str, Any], nodes: list[dict[str, Any]]) -> lis
     if focus:
         return focus
     for item in nodes:
+        if has_legacy_regime_token(item):
+            continue
         if item.get("recommended_state") in {"research_candidate", "watchlist", "redesign"}:
             focus.append(
                 {
@@ -153,6 +179,19 @@ def build_next_focus(agenda: dict[str, Any], nodes: list[dict[str, Any]]) -> lis
                 }
             )
     return focus[:8]
+
+
+def has_legacy_regime_token(item: Any) -> bool:
+    text = json.dumps(item, ensure_ascii=False)
+    return any(token in text for token in LEGACY_REGIME_TOKENS)
+
+
+def load_regime_quarantine() -> dict[str, Any]:
+    return load_json(REGIME_QUARANTINE_JSON)
+
+
+def active_manual_lessons(lessons: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [lesson for lesson in lessons if lesson.get("quarantine_status") != "needs_regime_relabel"]
 
 
 def build_knowledge_gaps(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -259,6 +298,8 @@ def build_payload() -> dict[str, Any]:
     assessment = load_json(AGENT_ROOT / "strategy_assessments/latest_strategy_assessment.json")
     graph_context = load_json(GRAPH_CONTEXT_JSON)
     manual_lessons = load_manual_lessons()
+    active_lessons = active_manual_lessons(manual_lessons)
+    regime_quarantine = load_regime_quarantine()
     nodes = lineage.get("nodes", [])
     failure_summary = failure.get("failure_mode_summary", [])
     payload = {
@@ -272,24 +313,32 @@ def build_payload() -> dict[str, Any]:
         "knowledge_memory": build_knowledge_memory(graph_context) if graph_context else {},
         "strategy_taxonomy": taxonomy_summary(),
         "manual_lessons": manual_lessons,
+        "regime_inference_quarantine": {
+            "status": regime_quarantine.get("status") or ("missing" if not regime_quarantine else "active"),
+            "entry_count": len(regime_quarantine.get("entries", [])) if regime_quarantine else 0,
+            "path": rel(REGIME_QUARANTINE_JSON),
+            "policy": regime_quarantine.get("policy", {}),
+        },
         "durable_rules": [
             "Never promote a strategy from a single favorable slice.",
             "Treat leverage as a risk multiplier, not a fix for weak entry timing.",
             "Prefer variants that improve trade quality and sample size together.",
             "Every futures strategy hypothesis must declare a canonical strategy family and regime contract before strategy code is generated.",
             "Post-run attribution must be grouped by strategy family as well as by individual strategy class.",
+            "Legacy hardcoded bull_home/range_home/bear_home/high_vol_hostile interpretations are quarantined and cannot fuel strategy generation, promotion, or durable memory until relabeled by the data-derived regime manifest.",
             "Keep external strategies quarantined until translated into local auditable code.",
             "Do not repeat archived variants unless the new experiment changes the diagnosed failure mode.",
             "Generate new hypotheses from active knowledge-graph cards only; quarantined cards are reference material, not strategy fuel.",
             "Any knowledge-derived strategy must remain research-only until backtest, recursive, lookahead, regime, cost, and promotion gates pass.",
         ]
-        + [lesson["memory_rule"] for lesson in manual_lessons if lesson.get("memory_rule")],
+        + [lesson["memory_rule"] for lesson in active_lessons if lesson.get("memory_rule")],
         "source_artifacts": {
             "strategy_lineage": rel(AGENT_ROOT / "strategy_library/latest_strategy_lineage.json") if lineage else None,
             "failure_attribution": rel(AGENT_ROOT / "failure_attribution/latest_failure_attribution.json") if failure else None,
             "research_agenda": rel(AGENT_ROOT / "research_agendas/latest_research_agenda.json") if agenda else None,
             "strategy_assessment": rel(AGENT_ROOT / "strategy_assessments/latest_strategy_assessment.json") if assessment else None,
             "knowledge_graph_context": rel(GRAPH_CONTEXT_JSON) if graph_context else None,
+            "regime_inference_quarantine": rel(REGIME_QUARANTINE_JSON) if regime_quarantine else None,
         },
     }
     return payload
@@ -341,6 +390,7 @@ def write_markdown(path: Path, payload: dict[str, Any]) -> None:
             f"- Active knowledge cards: `{knowledge.get('active_card_count', 0)}`",
             f"- Research-only: `{knowledge.get('policy', {}).get('research_only', True)}`",
             f"- Exclude quarantined cards: `{knowledge.get('policy', {}).get('exclude_quarantined_cards', True)}`",
+            f"- Quarantined regime inference entries: `{payload.get('regime_inference_quarantine', {}).get('entry_count', 0)}`",
             "",
             "| Family | Count |",
             "|---|---:|",
@@ -386,9 +436,9 @@ def write_markdown(path: Path, payload: dict[str, Any]) -> None:
         evidence = ", ".join(item.get("evidence", [])[:3])
         lines.append(
             "| {lesson} | {evidence} | {memory_rule} | {next_test} |".format(
-                lesson=item.get("lesson") or "",
+                lesson=(item.get("lesson") or "") + (" [quarantined: needs_regime_relabel]" if item.get("quarantine_status") else ""),
                 evidence=evidence,
-                memory_rule=item.get("memory_rule") or "",
+                memory_rule="" if item.get("quarantine_status") else item.get("memory_rule") or "",
                 next_test=item.get("next_test") or "",
             )
         )

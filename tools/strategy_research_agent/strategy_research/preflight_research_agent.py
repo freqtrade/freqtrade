@@ -14,6 +14,7 @@ from typing import Any
 
 import pandas as pd
 
+from regime_window_builder import check_manifest_status
 from strategy_taxonomy import REQUIRED_TAXONOMY_IDS, STRATEGY_TAXONOMY
 
 
@@ -198,6 +199,9 @@ def check_workflow_gate(checks: list[Check]) -> None:
         check=False,
     )
     if completed.returncode != 0:
+        if "user_data/strategy_research/regime_windows/latest_regime_windows.json" in completed.stdout:
+            add(checks, "strategy_agent_gate", "warn", "Regime manifest missing; run --regime-windows before regime matrix, family-risk, promotion, or agent-brain gates.")
+            return
         add(checks, "strategy_agent_gate", "fail", completed.stdout[-2000:].strip())
         return
     try:
@@ -207,6 +211,12 @@ def check_workflow_gate(checks: list[Check]) -> None:
         return
     required = payload.get("must_load_before_research", [])
     add(checks, "strategy_agent_gate", "ok", f"Loaded {len(required)} fixed workflow artifacts.")
+
+
+def check_regime_manifest(checks: list[Check]) -> None:
+    for item in check_manifest_status():
+        status = "warn" if item.status == "warn" or item.detail.startswith("Missing ") else item.status
+        add(checks, f"regime:{item.name}", status, item.detail)
 
 
 def check_strategy_taxonomy(checks: list[Check]) -> None:
@@ -327,6 +337,7 @@ def main() -> int:
     check_fixed_risk_policy(checks, config)
     check_strategy_leverage_overrides(checks)
     check_workflow_gate(checks)
+    check_regime_manifest(checks)
     check_strategy_taxonomy(checks)
     registry = check_registry(checks)
     check_data(checks, registry)

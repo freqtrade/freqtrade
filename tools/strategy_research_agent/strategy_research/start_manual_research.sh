@@ -15,7 +15,7 @@ PYTHON="${PYTHON:-./.venv/bin/python}"
 
 usage() {
   cat <<'EOF'
-Usage: user_data/strategy_research/start_manual_research.sh [--quick|--source-scout|--price-action-knowledge|--bilibili-transcripts|--knowledge-graph|--knowledge-guided-hypotheses|--factor-research|--factor-to-strategy|--event-study|--agent-brain|--weekly-knowledge-update|--walk-forward|--promotion-gate|--family-risk-gate|--dryrun-risk-preflight|--trade-behavior|--failure-attribution|--post-run-attribution|--mature-researcher|--mature-researcher-queue|--execute-mature-researcher|--strategy-lineage|--research-memory|--memory-guided-hypotheses|--memory-guided-strategies|--preflight-only] [--extra-agent-arg ARG ...]
+Usage: user_data/strategy_research/start_manual_research.sh [--quick|--source-scout|--price-action-knowledge|--bilibili-transcripts|--knowledge-graph|--knowledge-guided-hypotheses|--factor-research|--factor-to-strategy|--event-study|--regime-windows|--agent-brain|--weekly-knowledge-update|--walk-forward|--promotion-gate|--family-risk-gate|--dryrun-risk-preflight|--trade-behavior|--failure-attribution|--post-run-attribution|--mature-researcher|--mature-researcher-queue|--execute-mature-researcher|--strategy-lineage|--research-memory|--memory-guided-hypotheses|--memory-guided-strategies|--preflight-only] [--extra-agent-arg ARG ...]
 
 Manual entrypoint for the research-only strategy agent.
 
@@ -34,6 +34,7 @@ Modes:
   --factor-to-strategy
                      Convert factor edge candidates into guarded event-study hypotheses; does not generate strategy classes directly.
   --event-study      Test measurable entry events before strategy generation.
+  --regime-windows   Build data-derived BTC/ETH futures regime windows and quarantine legacy hardcoded regime inference.
   --agent-brain      Rebuild knowledge graph, research memory, knowledge/memory hypotheses, and consolidation policy.
   --weekly-knowledge-update
                      Refresh external/source knowledge weekly layer, rebuild Agent brain, and write a weekly knowledge update report.
@@ -109,6 +110,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --event-study)
       mode="event_study"
+      shift
+      ;;
+    --regime-windows)
+      mode="regime_windows"
       shift
       ;;
     --agent-brain)
@@ -201,6 +206,16 @@ done
 
 echo "== Strategy Research Agent: preflight =="
 "$PYTHON" user_data/strategy_research/preflight_research_agent.py
+
+if [[ "$mode" == "regime_windows" ]]; then
+  echo "== Strategy Research Agent: data-derived regime windows =="
+  "$PYTHON" user_data/strategy_research/regime_window_builder.py
+  echo "== Strategy Research Agent: refresh consolidation rules =="
+  "$PYTHON" user_data/strategy_research/build_research_consolidation.py
+  echo "== Strategy Research Agent: fixed workflow gate =="
+  "$PYTHON" user_data/strategy_research/enforce_agent_workflow_gate.py
+  exit 0
+fi
 
 echo "== Strategy Research Agent: fixed workflow gate =="
 "$PYTHON" user_data/strategy_research/enforce_agent_workflow_gate.py
@@ -330,11 +345,13 @@ case "$mode" in
     ;;
   event_study)
     echo "== Strategy Research Agent: event study edge check =="
+    "$PYTHON" user_data/strategy_research/regime_window_builder.py --check-only
     "$PYTHON" user_data/strategy_research/run_event_study.py
     "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
     ;;
   agent_brain)
     echo "== Strategy Research Agent: knowledge-memory-consolidation brain =="
+    "$PYTHON" user_data/strategy_research/regime_window_builder.py --check-only
     run_agent_brain
     "$PYTHON" user_data/strategy_research/run_research_agent.py --skip-backtests
     ;;
@@ -362,6 +379,7 @@ PY
     ;;
   promotion_gate)
     echo "== Strategy Research Agent: promotion gate =="
+    "$PYTHON" user_data/strategy_research/regime_window_builder.py --check-only
     "$PYTHON" user_data/strategy_research/family_risk_gate.py ${extra_args[@]+"${extra_args[@]}"}
     run_optional_script user_data/strategy_research/research_agenda.py
     run_promotion_experience_update
@@ -369,6 +387,7 @@ PY
     ;;
   family_risk_gate)
     echo "== Strategy Research Agent: family risk gate =="
+    "$PYTHON" user_data/strategy_research/regime_window_builder.py --check-only
     "$PYTHON" user_data/strategy_research/family_risk_gate.py ${extra_args[@]+"${extra_args[@]}"}
     run_optional_script user_data/strategy_research/research_agenda.py
     run_promotion_experience_update
@@ -473,6 +492,8 @@ MemPlan:    user_data/strategy_research/experiments/memory_guided_hypothesis_led
 MemStrat:   user_data/strategy_research/experiments/memory_guided_strategy_ledger.md
 Solidify:   user_data/strategy_research/consolidation/latest_research_consolidation.md
 AgentRules: user_data/strategy_research/consolidation/agent_operating_rules.json
+RegimeWin:  user_data/strategy_research/regime_windows/latest_regime_windows.md
+RegimeQ:    user_data/strategy_research/regime_windows/regime_inference_quarantine.md
 Sources:    user_data/strategy_research/source_discovery/latest_source_discovery.md
 KnowWeekly: user_data/strategy_research/knowledge_updates/latest_weekly_knowledge_update.md
 Knowledge:  user_data/strategy_research/knowledge/latest_price_action_knowledge_report.md

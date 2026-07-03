@@ -60,6 +60,27 @@ The gate must classify the result into explicit failure or edge buckets:
 
 No next experiment queue item may be created from a backtest round unless the attribution gate states what failed, what survived, and which single mechanism the next run is testing.
 
+## Regime Window Gate
+
+Regime labels must come from a reproducible BTC/ETH futures OHLCV manifest, not
+from manually chosen example periods.
+
+The Agent must build and read:
+
+- `user_data/strategy_research/regime_windows/latest_regime_windows.json`
+- `user_data/strategy_research/regime_windows/regime_inference_quarantine.json`
+
+The manifest labels daily and window-level market states using BTC/ETH futures
+returns, EMA structure, realized volatility, ATR%, BB width, trend strength,
+range score, and BTC/ETH directional agreement. Regime matrix, event-study
+context, family-risk gate, promotion gate, and strategy-family routing must use
+this manifest.
+
+Legacy labels such as `bull_home`, `range_home`, `bear_home`, and
+`high_vol_hostile` are quarantined. Old reports may still be used as raw
+date-range backtest evidence, but their regime interpretation is
+`needs_regime_relabel` until rebuilt against the manifest.
+
 ## Durable Rule
 
 Do not describe the Agent as missing materials, knowledge, or self-iteration. Those already exist. The accurate framing is:

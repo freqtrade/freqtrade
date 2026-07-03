@@ -29,6 +29,8 @@ KNOWLEDGE_PLAN_JSON = AGENT_ROOT / "experiments/knowledge_guided_hypothesis_plan
 MEMORY_PLAN_JSON = AGENT_ROOT / "experiments/memory_guided_hypothesis_plan.json"
 PROMOTION_JSON = AGENT_ROOT / "promotion_reports/latest_promotion_report.json"
 WEEKLY_KNOWLEDGE_UPDATE_JSON = AGENT_ROOT / "knowledge_updates/latest_weekly_knowledge_update.json"
+REGIME_WINDOWS_JSON = AGENT_ROOT / "regime_windows/latest_regime_windows.json"
+REGIME_QUARANTINE_JSON = AGENT_ROOT / "regime_windows/regime_inference_quarantine.json"
 
 
 REQUIRED_GATES = [
@@ -180,6 +182,16 @@ def build_blocked_patterns(memory: dict[str, Any]) -> list[dict[str, Any]]:
                 "rule": item.get("memory_rule"),
             }
         )
+    quarantine = load_json(REGIME_QUARANTINE_JSON)
+    if quarantine:
+        blocked.append(
+            {
+                "pattern": "legacy_hardcoded_regime_window",
+                "evidence_count": len(quarantine.get("entries", [])),
+                "allowed_use": "raw_date_range_backtest_only",
+                "rule": "Do not use legacy bull_home/range_home/bear_home/high_vol_hostile interpretations as Agent memory or promotion evidence until relabeled by the data-derived regime manifest.",
+            }
+        )
     return blocked
 
 
@@ -228,6 +240,8 @@ def build_payload() -> dict[str, Any]:
     memory_plan = load_json(MEMORY_PLAN_JSON)
     promotion = load_json(PROMOTION_JSON)
     weekly_update = load_json(WEEKLY_KNOWLEDGE_UPDATE_JSON)
+    regime_windows = load_json(REGIME_WINDOWS_JSON)
+    regime_quarantine = load_json(REGIME_QUARANTINE_JSON)
     required_checks = Counter()
     for card in graph_context.get("cards", []):
         for check in card.get("required_checks", []):
@@ -246,6 +260,7 @@ def build_payload() -> dict[str, Any]:
             "No fixed-50x strategy class can be generated directly from external knowledge or memory; factor research must first test forward-return, MFE/MAE, sample size, and side-specific expectancy unless the run is explicitly labeled negative-control.",
             "No OHLCV or L2-inspired hypothesis can generate a strategy class before an event study shows edge_candidate, unless the run is explicitly labeled counterexample or negative-control.",
             "No backtest round can feed the next experiment queue until post-run attribution has identified signal, timing, exit, cost, risk, regime, and sample-size failure modes.",
+            "Regime windows must come from user_data/strategy_research/regime_windows/latest_regime_windows.json; legacy hardcoded bull_home/range_home/bear_home/high_vol_hostile windows are quarantined and cannot fuel strategy generation or promotion.",
             "No new fixed-50x futures strategy may use 1h or higher candles as its primary entry timeframe; use 3m/5m/15m for entry and 1h only for background confirmation.",
             "No strategy reaches dry-run review without manual approval after promotion gate.",
             "Promotion gate is family-level: evaluate target-regime edge plus hostile-regime loss containment under router, cooldown, drawdown, and consecutive stop-loss circuit breakers, not naked all-regime performance alone.",
@@ -257,6 +272,8 @@ def build_payload() -> dict[str, Any]:
             "The Agent already has materials, a knowledge graph, and a self-iteration loop; frame future work as deeper integration, not as building those from zero.",
             "The Agent has two iteration loops: internal self-iteration from backtest evidence and external knowledge iteration from the weekly knowledge update layer.",
             "Load knowledge graph context, research memory, and this consolidation policy before generating strategies.",
+            "Load the data-derived regime manifest and regime inference quarantine before event-study planning, family-risk gates, promotion gates, or strategy generation.",
+            "Do not treat legacy bull_home/range_home/bear_home/high_vol_hostile labels as market truth; old outputs are raw date-range backtests only until relabeled.",
             "Run factor research as the same Agent's front-door evidence layer before event-study planning or strategy synthesis.",
             "Convert only factor rows with sufficient sample, after-fee expectancy, win rate, and MFE/MAE evidence into factor-to-strategy event hypotheses.",
             "Before generating a concrete strategy class, define a measurable event and run or read event-study evidence for samples, forward returns, win rate, and MFE/MAE.",
@@ -279,6 +296,8 @@ def build_payload() -> dict[str, Any]:
             "memory_guided_plan": rel(MEMORY_PLAN_JSON) if memory_plan else None,
             "promotion_report": rel(PROMOTION_JSON) if promotion else None,
             "weekly_knowledge_update": rel(WEEKLY_KNOWLEDGE_UPDATE_JSON) if weekly_update else None,
+            "regime_windows": rel(REGIME_WINDOWS_JSON) if regime_windows else None,
+            "regime_inference_quarantine": rel(REGIME_QUARANTINE_JSON) if regime_quarantine else None,
             "workflow_contract": rel(WORKFLOW_CONTRACT_MD) if WORKFLOW_CONTRACT_MD.exists() else None,
             "factor_research": FACTOR_RESEARCH_POLICY["latest_factor_report"],
             "factor_strategy_plan": FACTOR_RESEARCH_POLICY["latest_factor_strategy_plan"],
@@ -289,6 +308,7 @@ def build_payload() -> dict[str, Any]:
             "memory_hypotheses": memory_plan.get("hypothesis_count", 0),
             "avoid_patterns": len(memory.get("avoid_patterns", [])),
             "solidified_rules": 0,
+            "quarantined_regime_inference_entries": len(regime_quarantine.get("entries", [])) if regime_quarantine else 0,
         },
     }
     payload["observed_counts"]["solidified_rules"] = len(payload["solidified_rules"])
@@ -301,6 +321,8 @@ def build_operating_rules(payload: dict[str, Any]) -> dict[str, Any]:
         "must_load_before_research": [
             rel(GRAPH_CONTEXT_JSON),
             rel(MEMORY_JSON),
+            rel(REGIME_WINDOWS_JSON),
+            rel(REGIME_QUARANTINE_JSON),
             rel(LATEST_JSON),
             rel(WORKFLOW_CONTRACT_MD),
             rel(WEEKLY_KNOWLEDGE_UPDATE_JSON),
@@ -323,6 +345,7 @@ def write_markdown(path: Path, payload: dict[str, Any]) -> None:
         f"- Research-only: `{payload['research_only']}`",
         f"- Active knowledge cards: `{payload['observed_counts']['active_knowledge_cards']}`",
         f"- Solidified rules: `{payload['observed_counts']['solidified_rules']}`",
+        f"- Quarantined legacy regime entries: `{payload['observed_counts'].get('quarantined_regime_inference_entries', 0)}`",
         "",
         "## Allowed Research Families",
         "",

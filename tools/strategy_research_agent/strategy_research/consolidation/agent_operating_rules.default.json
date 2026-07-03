@@ -5,6 +5,8 @@
     "user_data/strategy_research/research_memory/latest_research_memory.json",
     "user_data/strategy_research/consolidation/latest_research_consolidation.json",
     "user_data/strategy_research/consolidation/agent_workflow_contract.md",
+    "user_data/strategy_research/regime_windows/latest_regime_windows.json",
+    "user_data/strategy_research/regime_windows/regime_inference_quarantine.json",
     "user_data/strategy_research/knowledge_updates/latest_weekly_knowledge_update.json"
   ],
   "research_only": true,
@@ -36,6 +38,25 @@
       "1d"
     ],
     "rule": "For fixed 50x futures research, 1h can only be used as background/regime/confirmation, not as the primary entry timeframe."
+  },
+  "regime_window_policy": {
+    "active_manifest": "user_data/strategy_research/regime_windows/latest_regime_windows.json",
+    "quarantine_manifest": "user_data/strategy_research/regime_windows/regime_inference_quarantine.json",
+    "source": "data_derived_btc_eth_futures_ohlcv",
+    "labels": [
+      "bull",
+      "bear",
+      "range",
+      "high_vol",
+      "mixed/unknown"
+    ],
+    "legacy_hardcoded_labels": [
+      "bull_home",
+      "range_home",
+      "bear_home",
+      "high_vol_hostile"
+    ],
+    "rule": "Regime matrix, family-risk gate, promotion gate, event-study context, and strategy-family routing must read the latest data-derived manifest. Legacy hardcoded regime labels are quarantined and may only be cited as raw date-range backtest evidence until relabeled."
   },
   "futures_runtime_safety_policy": {
     "scope": "all Binance USDT-M futures dry-run and live-review candidates",
@@ -93,6 +114,8 @@
     "No Binance USDT-M futures dry-run or live-review startup may proceed if ccxt Binance futures preflight cannot fetch current futures data through the active runtime environment.",
     "No Binance USDT-M futures dry-run or live-review startup may proceed if dry-run strategy risk preflight cannot prove callable hooks, explicit config overrides, and final effective risk settings.",
     "No futures strategy may enter live review with stoploss_on_exchange disabled or without an explicit exchange-side stoploss verification plan.",
+    "No regime matrix, family-risk gate, promotion gate, or strategy-generation basis may use legacy hardcoded bull_home/range_home/bear_home/high_vol_hostile windows as active regime truth.",
+    "No legacy regime-derived lesson may update durable memory, candidate promotion, or next strategy synthesis until it is relabeled against the data-derived regime manifest.",
     "No strategy reaches dry-run review without manual approval after promotion gate.",
     "No dry-run runtime state, private token, local trade database, or unsanitized full dashboard/report may be committed as live-review evidence.",
     "A dry-run that passes review may only enter the repository as a secret-free live-review candidate package: strategy source, candidate registry status, promotion/family-risk evidence summary, config template, checklist, and rollback/emergency-stop runbook.",
@@ -120,6 +143,8 @@
     "The Agent already has materials, a knowledge graph, and a self-iteration loop; frame future work as deeper integration, not as building those from zero.",
     "The Agent has two iteration loops: internal self-iteration from backtest evidence and external knowledge iteration from the weekly knowledge update layer.",
     "Load knowledge graph context, research memory, and this consolidation policy before generating strategies.",
+    "Load the data-derived regime manifest and regime quarantine before event-study, family-risk, promotion, agent-brain, or strategy-generation work.",
+    "Treat legacy hardcoded regime windows as quarantined raw date-range evidence, not as active bull/range/bear/high-vol labels.",
     "Run factor research as the same Agent's front-door evidence layer before event-study planning or strategy synthesis.",
     "Convert only factor rows with sufficient sample, after-fee expectancy, win rate, and MFE/MAE evidence into factor-to-strategy event hypotheses.",
     "Before generating a concrete strategy class, define a measurable event and run or read event-study evidence for samples, forward returns, win rate, and MFE/MAE.",

@@ -37,6 +37,8 @@ The gate requires these fixed artifacts to be loadable:
 - research memory
 - consolidation policy
 - workflow contract
+- data-derived regime window manifest
+- regime inference quarantine manifest
 - weekly knowledge update layer
 
 ## Current Workflow
@@ -46,16 +48,17 @@ The gate requires these fixed artifacts to be loadable:
 3. Run factor research on `3m`/`5m`/`15m` futures OHLCV.
 4. Convert factor candidates into event-study hypotheses.
 5. Run event study.
-6. Generate memory-guided strategy variants only after the knowledge/memory layers are refreshed.
-7. Backtest through Freqtrade.
-8. Run post-run attribution.
-9. Run failure attribution.
-10. Run recursive-analysis and lookahead-analysis for candidates.
-11. Run walk-forward validation.
-12. Run fee/slippage/funding stress through the promotion/family gate.
-13. Run family risk gate.
-14. Run promotion gate.
-15. Update strategy lineage, research memory, consolidation, dashboard, and registry.
+6. Refresh data-derived regime windows and quarantine legacy regime interpretations.
+7. Generate memory-guided strategy variants only after the knowledge/memory layers are refreshed.
+8. Backtest through Freqtrade.
+9. Run post-run attribution.
+10. Run failure attribution.
+11. Run recursive-analysis and lookahead-analysis for candidates.
+12. Run walk-forward validation.
+13. Run fee/slippage/funding stress through the promotion/family gate.
+14. Run family risk gate.
+15. Run promotion gate.
+16. Update strategy lineage, research memory, consolidation, dashboard, and registry.
 
 Family-risk and promotion gate results are research evidence even when they
 fail. A failed gate must still rebuild lineage, research memory, and
@@ -75,6 +78,7 @@ user_data/strategy_research/start_manual_research.sh --knowledge-guided-hypothes
 user_data/strategy_research/start_manual_research.sh --factor-research
 user_data/strategy_research/start_manual_research.sh --factor-to-strategy
 user_data/strategy_research/start_manual_research.sh --event-study
+user_data/strategy_research/start_manual_research.sh --regime-windows
 user_data/strategy_research/start_manual_research.sh --agent-brain
 user_data/strategy_research/start_manual_research.sh --weekly-knowledge-update
 user_data/strategy_research/start_manual_research.sh --walk-forward
@@ -104,6 +108,8 @@ K-line lab wrappers.
 - Factor research: `user_data/strategy_research/factors/latest_factor_research.md`
 - Factor-to-strategy plan: `user_data/strategy_research/factors/latest_factor_strategy_plan.md`
 - Event study: `user_data/strategy_research/event_studies/latest_event_study.md`
+- Regime windows: `user_data/strategy_research/regime_windows/latest_regime_windows.md`
+- Regime quarantine: `user_data/strategy_research/regime_windows/regime_inference_quarantine.md`
 - Walk-forward: `user_data/strategy_research/walk_forward_summaries/latest_walk_forward_summary.md`
 - Family risk gate: `user_data/strategy_research/family_risk_gate/latest_family_risk_gate.md`
 - Promotion report: `user_data/strategy_research/promotion_reports/latest_promotion_report.md`
@@ -115,6 +121,27 @@ K-line lab wrappers.
 - Research memory: `user_data/strategy_research/research_memory/latest_research_memory.md`
 - Weekly knowledge update: `user_data/strategy_research/knowledge_updates/latest_weekly_knowledge_update.md`
 - Consolidation: `user_data/strategy_research/consolidation/latest_research_consolidation.md`
+
+## Regime Window Builder
+
+Regime labels are generated from local Binance USDT-M BTC/ETH futures OHLCV,
+not from hardcoded historical examples. Refresh them with:
+
+```bash
+user_data/strategy_research/start_manual_research.sh --regime-windows
+```
+
+The builder prefers `1h` futures feather data and resamples `15m`/`5m`/`1m`
+futures candles to `1h` when needed. It computes BTC/ETH returns, EMA gaps,
+realized volatility, ATR%, BB width, trend strength, range score, and
+directional agreement before selecting candidate `bull`, `bear`, `range`, and
+`high_vol` windows.
+
+Old manually named windows such as `bull_home`, `range_home`, `bear_home`, and
+`high_vol_hostile` are quarantined. Their old reports may remain as raw
+date-range backtests, but they must not be used as active regime truth,
+promotion evidence, strategy-generation basis, or durable memory until relabeled
+against `latest_regime_windows.json`.
 
 ## Dry-Run Runtime Safety
 
