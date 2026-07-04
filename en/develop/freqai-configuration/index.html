@@ -2600,9 +2600,9 @@ Define our model, loss function, and optimizer, and then move them to the approp
 <p>Like all freqai models, PyTorch models inherit <code>IFreqaiModel</code>. <code>IFreqaiModel</code> declares three abstract methods: <code>train</code>, <code>fit</code>, and <code>predict</code>. we implement these methods in three levels of hierarchy.
 From top to bottom:</p>
 <ol>
-<li><code>BasePyTorchModel</code> - Implements the <code>train</code> method. all <code>BasePyTorch*</code> inherit it. responsible for general data preparation (e.g., data normalization) and calling the <code>fit</code> method. Sets <code>device</code> attribute used by children classes. Sets <code>model_type</code> attribute used by the parent class.</li>
-<li><code>BasePyTorch*</code> -  Implements the <code>predict</code> method. Here, the <code>*</code> represents a group of algorithms, such as classifiers or regressors. responsible for data preprocessing, predicting, and postprocessing if needed.</li>
-<li><code>PyTorch*Classifier</code> / <code>PyTorch*Regressor</code> - implements the <code>fit</code> method. responsible for the main train flaw, where we initialize the trainer and model objects.</li>
+<li><code>BasePyTorchModel</code> - Implements the <code>train</code> method. All <code>BasePyTorch*</code> inherit it. Responsible for general data preparation (e.g., data normalization) and calling the <code>fit</code> method. Sets <code>device</code> attribute used by children classes. Sets <code>model_type</code> attribute used by the parent class.</li>
+<li><code>BasePyTorch*</code> -  Implements the <code>predict</code> method. Here, the <code>*</code> represents a group of algorithms, such as classifiers or regressors. Responsible for data preprocessing, predicting, and postprocessing if needed.</li>
+<li><code>PyTorch*Classifier</code> / <code>PyTorch*Regressor</code> - implements the <code>fit</code> method. Responsible for the main training flow, where we initialize the trainer and model objects.</li>
 </ol>
 <p><img alt="image" src="../assets/freqai_pytorch-diagram.png" /></p>
 <h4 id="full-example">Full example<a class="headerlink" href="#full-example" title="Permanent link">&para;</a></h4>
