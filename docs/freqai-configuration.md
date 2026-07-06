@@ -349,9 +349,9 @@ In addition, the trainer is responsible for the following:
 Like all freqai models, PyTorch models inherit `IFreqaiModel`. `IFreqaiModel` declares three abstract methods: `train`, `fit`, and `predict`. we implement these methods in three levels of hierarchy.
 From top to bottom:
 
-1. `BasePyTorchModel` - Implements the `train` method. all `BasePyTorch*` inherit it. responsible for general data preparation (e.g., data normalization) and calling the `fit` method. Sets `device` attribute used by children classes. Sets `model_type` attribute used by the parent class.
-2. `BasePyTorch*` -  Implements the `predict` method. Here, the `*` represents a group of algorithms, such as classifiers or regressors. responsible for data preprocessing, predicting, and postprocessing if needed.
-3. `PyTorch*Classifier` / `PyTorch*Regressor` - implements the `fit` method. responsible for the main train flaw, where we initialize the trainer and model objects.
+1. `BasePyTorchModel` - Implements the `train` method. All `BasePyTorch*` inherit it. Responsible for general data preparation (e.g., data normalization) and calling the `fit` method. Sets `device` attribute used by children classes. Sets `model_type` attribute used by the parent class.
+2. `BasePyTorch*` -  Implements the `predict` method. Here, the `*` represents a group of algorithms, such as classifiers or regressors. Responsible for data preprocessing, predicting, and postprocessing if needed.
+3. `PyTorch*Classifier` / `PyTorch*Regressor` - implements the `fit` method. Responsible for the main training flow, where we initialize the trainer and model objects.
 
 ![image](assets/freqai_pytorch-diagram.png)
 
