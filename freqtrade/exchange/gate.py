@@ -131,3 +131,13 @@ class Gate(Exchange):
                                 "rate": pair_fees[takerOrMaker],
                             }
         return trades
+
+
+class GateEU(Gate):
+    """Gate.io EU exchange class.
+    Minimal adjustment to disable futures trading for the EU version of gate.io.
+    """
+
+    _supported_trading_mode_margin_pairs: list[tuple[TradingMode, MarginMode]] = [
+        (TradingMode.SPOT, MarginMode.NONE),
+    ]

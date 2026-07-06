@@ -149,7 +149,7 @@ def __run_backtest_bg(btconfig: Config, job_id: str):
         job["error"] = str(e)
     finally:
         job["is_running"] = False
-        ApiBG.bgtask_running = False
+        ApiBG.analysis_running = False
 
 
 @router.post("/backtest", response_model=BacktestResponse)
@@ -157,7 +157,7 @@ async def api_start_backtest(
     bt_settings: BacktestRequest, background_tasks: BackgroundTasks, config=Depends(get_config)
 ):
     """Start backtesting if not done so already"""
-    if ApiBG.bgtask_running:
+    if ApiBG.analysis_running:
         raise RPCException("Bot Background task already running")
 
     verify_strategy(bt_settings.strategy)
@@ -194,7 +194,7 @@ async def api_start_backtest(
     ApiBG.bt["job_id"] = job_id
 
     background_tasks.add_task(__run_backtest_bg, btconfig=btconfig, job_id=job_id)
-    ApiBG.bgtask_running = True
+    ApiBG.analysis_running = True
 
     return {
         "status": "running",
@@ -215,7 +215,7 @@ def api_get_backtest():
 
     job = ApiBG.jobs.get(ApiBG.bt.get("job_id") or "")
 
-    if ApiBG.bgtask_running:
+    if ApiBG.analysis_running:
         bt = ApiBG.bt["bt"]
         progress_tasks = (job.get("progress_tasks") if job else None) or {}
         # Derive the legacy step/progress fields from the inner/detail task, preserving
@@ -263,7 +263,7 @@ def api_get_backtest():
 @router.delete("/backtest", response_model=BacktestResponse)
 def api_delete_backtest():
     """Reset backtesting"""
-    if ApiBG.bgtask_running:
+    if ApiBG.analysis_running:
         return {
             "status": "running",
             "running": True,
@@ -290,7 +290,7 @@ def api_delete_backtest():
 
 @router.get("/backtest/abort", response_model=BacktestResponse)
 def api_backtest_abort():
-    if not ApiBG.bgtask_running:
+    if not ApiBG.analysis_running:
         return {
             "status": "not_running",
             "running": False,

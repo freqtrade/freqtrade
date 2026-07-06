@@ -200,6 +200,7 @@ class ApiServer(RPCHandler):
         )
 
     def configure_app(self, app: FastAPI, config):
+        from freqtrade.rpc.api_server.api_analysis import router_lookahead, router_recursive
         from freqtrade.rpc.api_server.api_auth import http_basic_or_jwt_token, router_login
         from freqtrade.rpc.api_server.api_background_tasks import router as api_bg_tasks
         from freqtrade.rpc.api_server.api_backtest import router as api_backtest
@@ -261,6 +262,18 @@ class ApiServer(RPCHandler):
             api_download_data,
             prefix="/api/v1",
             tags=["Download-data", "Webserver"],
+            dependencies=[Depends(http_basic_or_jwt_token), Depends(is_webserver_mode)],
+        )
+        app.include_router(
+            router_lookahead,
+            prefix="/api/v1",
+            tags=["Lookahead Analysis", "Webserver"],
+            dependencies=[Depends(http_basic_or_jwt_token), Depends(is_webserver_mode)],
+        )
+        app.include_router(
+            router_recursive,
+            prefix="/api/v1",
+            tags=["Recursive Analysis", "Webserver"],
             dependencies=[Depends(http_basic_or_jwt_token), Depends(is_webserver_mode)],
         )
         app.include_router(ws_router, prefix="/api/v1")

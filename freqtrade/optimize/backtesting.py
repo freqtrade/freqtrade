@@ -1490,6 +1490,23 @@ class Backtesting:
             return None
         return row
 
+    def _sync_pair_index(
+        self, data: dict, pair: str, row_index: int, current_time: datetime
+    ) -> int:
+        """
+        Fast-forward a stale row index to the row dated current_time.
+
+        A dynamic pairlist can drop a pair and re-add it later. indexes[pair] only
+        advances while the pair is processed, so on re-entry it points at old rows
+        the pair would otherwise replay.
+        """
+        if not self.dynamic_pairlist:
+            return row_index
+        pair_rows = data[pair]
+        while row_index < len(pair_rows) and pair_rows[row_index][DATE_IDX] < current_time:
+            row_index += 1
+        return row_index
+
     def _collate_rejected(self, pair, row):
         """
         Temporarily store rejected signal information for downstream use in backtesting_analysis
@@ -1669,7 +1686,7 @@ class Backtesting:
                 trade_dir: LongShort | None = None
                 if is_first:
                     # Main candle
-                    row_index = indexes[pair]
+                    row_index = self._sync_pair_index(data, pair, indexes[pair], current_time)
                     row = self.validate_row(data, pair, row_index, current_time)
                     if not row:
                         continue

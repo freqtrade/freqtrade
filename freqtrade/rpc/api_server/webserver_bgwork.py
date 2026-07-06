@@ -22,8 +22,13 @@ class ProgressTask(TypedDict):
     description: str
 
 
+JOB_CATEGORIES = Literal[
+    "pairlist", "download_data", "backtest", "lookahead_analysis", "recursive_analysis"
+]
+
+
 class JobsContainer(TypedDict):
-    category: Literal["pairlist", "download_data", "backtest"]
+    category: JOB_CATEGORIES
     is_running: bool
     status: str
     progress: float | None
@@ -51,7 +56,6 @@ class ApiBG:
         "last_config": {},
         "job_id": None,
     }
-    bgtask_running: bool = False
     # Exchange - only available in webserver mode.
     exchanges: dict[str, Exchange] = {}
 
@@ -63,6 +67,8 @@ class ApiBG:
     # Pairlist evaluate things
     pairlist_running: bool = False
     download_data_running: bool = False
+    # Lookahead / recursive analysis
+    analysis_running: bool = False
 
     @staticmethod
     def get_job_id() -> str:

@@ -2952,15 +2952,29 @@ def test_api_pairlists_evaluate(botclient, tmp_path, mocker):
     # Get individual job
     rc = client_get(client, f"{BASE_URI}/background/{job_id}")
     assert_response(rc)
-    response = rc.json()
-    assert response["job_id"] == job_id
-    assert response["job_category"] == "pairlist"
+    response_get = rc.json()
+    assert response_get["job_id"] == job_id
+    assert response_get["job_category"] == "pairlist"
 
     rc = client_get(client, f"{BASE_URI}/pairlists/evaluate/{job_id}")
     assert_response(rc)
     response = rc.json()
     assert response["result"]["whitelist"] == ["ETH/BTC", "LTC/BTC", "XRP/BTC", "NEO/BTC"]
     assert response["result"]["length"] == 4
+    assert len(ApiBG.jobs) == 1
+
+    # Test background job deletion
+    rc = client_delete(client, f"{BASE_URI}/background/RandomJob")
+    assert_response(rc, 404)
+    assert rc.json()["detail"] == "Job not found."
+
+    rc = client_delete(client, f"{BASE_URI}/background/{job_id}")
+    assert_response(rc)
+    response_del = rc.json()
+    assert response_del["job_id"] == job_id
+    assert response_del["job_category"] == "pairlist"
+    assert response_del == response_get
+    assert len(ApiBG.jobs) == 0
 
     # Restart with additional filter, reducing the list to 2
     body["pairlists"].append({"method": "OffsetFilter", "number_assets": 2})
@@ -3037,6 +3051,91 @@ def test_list_available_pairs(botclient):
     assert rc.json()["length"] == 2
     assert rc.json()["pairs"] == ["UNITTEST/USDT:USDT", "XRP/USDT:USDT"]
     assert len(rc.json()["pair_interval"]) == 2
+
+
+def test_api_background_jobs(botclient):
+    ftbot, client = botclient
+    rc = client_get(client, f"{BASE_URI}/background")
+    assert_response(rc, 503)
+
+    ftbot.config["runmode"] = RunMode.WEBSERVER
+
+    rc = client_get(client, f"{BASE_URI}/background")
+    assert_response(rc)
+    response = rc.json()
+    assert isinstance(response, list)
+    assert len(response) == 0
+
+    # Fake a job
+    job_id = "RandomExistingJob"
+    ApiBG.jobs[job_id] = {
+        "category": "pairlist",
+        "status": "running",
+        "is_running": True,
+        "result": None,
+    }
+    rc = client_get(client, f"{BASE_URI}/background")
+    assert_response(rc)
+    response = rc.json()
+    assert isinstance(response, list)
+    assert len(response) == 1
+    assert response[0]["job_id"] == job_id
+
+    rc = client_get(client, f"{BASE_URI}/background/{job_id}")
+    assert_response(rc)
+    response = rc.json()
+    assert response["job_id"] == job_id
+
+    # Attempt deletion
+    rc = client_delete(client, f"{BASE_URI}/background/{job_id}")
+    assert_response(rc, 400)
+    assert rc.json()["detail"] == "Job is still running."
+
+    # Attempt deleting a non-existing job
+    rc = client_delete(client, f"{BASE_URI}/background/NonExistingJob")
+    assert_response(rc, 404)
+    assert rc.json()["detail"] == "Job not found."
+
+    ApiBG.jobs[job_id]["is_running"] = False
+    rc = client_delete(client, f"{BASE_URI}/background/{job_id}")
+    assert_response(rc, 200)
+    response = rc.json()
+    assert response["job_id"] == job_id
+    assert len(ApiBG.jobs) == 0
+
+    # Reinsert job for testing
+    ApiBG.jobs.update(
+        {
+            job_id: {
+                "category": "pairlist",
+                "status": "ended",
+                "is_running": False,
+                "result": None,
+            },
+            "randomJob2": {
+                "category": "download_data",
+                "status": "running",
+                "is_running": True,
+                "result": None,
+            },
+            "randomJob3": {
+                "category": "download_data",
+                "status": "failed",
+                "is_running": False,
+                "result": None,
+            },
+        }
+    )
+    assert len(ApiBG.jobs) == 3
+
+    rc = client_delete(client, f"{BASE_URI}/background/clear")
+    assert_response(rc)
+    assert len(ApiBG.jobs) == 1
+    response = rc.json()
+    assert isinstance(response, list)
+    assert len(response) == 1
+    # The not deleted job should still be there
+    assert response[0]["job_id"] == "randomJob2"
 
 
 def test_sysinfo(botclient):
@@ -3129,7 +3228,7 @@ def test_api_backtesting(botclient, mocker, fee, caplog, tmp_path):
         assert result["status_msg"] == "Backtest ended"
 
         # Simulate running backtest
-        ApiBG.bgtask_running = True
+        ApiBG.analysis_running = True
         rc = client_get(client, f"{BASE_URI}/backtest/abort")
         assert_response(rc)
         result = rc.json()
@@ -3158,7 +3257,7 @@ def test_api_backtesting(botclient, mocker, fee, caplog, tmp_path):
         result = rc.json()
         assert "Bot Background task already running" in result["error"]
 
-        ApiBG.bgtask_running = False
+        ApiBG.analysis_running = False
 
         # Rerun backtest (should get previous result)
         rc = client_post(client, f"{BASE_URI}/backtest", data=data)
@@ -3635,6 +3734,157 @@ def test_api_download_data(botclient, mocker, tmp_path):
     assert response["job_category"] == "download_data"
     assert response["status"] == "failed"
     assert response["error"] == "Download error"
+
+
+def test_api_lookahead_analysis(botclient, mocker, tmp_path):
+    from types import SimpleNamespace
+
+    ftbot, client = botclient
+
+    body = {
+        "strategy": CURRENT_TEST_STRATEGY,
+        "timerange": "20180110-20180112",
+        "minimum_trade_amount": 10,
+        "targeted_trade_amount": 20,
+    }
+
+    # Fail - not in webserver mode
+    rc = client_post(client, f"{BASE_URI}/lookahead_analysis", data=body)
+    assert_response(rc, 503)
+    assert rc.json()["detail"] == "Bot is not in the correct state."
+
+    ftbot.config["runmode"] = RunMode.WEBSERVER
+    ftbot.config["user_data_dir"] = tmp_path
+
+    # Fail, already running
+    ApiBG.analysis_running = True
+    rc = client_post(client, f"{BASE_URI}/lookahead_analysis", data=body)
+    assert_response(rc, 400)
+    assert rc.json()["detail"] == "Analysis is already running."
+    ApiBG.analysis_running = False
+
+    fake_instance = SimpleNamespace(
+        strategy_obj={"name": CURRENT_TEST_STRATEGY},
+        current_analysis=SimpleNamespace(
+            has_bias=True,
+            total_signals=25,
+            false_entry_signals=2,
+            false_exit_signals=1,
+            false_indicators=["rsi", "ema"],
+        ),
+    )
+    mocker.patch(
+        "freqtrade.optimize.analysis.lookahead_helpers."
+        "LookaheadAnalysisSubFunctions.initialize_single_lookahead_analysis",
+        return_value=fake_instance,
+    )
+
+    rc = client_post(client, f"{BASE_URI}/lookahead_analysis", data=body)
+    assert_response(rc)
+    assert rc.json()["status"] == "Lookahead analysis started in background."
+    job_id = rc.json()["job_id"]
+
+    # Job finished immediately (BackgroundTask runs synchronously in TestClient)
+    rc = client_get(client, f"{BASE_URI}/background/{job_id}")
+    assert_response(rc)
+    assert rc.json()["job_category"] == "lookahead_analysis"
+    assert rc.json()["status"] == "success"
+
+    rc = client_get(client, f"{BASE_URI}/lookahead_analysis/{job_id}")
+    assert_response(rc)
+    response = rc.json()
+    assert response["status"] == "ended"
+    assert response["running"] is False
+    assert response["result"]["strategy"] == CURRENT_TEST_STRATEGY
+    assert response["result"]["has_bias"] is True
+    assert response["result"]["total_signals"] == 25
+    assert response["result"]["biased_entry_signals"] == 2
+    assert response["result"]["biased_exit_signals"] == 1
+    assert response["result"]["biased_indicators"] == ["rsi", "ema"]
+
+    # Unknown job
+    rc = client_get(client, f"{BASE_URI}/lookahead_analysis/RandomJob")
+    assert_response(rc, 404)
+
+    # Error case
+    ApiBG.analysis_running = False
+    mocker.patch(
+        "freqtrade.optimize.analysis.lookahead_helpers."
+        "LookaheadAnalysisSubFunctions.initialize_single_lookahead_analysis",
+        side_effect=OperationalException("Analysis error"),
+    )
+    rc = client_post(client, f"{BASE_URI}/lookahead_analysis", data=body)
+    assert_response(rc)
+    job_id = rc.json()["job_id"]
+    rc = client_get(client, f"{BASE_URI}/lookahead_analysis/{job_id}")
+    assert_response(rc)
+    assert rc.json()["status"] == "error"
+    assert "Analysis error" in rc.json()["status_msg"]
+
+    rc = client_get(client, f"{BASE_URI}/recursive_analysis/NonExistingJob")
+    assert_response(rc, 404)
+    assert rc.json()["detail"] == "Job not found."
+
+
+def test_api_recursive_analysis(botclient, mocker, tmp_path):
+    from types import SimpleNamespace
+
+    ftbot, client = botclient
+
+    body = {
+        "strategy": CURRENT_TEST_STRATEGY,
+        "timerange": "20180110-20180112",
+    }
+
+    # Fail - not in webserver mode
+    rc = client_post(client, f"{BASE_URI}/recursive_analysis", data=body)
+    assert_response(rc, 503)
+    assert rc.json()["detail"] == "Bot is not in the correct state."
+
+    ftbot.config["runmode"] = RunMode.WEBSERVER
+    ftbot.config["user_data_dir"] = tmp_path
+
+    # Fail, already running
+    ApiBG.analysis_running = True
+    rc = client_post(client, f"{BASE_URI}/recursive_analysis", data=body)
+    assert_response(rc, 400)
+    assert rc.json()["detail"] == "Analysis is already running."
+    ApiBG.analysis_running = False
+
+    fake_instance = SimpleNamespace(
+        strategy_obj={"name": CURRENT_TEST_STRATEGY},
+        _startup_candle=[199, 399],
+        _strat_scc=300,
+        dict_recursive={"rsi": {"199": 0.01234, "399": 0.0}},
+    )
+    mocker.patch(
+        "freqtrade.optimize.analysis.recursive_helpers."
+        "RecursiveAnalysisSubFunctions.initialize_single_recursive_analysis",
+        return_value=fake_instance,
+    )
+
+    rc = client_post(client, f"{BASE_URI}/recursive_analysis", data=body)
+    assert_response(rc)
+    assert rc.json()["status"] == "Recursive analysis started in background."
+    job_id = rc.json()["job_id"]
+
+    rc = client_get(client, f"{BASE_URI}/background/{job_id}")
+    assert_response(rc)
+    assert rc.json()["job_category"] == "recursive_analysis"
+    assert rc.json()["status"] == "success"
+
+    rc = client_get(client, f"{BASE_URI}/recursive_analysis/{job_id}")
+    assert_response(rc)
+    response = rc.json()
+    assert response["status"] == "ended"
+    assert response["result"]["strategy"] == CURRENT_TEST_STRATEGY
+    assert response["result"]["startup_candles"] == [199, 399]
+    assert response["result"]["strategy_scc"] == 300
+    assert response["result"]["results"] == {"rsi": {"199": 0.01234, "399": 0.0}}
+
+    rc = client_get(client, f"{BASE_URI}/recursive_analysis/NonExistingJob")
+    assert_response(rc, 404)
+    assert rc.json()["detail"] == "Job not found."
 
 
 def test_api_markets_live(botclient):

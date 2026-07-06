@@ -10,7 +10,7 @@ from freqtrade.exchange.bitget import Bitget
 from freqtrade.exchange.bitmart import Bitmart
 from freqtrade.exchange.bitpanda import Bitpanda
 from freqtrade.exchange.bitvavo import Bitvavo
-from freqtrade.exchange.bybit import Bybit
+from freqtrade.exchange.bybit import Bybit, BybitEU
 from freqtrade.exchange.coinex import Coinex
 from freqtrade.exchange.cryptocom import Cryptocom
 from freqtrade.exchange.exchange_utils import (
@@ -38,7 +38,7 @@ from freqtrade.exchange.exchange_utils_timeframe import (
     timeframe_to_resample_freq,
     timeframe_to_seconds,
 )
-from freqtrade.exchange.gate import Gate
+from freqtrade.exchange.gate import Gate, GateEU
 from freqtrade.exchange.hitbtc import Hitbtc
 from freqtrade.exchange.htx import Htx
 from freqtrade.exchange.hyperliquid import Hyperliquid

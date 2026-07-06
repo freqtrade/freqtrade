@@ -26,9 +26,15 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.exchange_utils import date_minus_candles
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist
-from freqtrade.util import dt_now, dt_ts, format_ms_time, format_ms_time_det
+from freqtrade.util import (
+    CustomProgress,
+    dt_now,
+    dt_ts,
+    format_ms_time,
+    format_ms_time_det,
+    retrieve_progress_tracker,
+)
 from freqtrade.util.migrations import migrate_data
-from freqtrade.util.progress_tracker import CustomProgress, retrieve_progress_tracker
 
 
 logger = logging.getLogger(__name__)

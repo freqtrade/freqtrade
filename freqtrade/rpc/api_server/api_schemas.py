@@ -6,7 +6,7 @@ from pydantic import AwareDatetime, BaseModel, Field, RootModel, SerializeAsAny,
 from freqtrade.constants import DL_DATA_TIMEFRAMES, IntOrInf
 from freqtrade.enums import MarginMode, OrderTypeValues, SignalDirection, TradingMode
 from freqtrade.ft_types import AnnotationType, ValidExchangesType
-from freqtrade.rpc.api_server.webserver_bgwork import ProgressTask
+from freqtrade.rpc.api_server.webserver_bgwork import JOB_CATEGORIES, ProgressTask
 
 
 class ExchangeModePayloadMixin(BaseModel):
@@ -41,7 +41,7 @@ class BgJobStarted(StatusMsg):
 
 class BackgroundTaskStatus(BaseModel):
     job_id: str
-    job_category: str
+    job_category: JOB_CATEGORIES
     status: str
     running: bool
     progress: float | None = None
@@ -678,6 +678,60 @@ class BacktestMarketChange(BaseModel):
     columns: list[str]
     length: int
     data: list[list[Any]]
+
+
+class LookaheadAnalysisRequest(BaseModel):
+    strategy: str
+    timeframe: str | None = None
+    timerange: str | None = None
+    minimum_trade_amount: int = 10
+    targeted_trade_amount: int = 20
+    lookahead_allow_limit_orders: bool = False
+
+
+class LookaheadAnalysisResultEntry(BaseModel):
+    strategy: str
+    has_bias: bool
+    total_signals: int
+    biased_entry_signals: int
+    biased_exit_signals: int
+    biased_indicators: list[str]
+
+
+class LookaheadAnalysisResponse(BaseModel):
+    status: str
+    running: bool
+    status_msg: str
+    result: LookaheadAnalysisResultEntry | None = None
+
+
+class RecursiveAnalysisRequest(BaseModel):
+    strategy: str
+    timeframe: str | None = None
+    timerange: str | None = None
+    startup_candle: list[int] | None = None
+
+
+class RecursiveAnalysisResultEntry(BaseModel):
+    strategy: str
+    startup_candles: list[int] = Field(description="The startup candle counts that were tested.")
+    strategy_scc: int | None = Field(
+        default=None,
+        description="The strategy's own startup_candle_count, if it could be determined.",
+    )
+    results: dict[str, dict[str, float]] = Field(
+        description=(
+            "Per-indicator variance keyed by indicator name, then by startup candle count. "
+            "e.g. { 'rsi': { '199': 0.123, '200': float('nan'), ... }, 'macd': { ... }, ... } }. "
+        )
+    )
+
+
+class RecursiveAnalysisResponse(BaseModel):
+    status: str
+    running: bool
+    status_msg: str
+    result: RecursiveAnalysisResultEntry | None = None
 
 
 class WalletHistoryResponse(BaseModel):

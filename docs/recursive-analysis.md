@@ -24,6 +24,10 @@ Command settings:
 
 In addition to the recursive formula check, this command also carries out a simple lookahead bias check on the indicator values only. For a full lookahead check, use [Lookahead-analysis](lookahead-analysis.md).
 
+!!! Tip "Running recursive-analysis via freqUI"
+    `recursive-analysis` can also be ran through freqUI when running freqtrade in [webserver mode](utils.md#webserver-mode).
+    As the analysis can run for a while, it is executed as a background task.
+
 ## Recursive-analysis command reference
 
 --8<-- "commands/recursive-analysis.md"
@@ -68,3 +72,14 @@ As such, aiming for absolute zero variance (shown by `-` value) might not be the
 - `recursive-analysis` will only calculate and compare the indicator values at the last row. The output table reports the percentage differences between the different startup candle count calculations and the original benchmark calculation. Whether it has any actual impact on your entries and exits is not included.
 - The ideal scenario is that indicators will have no variance (or at least very close to 0%) despite the startup candle being varied. In reality, indicators such as EMA are using a recursive formula to calculate indicator values, so the goal is not necessarily to have zero percentage variance, but to have the variance low enough (and therefore `startup_candle_count` high enough) that the recursion inherent in the indicator will not have any real impact on trading decisions.
 - `recursive-analysis` will only run calculations on `populate_indicators` and `@informative` decorator(s). If you put any indicator calculation on `populate_entry_trend` or `populate_exit_trend`, it won't be calculated.
+
+## Running recursive-analysis via the REST API
+
+`recursive-analysis` can also be triggered through the REST API when running freqtrade in [webserver mode](utils.md#webserver-mode).
+As the analysis can run for a while, it is executed as a background task.
+
+1. `POST /api/v1/recursive_analysis` with a JSON body containing at least `strategy` and `timerange` (optional: `timeframe`, `startup_candle`). Pairs are taken from the webserver configuration. This returns a `job_id`.
+2. Poll `GET /api/v1/background/{job_id}` to follow the progress.
+3. Once finished, fetch the result via `GET /api/v1/recursive_analysis/{job_id}`.
+
+Only one analysis (lookahead or recursive) can run at a time.

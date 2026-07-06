@@ -45,24 +45,26 @@ Please read the [exchange specific notes](exchanges.md) to learn about eventual,
 - [X] [BingX](https://bingx.com/invite/0EM9RX)
 - [X] [Bitget](https://www.bitget.com/)
 - [X] [Bitmart](https://bitmart.com/)
+- [X] [Bybit EU](https://bybit.eu/)
 - [X] [Bybit](https://bybit.com/)
-- [X] [Gate.io](https://www.gate.io/ref/6266643)
+- [X] [Gate EU](https://www.gate.com/en-eu)
+- [X] [Gate](https://www.gate.com/ref/6266643)
 - [X] [HTX](https://www.htx.com/)
 - [X] [Hyperliquid](https://hyperliquid.xyz/) (A decentralized exchange, or DEX)
 - [X] [Kraken](https://kraken.com/)
-- [X] [OKX](https://okx.com/)
 - [X] [MyOKX](https://okx.com/) (OKX EEA)
-- [ ] [potentially many others through <img alt="ccxt" width="30px" src="assets/ccxt-logo.svg" />](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
+- [X] [OKX](https://okx.com/)
+- [ ] [potentially many others](https://github.com/ccxt/ccxt/). _(We cannot guarantee they will work)_
 
 ### Supported Futures Exchanges
 
 - [X] [Binance](https://www.binance.com/)
 - [X] [Bitget](https://www.bitget.com/)
 - [X] [Bybit](https://bybit.com/)
-- [X] [Gate.io](https://www.gate.io/ref/6266643)
+- [X] [Gate](https://www.gate.com/ref/6266643)
 - [X] [Hyperliquid](https://hyperliquid.xyz/) (A decentralized exchange, or DEX)
-- [X] [OKX](https://okx.com/)
 - [X] [Kraken](https://www.kraken.com/features/futures)
+- [X] [OKX](https://okx.com/)
 
 Please make sure to read the [exchange specific notes](exchanges.md), as well as the [trading with leverage](leverage.md) documentation before diving in.
 

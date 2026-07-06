@@ -24,7 +24,7 @@ from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import timeframe_to_next_date, timeframe_to_prev_date
 from freqtrade.exchange.exchange_utils import DECIMAL_PLACES, TICK_SIZE
 from freqtrade.optimize.backtest_caching import get_backtest_metadata_filename, get_strategy_run_id
-from freqtrade.optimize.backtesting import HEADERS, Backtesting
+from freqtrade.optimize.backtesting import DATE_IDX, HEADERS, Backtesting
 from freqtrade.persistence import LocalTrade, Trade
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.util import dt_now, dt_utc
@@ -32,6 +32,7 @@ from tests.conftest import (
     CURRENT_TEST_STRATEGY,
     EXMS,
     generate_test_data,
+    generate_test_data_raw,
     get_args,
     log_has,
     log_has_re,
@@ -2876,3 +2877,84 @@ def test_time_pair_generator_open_trades_first(mocker, default_conf, dynamic_pai
         assert processed_pairs == ["XRP/BTC", "NEO/BTC", "ETH/BTC", "LTC/BTC"]
     else:
         assert processed_pairs == ["XRP/BTC", "NEO/BTC", "LTC/BTC", "ETH/BTC"]
+
+
+def test_time_pair_generator_dynamic_pairlist_no_stale_replay(mocker, default_conf):
+    patch_exchange(mocker)
+    default_conf["enable_dynamic_pairlist"] = True
+    backtesting = Backtesting(default_conf)
+    backtesting._set_strategy(backtesting.strategylist[0])
+
+    n = 10
+    tf = backtesting.timeframe_td
+    start = datetime(2025, 1, 1, tzinfo=UTC)
+    # data[pair][0] is dated start + tf
+    candles = generate_test_data_raw(backtesting.timeframe, n, start=start)
+    rows = [
+        [start + tf * (i + 1), c[1], c[2], c[3], c[4], 0, 0, 0, 0, None, None]
+        for i, c in enumerate(candles)
+    ]
+    pairs = ["A/BTC", "B/BTC"]
+    data = {p: list(rows) for p in pairs}
+
+    # B/BTC absent for candles 3-5, then re-enters
+    absent = {3, 4, 5}
+    calls = {"n": -1}
+
+    def mock_refresh(self, **kwargs):
+        calls["n"] += 1
+        self._whitelist = ["A/BTC"] if calls["n"] in absent else ["A/BTC", "B/BTC"]
+
+    mocker.patch("freqtrade.plugins.pairlistmanager.PairListManager.refresh_pairlist", mock_refresh)
+
+    end = start + tf * n
+    a_rows, b_rows = [], []
+    for current_time, pair, r, _, _ in backtesting.time_pair_generator(start, end, pairs, data):
+        (a_rows if pair == "A/BTC" else b_rows).append((current_time, r[DATE_IDX]))
+
+    # Every row is dated at its candle, and B resumes with no replay on re-entry
+    assert all(ct == d for ct, d in a_rows)
+    assert len(a_rows) == n
+    b_present = [a for a in a_rows if a[0] not in {start + tf * (i + 1) for i in absent}]
+    assert b_rows == b_present
+
+
+def test_time_pair_generator_dynamic_pairlist_real_filters(mocker, default_conf):
+    patch_exchange(mocker)
+    pairs = ["ETH/BTC", "LTC/BTC", "XRP/BTC", "NEO/BTC", "ADA/BTC", "DASH/BTC"]
+    default_conf["exchange"]["pair_whitelist"] = pairs
+    default_conf["enable_dynamic_pairlist"] = True
+    # Rotates the active 2 pairs each candle, so pairs leave and re-enter (seeded)
+    default_conf["pairlists"] = [
+        {"method": "StaticPairList"},
+        {"method": "ShuffleFilter", "seed": 42, "shuffle_frequency": "iteration"},
+        {"method": "OffsetFilter", "number_assets": 2},
+    ]
+    backtesting = Backtesting(default_conf)
+    backtesting._set_strategy(backtesting.strategylist[0])
+    backtesting.available_pairs = list(pairs)
+
+    n = 20
+    tf = backtesting.timeframe_td
+    start = datetime(2025, 1, 1, tzinfo=UTC)
+    grid = [start + tf * (i + 1) for i in range(n)]
+
+    def row(t):
+        return [t, 1.0, 1.1, 0.9, 1.0, 0, 0, 0, 0, None, None]
+
+    data = {p: [row(t) for t in grid] for p in pairs}
+    end = start + tf * n
+
+    present_at: dict = {}
+    for current_time, pair, r, _, _ in backtesting.time_pair_generator(start, end, pairs, data):
+        assert r[DATE_IDX] == current_time
+        present_at.setdefault(pair, []).append(current_time)
+
+    # Confirm the rotation drops and re-adds a pair, so re-entry was exercised
+    candles = sorted({c for cs in present_at.values() for c in cs})
+    reentered = [
+        p
+        for p, cs in present_at.items()
+        if any(c not in cs for c in candles[candles.index(cs[0]) : candles.index(cs[-1])])
+    ]
+    assert reentered
