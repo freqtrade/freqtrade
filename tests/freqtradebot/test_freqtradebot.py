@@ -2827,6 +2827,103 @@ def test_handle_cancel_exit_cancel_exception(mocker, default_conf_usdt) -> None:
     # assert not freqtrade.handle_cancel_exit(trade, order, reason)
 
 
+@pytest.mark.parametrize("is_short", [False, True])
+def test_handle_similar_open_order_unexitable(
+    mocker, default_conf_usdt, fee, is_short, caplog
+) -> None:
+    """
+    A partially-filled exit order that cannot be cancelled (cancelling would leave an
+    unexitable remainder) must not be replaced by a new order - otherwise the position
+    would be exited twice. Regression test for #13332.
+    """
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    amount = 100
+    entry_price = 0.25
+    mocker.patch(f"{EXMS}.get_min_pair_stake_amount", return_value=10)
+    mocker.patch(f"{EXMS}.get_rate", return_value=entry_price)
+    cancel_order_mock = mocker.patch(f"{EXMS}.cancel_order_with_result")
+    # cancel_open_orders_of_trade fetches the current order state from the exchange
+    mocker.patch(
+        f"{EXMS}.fetch_order",
+        return_value={
+            "id": "sell_123456",
+            "side": exit_side(is_short),
+            "amount": amount,
+            "filled": amount * 0.99,
+            "remaining": amount * 0.01,
+            "status": "open",
+        },
+    )
+
+    freqtrade = FreqtradeBot(default_conf_usdt)
+
+    trade = Trade(
+        pair="LTC/USDT",
+        amount=amount,
+        exchange="binance",
+        open_rate=entry_price,
+        open_date=dt_now() - timedelta(days=2),
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        exit_reason="roi",
+        stake_amount=entry_price * amount,
+        leverage=1,
+        is_short=is_short,
+    )
+    trade.orders = [
+        Order(
+            ft_order_side=entry_side(is_short),
+            ft_pair=trade.pair,
+            ft_is_open=False,
+            order_id="buy_123456",
+            status="closed",
+            symbol=trade.pair,
+            order_type="market",
+            side=entry_side(is_short),
+            price=entry_price,
+            average=entry_price,
+            amount=amount,
+            filled=amount,
+            remaining=0,
+            cost=entry_price * amount,
+            order_date=trade.open_date,
+            order_filled_date=trade.open_date,
+        ),
+        Order(
+            ft_order_side=exit_side(is_short),
+            ft_pair=trade.pair,
+            ft_is_open=True,
+            order_id="sell_123456",
+            status="open",
+            symbol=trade.pair,
+            order_type="limit",
+            side=exit_side(is_short),
+            price=entry_price,
+            average=entry_price,
+            amount=amount,
+            filled=amount * 0.99,
+            remaining=amount * 0.01,
+            cost=entry_price * amount,
+            order_date=trade.open_date,
+        ),
+    ]
+
+    assert trade.has_open_orders
+    # New exit at a *different* price -> tries to cancel and replace, but the cancel is
+    # refused (would leave an unexitable remainder), so the order stays open.
+    result = freqtrade.handle_similar_open_order(
+        trade, price=entry_price * 1.01, amount=amount, side=exit_side(is_short)
+    )
+    # Must return True so the caller does NOT place a new (duplicate) order.
+    assert result is True
+    assert cancel_order_mock.call_count == 0
+    assert trade.has_open_orders
+    assert log_has_re(
+        r"Order .* not cancelled, as .* would result in an unexitable trade\.", caplog
+    )
+
+
 @pytest.mark.parametrize(
     "is_short, open_rate, amt",
     [
