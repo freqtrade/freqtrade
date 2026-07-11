@@ -5,7 +5,6 @@ Provides pair white list as it configured in config
 """
 
 import logging
-from copy import deepcopy
 
 from cachetools import LRUCache
 
