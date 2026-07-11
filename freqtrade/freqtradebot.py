@@ -303,8 +303,10 @@ class FreqtradeBot(LoggingMixin):
                 self.process_open_trade_positions()
 
         # Then looking for entry opportunities
-        if self.state == State.RUNNING and self.get_free_open_trades():
-            self.enter_positions()
+        if self.state == State.RUNNING:
+            free_trade_slots = self.get_free_open_trades()
+            if free_trade_slots > 0:
+                self.enter_positions(free_trade_slots)
         self._schedule.run_pending()
         Trade.commit()
         self.rpc.process_msg_queue(self.dataprovider._msg_queue)
@@ -610,9 +612,11 @@ class FreqtradeBot(LoggingMixin):
     # enter positions / open trades logic and methods
     #
 
-    def enter_positions(self) -> int:
+    def enter_positions(self, free_trade_slots: int | None = None) -> int:
         """
         Tries to execute entry orders for new trades (positions)
+
+        :param free_trade_slots: Number of available slots for new trades.
         """
         trades_created = 0
 
@@ -621,7 +625,8 @@ class FreqtradeBot(LoggingMixin):
             self.log_once("Active pair whitelist is empty.", logger.info)
             return trades_created
         # Remove pairs for currently opened trades from the whitelist
-        for trade in Trade.get_open_trades():
+        open_trades = Trade.get_open_trades()
+        for trade in open_trades:
             if trade.pair in whitelist:
                 whitelist.remove(trade.pair)
                 logger.debug("Ignoring %s in pair whitelist", trade.pair)
@@ -632,6 +637,12 @@ class FreqtradeBot(LoggingMixin):
                 logger.info,
             )
             return trades_created
+
+        if free_trade_slots is None:
+            free_trade_slots = max(0, self.config["max_open_trades"] - len(open_trades))
+        if free_trade_slots <= 0:
+            return trades_created
+
         if PairLocks.is_global_lock(side="*"):
             # This only checks for total locks (both sides).
             # per-side locks will be evaluated by `is_pair_locked` within create_trade,
@@ -649,9 +660,13 @@ class FreqtradeBot(LoggingMixin):
             return trades_created
         # Create entity and execute trade for each pair from whitelist
         for pair in whitelist:
+            if free_trade_slots <= 0:
+                break
             try:
                 with self._exit_lock:
-                    trades_created += self.create_trade(pair)
+                    trade_created = self.create_trade(pair)
+                    free_trade_slots -= trade_created
+                    trades_created += trade_created
             except DependencyException as exception:
                 logger.warning("Unable to create trade for %s: %s", pair, exception)
 
@@ -671,12 +686,6 @@ class FreqtradeBot(LoggingMixin):
         """
         logger.debug(f"create_trade for pair {pair}")
 
-        # get_free_open_trades is checked before create_trade is called
-        # but it is still used here to prevent opening too many trades within one iteration
-        if not self.get_free_open_trades():
-            logger.debug(f"Can't open a new trade for {pair}: max number of trades is reached.")
-            return False
-
         analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(pair, self.strategy.timeframe)
         nowtime = analyzed_df.iloc[-1]["date"] if len(analyzed_df) > 0 else None
 
@@ -685,40 +694,47 @@ class FreqtradeBot(LoggingMixin):
             pair, self.strategy.timeframe, analyzed_df
         )
 
-        if signal:
-            if self.strategy.is_pair_locked(pair, candle_date=nowtime, side=signal):
-                lock = PairLocks.get_pair_longest_lock(pair, nowtime, signal)
-                if lock:
-                    self.log_once(
-                        f"Pair {pair} {lock.side} is locked until "
-                        f"{lock.lock_end_time.strftime(constants.DATETIME_PRINT_FORMAT)} "
-                        f"due to {lock.reason}.",
-                        logger.info,
-                    )
-                else:
-                    self.log_once(f"Pair {pair} is currently locked.", logger.info)
-                return False
-            stake_amount = self.wallets.get_trade_stake_amount(pair, self.config["max_open_trades"])
-
-            bid_check_dom = self.config.get("entry_pricing", {}).get("check_depth_of_market", {})
-            if (bid_check_dom.get("enabled", False)) and (
-                bid_check_dom.get("bids_to_ask_delta", 0) > 0
-            ):
-                if self._check_depth_of_market(pair, bid_check_dom, side=signal):
-                    return self.execute_entry(
-                        pair,
-                        stake_amount,
-                        enter_tag=enter_tag,
-                        is_short=(signal == SignalDirection.SHORT),
-                    )
-                else:
-                    return False
-
-            return self.execute_entry(
-                pair, stake_amount, enter_tag=enter_tag, is_short=(signal == SignalDirection.SHORT)
-            )
-        else:
+        if not signal:
             return False
+
+        if self.strategy.is_pair_locked(pair, candle_date=nowtime, side=signal):
+            lock = PairLocks.get_pair_longest_lock(pair, nowtime, signal)
+            if lock:
+                self.log_once(
+                    f"Pair {pair} {lock.side} is locked until "
+                    f"{lock.lock_end_time.strftime(constants.DATETIME_PRINT_FORMAT)} "
+                    f"due to {lock.reason}.",
+                    logger.info,
+                )
+            else:
+                self.log_once(f"Pair {pair} is currently locked.", logger.info)
+            return False
+
+        # get_free_open_trades is checked when signal is found
+        # to prevent opening too many trades within one iteration
+        if not self.get_free_open_trades():
+            logger.debug(f"Can't open a new trade for {pair}: max number of trades is reached.")
+            return False
+
+        stake_amount = self.wallets.get_trade_stake_amount(pair, self.config["max_open_trades"])
+
+        bid_check_dom = self.config.get("entry_pricing", {}).get("check_depth_of_market", {})
+        if (bid_check_dom.get("enabled", False)) and (
+            bid_check_dom.get("bids_to_ask_delta", 0) > 0
+        ):
+            if self._check_depth_of_market(pair, bid_check_dom, side=signal):
+                return self.execute_entry(
+                    pair,
+                    stake_amount,
+                    enter_tag=enter_tag,
+                    is_short=(signal == SignalDirection.SHORT),
+                )
+            else:
+                return False
+
+        return self.execute_entry(
+            pair, stake_amount, enter_tag=enter_tag, is_short=(signal == SignalDirection.SHORT)
+        )
 
     #
     # Modify positions / DCA logic and methods
