@@ -1341,17 +1341,19 @@ class LocalTrade:
         :param only_filled: Only search for Filled orders (only valid with is_open=False).
         :return: latest Order object if it exists, else None
         """
-        orders = self.orders
-        if order_side:
-            orders = [o for o in orders if o.ft_order_side == order_side]
-        if is_open is not None:
-            orders = [o for o in orders if o.ft_is_open == is_open]
-        if is_open is False and only_filled:
-            orders = [o for o in orders if o.filled and o.status in NON_OPEN_EXCHANGE_STATES]
-        if len(orders) > 0:
-            return orders[-1]
-        else:
-            return None
+        for o in reversed(self.orders):
+            if order_side and o.ft_order_side != order_side:
+                continue
+            if is_open is not None and o.ft_is_open != is_open:
+                continue
+            if (
+                is_open is False
+                and only_filled
+                and (not o.filled or o.status not in NON_OPEN_EXCHANGE_STATES)
+            ):
+                continue
+            return o
+        return None
 
     def select_filled_orders(self, order_side: str | None = None) -> list["Order"]:
         """
