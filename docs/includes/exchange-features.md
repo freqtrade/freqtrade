@@ -20,5 +20,7 @@
 | [Kraken](exchanges.md#kraken-futures) | futures | isolated | market, limit |
 | [OKX](exchanges.md#okx) | spot | | limit |
 | [OKX](exchanges.md#okx) | futures | isolated | limit |
+| [MyOKX](exchanges.md#myokx-okx-eea-europe) | spot | | limit |
+| [MyOKX](exchanges.md#myokx-okx-eea-europe) | futures | isolated | limit |
 | [Bitvavo](exchanges.md#bitvavo) | spot | | ❌ (not available) |
 | [Kucoin](exchanges.md#kucoin) | spot | | market, limit |

@@ -298,6 +298,48 @@ Using the wrong exchange will result in the error "OKX Error 50119: API key does
     Freqtrade supports both modes (we recommend to use Buy/Sell mode) - but changing the mode mid-trading is not supported and will lead to exceptions and failures to place trades.
     OKX also only provides MARK candles for the past ~3 months. Backtesting futures prior to that date will therefore lead to slight deviations, as funding-fees cannot be calculated correctly without this data.
 
+### MyOKX (OKX EEA / Europe)
+
+MyOKX is the European Economic Area (EEA) subsidiary of OKX (my.okx.com / eea.okx.com).
+It operates under MiCA regulations and offers a different set of products compared to the global OKX platform.
+
+The main difference for futures traders is that MyOKX offers **X-Perps**, dated futures contracts settled in **USD**, instead of the USDT perpetual swaps available on the main OKX platform.
+
+!!! Note "X-Perps vs Perpetual Swaps"
+    X-Perps are futures contracts with a far expiry date (typically in 2031). They function like perpetual swaps
+    for all practical trading purposes, but they are technically `type=future` rather than `type=swap`.
+    MyOKX does **not** support USDT. Only USD-settled X-Perps are available.
+
+**Configuration for MyOKX futures:**
+
+```json
+"exchange": {
+    "name": "myokx",
+    "key": "your_api_key",
+    "secret": "your_api_secret",
+    "password": "your_api_passphrase",
+    "pair_whitelist": [
+        "BTC/USD:USD-310404",
+        "ETH/USD:USD-310404",
+        "SOL/USD:USD-310404"
+    ]
+},
+"trading_mode": "futures",
+"margin_mode": "isolated",
+"stake_currency": "USD"
+```
+
+Key points for MyOKX futures:
+
+* **Stake currency must be `USD`**: all X-Perps are USD-settled.
+* **Use the XPERP contract variant**: each symbol has multiple expiry dates (e.g. `SOL/USD:USD-260925`, `SOL/USD:USD-261225`, `SOL/USD:USD-310404`). Always pick the XPERP one (furthest expiry, ~2031) for continuous trading without rollover.
+* **List available pairs** with `freqtrade list-pairs --config config.json --quote USD` to see all USD-settled futures.
+* **Spot trading** with USDC is also available: set `"trading_mode": "spot"` and `"stake_currency": "USDC"`.
+
+!!! Warning "Wrong exchange name"
+    Using `"okx"` instead of `"myokx"` for an EEA account will result in the error
+    `"OKX Error 50119: API key doesn't exist"`. The two entities are separate and use different API endpoints.
+
 ## Gate.io
 
 !!! Tip "Stoploss on Exchange"

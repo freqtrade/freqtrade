@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, PropertyMock
 
 import ccxt
@@ -8,6 +9,7 @@ from freqtrade.enums import CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import RetryableOrderError, TemporaryError
 from freqtrade.exchange.common import API_RETRY_COUNT
 from freqtrade.exchange.exchange import timeframe_to_minutes
+from freqtrade.exchange.okx import Myokx
 from tests.conftest import EXMS, get_patched_exchange, log_has
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
 
@@ -747,3 +749,76 @@ def test_fetch_orders_okx(default_conf, mocker, limit_order):
     assert api_mock.fetch_closed_orders.call_count == 2
     assert "params" not in api_mock.fetch_closed_orders.call_args_list[0][1]
     assert api_mock.fetch_closed_orders.call_args_list[1][1]["params"] == history_params
+
+
+@pytest.mark.parametrize(
+    "market,expected",
+    [
+        # USDT perpetual swap - not available on MyOKX
+        (
+            {
+                "swap": True,
+                "future": False,
+                "type": "swap",
+                "linear": True,
+            },
+            False,
+        ),
+        # X-Perp (USD-margined dated future) - tradable on MyOKX
+        (
+            {
+                "swap": False,
+                "future": True,
+                "type": "future",
+                "linear": True,
+            },
+            True,
+        ),
+        # Spot market
+        (
+            {
+                "swap": False,
+                "future": False,
+                "type": "spot",
+                "linear": None,
+            },
+            False,
+        ),
+        # Inverse coin-margined swap (e.g. ADA/USD:ADA)
+        (
+            {
+                "swap": True,
+                "future": False,
+                "type": "swap",
+                "linear": False,
+            },
+            False,
+        ),
+        # Future type but not linear
+        (
+            {
+                "swap": False,
+                "future": True,
+                "type": "future",
+                "linear": False,
+            },
+            False,
+        ),
+        # Future type but future flag not set
+        (
+            {
+                "swap": False,
+                "future": False,
+                "type": "future",
+                "linear": True,
+            },
+            False,
+        ),
+    ],
+)
+def test_myokx_market_is_future(mocker, market: dict[str, Any], expected: bool):
+    mocker.patch.object(Myokx, "__init__", lambda self, *args, **kwargs: None)
+    myokx = Myokx.__new__(Myokx)
+    myokx.trading_mode = TradingMode.FUTURES
+    myokx._ft_has = {"ccxt_futures_name": "swap"}
+    assert myokx.market_is_future(market) == expected

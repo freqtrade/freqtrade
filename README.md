@@ -52,6 +52,7 @@ Please read the [exchange-specific notes](https://www.freqtrade.io/en/stable/exc
 - [X] [Gate](https://www.gate.com/ref/6266643)
 - [X] [Hyperliquid](https://hyperliquid.xyz/) (A decentralized exchange, or DEX)
 - [X] [Kraken](https://www.kraken.com/features/futures)
+- [X] [MyOKX](https://my.okx.com/) (OKX EEA)
 - [X] [OKX](https://okx.com/)
 
 Please make sure to read the [exchange specific notes](https://www.freqtrade.io/en/stable/exchanges/), as well as the [trading with leverage](https://www.freqtrade.io/en/stable/leverage/) documentation before diving in.

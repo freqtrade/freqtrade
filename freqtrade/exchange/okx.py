@@ -1,5 +1,6 @@
 import logging
 from datetime import timedelta
+from typing import Any
 
 import ccxt
 
@@ -279,12 +280,18 @@ class Okx(Exchange):
 
 class Myokx(Okx):
     """MyOkx exchange class.
-    Minimal adjustment to disable futures trading for the EU subsidiary of Okx
+    OKX EEA/EU subsidiary. Supports futures trading via X-Perps (USD-settled dated futures).
+
+    MyOKX does not offer USDT perpetual swaps. It only offers X-Perps,
+    which have type='future' rather than type='swap'.
     """
 
-    _supported_trading_mode_margin_pairs: list[tuple[TradingMode, MarginMode]] = [
-        (TradingMode.SPOT, MarginMode.NONE),
-    ]
+    def market_is_future(self, market: dict[str, Any]) -> bool:
+        return (
+            market.get("future", False) is True
+            and market.get("type", False) == "future"
+            and market.get("linear", False) is True
+        )
 
 
 class Okxus(Okx):
