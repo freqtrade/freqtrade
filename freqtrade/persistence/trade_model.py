@@ -1155,7 +1155,7 @@ class LocalTrade:
                 profit_ratio = (1 - (close_trade_value / open_trade_value)) * self.leverage
             else:
                 profit_ratio = ((close_trade_value / open_trade_value) - 1) * self.leverage
-            profit_ratio = float(f"{profit_ratio:.8f}")
+            profit_ratio = round(profit_ratio, 8)
         except ZeroDivisionError:
             profit_ratio = 0.0
 
@@ -1165,11 +1165,11 @@ class LocalTrade:
                 (1 - self.fee_open) if self.is_short else (1 + self.fee_open)
             )
             total_profit_ratio = total_profit_abs / max_stake
-            total_profit_ratio = float(f"{total_profit_ratio:.8f}")
+            total_profit_ratio = round(total_profit_ratio, 8)
         else:
             total_profit_ratio = 0.0
-        profit_abs = float(f"{profit_abs:.8f}")
-        total_profit_abs = float(f"{total_profit_abs:.8f}")
+        profit_abs = round(profit_abs, 8)
+        total_profit_abs = round(total_profit_abs, 8)
 
         return ProfitStruct(
             profit_abs=profit_abs,
@@ -1206,7 +1206,7 @@ class LocalTrade:
             else:
                 profit_ratio = ((close_trade_value / open_trade_value) - 1) * self.leverage
 
-        return float(f"{profit_ratio:.8f}")
+        return round(profit_ratio, 8)
 
     def calc_close_rate_for_roi(self, target_roi: float) -> float:
         """

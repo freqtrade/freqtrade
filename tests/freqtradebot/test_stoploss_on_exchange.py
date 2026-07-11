@@ -1097,6 +1097,9 @@ def test_execute_trade_exit_sloe_cancel_exception(
         fetch_ticker=ticker_usdt,
         get_fee=fee,
         create_order=create_order_mock,
+        fetch_order=MagicMock(
+            return_value={"id": "12345554", "side": "buy", "status": "canceled", "filled": 0.0}
+        ),
     )
 
     freqtrade.strategy.order_types["stoploss_on_exchange"] = True
