@@ -697,47 +697,47 @@ class FreqtradeBot(LoggingMixin):
             pair, self.strategy.timeframe, analyzed_df
         )
 
-        if not signal:
-            return False
-
-        if self.strategy.is_pair_locked(pair, candle_date=nowtime, side=signal):
-            lock = PairLocks.get_pair_longest_lock(pair, nowtime, signal)
-            if lock:
-                self.log_once(
-                    f"Pair {pair} {lock.side} is locked until "
-                    f"{lock.lock_end_time.strftime(constants.DATETIME_PRINT_FORMAT)} "
-                    f"due to {lock.reason}.",
-                    logger.info,
-                )
-            else:
-                self.log_once(f"Pair {pair} is currently locked.", logger.info)
-            return False
-
-        # get_free_open_trades is checked when signal is found
-        # to prevent opening too many trades within one iteration
-        if not self.get_free_open_trades():
-            logger.debug(f"Can't open a new trade for {pair}: max number of trades is reached.")
-            return False
-
-        stake_amount = self.wallets.get_trade_stake_amount(pair, self.config["max_open_trades"])
-
-        bid_check_dom = self.config.get("entry_pricing", {}).get("check_depth_of_market", {})
-        if (bid_check_dom.get("enabled", False)) and (
-            bid_check_dom.get("bids_to_ask_delta", 0) > 0
-        ):
-            if self._check_depth_of_market(pair, bid_check_dom, side=signal):
-                return self.execute_entry(
-                    pair,
-                    stake_amount,
-                    enter_tag=enter_tag,
-                    is_short=(signal == SignalDirection.SHORT),
-                )
-            else:
+        if signal:
+            if self.strategy.is_pair_locked(pair, candle_date=nowtime, side=signal):
+                lock = PairLocks.get_pair_longest_lock(pair, nowtime, signal)
+                if lock:
+                    self.log_once(
+                        f"Pair {pair} {lock.side} is locked until "
+                        f"{lock.lock_end_time.strftime(constants.DATETIME_PRINT_FORMAT)} "
+                        f"due to {lock.reason}.",
+                        logger.info,
+                    )
+                else:
+                    self.log_once(f"Pair {pair} is currently locked.", logger.info)
                 return False
 
-        return self.execute_entry(
-            pair, stake_amount, enter_tag=enter_tag, is_short=(signal == SignalDirection.SHORT)
-        )
+            # get_free_open_trades is checked when signal is found
+            # to prevent opening too many trades within one iteration
+            if not self.get_free_open_trades():
+                logger.debug(f"Can't open a new trade for {pair}: max number of trades is reached.")
+                return False
+
+            stake_amount = self.wallets.get_trade_stake_amount(pair, self.config["max_open_trades"])
+
+            bid_check_dom = self.config.get("entry_pricing", {}).get("check_depth_of_market", {})
+            if (bid_check_dom.get("enabled", False)) and (
+                bid_check_dom.get("bids_to_ask_delta", 0) > 0
+            ):
+                if self._check_depth_of_market(pair, bid_check_dom, side=signal):
+                    return self.execute_entry(
+                        pair,
+                        stake_amount,
+                        enter_tag=enter_tag,
+                        is_short=(signal == SignalDirection.SHORT),
+                    )
+                else:
+                    return False
+
+            return self.execute_entry(
+                pair, stake_amount, enter_tag=enter_tag, is_short=(signal == SignalDirection.SHORT)
+            )
+        else:
+            return False
 
     #
     # Modify positions / DCA logic and methods
