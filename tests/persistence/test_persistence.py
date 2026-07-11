@@ -8,7 +8,6 @@ from sqlalchemy import select
 from freqtrade.constants import (
     CUSTOM_TAG_MAX_LENGTH,
     DATETIME_PRINT_FORMAT,
-    NON_OPEN_EXCHANGE_STATES,
 )
 from freqtrade.enums import TradingMode
 from freqtrade.exceptions import DependencyException
