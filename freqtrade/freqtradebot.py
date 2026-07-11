@@ -638,8 +638,11 @@ class FreqtradeBot(LoggingMixin):
             )
             return trades_created
 
-        if free_trade_slots is None:
-            free_trade_slots = max(0, self.config["max_open_trades"] - len(open_trades))
+        free_trade_slots = (
+            free_trade_slots
+            if free_trade_slots is not None
+            else max(0, self.config["max_open_trades"] - len(open_trades))
+        )
         if free_trade_slots <= 0:
             return trades_created
 
