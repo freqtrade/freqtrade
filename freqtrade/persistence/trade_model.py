@@ -687,8 +687,7 @@ class LocalTrade:
             else:
                 if order.ft_order_side == entry_side:
                     filled_entry_orders.append(order)
-                    order_filled_utc = order.order_filled_utc
-                    if order_filled_utc:
+                    if order_filled_utc := order.order_filled_utc:
                         filled_entry_datetime_utc.append(order_filled_utc)
                 elif order.ft_order_side == exit_side:
                     filled_exit_orders.append(order)
