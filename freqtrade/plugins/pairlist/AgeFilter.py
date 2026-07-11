@@ -3,7 +3,6 @@ Minimum age (days listed) pair list filter
 """
 
 import logging
-from copy import deepcopy
 from datetime import timedelta
 
 from pandas import DataFrame
