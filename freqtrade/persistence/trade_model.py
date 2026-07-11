@@ -685,14 +685,13 @@ class LocalTrade:
                     open_sl_orders.append(order)
                     open_sl_orders_ts.append(order.order_date_utc)
             else:
-                if order.filled and order.status in NON_OPEN_EXCHANGE_STATES:
-                    if order.ft_order_side == entry_side:
-                        filled_entry_orders.append(order)
-                        order_filled_utc = order.order_filled_utc
-                        if order_filled_utc:
-                            filled_entry_datetime_utc.append(order_filled_utc)
-                    elif order.ft_order_side == exit_side:
-                        filled_exit_orders.append(order)
+                if order.ft_order_side == entry_side:
+                    filled_entry_orders.append(order)
+                    order_filled_utc = order.order_filled_utc
+                    if order_filled_utc:
+                        filled_entry_datetime_utc.append(order_filled_utc)
+                elif order.ft_order_side == exit_side:
+                    filled_exit_orders.append(order)
 
         open_date_utc = self.open_date_utc
         close_date_utc = self.close_date_utc
@@ -744,7 +743,7 @@ class LocalTrade:
             "close_profit_pct": round(self.close_profit * 100, 2) if self.close_profit else None,
             "close_profit_abs": self.close_profit_abs,  # Deprecated
             "trade_duration_s": trade_duration_s,
-            "trade_duration": int(trade_duration_s // 60) if trade_duration_s else None,
+            "trade_duration": int(trade_duration_s // 60) if trade_duration_s is not None else None,
             "profit_ratio": self.close_profit,
             "profit_pct": round(self.close_profit * 100, 2) if self.close_profit else None,
             "profit_abs": self.close_profit_abs,
