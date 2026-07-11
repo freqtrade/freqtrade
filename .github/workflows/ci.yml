@@ -167,12 +167,7 @@ jobs:
       shell: pwsh
       run: |
         $PSVersionTable
-        Get-PSRepository | Format-List *
-        if (-not (Get-PSRepository -Name PSGallery -ErrorAction SilentlyContinue)) {
-          Register-PSRepository -Default
-        }
-        Set-PSRepository PSGallery -InstallationPolicy Trusted
-        Install-Module -Name Pester -RequiredVersion 5.7.1 -Confirm:$false -Force -SkipPublisherCheck
+        Install-PSResource -Name Pester -Version '[5.7.1]' -TrustRepository -Reinstall
         $Error.clear()
 
         # Override Clear-Host globally to prevent headless console crashes
