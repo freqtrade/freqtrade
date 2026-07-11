@@ -638,14 +638,6 @@ class FreqtradeBot(LoggingMixin):
             )
             return trades_created
 
-        free_trade_slots = (
-            free_trade_slots
-            if free_trade_slots is not None
-            else max(0, self.config["max_open_trades"] - len(open_trades))
-        )
-        if free_trade_slots <= 0:
-            return trades_created
-
         if PairLocks.is_global_lock(side="*"):
             # This only checks for total locks (both sides).
             # per-side locks will be evaluated by `is_pair_locked` within create_trade,
@@ -661,15 +653,22 @@ class FreqtradeBot(LoggingMixin):
             else:
                 self.log_once("Global pairlock active. Not creating new trades.", logger.info)
             return trades_created
+
+        free_trade_slots = (
+            free_trade_slots
+            if free_trade_slots is not None
+            else max(0, self.config["max_open_trades"] - len(open_trades))
+        )
+
         # Create entity and execute trade for each pair from whitelist
         for pair in whitelist:
             if free_trade_slots <= 0:
                 break
             try:
                 with self._exit_lock:
-                    trade_created = self.create_trade(pair)
-                    free_trade_slots -= trade_created
-                    trades_created += trade_created
+                    if self.create_trade(pair):
+                        free_trade_slots -= 1
+                        trades_created += 1
             except DependencyException as exception:
                 logger.warning("Unable to create trade for %s: %s", pair, exception)
 
