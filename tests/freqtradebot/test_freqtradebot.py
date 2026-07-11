@@ -264,21 +264,20 @@ def test_total_open_trades_stakes(mocker, default_conf_usdt, ticker_usdt, fee) -
     )
     freqtrade = FreqtradeBot(default_conf_usdt)
     patch_get_signal(freqtrade)
-    freqtrade.enter_positions()
-    trade = Trade.session.scalars(select(Trade)).first()
+    freqtrade.enter_positions(2)
+    trade1 = Trade.session.scalars(select(Trade)).first()
 
-    assert trade is not None
-    assert trade.stake_amount == 60.0
-    assert trade.is_open
-    assert trade.open_date is not None
+    assert trade1 is not None
+    assert trade1.stake_amount == 60.0
+    assert trade1.is_open
+    assert trade1.open_date is not None
 
-    freqtrade.enter_positions()
-    trade = Trade.session.scalars(select(Trade).order_by(Trade.id.desc())).first()
+    trade2 = Trade.session.scalars(select(Trade).order_by(Trade.id.desc())).first()
 
-    assert trade is not None
-    assert trade.stake_amount == 60.0
-    assert trade.is_open
-    assert trade.open_date is not None
+    assert trade2 is not None
+    assert trade2.stake_amount == 60.0
+    assert trade2.is_open
+    assert trade2.open_date is not None
 
     assert Trade.total_open_trades_stakes() == 120.0
 
@@ -432,11 +431,11 @@ def test_enter_positions_no_pairs_left(
     freqtrade = FreqtradeBot(default_conf_usdt)
     patch_get_signal(freqtrade)
 
-    n = freqtrade.enter_positions()
+    n = freqtrade.enter_positions(1)
     assert n == positions
     if positions:
         assert not log_has_re(r"No currency pair in active pair whitelist.*", caplog)
-        n = freqtrade.enter_positions()
+        n = freqtrade.enter_positions(0)
         assert n == 0
         assert log_has_re(r"No currency pair in active pair whitelist.*", caplog)
     else:
@@ -458,16 +457,17 @@ def test_enter_positions_global_pairlock(
     )
     freqtrade = FreqtradeBot(default_conf_usdt)
     patch_get_signal(freqtrade)
-    n = freqtrade.enter_positions()
+    n = freqtrade.enter_positions(1)
+    assert n == 1
     message = r"Global pairlock active until.* Not creating new trades."
-    n = freqtrade.enter_positions()
+    n = freqtrade.enter_positions(0)
     # 0 trades, but it's not because of pairlock.
     assert n == 0
     assert not log_has_re(message, caplog)
     caplog.clear()
 
     PairLocks.lock_pair("*", dt_now() + timedelta(minutes=20), "Just because", side="*")
-    n = freqtrade.enter_positions()
+    n = freqtrade.enter_positions(1)
     assert n == 0
     assert log_has_re(message, caplog)
 
@@ -540,7 +540,7 @@ def test_create_trades_multiple_trades(
     freqtrade = FreqtradeBot(default_conf_usdt)
     patch_get_signal(freqtrade)
 
-    n = freqtrade.enter_positions()
+    n = freqtrade.enter_positions(max_open)
     trades = Trade.get_open_trades()
     # Expected trades should be max_open * a modified value
     # depending on the configured tradable_balance
@@ -1158,7 +1158,7 @@ def test_enter_positions(
         "freqtrade.freqtradebot.FreqtradeBot.create_trade",
         MagicMock(return_value=return_value, side_effect=side_effect),
     )
-    n = freqtrade.enter_positions()
+    n = freqtrade.enter_positions(1)
     assert n == 0
     assert log_has(log_message, caplog)
     # create_trade should be called once for every pair in the whitelist.
@@ -1494,7 +1494,7 @@ def test_handle_trade(
     freqtrade = FreqtradeBot(default_conf_usdt)
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
 
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
@@ -1574,7 +1574,7 @@ def test_handle_overlapping_signals(
         patch_get_signal(freqtrade, enter_long=True, exit_long=True)
     freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
 
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
 
     # Buy and Sell triggering, so doing nothing ...
     trades = Trade.session.scalars(select(Trade)).all()
@@ -1584,7 +1584,7 @@ def test_handle_overlapping_signals(
 
     # Buy is triggering, so buying ...
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
     trades = Trade.session.scalars(select(Trade)).all()
     for trade in trades:
         trade.is_short = is_short
@@ -1651,7 +1651,7 @@ def test_handle_trade_roi(
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
     freqtrade.strategy.min_roi_reached = MagicMock(return_value=True)
 
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
 
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
@@ -1693,7 +1693,7 @@ def test_handle_trade_use_exit_signal(
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
     freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
 
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
@@ -1729,7 +1729,7 @@ def test_close_trade(
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
     # Create trade and sell it
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
 
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
@@ -2956,7 +2956,7 @@ def test_execute_trade_exit_up(
     freqtrade.strategy.confirm_trade_exit = MagicMock(return_value=False)
 
     # Create some test data
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
     rpc_mock.reset_mock()
 
     trade = Trade.session.scalars(select(Trade)).first()
@@ -3047,7 +3047,7 @@ def test_execute_trade_exit_down(
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
     # Create some test data
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
 
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
@@ -3137,7 +3137,7 @@ def test_execute_trade_exit_custom_exit_price(
     freqtrade.strategy.confirm_trade_exit = MagicMock(return_value=False)
 
     # Create some test data
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
     rpc_mock.reset_mock()
 
     trade = Trade.session.scalars(select(Trade)).first()
@@ -3251,7 +3251,7 @@ def test_execute_trade_exit_market_order(
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
     # Create some test data
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
 
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
@@ -3330,7 +3330,7 @@ def test_execute_trade_exit_insufficient_funds_error(
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
     # Create some test data
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
 
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
@@ -3410,7 +3410,7 @@ def test_exit_profit_only(
         freqtrade.strategy.ft_stoploss_reached = MagicMock(
             return_value=ExitCheckTuple(exit_type=ExitType.NONE)
         )
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
 
     trade = Trade.session.scalars(select(Trade)).first()
     assert trade.is_short == is_short
@@ -3454,7 +3454,7 @@ def test_sell_not_enough_balance(
     patch_get_signal(freqtrade)
     freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
 
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
 
     trade = Trade.session.scalars(select(Trade)).first()
     amnt = trade.amount
@@ -3519,7 +3519,7 @@ def test_locked_pairs(
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
     # Create some test data
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
 
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
@@ -3541,7 +3541,7 @@ def test_locked_pairs(
 
     # reinit - should buy other pair.
     caplog.clear()
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
     direction = "short" if is_short else "long"
 
     assert log_has_re(rf"Pair {trade.pair} {direction} is locked.*", caplog)
@@ -3571,7 +3571,7 @@ def test_ignore_roi_if_entry_signal(
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
     freqtrade.strategy.min_roi_reached = MagicMock(return_value=True)
 
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
 
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
@@ -3617,7 +3617,7 @@ def test_trailing_stop_loss(
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
     freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
 
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
     trade = Trade.session.scalars(select(Trade)).first()
     assert trade.is_short == is_short
     assert freqtrade.handle_trade(trade) is False
@@ -3704,7 +3704,7 @@ def test_trailing_stop_loss_positive(
     freqtrade = FreqtradeBot(default_conf_usdt)
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
     freqtrade.strategy.min_roi_reached = MagicMock(return_value=False)
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
 
     trade = Trade.session.scalars(select(Trade)).first()
     assert trade.is_short == is_short
@@ -3804,7 +3804,7 @@ def test_disable_ignore_roi_if_entry_signal(
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
     freqtrade.strategy.min_roi_reached = MagicMock(return_value=True)
 
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
 
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
@@ -4363,7 +4363,7 @@ def test_order_book_depth_of_market(
     whitelist = deepcopy(default_conf_usdt["exchange"]["pair_whitelist"])
     freqtrade = FreqtradeBot(default_conf_usdt)
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
 
     trade = Trade.session.scalars(select(Trade)).first()
     if is_high_delta:
@@ -4487,7 +4487,7 @@ def test_order_book_exit_pricing(
     freqtrade = FreqtradeBot(default_conf_usdt)
     patch_get_signal(freqtrade)
 
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
 
     trade = Trade.session.scalars(select(Trade)).first()
     assert trade
@@ -4551,13 +4551,13 @@ def test_sync_wallet_dry_run(
     patch_get_signal(bot)
     assert bot.wallets.get_free("USDT") == 120.0
 
-    n = bot.enter_positions()
+    n = bot.enter_positions(2)
     assert n == 2
     trades = Trade.session.scalars(select(Trade)).all()
     assert len(trades) == 2
 
     bot.config["max_open_trades"] = 3
-    n = bot.enter_positions()
+    n = bot.enter_positions(1)
     assert n == 0
     assert log_has_re(
         r"Unable to create trade for XRP/USDT: "

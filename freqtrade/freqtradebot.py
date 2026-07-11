@@ -303,10 +303,8 @@ class FreqtradeBot(LoggingMixin):
                 self.process_open_trade_positions()
 
         # Then looking for entry opportunities
-        if self.state == State.RUNNING:
-            free_trade_slots = self.get_free_open_trades()
-            if free_trade_slots > 0:
-                self.enter_positions(free_trade_slots)
+        if self.state == State.RUNNING and ((free_trade_slots := self.get_free_open_trades()) > 0):
+            self.enter_positions(free_trade_slots)
         self._schedule.run_pending()
         Trade.commit()
         self.rpc.process_msg_queue(self.dataprovider._msg_queue)
@@ -612,7 +610,7 @@ class FreqtradeBot(LoggingMixin):
     # enter positions / open trades logic and methods
     #
 
-    def enter_positions(self, free_trade_slots: int | None = None) -> int:
+    def enter_positions(self, free_trade_slots: int) -> int:
         """
         Tries to execute entry orders for new trades (positions)
 
@@ -654,12 +652,6 @@ class FreqtradeBot(LoggingMixin):
                 self.log_once("Global pairlock active. Not creating new trades.", logger.info)
             return trades_created
 
-        free_trade_slots = (
-            free_trade_slots
-            if free_trade_slots is not None
-            else max(0, self.config["max_open_trades"] - len(open_trades))
-        )
-
         # Create entity and execute trade for each pair from whitelist
         for pair in whitelist:
             if free_trade_slots <= 0:
@@ -688,6 +680,12 @@ class FreqtradeBot(LoggingMixin):
         """
         logger.debug(f"create_trade for pair {pair}")
 
+        # get_free_open_trades is checked before create_trade is called
+        # but it is still used here to prevent opening too many trades within one iteration
+        if not self.get_free_open_trades():
+            logger.debug(f"Can't open a new trade for {pair}: max number of trades is reached.")
+            return False
+
         analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(pair, self.strategy.timeframe)
         nowtime = analyzed_df.iloc[-1]["date"] if len(analyzed_df) > 0 else None
 
@@ -708,12 +706,6 @@ class FreqtradeBot(LoggingMixin):
                     )
                 else:
                     self.log_once(f"Pair {pair} is currently locked.", logger.info)
-                return False
-
-            # get_free_open_trades is checked when signal is found
-            # to prevent opening too many trades within one iteration
-            if not self.get_free_open_trades():
-                logger.debug(f"Can't open a new trade for {pair}: max number of trades is reached.")
                 return False
 
             stake_amount = self.wallets.get_trade_stake_amount(pair, self.config["max_open_trades"])
