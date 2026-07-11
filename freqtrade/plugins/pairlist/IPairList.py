@@ -201,7 +201,7 @@ class IPairList(LoggingMixin, ABC):
         """
         if self._enabled:
             # Copy list since we're modifying this list
-            for p in deepcopy(pairlist):
+            for p in pairlist.copy():
                 # Filter out assets
                 if not self._validate_pair(p, tickers[p] if p in tickers else None):
                     pairlist.remove(p)

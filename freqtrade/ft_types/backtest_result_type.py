@@ -21,13 +21,11 @@ class BacktestResultType(TypedDict):
 def get_BacktestResultType_default() -> BacktestResultType:
     return cast(
         BacktestResultType,
-        deepcopy(
-            {
-                "metadata": {},
-                "strategy": {},
-                "strategy_comparison": [],
-            }
-        ),
+        {
+            "metadata": {},
+            "strategy": {},
+            "strategy_comparison": [],
+        },
     )
 
 

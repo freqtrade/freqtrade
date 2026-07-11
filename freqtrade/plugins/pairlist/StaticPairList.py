@@ -82,7 +82,7 @@ class StaticPairList(IPairList):
         :param tickers: Tickers (from exchange.get_tickers). May be cached.
         :return: new whitelist
         """
-        pairlist_ = deepcopy(pairlist)
+        pairlist_ = pairlist.copy()
         for pair in self._config["exchange"]["pair_whitelist"]:
             if pair not in pairlist_:
                 pairlist_.append(pair)
