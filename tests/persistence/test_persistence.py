@@ -5,10 +5,7 @@ from types import FunctionType
 import pytest
 from sqlalchemy import select
 
-from freqtrade.constants import (
-    CUSTOM_TAG_MAX_LENGTH,
-    DATETIME_PRINT_FORMAT,
-)
+from freqtrade.constants import CUSTOM_TAG_MAX_LENGTH, DATETIME_PRINT_FORMAT
 from freqtrade.enums import TradingMode
 from freqtrade.exceptions import DependencyException
 from freqtrade.exchange.exchange_utils import TICK_SIZE
@@ -2095,40 +2092,40 @@ def test_select_order(fee, is_short):
     assert order.ft_is_open is True
 
     # closed buy order, and open sell order
-    trade = trades[1]
-    order = trade.select_order(trade.entry_side, True)
-    assert order is None
-    order = trade.select_order(trade.entry_side, False)
-    assert order is not None
-    order = trade.select_order(trade.entry_side, None)
-    assert order is not None
-    order = trade.select_order(trade.exit_side, True)
-    assert order is None
-    order = trade.select_order(trade.exit_side, False)
-    assert order is not None
+    trade1 = trades[1]
+    order1 = trade1.select_order(trade1.entry_side, True)
+    assert order1 is None
+    order1 = trade1.select_order(trade1.entry_side, False)
+    assert order1 is not None
+    order1 = trade1.select_order(trade1.entry_side, None)
+    assert order1 is not None
+    order1 = trade1.select_order(trade1.exit_side, True)
+    assert order1 is None
+    order1 = trade1.select_order(trade1.exit_side, False)
+    assert order1 is not None
 
     # Has open buy order
-    trade = trades[3]
-    order = trade.select_order(trade.entry_side, True)
-    assert order is not None
-    order = trade.select_order(trade.entry_side, False)
-    assert order is None
+    trade3 = trades[3]
+    order3 = trade3.select_order(trade3.entry_side, True)
+    assert order3 is not None
+    order3 = trade3.select_order(trade3.entry_side, False)
+    assert order3 is None
 
     # Open sell order
-    trade = trades[4]
-    order = trade.select_order(trade.entry_side, True)
-    assert order is None
-    order = trade.select_order(trade.entry_side, False)
-    assert order is not None
+    trade4 = trades[4]
+    order4 = trade4.select_order(trade4.entry_side, True)
+    assert order4 is None
+    order4 = trade4.select_order(trade4.entry_side, False)
+    assert order4 is not None
 
-    trade.orders[1].ft_order_side = trade.exit_side
-    order = trade.select_order(trade.exit_side, True)
-    assert order is not None
+    trade4.orders[1].ft_order_side = trade4.exit_side
+    order4 = trade4.select_order(trade4.exit_side, True)
+    assert order4 is not None
 
-    trade.orders[1].ft_order_side = "stoploss"
-    order = trade.select_order("stoploss", None)
-    assert order is not None
-    assert order.ft_order_side == "stoploss"
+    trade4.orders[1].ft_order_side = "stoploss"
+    order4 = trade4.select_order("stoploss", None)
+    assert order4 is not None
+    assert order4.ft_order_side == "stoploss"
 
 
 @pytest.mark.usefixtures("init_persistence")
