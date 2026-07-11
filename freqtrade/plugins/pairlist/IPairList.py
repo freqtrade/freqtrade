@@ -4,7 +4,6 @@ PairList Handler base class
 
 import logging
 from abc import ABC, abstractmethod
-from copy import deepcopy
 from enum import StrEnum
 from typing import Any, Literal, TypedDict
 
