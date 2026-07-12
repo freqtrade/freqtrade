@@ -615,6 +615,7 @@ class FreqtradeBot(LoggingMixin):
         Tries to execute entry orders for new trades (positions)
 
         :param free_trade_slots: Number of available slots for new trades.
+        :return: Number of trades created
         """
         trades_created = 0
 
@@ -623,8 +624,7 @@ class FreqtradeBot(LoggingMixin):
             self.log_once("Active pair whitelist is empty.", logger.info)
             return trades_created
         # Remove pairs for currently opened trades from the whitelist
-        open_trades = Trade.get_open_trades()
-        for trade in open_trades:
+        for trade in Trade.get_open_trades():
             if trade.pair in whitelist:
                 whitelist.remove(trade.pair)
                 logger.debug("Ignoring %s in pair whitelist", trade.pair)
@@ -635,7 +635,6 @@ class FreqtradeBot(LoggingMixin):
                 logger.info,
             )
             return trades_created
-
         if PairLocks.is_global_lock(side="*"):
             # This only checks for total locks (both sides).
             # per-side locks will be evaluated by `is_pair_locked` within create_trade,
