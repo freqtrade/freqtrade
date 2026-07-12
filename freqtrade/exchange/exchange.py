@@ -92,6 +92,7 @@ from freqtrade.exchange.exchange_utils import (
     is_exchange_known_ccxt,
     market_is_active,
     price_to_precision,
+    resolve_ws_enabled,
 )
 from freqtrade.exchange.exchange_utils_timeframe import (
     timeframe_to_minutes,
@@ -282,15 +283,20 @@ class Exchange:
             exchange_conf.get("ccxt_async_config", {}), ccxt_async_config
         )
         self._api_async = self._init_ccxt(exchange_conf, False, ccxt_async_config)
-        _has_watch_ohlcv = self.exchange_has("watchOHLCV") and self._ft_has["ws_enabled"]["ohlcv"]
-        _has_watch_orderbook = (
-            self.exchange_has("watchOrderBook") and self._ft_has["ws_enabled"]["orderbook"]
+        # User preference (config), merged per-stream with the exchange's tested capability.
+        enable_ws_user_config = resolve_ws_enabled(exchange_conf.get("enable_ws", True))
+        self._has_watch_ohlcv = (
+            self.exchange_has("watchOHLCV")
+            and self._ft_has["ws_enabled"]["ohlcv"]
+            and enable_ws_user_config["ohlcv"]
         )
-        self._has_watch_orderbook = _has_watch_orderbook
-        if (
-            self._config["runmode"] in TRADE_MODES
-            and exchange_conf.get("enable_ws", True)
-            and (_has_watch_ohlcv or _has_watch_orderbook)
+        self._has_watch_orderbook = (
+            self.exchange_has("watchOrderBook")
+            and self._ft_has["ws_enabled"]["orderbook"]
+            and enable_ws_user_config["orderbook"]
+        )
+        if self._config["runmode"] in TRADE_MODES and (
+            self._has_watch_ohlcv or self._has_watch_orderbook
         ):
             self._ws_async = self._init_ccxt(exchange_conf, False, ccxt_async_config)
             self._exchange_ws = ExchangeWS(self._config, self._ws_async)
@@ -2735,7 +2741,11 @@ class Exchange:
         Check if we can use websocket for this pair.
         Acts as typeguard for exchangeWs
         """
-        if exchange_ws and candle_type in (CandleType.SPOT, CandleType.FUTURES):
+        if (
+            exchange_ws
+            and self._has_watch_ohlcv
+            and candle_type in (CandleType.SPOT, CandleType.FUTURES)
+        ):
             return True
         return False
 
