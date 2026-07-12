@@ -44,7 +44,7 @@ class Binance(Exchange):
         "trades_has_history": True,
         "fetch_orders_limit_minutes": None,
         "l2_limit_range": [5, 10, 20, 50, 100, 500, 1000],
-        "ws_enabled": True,
+        "ws_enabled": {"ohlcv": True, "orderbook": True},
         "has_delisting": True,
         # Demo trading
         # https://www.binance.com/en/support/faq/detail/9be58f73e5e14338809e3b705b9687dd
@@ -67,7 +67,7 @@ class Binance(Exchange):
             PriceType.LAST: "CONTRACT_PRICE",
             PriceType.MARK: "MARK_PRICE",
         },
-        "ws_enabled": False,
+        "ws_enabled": {"ohlcv": False, "orderbook": False},
         # ccxt maps "total" to assets[].marginBalance (= walletBalance + unrealizedProfit)
         "balance_includes_unrealized_pnl": True,
         "proxy_coin_mapping": {

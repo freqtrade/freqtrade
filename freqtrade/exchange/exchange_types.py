@@ -6,6 +6,11 @@ from ccxt.base.types import FundingRate  # noqa: F401
 from freqtrade.enums import CandleType
 
 
+class FtWsEnabled(TypedDict):
+    ohlcv: bool
+    orderbook: bool
+
+
 class FtHas(TypedDict, total=False):
     order_time_in_force: list[str]
     exchange_has_overrides: dict[str, bool]
@@ -67,7 +72,7 @@ class FtHas(TypedDict, total=False):
     proxy_coin_mapping: dict[str, str]
 
     # Websocket control
-    ws_enabled: bool
+    ws_enabled: FtWsEnabled
 
     # Delisting check
     has_delisting: bool
