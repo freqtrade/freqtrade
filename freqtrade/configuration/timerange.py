@@ -34,6 +34,15 @@ class TimeRange:
         self.startts: int = startts
         self.stopts: int = stopts
 
+    def copy(self) -> Self:
+        """Return an independent copy of this timerange."""
+        return type(self)(
+            starttype=self.starttype,
+            stoptype=self.stoptype,
+            startts=self.startts,
+            stopts=self.stopts,
+        )
+
     @property
     def startdt(self) -> datetime | None:
         if self.startts:

@@ -67,6 +67,30 @@ def test_subtract_start():
     assert x.startts == 1274486400 - 300
 
 
+def test_TimeRange_copy():
+    x = TimeRange("date", "date", 1274486400, 1438214400)
+    y = x.copy()
+
+    # Equal in value, but a distinct object
+    assert y == x
+    assert y is not x
+    assert isinstance(y, TimeRange)
+
+    # Mutating the copy does not affect the original
+    y.subtract_start(300)
+    assert y.startts == 1274486400 - 300
+    assert x.startts == 1274486400
+    assert y != x
+
+    # All fields are copied independently
+    x = TimeRange(None, "date", 0, 1438214400)
+    y = x.copy()
+    assert y.starttype is None
+    assert y.stoptype == "date"
+    assert y.startts == 0
+    assert y.stopts == 1438214400
+
+
 def test_adjust_start_if_necessary():
     min_date = datetime(2017, 11, 14, 21, 15, 00, tzinfo=UTC)
 
