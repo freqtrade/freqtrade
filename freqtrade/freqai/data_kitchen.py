@@ -596,8 +596,8 @@ class FreqaiDataKitchen:
         self.model_filename = f"cb_{coin.lower()}_{timestamp_id}"
 
     def set_all_pairs(self) -> None:
-        self.all_pairs = copy.deepcopy(
-            self.freqai_config["feature_parameters"].get("include_corr_pairlist", [])
+        self.all_pairs = (
+            self.freqai_config["feature_parameters"].get("include_corr_pairlist", []).copy()
         )
         for pair in self.config.get("exchange", "").get("pair_whitelist"):
             if pair not in self.all_pairs:

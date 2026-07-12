@@ -616,7 +616,7 @@ class FreqtradeBot(LoggingMixin):
         """
         trades_created = 0
 
-        whitelist = deepcopy(self.active_pair_whitelist)
+        whitelist = self.active_pair_whitelist.copy()
         if not whitelist:
             self.log_once("Active pair whitelist is empty.", logger.info)
             return trades_created
