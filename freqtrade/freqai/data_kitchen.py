@@ -338,8 +338,8 @@ class FreqaiDataKitchen:
         config_timerange = TimeRange.parse_timerange(self.config["timerange"])
         if config_timerange.stopts == 0:
             config_timerange.stopts = int(datetime.now(tz=UTC).timestamp())
-        timerange_train = copy.deepcopy(full_timerange)
-        timerange_backtest = copy.deepcopy(full_timerange)
+        timerange_train = copy.copy(full_timerange)
+        timerange_backtest = copy.copy(full_timerange)
 
         tr_training_list = []
         tr_backtesting_list = []
@@ -354,7 +354,7 @@ class FreqaiDataKitchen:
 
             first = False
             tr_training_list.append(timerange_train.timerange_str)
-            tr_training_list_timerange.append(copy.deepcopy(timerange_train))
+            tr_training_list_timerange.append(copy.copy(timerange_train))
 
             # associated backtest period
             timerange_backtest.startts = timerange_train.stopts
@@ -364,7 +364,7 @@ class FreqaiDataKitchen:
                 timerange_backtest.stopts = config_timerange.stopts
 
             tr_backtesting_list.append(timerange_backtest.timerange_str)
-            tr_backtesting_list_timerange.append(copy.deepcopy(timerange_backtest))
+            tr_backtesting_list_timerange.append(copy.copy(timerange_backtest))
 
             # ensure we are predicting on exactly same amount of data as requested by user defined
             #  --timerange
