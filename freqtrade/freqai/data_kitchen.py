@@ -11,7 +11,7 @@ import numpy.typing as npt
 import pandas as pd
 import psutil
 from datasieve.pipeline import Pipeline
-from pandas import DataFrame
+from pandas import DataFrame, Series
 from sklearn.model_selection import train_test_split
 
 from freqtrade.configuration import TimeRange
@@ -426,7 +426,7 @@ class FreqaiDataKitchen:
         # Build dict first and construct DataFrame once to avoid
         # column-by-column assignment which causes DataFrame fragmentation
         # and PerformanceWarning on large prediction sets.
-        append_dict: dict[str, Any] = {}
+        append_dict: dict[str, Series | npt.ArrayLike] = {}
 
         for label in predictions.columns:
             append_dict[label] = predictions[label]
