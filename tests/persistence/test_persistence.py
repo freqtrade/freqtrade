@@ -2075,45 +2075,169 @@ def test_select_order(fee, is_short):
     trades = Trade.get_trades().all()
 
     # Open buy order, no sell order
-    order = trades[0].select_order(trades[0].entry_side, True)
+    trade = trades[0]
+    order = trade.select_order(trade.entry_side, True)
     assert order is not None
-    order = trades[0].select_order(trades[0].entry_side, False)
+    order = trade.select_order(trade.entry_side, False)
     assert order is None
-    order = trades[0].select_order(trades[0].exit_side, None)
+    order = trade.select_order(trade.exit_side, None)
     assert order is None
+
+    # When is_open is None, ignore only_filled and return the last order with matching order side
+    # for current trade, there is only one open entry order and no exit order yet
+    order = trade.select_order(trade.entry_side, None, only_filled=True)
+    assert order is not None
+    assert order.ft_order_side == trade.entry_side
+    # Make sure the order is still open, which means the filter ignore only_filled param
+    assert order.ft_is_open is True
 
     # closed buy order, and open sell order
-    order = trades[1].select_order(trades[1].entry_side, True)
-    assert order is None
-    order = trades[1].select_order(trades[1].entry_side, False)
-    assert order is not None
-    order = trades[1].select_order(trades[1].entry_side, None)
-    assert order is not None
-    order = trades[1].select_order(trades[1].exit_side, True)
-    assert order is None
-    order = trades[1].select_order(trades[1].exit_side, False)
-    assert order is not None
+    trade1 = trades[1]
+    order1 = trade1.select_order(trade1.entry_side, True)
+    assert order1 is None
+    order1 = trade1.select_order(trade1.entry_side, False)
+    assert order1 is not None
+    order1 = trade1.select_order(trade1.entry_side, None)
+    assert order1 is not None
+    order1 = trade1.select_order(trade1.exit_side, True)
+    assert order1 is None
+    order1 = trade1.select_order(trade1.exit_side, False)
+    assert order1 is not None
 
     # Has open buy order
-    order = trades[3].select_order(trades[3].entry_side, True)
-    assert order is not None
-    order = trades[3].select_order(trades[3].entry_side, False)
-    assert order is None
+    trade3 = trades[3]
+    order3 = trade3.select_order(trade3.entry_side, True)
+    assert order3 is not None
+    order3 = trade3.select_order(trade3.entry_side, False)
+    assert order3 is None
 
     # Open sell order
-    order = trades[4].select_order(trades[4].entry_side, True)
+    trade4 = trades[4]
+    order4 = trade4.select_order(trade4.entry_side, True)
+    assert order4 is None
+    order4 = trade4.select_order(trade4.entry_side, False)
+    assert order4 is not None
+
+    trade4.orders[1].ft_order_side = trade4.exit_side
+    order4 = trade4.select_order(trade4.exit_side, True)
+    assert order4 is not None
+
+    trade4.orders[1].ft_order_side = "stoploss"
+    order4 = trade4.select_order("stoploss", None)
+    assert order4 is not None
+    assert order4.ft_order_side == "stoploss"
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_select_order_skip_unfilled_closed_order(fee):
+    """
+    Test that select_order skips closed orders with no filled amount when only_filled=True.
+    When only_filled=False, it should return the closed order even if filled amount is 0.
+    """
+    create_mock_trades(fee, False)
+    trades = Trade.get_trades().all()
+    trade = trades[1]
+
+    # Create an order with no filled amount
+    unfilled_order = trade.orders[0]
+    unfilled_order.ft_is_open = False
+    unfilled_order.filled = 0.0  # No filled amount
+    unfilled_order.status = "closed"
+    Trade.session.add(unfilled_order)
+    Trade.commit()
+
+    # When only_filled=True, should skip order with no filled amount
+    order = trade.select_order(unfilled_order.ft_order_side, is_open=False, only_filled=True)
     assert order is None
-    order = trades[4].select_order(trades[4].entry_side, False)
+    # When only_filled=False, should return order with no filled amount
+    order = trade.select_order(unfilled_order.ft_order_side, is_open=False, only_filled=False)
     assert order is not None
 
-    trades[4].orders[1].ft_order_side = trades[4].exit_side
-    order = trades[4].select_order(trades[4].exit_side, True)
+
+@pytest.mark.usefixtures("init_persistence")
+def test_select_order_only_filled_skip_wrong_status(fee):
+    """
+    Test that select_order skips orders with wrong status when only_filled=True.
+    Tests the condition: (... or o.status not in NON_OPEN_EXCHANGE_STATES)
+    When only_filled=False, it should return the order.
+    """
+    create_mock_trades(fee, False)
+    trades = Trade.get_trades().all()
+    trade = trades[1]
+
+    # Create an order with filled amount but wrong status
+    bad_status_order = trade.orders[0]
+    bad_status_order.ft_is_open = False
+    bad_status_order.filled = 10.0  # Has filled amount
+    bad_status_order.status = "pending"  # Not in NON_OPEN_EXCHANGE_STATES
+    Trade.session.add(bad_status_order)
+    Trade.commit()
+
+    # When only_filled=True, should skip order with non-standard status
+    order = trade.select_order(bad_status_order.ft_order_side, is_open=False, only_filled=True)
+    assert order is None
+    # When only_filled=False, should return order with non-standard status
+    order = trade.select_order(bad_status_order.ft_order_side, is_open=False, only_filled=False)
     assert order is not None
 
-    trades[4].orders[1].ft_order_side = "stoploss"
-    order = trades[4].select_order("stoploss", None)
+
+@pytest.mark.usefixtures("init_persistence")
+def test_select_order_only_filled_reversed_iteration(fee):
+    """
+    Test that select_order returns the LATEST order when multiple exist.
+    Verifies reversed() iteration works correctly with only_filled.
+    """
+    create_mock_trades(fee, False)
+    trades = Trade.get_trades().all()
+    trade = trades[1]
+
+    # Add multiple closed orders
+    for i in range(3):
+        order = Order(
+            ft_trade_id=trade.id,
+            ft_order_side=trade.entry_side,
+            ft_pair=trade.pair,
+            ft_is_open=False,
+            ft_amount=1.0,
+            ft_price=1.0,
+            order_id=f"test_order_{i}",
+            status="closed",
+            filled=1.0 if i < 2 else 0.0,  # Last one is unfilled
+        )
+        trade.orders.append(order)
+    Trade.session.add(trade)
+    Trade.commit()
+
+    # Should return the latest properly filled order (reversed iteration)
+    order = trade.select_order(trade.entry_side, is_open=False, only_filled=True)
+
     assert order is not None
-    assert order.ft_order_side == "stoploss"
+    # test_order_2 is unfilled, so it should return test_order_1
+    assert order.order_id == "test_order_1"
+    assert order.filled > 0, "Should return an order with filled amount"
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_select_order_only_filled_false_ignores_status(fee):
+    """
+    Test that when only_filled=False, status and filled amount don't matter.
+    """
+    create_mock_trades(fee, False)
+    trades = Trade.get_trades().all()
+    trade = trades[1]
+
+    # Create closed order with bad status
+    order = trade.orders[0]
+    order.ft_is_open = False
+    order.filled = 0.0  # No filled
+    order.status = "pending"  # Bad status
+    Trade.session.add(order)
+    Trade.commit()
+
+    # With only_filled=False, should still find the order
+    found_order = trade.select_order(order.ft_order_side, is_open=False, only_filled=False)
+
+    assert found_order is not None
 
 
 def test_Trade_object_idem():

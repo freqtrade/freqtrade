@@ -2480,6 +2480,35 @@ def test_api_pair_history(botclient, tmp_path, mocker):
         assert_response(rc, 502)
         assert rc.json()["detail"] == ("No data for UNITTEST/BTC, 5m in 20200111-20200112 found.")
 
+        # Data available, but fully consumed by startup_candle_count trimming.
+        # The requested timerange sits at the very start of the available data, so no
+        # startup candles can be loaded ahead of it and trimming removes everything.
+        trim_timerange = "1515560100-1515562200"
+        if call == "get":
+            rc = client_get(
+                client,
+                f"{BASE_URI}/pair_history?pair=UNITTEST%2FBTC&timeframe={timeframe}"
+                f"&timerange={trim_timerange}&strategy={CURRENT_TEST_STRATEGY}",
+            )
+        else:
+            rc = client_post(
+                client,
+                f"{BASE_URI}/pair_history",
+                data={
+                    "pair": "UNITTEST/BTC",
+                    "timeframe": timeframe,
+                    "timerange": trim_timerange,
+                    "strategy": CURRENT_TEST_STRATEGY,
+                    "columns": ["rsi", "fastd", "fastk"],
+                },
+            )
+        assert_response(rc, 502)
+        assert rc.json()["detail"] == (
+            f"After trimming by startup_candle_count, no data for UNITTEST/BTC, 5m "
+            f"in {trim_timerange} left."
+        )
+        lfm.reset_mock()
+
     # No strategy
     rc = client_post(
         client,
