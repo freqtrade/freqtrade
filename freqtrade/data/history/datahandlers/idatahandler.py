@@ -366,7 +366,7 @@ class IDataHandler(ABC):
         :return: DataFrame with ohlcv data, or empty DataFrame
         """
         # Fix startup period
-        timerange_startup = timerange.copy()
+        timerange_startup = timerange.copy() if timerange else None
         if startup_candles > 0 and timerange_startup:
             timerange_startup.subtract_start(timeframe_to_seconds(timeframe) * startup_candles)
 
