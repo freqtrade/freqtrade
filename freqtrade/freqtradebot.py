@@ -303,8 +303,8 @@ class FreqtradeBot(LoggingMixin):
                 self.process_open_trade_positions()
 
         # Then looking for entry opportunities
-        if self.state == State.RUNNING and self.get_free_open_trades():
-            self.enter_positions()
+        if self.state == State.RUNNING and ((free_trade_slots := self.get_free_open_trades()) > 0):
+            self.enter_positions(free_trade_slots)
         self._schedule.run_pending()
         Trade.commit()
         self.rpc.process_msg_queue(self.dataprovider._msg_queue)
@@ -610,9 +610,12 @@ class FreqtradeBot(LoggingMixin):
     # enter positions / open trades logic and methods
     #
 
-    def enter_positions(self) -> int:
+    def enter_positions(self, free_trade_slots: int) -> int:
         """
         Tries to execute entry orders for new trades (positions)
+
+        :param free_trade_slots: Number of available slots for new trades.
+        :return: Number of trades created
         """
         trades_created = 0
 
@@ -647,11 +650,16 @@ class FreqtradeBot(LoggingMixin):
             else:
                 self.log_once("Global pairlock active. Not creating new trades.", logger.info)
             return trades_created
+
         # Create entity and execute trade for each pair from whitelist
         for pair in whitelist:
+            if free_trade_slots <= 0:
+                break
             try:
                 with self._exit_lock:
-                    trades_created += self.create_trade(pair)
+                    if self.create_trade(pair):
+                        free_trade_slots -= 1
+                        trades_created += 1
             except DependencyException as exception:
                 logger.warning("Unable to create trade for %s: %s", pair, exception)
 
@@ -698,6 +706,7 @@ class FreqtradeBot(LoggingMixin):
                 else:
                     self.log_once(f"Pair {pair} is currently locked.", logger.info)
                 return False
+
             stake_amount = self.wallets.get_trade_stake_amount(pair, self.config["max_open_trades"])
 
             bid_check_dom = self.config.get("entry_pricing", {}).get("check_depth_of_market", {})
