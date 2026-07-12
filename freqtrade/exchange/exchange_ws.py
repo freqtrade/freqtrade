@@ -11,7 +11,7 @@ from freqtrade.enums.candletype import CandleType
 from freqtrade.exceptions import TemporaryError
 from freqtrade.exchange.common import retrier
 from freqtrade.exchange.exchange import timeframe_to_seconds
-from freqtrade.exchange.exchange_types import OHLCVResponse
+from freqtrade.exchange.exchange_types import OHLCVResponse, OrderBook
 from freqtrade.util import dt_ts, format_ms_time, format_ms_time_det
 
 
@@ -341,7 +341,7 @@ class ExchangeWS:
         return pair, timeframe, candle_type, candles, drop_hint
 
     @retrier(retries=3)
-    def get_orderbook(self, pair: str) -> dict:
+    def get_orderbook(self, pair: str) -> OrderBook:
         """
         Returns a copy of the cached orderbook from ccxt's "watch" cache.
         Deep-copies so callers get a stable snapshot that's decoupled from the
