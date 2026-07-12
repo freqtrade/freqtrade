@@ -407,7 +407,11 @@ class FreqaiDataDrawer:
         """
         df = self.model_return_values[pair]
         to_keep = [col for col in dataframe.columns if not col.startswith("&")]
-        dataframe_new = pd.concat([dataframe[to_keep], df], axis=1)
+        # Merge on the candle date (not on the index) to ensure alignment in case of bad
+        # strategy handling like dropping candles or reindexing.
+        dataframe_new = pd.merge(
+            dataframe[to_keep], df, how="left", left_on="date", right_on="date_pred", validate="m:1"
+        )
         return dataframe_new
 
     def return_null_values_to_strategy(self, dataframe: DataFrame, dk: FreqaiDataKitchen) -> None:
