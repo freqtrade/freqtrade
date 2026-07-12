@@ -340,11 +340,20 @@ class ExchangeWS:
         )
         return pair, timeframe, candle_type, candles, drop_hint
 
+    @retrier(retries=3)
     def get_orderbook(self, pair: str) -> dict:
         """
-        Returns cached orderbook from ccxt's "watch" cache.
+        Returns a copy of the cached orderbook from ccxt's "watch" cache.
+        Deep-copies so callers get a stable snapshot that's decoupled from the
+        live cache the websocket thread keeps mutating.
         """
-        return self._ccxt_object.orderbooks.get(pair, {})
+        try:
+            return deepcopy(self._ccxt_object.orderbooks.get(pair, {}))
+        except RuntimeError as e:
+            # Capture runtime errors (raised when the ws thread mutates the book
+            # mid-copy) and retry.
+            # TemporaryError does not cause backoff - so we're essentially retrying immediately
+            raise TemporaryError(f"Error deepcopying: {e}") from e
 
     def schedule_orderbook(self, pair: str) -> None:
         """
