@@ -237,3 +237,42 @@ def test_set_initial_return_values_warning(mocker, freqai_conf):
 
     # Ensure logger error is not called
     mock_logger_warning.assert_called()
+
+
+def test_attach_return_values_to_return_dataframe(mocker, freqai_conf):
+    """
+    Test that the prediction buffer is always 0-indexed, so attaching it
+    to a strategy dataframe that carries a non-0-based index must align by candle date and
+    must not silently produce NaN predictions or change the dataframe length.
+    """
+    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
+    exchange = get_patched_exchange(mocker, freqai_conf)
+    strategy.dp = DataProvider(freqai_conf, exchange)
+    freqai = strategy.freqai
+    freqai.dk = FreqaiDataKitchen(freqai_conf)
+
+    pair = "BTC/USD"
+    dates = pd.date_range(start="2023-09-01", periods=5, freq="D")
+
+    # Prediction buffer: always 0-indexed (as produced by reset_index in the drawer)
+    freqai.dd.model_return_values[pair] = pd.DataFrame(
+        {"date_pred": dates, "&-s_close": range(6, 11), "do_predict": [1] * 5}
+    )
+
+    # Strategy dataframe with a shifted (non-0-based) index, as could arrive from a strategy
+    # that drops/filters rows without reset_index.
+    dataframe = pd.DataFrame(
+        {"date": dates, "close": range(1, 6), "&-s_close": [None] * 5},
+        index=range(301, 306),
+    )
+
+    result = freqai.dd.attach_return_values_to_return_dataframe(pair, dataframe)
+
+    # length is preserved (would double under the old index-concat)
+    assert len(result) == len(dataframe)
+    # predictions are attached to the correct candles, not NaN
+    assert not result["&-s_close"].isnull().any()
+    assert not result["do_predict"].isnull().any()
+    assert list(result["&-s_close"]) == list(range(6, 11))
+    # and the original close prices line up with their dates.
+    assert list(result["close"]) == list(range(1, 6))
