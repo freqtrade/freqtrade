@@ -168,6 +168,51 @@ def test_init(default_conf, mocker, caplog):
     assert log_has("Instance is running with dry_run enabled", caplog)
 
 
+@pytest.mark.parametrize(
+    "enable_ws,exp_ohlcv,exp_orderbook",
+    [
+        # historic boolean behavior - enables/disables all streams
+        (True, True, True),
+        (False, False, False),
+        # per-stream dict control
+        ({"ohlcv": True, "orderbook": True}, True, True),
+        ({"ohlcv": True, "orderbook": False}, True, False),
+        ({"ohlcv": False, "orderbook": True}, False, True),
+        ({"ohlcv": False, "orderbook": False}, False, False),
+        # streams omitted from the dict default to enabled
+        ({"orderbook": False}, True, False),
+        ({"ohlcv": False}, False, True),
+        ({}, True, True),
+    ],
+)
+def test_exchange_ws_enable_per_stream(default_conf, mocker, enable_ws, exp_ohlcv, exp_orderbook):
+    # Patch ExchangeWS to avoid spinning up a real websocket thread.
+    ws_mock = mocker.patch("freqtrade.exchange.exchange.ExchangeWS")
+    default_conf["runmode"] = RunMode.DRY_RUN
+    default_conf["exchange"]["enable_ws"] = enable_ws
+    # Force the exchange to "support" both watch endpoints regardless of the ccxt mock.
+    default_conf["exchange"]["_ft_has_params"] = {
+        "exchange_has_overrides": {"watchOHLCV": True, "watchOrderBook": True},
+    }
+
+    exchange = get_patched_exchange(mocker, default_conf)
+
+    assert exchange._has_watch_ohlcv is exp_ohlcv
+    assert exchange._has_watch_orderbook is exp_orderbook
+
+    # The websocket handler is only created if at least one stream is active.
+    if exp_ohlcv or exp_orderbook:
+        assert exchange._exchange_ws is not None
+        assert ws_mock.call_count == 1
+    else:
+        assert exchange._exchange_ws is None
+        assert ws_mock.call_count == 0
+
+    # can_use_websocket respects settings
+    can_use = exchange._can_use_websocket(exchange._exchange_ws, "BTC/USDT", "5m", CandleType.SPOT)
+    assert can_use is (exp_ohlcv and exchange._exchange_ws is not None)
+
+
 def test_init_ccxt_kwargs(default_conf, mocker, caplog):
     mocker.patch(f"{EXMS}.reload_markets")
     mocker.patch(f"{EXMS}.validate_stakecurrency")
