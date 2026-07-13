@@ -3080,6 +3080,10 @@ class Exchange:
     # fetch Trade data stuff
 
     def needed_candle_for_trades_ms(self, timeframe: str, candle_type: CandleType) -> int:
+        """
+        Get the timestamp in milliseconds of the earliest candle needed to fetch trades
+        for the given timeframe and candle type.
+        """
         candle_limit = self.ohlcv_candle_limit(timeframe, candle_type)
         tf_s = timeframe_to_seconds(timeframe)
         candles_fetched = candle_limit * self.required_candle_call_count
