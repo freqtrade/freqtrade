@@ -211,8 +211,8 @@ class FreqtradeBot(LoggingMixin):
         :return: Mapping of exchange name to Exchange instance (empty if none configured).
         """
         informative_exchanges: dict[str, Exchange] = {}
-        for exchange_config in self.config.get("informative_exchanges", []):
-            exchange_config = deepcopy(exchange_config)
+        for orig_exchange_config in self.config.get("informative_exchanges", []):
+            exchange_config = deepcopy(orig_exchange_config)
             name = exchange_config.get("name")
             if not name:
                 raise OperationalException(
@@ -227,6 +227,9 @@ class FreqtradeBot(LoggingMixin):
             informative_exchanges[name] = ExchangeResolver.load_data_exchange(
                 self.config, exchange_config=exchange_config
             )
+            # Remove credentials from the original config to avoid accidental exposure,
+            # mirroring the handling of the main exchange configuration.
+            remove_exchange_credentials(orig_exchange_config, True)
         return informative_exchanges
 
     def notify_status(self, msg: str, msg_type=RPCMessageType.STATUS) -> None:

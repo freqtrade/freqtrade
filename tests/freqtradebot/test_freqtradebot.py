@@ -802,12 +802,18 @@ def test_load_informative_exchanges(default_conf_usdt, mocker) -> None:
     assert freqtrade.dataprovider.informative_exchanges == []
     assert load_data_exchange.call_count == 0
 
-    # Configure two informative exchanges
-    default_conf_usdt["informative_exchanges"] = [{"name": "kraken"}, {"name": "kucoin"}]
+    # Configure two informative exchanges, one with credentials
+    default_conf_usdt["informative_exchanges"] = [
+        {"name": "kraken", "key": "secret_key", "secret": "secret_secret"},
+        {"name": "kucoin"},
+    ]
     freqtrade = FreqtradeBot(default_conf_usdt)
     assert set(freqtrade.informative_exchanges.keys()) == {"kraken", "kucoin"}
     assert set(freqtrade.dataprovider.informative_exchanges) == {"kraken", "kucoin"}
     assert load_data_exchange.call_count == 2
+    # Credentials are scrubbed from the stored config to avoid accidental exposure
+    assert default_conf_usdt["informative_exchanges"][0]["key"] == ""
+    assert default_conf_usdt["informative_exchanges"][0]["secret"] == ""
 
 
 def test_load_informative_exchanges_invalid(default_conf_usdt, mocker) -> None:
