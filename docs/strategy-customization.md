@@ -571,6 +571,45 @@ A full sample can be found [in the DataProvider section](#complete-dataprovider-
     ```
 ***
 
+### Informative pairs from other exchanges
+
+Informative data can also be sourced from **secondary exchanges**, which are used purely as data sources and are never traded on. This is useful when a reference pair (e.g. an index or a pair with better liquidity) is only available - or more meaningful - on a different exchange than the one you trade on.
+
+Configure the additional exchanges under the top-level `informative_exchanges` key. Each entry uses the same format as the main [`exchange`](configuration.md) configuration, but only requires a `name` (and, if needed, API keys for private data):
+
+``` json
+{
+    "exchange": {
+        "name": "binance"
+    },
+    "informative_exchanges": [
+        {"name": "kraken"},
+        {"name": "binanceus"}
+    ]
+}
+```
+
+Declare the informative pairs per exchange in your strategy using `informative_pairs_per_exchange()`, then access them via the `exchange` argument of `get_pair_dataframe()`:
+
+``` python
+def informative_pairs_per_exchange(self):
+    return {
+        "kraken": [("BTC/USD", "1h")],
+        "binanceus": [("ETH/USD", "1h")],
+    }
+
+def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    # Data fetched from the secondary "kraken" exchange
+    btc_usd = self.dp.get_pair_dataframe("BTC/USD", "1h", exchange="kraken")
+    ...
+    return dataframe
+```
+
+!!! Warning "Live / dry-run only"
+    Informative exchanges are only available in live and dry-run modes. Backtesting sources all data from local files by pair/timeframe and has no exchange dimension, so calling `get_pair_dataframe(..., exchange=...)` in backtest/hyperopt will raise an error.
+
+***
+
 ### Informative pairs decorator (`@informative()`)
 
 To easily define informative pairs, use the `@informative` decorator. All decorated `populate_indicators_*` methods run in isolation,

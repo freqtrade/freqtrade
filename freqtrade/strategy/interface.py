@@ -863,6 +863,17 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return []
 
+    def informative_pairs_per_exchange(self) -> dict[str, ListPairsWithTimeframes]:
+        """
+        Define informative pair/interval combinations to be fetched from secondary
+        exchanges (configured under "informative_exchanges").
+        These are non-tradable data sources, only available in live / dry-run modes,
+        and can be accessed via `self.dp.get_pair_dataframe(pair, timeframe, exchange=<name>)`.
+        :return: Mapping of exchange name to a list of (pair, interval) tuples.
+            Sample: return {"kraken": [("BTC/USD", "5m")], "binanceus": [("ETH/USD", "1h")]}
+        """
+        return {}
+
     def version(self) -> str | None:
         """
         Returns version of the strategy.
@@ -1121,6 +1132,29 @@ class IStrategy(ABC, HyperStrategyMixin):
                     informative_pairs.append((pair, inf_data.timeframe, candle_type))
         informative_pairs.extend(self.__informative_pairs_freqai())
         return list(set(informative_pairs))
+
+    def gather_informative_exchange_pairs(self) -> dict[str, ListPairsWithTimeframes]:
+        """
+        Internal method which gathers informative pairs to fetch from secondary exchanges,
+        normalizing each entry to a (pair, timeframe, candle_type) tuple.
+        """
+        result: dict[str, ListPairsWithTimeframes] = {}
+        default_candle_type = self.config.get("candle_type_def", CandleType.SPOT)
+        for exchange_name, pairs in self.informative_pairs_per_exchange().items():
+            normalized = [
+                (
+                    p[0],
+                    p[1],
+                    (
+                        CandleType.from_string(p[2])
+                        if len(p) > 2 and p[2] != ""
+                        else default_candle_type
+                    ),
+                )
+                for p in pairs
+            ]
+            result[exchange_name] = list(set(normalized))
+        return result
 
     def get_strategy_name(self) -> str:
         """

@@ -32,10 +32,14 @@ class ExchangeResolver(IResolver):
     ) -> Exchange:
         """
         Load the custom class from config parameter
-        :param exchange_name: name of the Exchange to load
         :param config: configuration dictionary
+        :param exchange_config: Optional exchange configuration. When provided, its "name"
+            is used to select the exchange class - this allows loading a secondary exchange
+            that differs from the main ``config["exchange"]`` (e.g. for informative data).
         """
-        exchange_name: str = config["exchange"]["name"]
+        # Prefer the name from the explicit exchange_config (secondary exchanges),
+        # falling back to the main exchange configuration.
+        exchange_name: str = (exchange_config or config["exchange"])["name"]
         # Map exchange name to avoid duplicate classes for identical exchanges
         exchange_name = MAP_EXCHANGE_CHILDCLASS.get(exchange_name, exchange_name)
         exchange_name = exchange_name.title()
@@ -62,6 +66,24 @@ class ExchangeResolver(IResolver):
                 exchange_config=exchange_config,
             )
         return exchange
+
+    @staticmethod
+    def load_data_exchange(config: Config, exchange_config: ExchangeConfig) -> Exchange:
+        """
+        Load a secondary exchange used purely as a data source (informative pairs).
+        These exchanges are never used for trading, so config validation and leverage
+        tier loading are skipped.
+        :param config: configuration dictionary (used for shared settings like runmode)
+        :param exchange_config: exchange configuration for this data source. Must contain
+            at least a "name".
+        :return: Exchange instance
+        """
+        return ExchangeResolver.load_exchange(
+            config,
+            exchange_config=exchange_config,
+            validate=False,
+            load_leverage_tiers=False,
+        )
 
     @staticmethod
     def _load_exchange(exchange_name: str, kwargs: dict) -> Exchange:

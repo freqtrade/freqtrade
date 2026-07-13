@@ -521,6 +521,15 @@ CONF_SCHEMA = {
             "description": "Exchange configuration.",
             "$ref": "#/definitions/exchange",
         },
+        "informative_exchanges": {
+            "description": (
+                "Secondary exchanges used purely as data sources for informative pairs "
+                "(no trading). Accessible in the strategy via "
+                "self.dp.get_pair_dataframe(pair, timeframe, exchange=<name>)."
+            ),
+            "type": "array",
+            "items": {"$ref": "#/definitions/exchange"},
+        },
         "log_config": {
             "description": "Logging configuration.",
             "$ref": "#/definitions/logging",

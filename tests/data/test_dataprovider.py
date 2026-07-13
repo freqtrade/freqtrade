@@ -333,6 +333,76 @@ def test_refresh(mocker, default_conf):
     assert refresh_mock.call_count == 1
 
 
+def test_informative_exchanges(mocker, default_conf, ohlcv_history):
+    default_conf["runmode"] = RunMode.DRY_RUN
+    timeframe = default_conf["timeframe"]
+    candletype = CandleType.SPOT
+    exchange = get_patched_exchange(mocker, default_conf)
+    exchange._klines[("BTC/USDT", timeframe, candletype)] = ohlcv_history
+
+    # Secondary (informative) exchange with its own cached data
+    sec_history = ohlcv_history.copy()
+    sec_history["close"] = sec_history["close"] + 1
+    informative_exchange = MagicMock()
+    informative_exchange.klines = MagicMock(return_value=sec_history)
+
+    dp = DataProvider(
+        default_conf, exchange, informative_exchanges={"kraken": informative_exchange}
+    )
+
+    assert dp.informative_exchanges == ["kraken"]
+
+    # Default (no exchange) -> main exchange data
+    assert dp.ohlcv("BTC/USDT", timeframe).equals(ohlcv_history)
+    # Routed to the secondary exchange
+    assert dp.ohlcv("BTC/USDT", timeframe, exchange="kraken").equals(sec_history)
+    assert informative_exchange.klines.call_count == 1
+
+    # get_pair_dataframe routes too
+    assert dp.get_pair_dataframe("BTC/USDT", timeframe, exchange="kraken").equals(sec_history)
+
+    # Unknown informative exchange raises
+    with pytest.raises(OperationalException, match=r"Informative exchange 'binance' is not"):
+        dp.ohlcv("BTC/USDT", timeframe, exchange="binance")
+
+    # Informative exchanges are not supported in backtest / historic mode
+    default_conf["runmode"] = RunMode.BACKTEST
+    dp_bt = DataProvider(
+        default_conf, exchange, informative_exchanges={"kraken": informative_exchange}
+    )
+    with pytest.raises(OperationalException, match=r"only supported in live / dry-run"):
+        dp_bt.get_pair_dataframe("BTC/USDT", timeframe, exchange="kraken")
+
+
+def test_refresh_informative_exchanges(mocker, default_conf):
+    refresh_mock = mocker.patch(f"{EXMS}.refresh_latest_ohlcv")
+    mocker.patch(f"{EXMS}.refresh_latest_trades")
+
+    exchange = get_patched_exchange(mocker, default_conf, exchange="binance")
+    timeframe = default_conf["timeframe"]
+    pairs = [("XRP/BTC", timeframe), ("UNITTEST/BTC", timeframe)]
+
+    informative_exchange = MagicMock()
+    dp = DataProvider(
+        default_conf, exchange, informative_exchanges={"kraken": informative_exchange}
+    )
+
+    kraken_pairs = [("BTC/USD", timeframe), ("ETH/USD", timeframe)]
+    dp.refresh(pairs, informative_exchange_pairs={"kraken": kraken_pairs})
+
+    # Main exchange refreshed with the main pairs
+    assert refresh_mock.call_count == 1
+    assert refresh_mock.call_args[0][0] == pairs
+    # Secondary exchange refreshed with its own pairs
+    assert informative_exchange.refresh_latest_ohlcv.call_count == 1
+    assert informative_exchange.refresh_latest_ohlcv.call_args[0][0] == kraken_pairs
+
+    # Empty pair list for an exchange is skipped
+    informative_exchange.refresh_latest_ohlcv.reset_mock()
+    dp.refresh(pairs, informative_exchange_pairs={"kraken": []})
+    assert informative_exchange.refresh_latest_ohlcv.call_count == 0
+
+
 def test_orderbook(mocker, default_conf, order_book_l2):
     api_mock = MagicMock()
     api_mock.fetch_l2_order_book = order_book_l2

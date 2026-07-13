@@ -22,6 +22,7 @@ from freqtrade.enums import (
     State,
 )
 from freqtrade.exceptions import (
+    ConfigurationError,
     DependencyException,
     ExchangeError,
     InsufficientFundsError,
@@ -784,6 +785,53 @@ def test_process_informative_pairs_added(default_conf_usdt, ticker_usdt, mocker)
     assert ("ETH/USDT", default_conf_usdt["timeframe"], CandleType.SPOT) in refresh_mock.call_args[
         0
     ][0]
+
+
+def test_load_informative_exchanges(default_conf_usdt, mocker) -> None:
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+
+    load_data_exchange = mocker.patch(
+        "freqtrade.freqtradebot.ExchangeResolver.load_data_exchange",
+        side_effect=lambda config, exchange_config: MagicMock(name=exchange_config["name"]),
+    )
+
+    # No informative exchanges configured -> empty registry
+    freqtrade = FreqtradeBot(default_conf_usdt)
+    assert freqtrade.informative_exchanges == {}
+    assert freqtrade.dataprovider.informative_exchanges == []
+    assert load_data_exchange.call_count == 0
+
+    # Configure two informative exchanges
+    default_conf_usdt["informative_exchanges"] = [{"name": "kraken"}, {"name": "kucoin"}]
+    freqtrade = FreqtradeBot(default_conf_usdt)
+    assert set(freqtrade.informative_exchanges.keys()) == {"kraken", "kucoin"}
+    assert set(freqtrade.dataprovider.informative_exchanges) == {"kraken", "kucoin"}
+    assert load_data_exchange.call_count == 2
+
+
+def test_load_informative_exchanges_invalid(default_conf_usdt, mocker) -> None:
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    mocker.patch(
+        "freqtrade.freqtradebot.ExchangeResolver.load_data_exchange",
+        side_effect=lambda config, exchange_config: MagicMock(),
+    )
+
+    # Missing name - rejected by config schema (exchange definition requires "name")
+    default_conf_usdt["informative_exchanges"] = [{"key": "x"}]
+    with pytest.raises(ConfigurationError, match=r"name"):
+        FreqtradeBot(default_conf_usdt)
+
+    # Matches the main trading exchange
+    default_conf_usdt["informative_exchanges"] = [{"name": default_conf_usdt["exchange"]["name"]}]
+    with pytest.raises(OperationalException, match=r"duplicated or matches the main"):
+        FreqtradeBot(default_conf_usdt)
+
+    # Duplicated informative exchange
+    default_conf_usdt["informative_exchanges"] = [{"name": "kraken"}, {"name": "kraken"}]
+    with pytest.raises(OperationalException, match=r"duplicated or matches the main"):
+        FreqtradeBot(default_conf_usdt)
 
 
 @pytest.mark.parametrize(

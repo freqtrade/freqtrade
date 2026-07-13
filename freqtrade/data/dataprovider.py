@@ -43,9 +43,13 @@ class DataProvider:
         exchange: Exchange | None,
         pairlists=None,
         rpc: RPCManager | None = None,
+        informative_exchanges: dict[str, Exchange] | None = None,
     ) -> None:
         self._config = config
         self._exchange = exchange
+        # Secondary exchanges used purely as informative data sources (no trading).
+        # Keyed by exchange name (as configured under "informative_exchanges").
+        self._informative_exchanges: dict[str, Exchange] = informative_exchanges or {}
         self._pairlists = pairlists
         self.__rpc = rpc
         self.__cached_pairs: dict[PairWithTimeframe, tuple[DataFrame, datetime]] = {}
@@ -365,7 +369,11 @@ class DataProvider:
         return timeframe
 
     def get_pair_dataframe(
-        self, pair: str, timeframe: str | None = None, candle_type: str = ""
+        self,
+        pair: str,
+        timeframe: str | None = None,
+        candle_type: str = "",
+        exchange: str | None = None,
     ) -> DataFrame:
         """
         Return pair candle (OHLCV) data, either live or cached historical -- depending
@@ -376,12 +384,20 @@ class DataProvider:
         :param timeframe: timeframe to get data for
         :return: Dataframe for this pair
         :param candle_type: '', mark, index, premiumIndex, or funding_rate
+        :param exchange: Name of a configured informative exchange to source the data from.
+            Only supported in live / dry-run modes. Defaults to the main (trading) exchange.
         """
         timeframe = self.__fix_funding_rate_timeframe(pair, timeframe, candle_type)
         if self.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
             # Get live OHLCV data.
-            data = self.ohlcv(pair=pair, timeframe=timeframe, candle_type=candle_type)
+            data = self.ohlcv(
+                pair=pair, timeframe=timeframe, candle_type=candle_type, exchange=exchange
+            )
         else:
+            if exchange is not None:
+                raise OperationalException(
+                    "Informative exchanges are only supported in live / dry-run modes."
+                )
             # Get historical OHLCV data (cached on disk).
             timeframe = timeframe or self._config["timeframe"]
             data = self.historic_ohlcv(pair=pair, timeframe=timeframe, candle_type=candle_type)
@@ -452,13 +468,43 @@ class DataProvider:
 
     # Exchange functions
 
+    def _get_exchange(self, exchange: str | None = None) -> Exchange:
+        """
+        Resolve which exchange to use for a data request.
+        :param exchange: Name of a secondary (informative) exchange, or None for the main one.
+        :return: The resolved Exchange instance.
+        :raises OperationalException: if no exchange is available or the name is unknown.
+        """
+        if exchange is None:
+            if self._exchange is None:
+                raise OperationalException(NO_EXCHANGE_EXCEPTION)
+            return self._exchange
+        if exchange in self._informative_exchanges:
+            return self._informative_exchanges[exchange]
+        raise OperationalException(
+            f"Informative exchange '{exchange}' is not configured. "
+            f"Available informative exchanges: {list(self._informative_exchanges.keys())}"
+        )
+
+    @property
+    def informative_exchanges(self) -> list[str]:
+        """
+        Return the list of configured secondary (informative) exchange names.
+        """
+        return list(self._informative_exchanges.keys())
+
     def refresh(
         self,
         pairlist: ListPairsWithTimeframes,
         helping_pairs: ListPairsWithTimeframes | None = None,
+        informative_exchange_pairs: dict[str, ListPairsWithTimeframes] | None = None,
     ) -> None:
         """
         Refresh data, called with each cycle
+        :param pairlist: List of pairs to refresh on the main exchange
+        :param helping_pairs: Informative pairs to refresh on the main exchange
+        :param informative_exchange_pairs: Mapping of secondary exchange name to the list of
+            informative pairs to refresh on that exchange.
         """
         if self._exchange is None:
             raise OperationalException(NO_EXCHANGE_EXCEPTION)
@@ -467,6 +513,13 @@ class DataProvider:
         self._exchange.refresh_latest_ohlcv(final_pairs)
         # refresh latest trades data
         self.refresh_latest_trades(pairlist)
+
+        # refresh informative pairs on secondary exchanges
+        if informative_exchange_pairs:
+            for exchange_name, ex_pairs in informative_exchange_pairs.items():
+                if not ex_pairs:
+                    continue
+                self._get_exchange(exchange_name).refresh_latest_ohlcv(ex_pairs)
 
     def refresh_latest_trades(self, pairlist: ListPairsWithTimeframes) -> None:
         """
@@ -489,7 +542,12 @@ class DataProvider:
         return list(self._exchange._klines.keys())
 
     def ohlcv(
-        self, pair: str, timeframe: str | None = None, copy: bool = True, candle_type: str = ""
+        self,
+        pair: str,
+        timeframe: str | None = None,
+        copy: bool = True,
+        candle_type: str = "",
+        exchange: str | None = None,
     ) -> DataFrame:
         """
         Get candle (OHLCV) data for the given pair as DataFrame
@@ -499,16 +557,17 @@ class DataProvider:
         :param candle_type: '', mark, index, premiumIndex, or funding_rate
         :param copy: copy dataframe before returning if True.
                      Use False only for read-only operations (where the dataframe is not modified)
+        :param exchange: Name of a configured informative exchange to source the data from.
+                     Defaults to the main (trading) exchange.
         """
-        if self._exchange is None:
-            raise OperationalException(NO_EXCHANGE_EXCEPTION)
+        _exchange = self._get_exchange(exchange)
         if self.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
             _candle_type = (
                 CandleType.from_string(candle_type)
                 if candle_type != ""
                 else self._config["candle_type_def"]
             )
-            return self._exchange.klines(
+            return _exchange.klines(
                 (pair, timeframe or self._config["timeframe"], _candle_type), copy=copy
             )
         else:

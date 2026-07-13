@@ -32,11 +32,13 @@ from freqtrade.exceptions import (
     ExchangeError,
     InsufficientFundsError,
     InvalidOrderException,
+    OperationalException,
     PricingError,
 )
 from freqtrade.exchange import (
     ROUND_DOWN,
     ROUND_UP,
+    Exchange,
     timeframe_to_minutes,
     timeframe_to_next_date,
     timeframe_to_seconds,
@@ -121,7 +123,15 @@ class FreqtradeBot(LoggingMixin):
             # Keep this at the end of this initialization method.
             self.rpc: RPCManager = RPCManager(self)
 
-            self.dataprovider = DataProvider(self.config, self.exchange, rpc=self.rpc)
+            # Load secondary exchanges used purely as informative data sources (no trading)
+            self.informative_exchanges: dict[str, Exchange] = self._load_informative_exchanges()
+
+            self.dataprovider = DataProvider(
+                self.config,
+                self.exchange,
+                rpc=self.rpc,
+                informative_exchanges=self.informative_exchanges,
+            )
             self.pairlists = PairListManager(self.exchange, self.config, self.dataprovider)
 
             self.dataprovider.add_pairlisthandler(self.pairlists)
@@ -193,6 +203,32 @@ class FreqtradeBot(LoggingMixin):
             self.cleanup()
             raise e from e
 
+    def _load_informative_exchanges(self) -> dict[str, Exchange]:
+        """
+        Load secondary exchanges configured under "informative_exchanges".
+        These exchanges are used purely as data sources for informative pairs and are
+        never used for trading.
+        :return: Mapping of exchange name to Exchange instance (empty if none configured).
+        """
+        informative_exchanges: dict[str, Exchange] = {}
+        for exchange_config in self.config.get("informative_exchanges", []):
+            exchange_config = deepcopy(exchange_config)
+            name = exchange_config.get("name")
+            if not name:
+                raise OperationalException(
+                    "Each entry in 'informative_exchanges' must define a 'name'."
+                )
+            if name == self.config["exchange"]["name"] or name in informative_exchanges:
+                raise OperationalException(
+                    f"Informative exchange '{name}' is duplicated or matches the main "
+                    "trading exchange. Each informative exchange must be unique."
+                )
+            logger.info(f"Loading informative (data-source) exchange '{name}'")
+            informative_exchanges[name] = ExchangeResolver.load_data_exchange(
+                self.config, exchange_config=exchange_config
+            )
+        return informative_exchanges
+
     def notify_status(self, msg: str, msg_type=RPCMessageType.STATUS) -> None:
         """
         Public method for users of this class (worker, etc.) to send notifications
@@ -226,6 +262,8 @@ class FreqtradeBot(LoggingMixin):
             self.emc.shutdown()
         if getattr(self, "exchange", None):
             self.exchange.close()
+        for informative_exchange in getattr(self, "informative_exchanges", {}).values():
+            informative_exchange.close()
         try:
             if hasattr(Trade, "session"):
                 Trade.commit()
@@ -275,6 +313,7 @@ class FreqtradeBot(LoggingMixin):
         self.dataprovider.refresh(
             self.pairlists.create_pair_list(self.active_pair_whitelist),
             self.strategy.gather_informative_pairs(),
+            self.strategy.gather_informative_exchange_pairs(),
         )
 
         strategy_safe_wrapper(self.strategy.bot_loop_start, supress_error=True)(
