@@ -19,6 +19,9 @@ logger = logging.getLogger(__name__)
 
 
 class ExchangeWS:
+    # TODO: should either be configurable or use the main timeframe.
+    ob_timeout = 60  # 1m
+
     def __init__(self, config: Config, ccxt_object: ccxt.Exchange) -> None:
         self.config = config
         self._ccxt_object = ccxt_object
@@ -157,9 +160,8 @@ class ExchangeWS:
 
         with self._state_lock:
             for pair in list(self._ob_watching):
-                timeout = 60  # 1m
                 last_refresh = self.ob_last_request.get(pair, 0)
-                if last_refresh > 0 and (dt_ts() - last_refresh) > ((timeout + 20) * 1000):
+                if last_refresh > 0 and (dt_ts() - last_refresh) > ((self.ob_timeout + 20) * 1000):
                     logger.info(f"Removing {pair} from orderbook watchlist")
                     self._ob_watching.discard(pair)
 
