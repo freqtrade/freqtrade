@@ -247,17 +247,16 @@ def test_exchange_resolver(default_conf, mocker, caplog):
     mocker.patch(f"{EXMS}.validate_pricing")
     default_conf["exchange"]["name"] = "zaif"
     exchange = ExchangeResolver.load_exchange(default_conf)
+    msg = r"No .* specific subclass found. Using the generic exchange class instead."
     assert isinstance(exchange, Exchange)
-    assert log_has_re(r"No .* specific subclass found. Using the generic class instead.", caplog)
+    assert log_has_re(msg, caplog)
     caplog.clear()
 
     default_conf["exchange"]["name"] = "Bybit"
     exchange = ExchangeResolver.load_exchange(default_conf)
     assert isinstance(exchange, Exchange)
     assert isinstance(exchange, Bybit)
-    assert not log_has_re(
-        r"No .* specific subclass found. Using the generic class instead.", caplog
-    )
+    assert not log_has_re(msg, caplog)
     caplog.clear()
 
     default_conf["exchange"]["name"] = "kraken"
@@ -265,9 +264,7 @@ def test_exchange_resolver(default_conf, mocker, caplog):
     assert isinstance(exchange, Exchange)
     assert isinstance(exchange, Kraken)
     assert not isinstance(exchange, Binance)
-    assert not log_has_re(
-        r"No .* specific subclass found. Using the generic class instead.", caplog
-    )
+    assert not log_has_re(msg, caplog)
 
     default_conf["exchange"]["name"] = "binance"
     exchange = ExchangeResolver.load_exchange(default_conf)
@@ -275,9 +272,7 @@ def test_exchange_resolver(default_conf, mocker, caplog):
     assert isinstance(exchange, Binance)
     assert not isinstance(exchange, Kraken)
 
-    assert not log_has_re(
-        r"No .* specific subclass found. Using the generic class instead.", caplog
-    )
+    assert not log_has_re(msg, caplog)
 
     # Test mapping
     default_conf["exchange"]["name"] = "binanceus"
