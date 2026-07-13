@@ -400,6 +400,172 @@ def test_exchangews_get_ohlcv_with_refresh(mocker):
     exchange_ws.cleanup()
 
 
+def test_exchangews_get_orderbook(mocker):
+    config = MagicMock()
+    ccxt_object = MagicMock()
+    ob = {
+        "bids": [[100.0, 1.0], [99.0, 2.0]],
+        "asks": [[101.0, 1.5], [102.0, 3.0]],
+        "timestamp": 1635840000000,
+        "nonce": 7,
+    }
+    ccxt_object.orderbooks = {"ETH/USDT": ob}
+    mocker.patch("freqtrade.exchange.exchange_ws.ExchangeWS._start_forever")
+
+    exchange_ws = ExchangeWS(config, ccxt_object)
+
+    result = exchange_ws.get_orderbook("ETH/USDT")
+    assert result == ob
+    # A deep copy is returned - decoupled from the live cache (nested lists copied too).
+    assert result is not ob
+    assert result["bids"] is not ob["bids"]
+    # Mutating the live cache must not affect an already-returned snapshot.
+    ccxt_object.orderbooks["ETH/USDT"]["bids"][0][1] = 999
+    assert result["bids"][0][1] == 1.0
+
+    # Unknown pair returns an empty dict (caller falls back to REST).
+    assert exchange_ws.get_orderbook("BTC/USDT") == {}
+
+    exchange_ws.cleanup()
+
+
+def test_exchangews_get_orderbook_deepcopy_and_retry(mocker):
+    config = MagicMock()
+    ccxt_object = MagicMock()
+    ccxt_object.orderbooks = {"ETH/USDT": {"bids": [[1, 2]], "asks": [[3, 4]]}}
+    mocker.patch("freqtrade.exchange.exchange_ws.ExchangeWS._start_forever")
+
+    exchange_ws = ExchangeWS(config, ccxt_object)
+
+    call_count = {"count": 0}
+
+    def deepcopy_side_effect(value):
+        # RuntimeError mimics "collection changed size during iteration" while the
+        # ws thread mutates the book mid-copy - the retrier should swallow and retry.
+        call_count["count"] += 1
+        if call_count["count"] < 3:
+            raise RuntimeError("copy failed")
+        return {k: [row.copy() for row in v] for k, v in value.items()}
+
+    mocker.patch("freqtrade.exchange.exchange_ws.deepcopy", deepcopy_side_effect)
+
+    result = exchange_ws.get_orderbook("ETH/USDT")
+
+    assert call_count["count"] == 3
+    assert result == {"bids": [[1, 2]], "asks": [[3, 4]]}
+    assert result is not ccxt_object.orderbooks["ETH/USDT"]
+
+    # Fail every time -> surfaces as TemporaryError once retries are exhausted.
+    mocker.patch("freqtrade.exchange.exchange_ws.deepcopy", side_effect=RuntimeError("copy failed"))
+    with pytest.raises(TemporaryError, match=r"Error deepcopying: copy failed"):
+        exchange_ws.get_orderbook("ETH/USDT")
+
+    exchange_ws.cleanup()
+
+
+def test_exchangews_schedule_orderbook_loop_not_ready(mocker, caplog):
+    config = MagicMock()
+    ccxt_object = MagicMock()
+    mocker.patch("freqtrade.exchange.exchange_ws.ExchangeWS._start_forever")
+    run_threadsafe = mocker.patch("freqtrade.exchange.exchange_ws.asyncio.run_coroutine_threadsafe")
+
+    exchange_ws = ExchangeWS(config, ccxt_object)
+    exchange_ws.schedule_orderbook("ETH/BTC")
+
+    assert exchange_ws._ob_watching == set()
+    assert exchange_ws.ob_last_request == {}
+    assert run_threadsafe.call_count == 0
+    assert log_has_re("Websocket loop not ready. Could not schedule orderbook for ETH/BTC", caplog)
+
+    exchange_ws.cleanup()
+
+
+def test_exchangews_orderbook_stopped(mocker):
+    config = MagicMock()
+    ccxt_object = MagicMock()
+    mocker.patch("freqtrade.exchange.exchange_ws.ExchangeWS._start_forever")
+
+    exchange_ws = ExchangeWS(config, ccxt_object)
+
+    task = MagicMock()
+    exchange_ws._background_tasks.add(task)
+    exchange_ws._ob_scheduled.add("ETH/BTC")
+
+    exchange_ws._orderbook_stopped(task, "ETH/BTC")
+
+    assert task not in exchange_ws._background_tasks
+    assert "ETH/BTC" not in exchange_ws._ob_scheduled
+
+    exchange_ws.cleanup()
+
+
+async def test_exchangews_watch_orderbook(mocker, time_machine, caplog):
+    config = MagicMock()
+    ccxt_object = MagicMock()
+    caplog.set_level(logging.DEBUG)
+
+    async def controlled_sleeper(*args, **kwargs):
+        # Sleep to pass control back to the event loop
+        await asyncio.sleep(0.1)
+        return MagicMock()
+
+    async def wait_for_condition(condition_func, timeout_=5.0, check_interval=0.01):
+        """Wait for a condition to be true with timeout."""
+        try:
+            async with asyncio.timeout(timeout_):
+                while True:
+                    if condition_func():
+                        return True
+                    await asyncio.sleep(check_interval)
+        except TimeoutError:
+            return False
+
+    ccxt_object.watch_order_book = AsyncMock(side_effect=controlled_sleeper)
+    ccxt_object.close = AsyncMock()
+    time_machine.move_to("2024-11-01 01:00:02 +00:00")
+
+    mocker.patch("freqtrade.exchange.exchange_ws.ExchangeWS._start_forever")
+
+    exchange_ws = ExchangeWS(config, ccxt_object)
+    patch_eventloop_threading(exchange_ws)
+    try:
+        assert exchange_ws._ob_watching == set()
+        assert exchange_ws._ob_scheduled == set()
+
+        exchange_ws.schedule_orderbook("ETH/BTC")
+        exchange_ws.schedule_orderbook("XRP/BTC")
+
+        # Wait for both pairs to be watching and scheduled.
+        assert await wait_for_condition(
+            lambda: len(exchange_ws._ob_watching) == 2 and len(exchange_ws._ob_scheduled) == 2,
+            timeout_=2.0,
+        )
+        assert exchange_ws._ob_watching == {"ETH/BTC", "XRP/BTC"}
+        assert exchange_ws._ob_scheduled == {"ETH/BTC", "XRP/BTC"}
+
+        # The watch loop keeps calling watch_order_book for both pairs.
+        assert await wait_for_condition(
+            lambda: ccxt_object.watch_order_book.call_count >= 4, timeout_=3.0
+        )
+        watched_pairs = {c.args[0] for c in ccxt_object.watch_order_book.call_args_list}
+        assert watched_pairs == {"ETH/BTC", "XRP/BTC"}
+
+        # Move past the expiry window (timeout + 20s) and trigger the cleanup.
+        time_machine.shift(timedelta(seconds=exchange_ws.ob_timeout + 20))
+        exchange_ws.cleanup_expired()
+
+        # Both pairs get removed from the watchlist, and the tasks unschedule themselves.
+        assert await wait_for_condition(
+            lambda: exchange_ws._ob_watching == set() and exchange_ws._ob_scheduled == set(),
+            timeout_=2.0,
+        )
+        assert log_has_re("Removing ETH/BTC from orderbook watchlist", caplog)
+        assert log_has_re("Removing XRP/BTC from orderbook watchlist", caplog)
+    finally:
+        # Cleanup
+        exchange_ws.cleanup()
+
+
 def test_exchangews_continuous_stopped_task_exception(mocker, caplog):
     config = MagicMock()
     ccxt_object = MagicMock()
