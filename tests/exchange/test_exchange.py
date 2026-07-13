@@ -2857,23 +2857,23 @@ def test_needed_candle_for_trades_ms(mocker, default_conf, time_machine) -> None
 
     tf = "5m"
 
-    # required_candles = min(max_candles=1500, candles_fetched=500*1=500) = 500
+    # required_candles = min(max_candles=1500, candles_fetched=500*1=500) = 500 (+1 margin)
     exchange.required_candle_call_count = 1
-    # 500 candles * 5m = 2500 minutes ~= 1.7 days
-    expected = dt_ts(next_candle - timedelta(minutes=500 * 5))
+    # 501 candles * 5m = 2505 minutes ~= 1.7 days
+    expected = dt_ts(next_candle - timedelta(minutes=501 * 5))
     assert exchange.needed_candle_for_trades_ms(tf, CandleType.SPOT) == expected
 
-    # required_candles = min(max_candles=1500, candles_fetched=500*3=1500) = 1500
+    # required_candles = min(max_candles=1500, candles_fetched=500*3=1500) = 1500 (+1 margin)
     exchange.required_candle_call_count = 3
-    # 1500 candles * 5m = 7500 minutes ~= 5.2 days
-    expected = dt_ts(next_candle - timedelta(minutes=1500 * 5))
+    # 1501 candles * 5m = 7505 minutes ~= 5.2 days
+    expected = dt_ts(next_candle - timedelta(minutes=1501 * 5))
     assert exchange.needed_candle_for_trades_ms(tf, CandleType.SPOT) == expected
 
-    # required_candles capped at max_candles=800 (candles_fetched=500*5=2500)
+    # required_candles capped at max_candles=800 (candles_fetched=500*5=2500), +1 margin
     default_conf["orderflow"]["max_candles"] = 800
     exchange.required_candle_call_count = 5
-    # 800 candles * 5m = 4000 minutes ~= 2.8 days
-    expected = dt_ts(next_candle - timedelta(minutes=800 * 5))
+    # 801 candles * 5m = 4005 minutes ~= 2.8 days
+    expected = dt_ts(next_candle - timedelta(minutes=801 * 5))
     assert exchange.needed_candle_for_trades_ms(tf, CandleType.SPOT) == expected
 
 
