@@ -365,7 +365,12 @@ class DataProvider:
         return timeframe
 
     def get_pair_dataframe(
-        self, pair: str, timeframe: str | None = None, candle_type: str = ""
+        self,
+        pair: str,
+        timeframe: str | None = None,
+        candle_type: str = "",
+        *,
+        copy: bool = True,
     ) -> DataFrame:
         """
         Return pair candle (OHLCV) data, either live or cached historical -- depending
@@ -376,11 +381,12 @@ class DataProvider:
         :param timeframe: timeframe to get data for
         :return: Dataframe for this pair
         :param candle_type: '', mark, index, premiumIndex, or funding_rate
+        :param copy: Copy live data before returning it. Disable only for read-only operations.
         """
         timeframe = self.__fix_funding_rate_timeframe(pair, timeframe, candle_type)
         if self.runmode in (RunMode.DRY_RUN, RunMode.LIVE):
             # Get live OHLCV data.
-            data = self.ohlcv(pair=pair, timeframe=timeframe, candle_type=candle_type)
+            data = self.ohlcv(pair=pair, timeframe=timeframe, candle_type=candle_type, copy=copy)
         else:
             # Get historical OHLCV data (cached on disk).
             timeframe = timeframe or self._config["timeframe"]
