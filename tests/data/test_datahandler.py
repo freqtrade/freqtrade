@@ -386,7 +386,7 @@ def test_datahandler_trades_load(testdatadir, datahandler):
     assert trades.iloc[-1]["cost"] == 0.1986231
 
     trades1 = dh.trades_load("UNITTEST/NONEXIST", TradingMode.SPOT)
-    assert isinstance(trades, DataFrame)
+    assert isinstance(trades1, DataFrame)
     assert trades1.empty
 
 

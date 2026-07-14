@@ -11,6 +11,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from pandas import DataFrame, to_datetime
+from pyarrow import dataset
 
 from freqtrade import misc
 from freqtrade.configuration import TimeRange
@@ -257,6 +258,36 @@ class IDataHandler(ABC):
             filename.unlink()
             return True
         return False
+
+    def _build_arrow_time_filter(self, timerange: TimeRange | None):
+        """
+        Build Arrow predicate filter for timerange filtering.
+        Treats 0 as unbounded (no filter on that side).
+        :param timerange: TimeRange object with start/stop timestamps
+        :return: Arrow filter expression or None if fully unbounded
+        """
+        if not timerange:
+            return None
+
+        # Treat 0 as unbounded
+        start_set = bool(timerange.startts and timerange.startts > 0)
+        stop_set = bool(timerange.stopts and timerange.stopts > 0)
+
+        if not (start_set or stop_set):
+            return None
+
+        ts_field = dataset.field("timestamp")
+        exprs = []
+
+        if start_set:
+            exprs.append(ts_field >= timerange.startts)
+        if stop_set:
+            exprs.append(ts_field <= timerange.stopts)
+
+        if len(exprs) == 1:
+            return exprs[0]
+        else:
+            return exprs[0] & exprs[1]
 
     def trades_load(
         self, pair: str, trading_mode: TradingMode, timerange: TimeRange | None = None
