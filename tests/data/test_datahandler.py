@@ -528,13 +528,13 @@ def test_feather_trades_timerange_pushdown_fallback(
     feather_dh, trades_full, timerange_mid, monkeypatch, caplog
 ):
     # Pushdown filter should fail, so fallback should load the entire file
-    import freqtrade.data.history.datahandlers.featherdatahandler as fdh
+    import freqtrade.data.history.datahandlers.arrowdatahandler as adh
 
     def raise_err(*args, **kwargs):
         raise ValueError("fail")
 
     # Mock the dataset loading to raise an error
-    monkeypatch.setattr(fdh.dataset, "dataset", raise_err)
+    monkeypatch.setattr(adh.dataset, "dataset", raise_err)
 
     with caplog.at_level("WARNING"):
         out = feather_dh.trades_load("XRP/ETH", TradingMode.SPOT, timerange=timerange_mid)
