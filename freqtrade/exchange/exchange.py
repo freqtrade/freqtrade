@@ -2247,7 +2247,9 @@ class Exchange:
             self._exchange_ws.schedule_orderbook(pair)
 
             ob = self._exchange_ws.get_orderbook(pair)
-            if ob:
+            # ccxt.pro creates the orderbook object as soon as watching starts, but it's
+            # empty until the initial snapshot is applied - fall back to REST until then.
+            if ob.get("bids") and ob.get("asks"):
                 logger.info(f"using orderbook for {pair}")
                 return ob
 
