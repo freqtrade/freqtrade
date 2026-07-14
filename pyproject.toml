@@ -163,6 +163,12 @@ addopts = ["--dist", "loadscope"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 
+filterwarnings = [
+    # aiohttp warns that enable_cleanup_closed is a no-op on Python 3.14+
+    # It's set internally by ccxt/aiohttp and out of our control.
+    "ignore:enable_cleanup_closed ignored:DeprecationWarning:aiohttp.connector",
+]
+
 [tool.mypy]
 ignore_missing_imports = true
 namespace_packages = false
