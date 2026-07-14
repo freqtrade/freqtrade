@@ -7,5 +7,5 @@ scikit-learn==1.9.0
 joblib==1.5.3
 lightgbm==4.6.0
 xgboost==3.2.0
-tensorboard==2.20.0
+tensorboard==2.21.0
 datasieve==0.1.9

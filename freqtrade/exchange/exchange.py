@@ -3080,6 +3080,10 @@ class Exchange:
     # fetch Trade data stuff
 
     def needed_candle_for_trades_ms(self, timeframe: str, candle_type: CandleType) -> int:
+        """
+        Get the timestamp in milliseconds of the earliest candle needed to fetch trades
+        for the given timeframe and candle type.
+        """
         candle_limit = self.ohlcv_candle_limit(timeframe, candle_type)
         tf_s = timeframe_to_seconds(timeframe)
         candles_fetched = candle_limit * self.required_candle_call_count
@@ -3087,11 +3091,8 @@ class Exchange:
         max_candles = self._config["orderflow"]["max_candles"]
 
         required_candles = min(max_candles, candles_fetched)
-        move_to = (
-            tf_s * candle_limit * required_candles
-            if required_candles > candle_limit
-            else (max_candles + 1) * tf_s
-        )
+        # +1 candle as a safety margin so the oldest required candle is fully covered.
+        move_to = (required_candles + 1) * tf_s
 
         now = timeframe_to_next_date(timeframe)
         return int((now - timedelta(seconds=move_to)).timestamp() * 1000)
