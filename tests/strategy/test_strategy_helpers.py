@@ -119,12 +119,9 @@ def _shared_informative_call_count_strategy(
         base, quote = pair.split("/")
         return {"base": base, "quote": quote}
 
-    def get_pair_dataframe(
-        pair: str, timeframe: str, candle_type: str, *, copy: bool = True
-    ) -> pd.DataFrame:
+    def get_pair_dataframe(pair: str, timeframe: str, candle_type: str) -> pd.DataFrame:
         assert pair == "BTC/USDT"
-        dataframe = informative_data[timeframe]
-        return dataframe.copy() if copy else dataframe
+        return informative_data[timeframe].copy()
 
     dataprovider.market.side_effect = market
     dataprovider.get_pair_dataframe.side_effect = get_pair_dataframe
@@ -144,8 +141,8 @@ def _mixed_informative_cache_strategy(
         "base": pair.split("/")[0],
         "quote": pair.split("/")[1],
     }
-    dataprovider.get_pair_dataframe.side_effect = lambda pair, timeframe, candle_type, copy=True: (
-        informative_data[timeframe].copy() if copy else informative_data[timeframe]
+    dataprovider.get_pair_dataframe.side_effect = (
+        lambda pair, timeframe, candle_type: informative_data[timeframe].copy()
     )
     strategy.dp = dataprovider
     return strategy
@@ -161,8 +158,8 @@ def _same_source_informative_cache_strategy(
         "base": pair.split("/")[0],
         "quote": pair.split("/")[1],
     }
-    dataprovider.get_pair_dataframe.side_effect = lambda pair, timeframe, candle_type, copy=True: (
-        informative_data.copy() if copy else informative_data
+    dataprovider.get_pair_dataframe.side_effect = (
+        lambda pair, timeframe, candle_type: informative_data.copy()
     )
     strategy.dp = dataprovider
     return strategy
@@ -622,11 +619,9 @@ def test_shared_informative_call_count_for_each_base_pair(default_conf_usdt):
             ("second", "BTC/USDT", "1h"): 1,
         }
     )
-    # Raw data is still requested for every base pair, but it is borrowed read-only on cache hits.
+    # Raw data is still requested and copied for every base pair.
     assert strategy.dp.get_pair_dataframe.call_count == 18
-    assert all(
-        call.kwargs == {"copy": False} for call in strategy.dp.get_pair_dataframe.call_args_list
-    )
+    assert all(not call.kwargs for call in strategy.dp.get_pair_dataframe.call_args_list)
 
 
 @pytest.mark.parametrize("runmode", [RunMode.DRY_RUN, RunMode.LIVE])
@@ -644,12 +639,7 @@ def test_informative_cache_is_opt_out_per_decorator(default_conf_usdt, runmode):
         strategy.advise_indicators(base_data.copy(), {"pair": pair})
 
     assert Counter(strategy.informative_calls) == Counter({"15m": 1, "30m": 3})
-    for call in strategy.dp.get_pair_dataframe.call_args_list:
-        if call.args[1] == "15m":
-            assert call.kwargs == {"copy": False}
-        else:
-            assert call.args[1] == "30m"
-            assert "copy" not in call.kwargs
+    assert all(not call.kwargs for call in strategy.dp.get_pair_dataframe.call_args_list)
 
 
 def test_shared_informative_cache_preserves_indicator_data(default_conf_usdt):
