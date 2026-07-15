@@ -4,7 +4,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from pandas import DataFrame
-from pyarrow import dataset
+from pyarrow import ArrowException, dataset
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS
@@ -241,20 +241,12 @@ class ArrowDataHandler(IDataHandler):
         try:
             dataset_reader = dataset.dataset(filename, format=self._get_file_extension())
             time_filter = self._build_arrow_trades_filter(timerange)
-
-            if time_filter is not None and timerange is not None:
-                tradesdata = dataset_reader.to_table(filter=time_filter).to_pandas()
-                start_desc = timerange.startts if timerange.startts > 0 else "unbounded"
-                stop_desc = timerange.stopts if timerange.stopts > 0 else "unbounded"
-                logger.debug(
-                    f"Loaded {len(tradesdata)} trades for {pair} "
-                    f"(filtered start={start_desc}, stop={stop_desc})"
-                )
-            else:
-                tradesdata = dataset_reader.to_table().to_pandas()
-                logger.debug(f"Loaded {len(tradesdata)} trades for {pair} (unfiltered)")
-
-        except (ImportError, AttributeError, ValueError) as e:
+            tradesdata = dataset_reader.to_table(filter=time_filter).to_pandas()
+            logger.debug(
+                f"Loaded {len(tradesdata)} trades for {pair} "
+                f"({f'filter: {time_filter}' if time_filter is not None else 'unfiltered'})"
+            )
+        except (ImportError, AttributeError, ValueError, ArrowException) as e:
             # Fallback: load entire file
             logger.warning(f"Unable to use Arrow filtering, loading entire trades file: {e}")
             tradesdata = self._load_dataframe(filename)
