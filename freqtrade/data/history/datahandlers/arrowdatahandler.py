@@ -152,7 +152,7 @@ class ArrowDataHandler(IDataHandler):
         try:
             dataset_reader = dataset.dataset(filename, format=self._get_file_extension())
             pairdata = dataset_reader.to_table(filter=time_filter).to_pandas()
-        except (ImportError, AttributeError, ValueError) as e:
+        except (ImportError, AttributeError, ValueError, ArrowException) as e:
             # Fallback: load entire file
             logger.warning(f"Unable to use Arrow filtering, loading entire ohlcv file: {e}")
             return self._load_dataframe(filename)
