@@ -6,8 +6,9 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-from pandas import DataFrame, Timestamp
+from pandas import DataFrame, Timestamp, date_range
 from pandas.testing import assert_frame_equal
+from pyarrow import ArrowNotImplementedError
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import AVAILABLE_DATAHANDLERS
@@ -529,13 +530,14 @@ def test_feather_trades_timerange_filter_subset(feather_dh, trades_full, timeran
     assert len(subset) < len(trades_full)
 
 
+@pytest.mark.parametrize("exception", [ValueError("fail"), ArrowNotImplementedError("fail")])
 def test_feather_trades_timerange_pushdown_fallback(
-    feather_dh, trades_full, timerange_mid, mocker, caplog
+    feather_dh, trades_full, timerange_mid, mocker, caplog, exception
 ):
     # Pushdown filter should fail, so fallback should load the entire file
     mocker.patch(
         "freqtrade.data.history.datahandlers.arrowdatahandler.dataset.dataset",
-        side_effect=ValueError("fail"),
+        side_effect=exception,
     )
 
     with caplog.at_level("WARNING"):
@@ -709,14 +711,24 @@ def test_ohlcv_load_pushdown_limits_read(testdatadir, tmp_path, datahandler):
     assert limited.iloc[-1]["date"] == timerange.stopdt + timedelta(minutes=5)
 
 
-def test_ohlcv_load_pushdown_fallback(feather_dh, mocker, caplog):
+@pytest.mark.parametrize(
+    "exception",
+    [
+        ValueError("fail"),
+        # Arrow raises this when a filter can't be bound to the column - e.g. a tz-aware
+        # bound against a tz-naive date column. It's a NotImplementedError, not a
+        # ValueError, so it only reaches the fallback via ArrowException.
+        ArrowNotImplementedError("fail"),
+    ],
+)
+def test_ohlcv_load_pushdown_fallback(feather_dh, mocker, caplog, exception):
     # If Arrow filtering is unavailable, the whole file is read (and trimmed later).
     tr = TimeRange.parse_timerange("20180115-20180119")
     expected = feather_dh.ohlcv_load("UNITTEST/BTC", "5m", "spot", timerange=tr)
 
     mocker.patch(
         "freqtrade.data.history.datahandlers.arrowdatahandler.dataset.dataset",
-        side_effect=ValueError("fail"),
+        side_effect=exception,
     )
 
     with caplog.at_level("WARNING"):
