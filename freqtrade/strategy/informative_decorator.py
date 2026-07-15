@@ -144,8 +144,7 @@ def _get_populated_informative_dataframe(
     if cached is not None and cached.fingerprint == fingerprint:
         return cached.prepared.dataframe.copy(), True
 
-    # Cached live data is borrowed read-only from DataProvider. Give strategy code an owned copy.
-    dataframe = populate_indicators_fn(strategy, dataframe.copy(), metadata)
+    dataframe = populate_indicators_fn(strategy, dataframe, metadata)
     prepared = _prepare_informative_pair(
         dataframe,
         strategy.timeframe,
@@ -200,10 +199,7 @@ def _create_and_merge_informative_pair(
     cache: InformativeCache | None = (
         getattr(strategy, "_ft_informative_cache", None) if inf_data.cache else None
     )
-    if cache is None:
-        inf_dataframe = strategy.dp.get_pair_dataframe(asset, timeframe1, candle_type)
-    else:
-        inf_dataframe = strategy.dp.get_pair_dataframe(asset, timeframe1, candle_type, copy=False)
+    inf_dataframe = strategy.dp.get_pair_dataframe(asset, timeframe1, candle_type)
     if inf_dataframe.empty:
         raise ValueError(
             f"Informative dataframe for ({asset}, {timeframe1}, {candle_type}) is empty. "
