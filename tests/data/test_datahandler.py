@@ -362,7 +362,12 @@ def test_generic_datahandler_ohlcv_load_and_resave(
     ohlcv = dh1.ohlcv_load("UNITTEST/NONEXIST", timeframe, candle_type=candle_type)
     assert ohlcv.empty
 
-    # Try loading a file that exists but errors
+    # Try loading a file that exists but errors - Arrow fails, so the pandas reader is
+    # used as fallback, which errors as well.
+    mocker.patch(
+        "freqtrade.data.history.datahandlers.arrowdatahandler.dataset.dataset",
+        side_effect=ValueError("Test"),
+    )
     mocker.patch(
         "freqtrade.data.history.datahandlers.featherdatahandler.read_feather",
         side_effect=Exception("Test"),
