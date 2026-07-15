@@ -38,7 +38,7 @@ class InformativeData:
     fmt: str | Callable[[Any], str] | None
     ffill: bool
     candle_type: CandleType | None
-    cache: bool = False
+    cache: bool = True
 
 
 def informative(
@@ -48,7 +48,7 @@ def informative(
     *,
     candle_type: CandleType | str | None = None,
     ffill: bool = True,
-    cache: bool = False,
+    cache: bool = True,
 ) -> Callable[[PopulateIndicators], PopulateIndicators]:
     """
     A decorator for populate_indicators_Nn(self, dataframe, metadata), allowing these functions to
@@ -80,8 +80,8 @@ def informative(
     :param ffill: ffill dataframe after merging informative pair.
     :param candle_type: '', mark, index, premiumIndex, or funding_rate
     :param cache: Cache populated indicators in dry/live mode while the latest informative candle
-                  remains unchanged. Only enable for methods that depend solely on their dataframe
-                  and metadata and have no side effects. Defaults to False.
+                  remains unchanged. Disable for methods that use external state, have side effects,
+                  or otherwise need to run for every base pair. Defaults to True.
     """
     _asset = asset
     _timeframe = timeframe

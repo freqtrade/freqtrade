@@ -154,6 +154,10 @@ def test_get_pair_dataframe(mocker, default_conf, ohlcv_history, candle_type):
         dp.get_pair_dataframe("UNITTEST/BTC", timeframe, candle_type=candle_type)
         is not ohlcv_history
     )
+    assert (
+        dp.get_pair_dataframe("UNITTEST/BTC", timeframe, candle_type=candle_type, copy=False)
+        is ohlcv_history
+    )
     assert not dp.get_pair_dataframe("UNITTEST/BTC", timeframe, candle_type=candle_type).empty
     assert dp.get_pair_dataframe("NONSENSE/AAA", timeframe, candle_type=candle_type).empty
 
@@ -167,6 +171,10 @@ def test_get_pair_dataframe(mocker, default_conf, ohlcv_history, candle_type):
     assert dp.runmode == RunMode.LIVE
     assert isinstance(
         dp.get_pair_dataframe("UNITTEST/BTC", timeframe, candle_type=candle_type), DataFrame
+    )
+    assert (
+        dp.get_pair_dataframe("UNITTEST/BTC", timeframe, candle_type=candle_type, copy=False)
+        is ohlcv_history
     )
     assert dp.get_pair_dataframe("NONSENSE/AAA", timeframe, candle_type=candle_type).empty
 
