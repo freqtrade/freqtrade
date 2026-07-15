@@ -207,22 +207,18 @@ class ArrowDataHandler(IDataHandler):
         if not timerange:
             return None
 
-        # Treat 0 as unbounded
-        start_set = bool(timerange.startts and timerange.startts > 0)
-        stop_set = bool(timerange.stopts and timerange.stopts > 0)
-
-        if not (start_set or stop_set):
-            return None
-
         ts_field = dataset.field("timestamp")
         exprs = []
 
-        if start_set:
+        # Treat 0 as unbounded
+        if timerange.startts and timerange.startts > 0:
             exprs.append(ts_field >= timerange.startts)
-        if stop_set:
+        if timerange.stopts and timerange.stopts > 0:
             exprs.append(ts_field <= timerange.stopts)
 
-        if len(exprs) == 1:
+        if not exprs:
+            return None
+        elif len(exprs) == 1:
             return exprs[0]
         else:
             return exprs[0] & exprs[1]
