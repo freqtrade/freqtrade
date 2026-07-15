@@ -197,7 +197,7 @@ class ArrowDataHandler(IDataHandler):
         """
         raise NotImplementedError()
 
-    def _build_arrow_time_filter(self, timerange: TimeRange | None):
+    def _build_arrow_trades_filter(self, timerange: TimeRange | None):
         """
         Build Arrow predicate filter for timerange filtering.
         Treats 0 as unbounded (no filter on that side).
@@ -244,7 +244,7 @@ class ArrowDataHandler(IDataHandler):
         # Use Arrow dataset with optional timerange filtering, fallback to a full read
         try:
             dataset_reader = dataset.dataset(filename, format=self._get_file_extension())
-            time_filter = self._build_arrow_time_filter(timerange)
+            time_filter = self._build_arrow_trades_filter(timerange)
 
             if time_filter is not None and timerange is not None:
                 tradesdata = dataset_reader.to_table(filter=time_filter).to_pandas()

@@ -583,17 +583,17 @@ def test_feather_trades_timerange_fully_open(feather_dh, trades_full):
     )
 
 
-def test_feather_build_arrow_time_filter(feather_dh):
+def test_feather_build_arrow_trades_filter(feather_dh):
     # None timerange should return None
-    assert feather_dh._build_arrow_time_filter(None) is None
+    assert feather_dh._build_arrow_trades_filter(None) is None
 
     # Fully open (both bounds 0) should return None
     tr_fully_open = TimeRange(None, None, startts=0, stopts=0)
-    assert feather_dh._build_arrow_time_filter(tr_fully_open) is None
+    assert feather_dh._build_arrow_trades_filter(tr_fully_open) is None
 
     # Open start (startts=0) should return stop filter only
     tr_open_start = TimeRange(None, "date", startts=0, stopts=1000)
-    filter_open_start = feather_dh._build_arrow_time_filter(tr_open_start)
+    filter_open_start = feather_dh._build_arrow_trades_filter(tr_open_start)
     assert filter_open_start is not None
     # Should be a single expression (timestamp <= stopts)
     assert str(filter_open_start).count("<=") == 1
@@ -601,7 +601,7 @@ def test_feather_build_arrow_time_filter(feather_dh):
 
     # Open end (stopts=0) should return start filter only
     tr_open_end = TimeRange("date", None, startts=500, stopts=0)
-    filter_open_end = feather_dh._build_arrow_time_filter(tr_open_end)
+    filter_open_end = feather_dh._build_arrow_trades_filter(tr_open_end)
     assert filter_open_end is not None
     # Should be a single expression (timestamp >= startts)
     assert str(filter_open_end).count(">=") == 1
@@ -609,7 +609,7 @@ def test_feather_build_arrow_time_filter(feather_dh):
 
     # Closed range should return combined filter
     tr_closed = TimeRange("date", "date", startts=500, stopts=1000)
-    filter_closed = feather_dh._build_arrow_time_filter(tr_closed)
+    filter_closed = feather_dh._build_arrow_trades_filter(tr_closed)
     assert filter_closed is not None
     # Should contain both >= and <= (combined with &)
     filter_str = str(filter_closed)
