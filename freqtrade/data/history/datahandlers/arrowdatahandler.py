@@ -1,5 +1,6 @@
 import logging
 from abc import abstractmethod
+from datetime import timedelta
 from pathlib import Path
 
 from pandas import DataFrame
@@ -8,6 +9,7 @@ from pyarrow import dataset
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS
 from freqtrade.enums import CandleType, TradingMode
+from freqtrade.exchange import timeframe_to_seconds
 
 from .idatahandler import IDataHandler
 
@@ -83,7 +85,7 @@ class ArrowDataHandler(IDataHandler):
             if not filename.exists():
                 return DataFrame(columns=self._columns)
         try:
-            pairdata = self._load_dataframe(filename)
+            pairdata = self._load_ohlcv_dataframe(filename, timeframe, timerange)
             pairdata.columns = self._columns
             pairdata = pairdata.astype(
                 dtype={
@@ -101,6 +103,66 @@ class ArrowDataHandler(IDataHandler):
                 f"Error loading data from {filename}. Exception: {e}. Returning empty dataframe."
             )
             return DataFrame(columns=self._columns)
+
+    def _build_arrow_ohlcv_filter(self, timerange: TimeRange | None, timeframe: str):
+        """
+        Build Arrow predicate filter on the "date" column for ohlcv data.
+
+        Both bounds are widened by one candle. `ohlcv_load` trims the dataframe to the
+        exact timerange afterwards, but inspects the untrimmed dataframe first to warn
+        about missing data and to decide whether the last candle may be incomplete.
+        The extra candle on each side keeps that information intact.
+
+        :param timerange: TimeRange object with start/stop dates
+        :param timeframe: Timeframe of the data (e.g. "5m")
+        :return: Arrow filter expression or None if unbounded
+        """
+        if not timerange:
+            return None
+
+        widen = timedelta(seconds=timeframe_to_seconds(timeframe))
+        date_field = dataset.field("date")
+        exprs = []
+
+        if timerange.starttype == "date" and (startdt := timerange.startdt):
+            exprs.append(date_field >= startdt - widen)
+        if timerange.stoptype == "date" and (stopdt := timerange.stopdt):
+            exprs.append(date_field <= stopdt + widen)
+
+        if not exprs:
+            return None
+        elif len(exprs) == 1:
+            return exprs[0]
+        else:
+            return exprs[0] & exprs[1]
+
+    def _load_ohlcv_dataframe(
+        self, filename: Path, timeframe: str, timerange: TimeRange | None
+    ) -> DataFrame:
+        """
+        Load ohlcv data through Arrow, pushing the timerange filter down where possible
+        to avoid reading candles outside of the requested range.
+        Falls back to reading the full file - callers trim the result either way.
+        :param filename: File to load
+        :param timeframe: Timeframe of the data (e.g. "5m")
+        :param timerange: Timerange to limit the data to
+        :return: DataFrame as stored on disk, limited to (roughly) timerange
+        """
+        time_filter = self._build_arrow_ohlcv_filter(timerange, timeframe)
+        try:
+            dataset_reader = dataset.dataset(filename, format=self._get_file_extension())
+            pairdata = dataset_reader.to_table(filter=time_filter).to_pandas()
+        except (ImportError, AttributeError, ValueError) as e:
+            # Fallback: load entire file
+            logger.warning(f"Unable to use Arrow filtering, loading entire ohlcv file: {e}")
+            return self._load_dataframe(filename)
+
+        if time_filter is not None and pairdata.empty:
+            # No candles in the requested range - reload everything, so callers can tell
+            # "this file has no data at all" apart from "the file has no data for this
+            # timerange" (and can point at the data that is available).
+            return self._load_dataframe(filename)
+        return pairdata
 
     def ohlcv_append(
         self, pair: str, timeframe: str, data: DataFrame, candle_type: CandleType
