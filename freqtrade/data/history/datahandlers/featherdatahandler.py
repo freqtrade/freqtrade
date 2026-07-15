@@ -1,12 +1,8 @@
-import logging
 from pathlib import Path
 
 from pandas import DataFrame, read_feather
 
 from .arrowdatahandler import ArrowDataHandler
-
-
-logger = logging.getLogger(__name__)
 
 
 class FeatherDataHandler(ArrowDataHandler):

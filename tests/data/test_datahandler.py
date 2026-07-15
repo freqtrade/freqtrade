@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-from pandas import DataFrame, Timestamp, date_range
+from pandas import DataFrame, Timestamp
 from pandas.testing import assert_frame_equal
 from pyarrow import ArrowNotImplementedError
 
