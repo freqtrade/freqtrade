@@ -2490,17 +2490,17 @@ To persist this change, you should also add the following snippet to your config
 </div>
 <h4 id="dataformat-comparison">Dataformat comparison<a class="headerlink" href="#dataformat-comparison" title="Permanent link">&para;</a></h4>
 <p>The following comparisons have been made with the following data, and by using the linux <code>time</code> command.</p>
-<div class="highlight"><pre><span></span><code>Found 6 pair / timeframe combinations.
-+----------+-------------+--------+---------------------+---------------------+
-|     Pair |   Timeframe |   Type |                From |                  To |
-|----------+-------------+--------+---------------------+---------------------|
-| BTC/USDT |          5m |   spot | 2017-08-17 04:00:00 | 2022-09-13 19:25:00 |
-| ETH/USDT |          1m |   spot | 2017-08-17 04:00:00 | 2022-09-13 19:26:00 |
-| BTC/USDT |          1m |   spot | 2017-08-17 04:00:00 | 2022-09-13 19:30:00 |
-| XRP/USDT |          5m |   spot | 2018-05-04 08:10:00 | 2022-09-13 19:15:00 |
-| XRP/USDT |          1m |   spot | 2018-05-04 08:11:00 | 2022-09-13 19:22:00 |
-| ETH/USDT |          5m |   spot | 2017-08-17 04:00:00 | 2022-09-13 19:20:00 |
-+----------+-------------+--------+---------------------+---------------------+
+<div class="highlight"><pre><span></span><code>                       Found 6 pair / timeframe combinations.
+┏━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┓
+┃     Pair ┃ Timeframe ┃ Type ┃                From ┃                  To ┃ Candles ┃
+┡━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━┩
+│ BTC/USDT │        1m │ spot │ 2017-08-17 04:00:00 │ 2026-07-15 04:42:00 │ 4677171 │
+│ BTC/USDT │        5m │ spot │ 2017-08-17 04:00:00 │ 2026-07-15 04:35:00 │  935445 │
+│ ETH/USDT │        1m │ spot │ 2017-08-17 04:00:00 │ 2026-07-15 04:43:00 │ 4677172 │
+│ ETH/USDT │        5m │ spot │ 2017-08-17 04:00:00 │ 2026-07-15 04:35:00 │  935445 │
+│ XRP/USDT │        1m │ spot │ 2018-05-04 08:11:00 │ 2026-07-15 04:44:00 │ 4305252 │
+│ XRP/USDT │        5m │ spot │ 2018-05-04 08:10:00 │ 2026-07-15 04:40:00 │  861055 │
+└──────────┴───────────┴──────┴─────────────────────┴─────────────────────┴─────────┘
 </code></pre></div>
 <p>Timings have been taken in a not very scientific way with the following command, which forces reading the data into memory.</p>
 <div class="highlight"><pre><span></span><code><span class="nb">time</span><span class="w"> </span>freqtrade<span class="w"> </span>list-data<span class="w"> </span>--show-timerange<span class="w"> </span>--data-format-ohlcv<span class="w"> </span>&lt;dataformat&gt;
@@ -2516,28 +2516,28 @@ To persist this change, you should also add the following snippet to your config
 <tbody>
 <tr>
 <td><code>feather</code></td>
-<td>72Mb</td>
-<td>3.5s</td>
+<td>115Mb</td>
+<td>1.6s</td>
 </tr>
 <tr>
 <td><code>json</code></td>
-<td>149Mb</td>
-<td>25.6s</td>
+<td>265Mb</td>
+<td>17.1s</td>
 </tr>
 <tr>
 <td><code>jsongz</code></td>
-<td>39Mb</td>
-<td>27s</td>
+<td>83Mb</td>
+<td>23.6s</td>
 </tr>
 <tr>
 <td><code>parquet</code></td>
-<td>83Mb</td>
-<td>3.8s</td>
+<td>149Mb</td>
+<td>2.5s</td>
 </tr>
 </tbody>
 </table>
 <p>Size has been taken from the BTC/USDT 1m spot combination for the timerange specified above.</p>
-<p>To have a best performance/size mix, we recommend using the default feather format, or parquet.</p>
+<p>To have a best performance/size mix, we recommend using the default <strong>feather</strong> format.</p>
 <h3 id="pairs-file">Pairs file<a class="headerlink" href="#pairs-file" title="Permanent link">&para;</a></h3>
 <p>In alternative to the whitelist from <code>config.json</code>, a <code>pairs.json</code> file can be used.
 If you are using Binance for example:</p>
