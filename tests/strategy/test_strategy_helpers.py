@@ -742,6 +742,19 @@ def test_informative_cache_shares_preparation_across_formatters(mocker, default_
         )
 
 
+def test_informative_cache_avoids_date_merge_column_collisions(default_conf_usdt):
+    strategy = _same_source_informative_cache_strategy(default_conf_usdt)
+    base_data = generate_test_data("5m", 40)
+    base_data["date_merge"] = base_data["close"] * 2
+    base_data["_date_merge"] = base_data["close"] * 3
+
+    result = strategy.advise_indicators(base_data.copy(), {"pair": "XRP/USDT"})
+
+    pd.testing.assert_series_equal(result["date_merge"], base_data["date_merge"])
+    pd.testing.assert_series_equal(result["_date_merge"], base_data["_date_merge"])
+    assert "__date_merge" not in result.columns
+
+
 def test_informative_cache_reuses_result_for_new_base_candle(default_conf_usdt):
     strategy, _ = _shared_informative_call_count_strategy(default_conf_usdt)
     metadata = {"pair": "XRP/USDT"}
