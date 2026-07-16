@@ -141,8 +141,8 @@ def _mixed_informative_cache_strategy(
         "base": pair.split("/")[0],
         "quote": pair.split("/")[1],
     }
-    dataprovider.get_pair_dataframe.side_effect = (
-        lambda pair, timeframe, candle_type: informative_data[timeframe].copy()
+    dataprovider.get_pair_dataframe.side_effect = lambda pair, timeframe, candle_type: (
+        informative_data[timeframe].copy()
     )
     strategy.dp = dataprovider
     return strategy
@@ -158,8 +158,8 @@ def _same_source_informative_cache_strategy(
         "base": pair.split("/")[0],
         "quote": pair.split("/")[1],
     }
-    dataprovider.get_pair_dataframe.side_effect = (
-        lambda pair, timeframe, candle_type: informative_data.copy()
+    dataprovider.get_pair_dataframe.side_effect = lambda pair, timeframe, candle_type: (
+        informative_data.copy()
     )
     strategy.dp = dataprovider
     return strategy
