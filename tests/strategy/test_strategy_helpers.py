@@ -694,7 +694,7 @@ def test_informative_cache_reuses_prepared_frame_and_isolates_output(mocker, def
 
     second = strategy.advise_indicators(base_data.copy(), {"pair": "LTC/USDT"})
 
-    # Prepare count remains the same, meaning the cached informative datas are reused.
+    # Prepare count remains the same, meaning the cached informative data are reused.
     assert prepare_spy.call_count == 6
 
     # Make sure the cache only contains 6 unique informative pair/timeframe/function combinations.
@@ -765,7 +765,7 @@ def test_informative_cache_reuses_result_for_new_base_candle(default_conf_usdt):
 
     # New candle is added, but the informative data isn't changed
     strategy.advise_indicators(generate_test_data("5m", 41), metadata)
-    # Informative count remains the same, meaning the cached informative datas are reused.
+    # Informative count remains the same, meaning the cached informative data are reused.
     assert len(strategy.informative_calls) == 6
 
 
