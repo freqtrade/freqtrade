@@ -213,8 +213,24 @@ def test_init_ccxt_kwargs(default_conf, mocker, caplog):
 
 def test_destroy(default_conf, mocker, caplog):
     caplog.set_level(logging.DEBUG)
-    get_patched_exchange(mocker, default_conf)
-    assert log_has("Exchange object destroyed, closing async loop", caplog)
+    exchange = get_patched_exchange(mocker, default_conf)
+
+    closed = False
+
+    async def _close():
+        nonlocal closed
+        closed = True
+
+    # Simulate a "real" async session that needs closing.
+    exchange._api_async.close = _close
+    exchange._api_async.session = MagicMock()
+
+    exchange.close()
+    # Prevent the __del__ triggered close (at GC time) from touching the now-closed loop.
+    exchange._api_async.session = None
+
+    assert closed
+    assert log_has("Closing async ccxt session.", caplog)
 
 
 def test_init_exception(default_conf, mocker):
