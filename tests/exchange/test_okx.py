@@ -684,16 +684,6 @@ def test_stoploss_cancel_okx(mocker, default_conf):
 
 
 def test__get_stop_params_okx(mocker, default_conf):
-    default_conf["trading_mode"] = "futures"
-    default_conf["margin_mode"] = "isolated"
-    exchange = get_patched_exchange(mocker, default_conf, exchange="okx")
-    params = exchange._get_stop_params("sell", "market", 1500)
-
-    assert params["tdMode"] == "isolated"
-    assert params["posSide"] == "net"
-
-
-def test_create_stoploss_order_market_okx(mocker, default_conf):
     api_mock = MagicMock()
     api_mock.create_order = MagicMock(return_value={"id": "order-id", "info": {}})
     default_conf["dry_run"] = False
@@ -704,6 +694,10 @@ def test_create_stoploss_order_market_okx(mocker, default_conf):
     mocker.patch(f"{EXMS}.price_to_precision", lambda s, x, y, **kwargs: y)
 
     exchange = get_patched_exchange(mocker, default_conf, api_mock, exchange="okx")
+    params = exchange._get_stop_params("sell", "market", 1500)
+
+    assert params["tdMode"] == "isolated"
+    assert params["posSide"] == "net"
     exchange.create_stoploss(
         pair="ETH/USDT:USDT",
         amount=1,
@@ -712,8 +706,6 @@ def test_create_stoploss_order_market_okx(mocker, default_conf):
         side="sell",
         leverage=2.0,
     )
-    # Avoid destructor logs leaking into unrelated caplog assertions under xdist.
-    exchange.close()
 
     api_mock.create_order.assert_called_once_with(
         symbol="ETH/USDT:USDT",
