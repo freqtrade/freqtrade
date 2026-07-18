@@ -381,6 +381,12 @@ class IFreqaiModel(ABC):
                         )
                         self.model = None
 
+                    if self.model is None:
+                        # Persist metadata (feature list) to enable freqUI after backtest
+                        self.dd.save_metadata(dk)
+                        self._append_null_backtesting_predictions(dk, dataframe_backtest)
+                        continue
+
                     self.dd.pair_dict[pair]["trained_timestamp"] = int(tr_train.stopts)
                     if self.plot_features and self.model is not None:
                         plot_feature_importance(self.model, pair, dk, self.plot_features)
@@ -402,6 +408,27 @@ class IFreqaiModel(ABC):
         dk.fill_predictions(dataframe)
 
         return dk
+
+    def _append_null_backtesting_predictions(
+        self, dk: FreqaiDataKitchen, dataframe_backtest: DataFrame
+    ) -> None:
+        """
+        Append neutral predictions for a backtest window whose model training failed.
+        """
+        labels = dk.label_list + dk.unique_class_list
+        predictions = DataFrame(0, index=range(len(dataframe_backtest)), columns=labels)
+        do_preds = np.zeros(len(dataframe_backtest), dtype=np.int_)
+        dk.DI_values = np.zeros(len(dataframe_backtest))
+
+        labels_mean = dk.data.setdefault("labels_mean", {})
+        labels_std = dk.data.setdefault("labels_std", {})
+        for label in labels:
+            labels_mean[label] = 0
+            labels_std[label] = 0
+
+        append_df = dk.get_predictions_to_append(predictions, do_preds, dataframe_backtest)
+        dk.append_predictions(append_df)
+        dk.save_backtesting_prediction(append_df)
 
     def start_live(
         self, dataframe: DataFrame, metadata: dict, strategy: IStrategy, dk: FreqaiDataKitchen
