@@ -4,7 +4,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any, Literal
 
 import numpy as np
-from pandas import DataFrame, Series, concat, to_datetime
+from pandas import DataFrame, Series, merge_asof, to_datetime
 
 from freqtrade.constants import BACKTEST_BREAKDOWNS, DATETIME_PRINT_FORMAT
 from freqtrade.data.metrics import (
@@ -127,19 +127,25 @@ def generate_trade_signal_candles(
 ) -> dict[str, DataFrame]:
     signal_candles_only = {}
     for pair in preprocessed_df.keys():
-        signal_candles_only_df = DataFrame()
-
         pairdf = preprocessed_df[pair]
         resdf = bt_results["results"]
         pairresults = resdf.loc[(resdf["pair"] == pair)]
 
-        if pairdf.shape[0] > 0:
-            for t, v in pairresults.iterrows():
-                allinds = pairdf.loc[(pairdf["date"] < v[date_col])]
-                signal_inds = allinds.iloc[[-1]]
-                signal_candles_only_df = concat(
-                    [signal_candles_only_df.infer_objects(), signal_inds.infer_objects()]
-                )
+        if not pairdf.empty and not pairresults.empty:
+            pairresults_sorted = pairresults.sort_values(date_col).copy()
+            pairresults_sorted[date_col] = pairresults_sorted[date_col].astype(pairdf["date"].dtype)
+            pairdf_sorted = pairdf.sort_values("date")
+            merged = merge_asof(
+                pairresults_sorted[[date_col]],
+                pairdf_sorted,
+                left_on=date_col,
+                right_on="date",
+                direction="backward",
+                allow_exact_matches=False,
+            )
+            # merge_asof requires sorted input - restore original pairresults row order.
+            merged.index = pairresults_sorted.index
+            signal_candles_only_df = merged.reindex(pairresults.index).drop(columns=[date_col])
 
             signal_candles_only[pair] = signal_candles_only_df
     return signal_candles_only
@@ -150,17 +156,19 @@ def generate_rejected_signals(
 ) -> dict[str, DataFrame]:
     rejected_candles_only = {}
     for pair, signals in rejected_dict.items():
-        rejected_signals_only_df = DataFrame()
         pairdf = preprocessed_df[pair]
 
-        for t in signals:
-            data_df_row = pairdf.loc[(pairdf["date"] == t[0])].copy()
-            data_df_row["pair"] = pair
-            data_df_row["enter_tag"] = t[1]
-
-            rejected_signals_only_df = concat(
-                [rejected_signals_only_df.infer_objects(), data_df_row.infer_objects()]
+        if signals:
+            signals_df = DataFrame(signals, columns=["date", "_rejected_enter_tag"])
+            signals_df["date"] = signals_df["date"].astype(pairdf["date"].dtype)
+            rejected_signals_only_df = pairdf.merge(signals_df, on="date", how="inner")
+            rejected_signals_only_df["pair"] = pair
+            rejected_signals_only_df["enter_tag"] = rejected_signals_only_df["_rejected_enter_tag"]
+            rejected_signals_only_df = rejected_signals_only_df.drop(
+                columns=["_rejected_enter_tag"]
             )
+        else:
+            rejected_signals_only_df = DataFrame()
 
         rejected_candles_only[pair] = rejected_signals_only_df
     return rejected_candles_only
