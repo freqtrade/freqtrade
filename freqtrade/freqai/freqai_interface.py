@@ -381,11 +381,13 @@ class IFreqaiModel(ABC):
                         )
                         self.model = None
 
-                    self.dd.pair_dict[pair]["trained_timestamp"] = int(tr_train.stopts)
                     if self.model is None:
+                        # Persist metadata (feature list) to enable freqUI after backtest
+                        self.dd.save_metadata(dk)
                         self._append_null_backtesting_predictions(dk, dataframe_backtest)
                         continue
 
+                    self.dd.pair_dict[pair]["trained_timestamp"] = int(tr_train.stopts)
                     if self.plot_features and self.model is not None:
                         plot_feature_importance(self.model, pair, dk, self.plot_features)
                     if self.save_backtest_models and self.model is not None:
