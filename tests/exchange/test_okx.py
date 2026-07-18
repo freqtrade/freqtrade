@@ -712,6 +712,7 @@ def test_create_stoploss_order_market_okx(mocker, default_conf):
         side="sell",
         leverage=2.0,
     )
+    exchange.close()
 
     api_mock.create_order.assert_called_once_with(
         symbol="ETH/USDT:USDT",
