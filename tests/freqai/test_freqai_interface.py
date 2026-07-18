@@ -341,6 +341,24 @@ def test_start_backtesting_appends_null_predictions_when_training_fails(mocker, 
     assert "do_predict" in dk.return_dataframe
     assert dk.return_dataframe["do_predict"].eq(0).all()
 
+    # Second run reuses the cached predictions - ensure 2nd backtest run or
+    # API rendering does not trigger training or prediction
+    strategy2 = get_patched_freqai_strategy(mocker, freqai_conf)
+    strategy2.dp = DataProvider(freqai_conf, exchange)
+    strategy2.freqai_info = freqai_conf.get("freqai", {})
+    freqai2 = strategy2.freqai
+    freqai2.live = False
+    freqai2.dk = FreqaiDataKitchen(freqai_conf)
+    freqai2.dd.load_all_pair_histories(timerange, freqai2.dk)
+    train_mock = mocker.patch.object(freqai2, "train")
+    predict_mock2 = mocker.patch.object(freqai2, "predict")
+    freqai2.dk.set_paths("LTC/BTC", None)
+    dk2 = freqai2.start_backtesting(df, metadata, freqai2.dk, strategy2)
+
+    train_mock.assert_not_called()
+    predict_mock2.assert_not_called()
+    assert len(dk2.return_dataframe) == len(df)
+
     shutil.rmtree(Path(freqai.dk.full_path))
 
 
