@@ -2866,13 +2866,13 @@
 <td><a href="./#okx">OKX</a></td>
 <td>spot</td>
 <td></td>
-<td>limit</td>
+<td>market, limit</td>
 </tr>
 <tr>
 <td><a href="./#okx">OKX</a></td>
 <td>futures</td>
 <td>isolated</td>
-<td>limit</td>
+<td>market, limit</td>
 </tr>
 <tr>
 <td><a href="./#bitvavo">Bitvavo</a></td>
@@ -3097,6 +3097,10 @@ Kucoin accounts may use <code>KCS</code> for fees, and if a trade happens to be 
 <p>HTX supports <code>stoploss_on_exchange</code> and uses <code>stop-limit</code> orders. It provides great advantages, so we recommend to benefit from it by enabling stoploss on exchange.</p>
 </div>
 <h2 id="okx">OKX<a class="headerlink" href="#okx" title="Permanent link">&para;</a></h2>
+<div class="admonition tip">
+<p class="admonition-title">Stoploss on Exchange</p>
+<p>OKX supports <code>stoploss_on_exchange</code> with both stop-limit and stop-market orders on spot and futures markets. You can use either <code>"limit"</code> or <code>"market"</code> in the <code>order_types.stoploss</code> configuration setting to select the stoploss order type.</p>
+</div>
 <p>OKX requires a passphrase for each api key, you will therefore need to add this key into the configuration so your exchange section looks as follows:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;okx&quot;</span><span class="p">,</span>
