@@ -275,6 +275,9 @@ Kucoin accounts may use `KCS` for fees, and if a trade happens to be on `KCS`, f
 
 ## OKX
 
+!!! Tip "Stoploss on Exchange"
+    OKX supports `stoploss_on_exchange` with both stop-limit and stop-market orders on spot and futures markets. You can use either `"limit"` or `"market"` in the `order_types.stoploss` configuration setting to select the stoploss order type.
+
 OKX requires a passphrase for each api key, you will therefore need to add this key into the configuration so your exchange section looks as follows:
 
 ```json
@@ -297,9 +300,6 @@ Using the wrong exchange will result in the error "OKX Error 50119: API key does
     OKX Futures has the concept of "position mode" - which can be "Buy/Sell" or long/short (hedge mode).
     Freqtrade supports both modes (we recommend to use Buy/Sell mode) - but changing the mode mid-trading is not supported and will lead to exceptions and failures to place trades.
     OKX also only provides MARK candles for the past ~3 months. Backtesting futures prior to that date will therefore lead to slight deviations, as funding-fees cannot be calculated correctly without this data.
-
-!!! Tip "Stoploss on Exchange"
-    OKX supports `stoploss_on_exchange` with both stop-limit and stop-market orders on spot and futures markets. You can use either `"limit"` or `"market"` in the `order_types.stoploss` configuration setting to select the stoploss order type.
 
 ## Gate.io
 
