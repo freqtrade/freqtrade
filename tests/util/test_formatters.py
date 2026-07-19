@@ -55,6 +55,11 @@ def test_round_value():
     assert round_value(0.1274512123, 5) == "0.12745"
     assert round_value(222.2, 3, True) == "222.200"
     assert round_value(222.2, 0, True) == "222"
+    # decimals=0 without keep_trailing_zeros must not strip integer digits
+    assert round_value(222.2, 0) == "222"
+    assert round_value(1200, 0) == "1200"
+    assert round_value(1500, 0) == "1500"
+    assert round_value(0, 0) == "0"
     assert round_value(float("nan"), 0, True) == "N/A"
     assert round_value(float("nan"), 10, True) == "N/A"
     assert round_value(None, 10, True) == "N/A"
