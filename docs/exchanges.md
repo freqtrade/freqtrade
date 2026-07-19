@@ -299,7 +299,7 @@ Using the wrong exchange will result in the error "OKX Error 50119: API key does
     OKX also only provides MARK candles for the past ~3 months. Backtesting futures prior to that date will therefore lead to slight deviations, as funding-fees cannot be calculated correctly without this data.
 
 !!! Tip "Stoploss on Exchange"
-    OKX supports `stoploss_on_exchange` with stop-limit orders on spot markets. Futures markets support both stop-limit and stop-market orders. You can use either `"limit"` or `"market"` in the `order_types.stoploss` configuration setting to select the stoploss order type.
+    OKX supports `stoploss_on_exchange` with both stop-limit and stop-market orders on spot and futures markets. You can use either `"limit"` or `"market"` in the `order_types.stoploss` configuration setting to select the stoploss order type.
 
 ## Gate.io
 

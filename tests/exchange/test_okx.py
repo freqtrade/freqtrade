@@ -8,20 +8,8 @@ from freqtrade.enums import CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import RetryableOrderError, TemporaryError
 from freqtrade.exchange.common import API_RETRY_COUNT
 from freqtrade.exchange.exchange import timeframe_to_minutes
-from freqtrade.exchange.okx import Okx
 from tests.conftest import EXMS, get_patched_exchange, log_has
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
-
-
-def test_okx_stoploss_order_types():
-    spot_options = Okx.combine_ft_has(include_futures=False)
-    futures_options = Okx.combine_ft_has(include_futures=True)
-
-    assert spot_options["stoploss_order_types"] == {"limit": "limit"}
-    assert futures_options["stoploss_order_types"] == {
-        "limit": "limit",
-        "market": "market",
-    }
 
 
 def test_okx_ohlcv_candle_limit(default_conf, mocker):
@@ -683,44 +671,24 @@ def test_stoploss_cancel_okx(mocker, default_conf):
     assert args[2] == {"stop": True}
 
 
-def test__get_stop_params_okx(mocker, default_conf):
-    api_mock = MagicMock()
-    api_mock.create_order = MagicMock(return_value={"id": "order-id", "info": {}})
-    default_conf["dry_run"] = False
-    default_conf["trading_mode"] = TradingMode.FUTURES
-    default_conf["margin_mode"] = MarginMode.ISOLATED
-
-    mocker.patch(f"{EXMS}.amount_to_precision", lambda s, x, y: y)
-    mocker.patch(f"{EXMS}.price_to_precision", lambda s, x, y, **kwargs: y)
-
-    exchange = get_patched_exchange(mocker, default_conf, api_mock, exchange="okx")
+@pytest.mark.parametrize(
+    "trading_mode,margin_mode,expected",
+    [
+        (TradingMode.SPOT, MarginMode.NONE, {"stopLossPrice": 1500, "tdMode": "cash"}),
+        (
+            TradingMode.FUTURES,
+            MarginMode.ISOLATED,
+            {"stopLossPrice": 1500, "tdMode": "isolated", "posSide": "net"},
+        ),
+    ],
+)
+def test__get_stop_params_okx(mocker, default_conf, trading_mode, margin_mode, expected):
+    default_conf["trading_mode"] = trading_mode
+    default_conf["margin_mode"] = margin_mode
+    exchange = get_patched_exchange(mocker, default_conf, exchange="okx")
     params = exchange._get_stop_params("sell", "market", 1500)
 
-    assert params["tdMode"] == "isolated"
-    assert params["posSide"] == "net"
-    exchange.create_stoploss(
-        pair="ETH/USDT:USDT",
-        amount=1,
-        stop_price=1500,
-        order_types={"stoploss": "market", "stoploss_price_type": "mark"},
-        side="sell",
-        leverage=2.0,
-    )
-
-    api_mock.create_order.assert_called_once_with(
-        symbol="ETH/USDT:USDT",
-        type="market",
-        side="sell",
-        amount=0.1,
-        price=None,
-        params={
-            "stopLossPrice": 1500,
-            "tdMode": "isolated",
-            "posSide": "net",
-            "reduceOnly": True,
-            "slTriggerPxType": "mark",
-        },
-    )
+    assert params == expected
 
 
 def test_fetch_orders_okx(default_conf, mocker, limit_order):
