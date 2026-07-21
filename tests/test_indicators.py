@@ -27,9 +27,12 @@ def test_crossed_numpy_types():
         assert qtpylib.crossed_above(series, np.float64(60.0)).equals(expected_result)
 
 
+@pytest.mark.filterwarnings("ignore:freqtrade.vendor.qtpylib.indicators' is deprecated")
 def test_qtpylib_deprecation():
     """freqtrade.vendor.qtpylib.indicators only re-exports technical now and is deprecated."""
-    import freqtrade.vendor.qtpylib.indicators as qtpylib
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", FutureWarning)
+        import freqtrade.vendor.qtpylib.indicators as qtpylib
 
     with pytest.warns(FutureWarning, match="freqtrade.vendor.qtpylib.indicators' is deprecated"):
         importlib.reload(qtpylib)
