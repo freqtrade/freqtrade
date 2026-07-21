@@ -3,7 +3,7 @@
 # the one shipped by technical, so we re-export from there to avoid maintaining a
 # duplicate. Existing imports such as
 # `from freqtrade.vendor.qtpylib.indicators import crossed_above` keep working,
-# but emit a DeprecationWarning pointing at technical.
+# but emit a FutureWarning pointing at technical.
 
 import warnings
 
@@ -15,6 +15,6 @@ warnings.warn(
     "release. Import from technical instead - either the module "
     "(`from technical import qtpylib`) or a single "
     "function (`from technical.qtpylib import crossed_above`).",
-    DeprecationWarning,
+    FutureWarning,
     stacklevel=2,
 )
