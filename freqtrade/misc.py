@@ -27,11 +27,7 @@ def dump_json_to_file(file_obj: TextIO, data: Any) -> None:
     :param data: JSON Data to save
     """
     file_obj.write(
-        orjson.dumps(
-            data,
-            default=str,
-            option=orjson.OPT_SERIALIZE_NUMPY | orjson.OPT_PASSTHROUGH_DATETIME,
-        ).decode("utf-8")
+        orjson.dumps(data, default=str, option=orjson.OPT_SERIALIZE_NUMPY).decode("utf-8")
     )
 
 

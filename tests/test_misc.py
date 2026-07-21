@@ -57,7 +57,7 @@ def test_dump_json_to_file_datetime_format() -> None:
 
     dump_json_to_file(buffer, {"date": datetime(2026, 7, 11, 1, 2, 3, tzinfo=UTC)})
 
-    assert buffer.getvalue() == '{"date":"2026-07-11 01:02:03+00:00"}'
+    assert buffer.getvalue() == '{"date":"2026-07-11T01:02:03+00:00"}'
 
 
 def test_file_dump_json(mocker) -> None:
