@@ -982,17 +982,10 @@ class FreqtradeBot(LoggingMixin):
                 # in case of IOC orders we can check immediately
                 # if the order is fulfilled fully or partially
                 logger.warning(
-                    "%s %s order with time in force %s for %s is %s by %s."
-                    " %s amount fulfilled out of %s (%s remaining which is canceled).",
-                    name,
-                    time_in_force,
-                    order_type,
-                    pair,
-                    order_status,
-                    self.exchange.name,
-                    order["filled"],
-                    order["amount"],
-                    order["remaining"],
+                    f"{name} {time_in_force} order with time in force {order_type} for {pair} is "
+                    f"{order_status} by {self.exchange.name}. "
+                    f"{order['filled']} amount fulfilled out of {order['amount']} "
+                    f"({order['remaining']} remaining which is canceled)."
                 )
                 amount = safe_value_fallback(order, "filled", "amount", amount)
                 enter_limit_filled_price = safe_value_fallback(
