@@ -12,8 +12,13 @@ Few pointers for contributions:
 - Stick to english in both commit messages, PR descriptions and code comments and variable names.
 - New features need to contain unit tests, must pass CI (run pre-commit and pytest to get an early feedback) and should be documented with the introduction PR.
 - PR's can be declared as draft - signaling Work in Progress for Pull Requests (which are not finished). We'll still aim to provide feedback on draft PR's in a timely manner.
+
+### AI Assisted Contributions
+
 - If you're using AI for your PR, please both mention it in the PR description and do a thorough review of the generated code yourself.  
-  The final responsibility for the code with the PR author, not with the AI, which also means that commits must be linked to your (human) account, not some generic AI account.
+The final responsibility for the code with the PR author, not with the AI, which also means that commits must be linked to your (human) account, not some generic AI account.
+- **Never let an LLM speak for you** - all comments, issues and PR descriptions should be written in your own words, reflecting your own understanding.
+- **Never let an LLM think for you** - only submit contributions you fully understand and can explain.
 
 If you are unsure, discuss the feature on our [discord server](https://discord.gg/p7nuUNVfP7) or in a [issue](https://github.com/freqtrade/freqtrade/issues) before a Pull Request.
 
