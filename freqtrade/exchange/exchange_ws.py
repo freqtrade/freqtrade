@@ -39,6 +39,9 @@ class ExchangeWS:
         self._ob_watching: set[str] = set()
         self._ob_scheduled: set[str] = set()
         self.ob_last_request: dict[str, float] = {}
+        # Timestamp (ms) of the last orderbook update received from the websocket, per pair.
+        # Used by orderbook_is_fresh() to detect a stuck feed.
+        self._ob_last_refresh: dict[str, float] = {}
 
     def _start_forever(self) -> None:
         self._loop = asyncio.new_event_loop()
@@ -164,6 +167,7 @@ class ExchangeWS:
                 if last_refresh > 0 and (dt_ts() - last_refresh) > ((self.ob_timeout + 20) * 1000):
                     logger.info(f"Removing {pair} from orderbook watchlist")
                     self._ob_watching.discard(pair)
+                    self._ob_last_refresh.pop(pair, None)
 
     async def _schedule_while_true(self) -> None:
         # For the ones we should be watching
@@ -268,6 +272,10 @@ class ExchangeWS:
         try:
             while pair in self._ob_watching:
                 await self._ccxt_object.watch_order_book(pair)
+                # watch_order_book returns on every applied frame - record the time so
+                # get_orderbook callers can tell whether the feed is still alive.
+                with self._state_lock:
+                    self._ob_last_refresh[pair] = dt_ts()
         except ccxt.ExchangeClosedByUser:
             logger.debug("Exchange connection closed by user")
         except ccxt.BaseError:
@@ -275,6 +283,7 @@ class ExchangeWS:
         finally:
             with self._state_lock:
                 self._ob_watching.discard(pair)
+                self._ob_last_refresh.pop(pair, None)
 
     async def _continuously_async_watch_ohlcv(
         self, pair: str, timeframe: str, candle_type: CandleType
@@ -356,6 +365,16 @@ class ExchangeWS:
             # mid-copy) and retry.
             # TemporaryError does not cause backoff - so we're essentially retrying immediately
             raise TemporaryError(f"Error deepcopying: {e}") from e
+
+    def orderbook_is_fresh(self, pair: str, max_age: float) -> bool:
+        """
+        Whether the cached orderbook was refreshed within the last `max_age` seconds.
+        Returns False if no update arrived within that window (feed likely stuck),
+        prompting callers to fall back to REST.
+        """
+        with self._state_lock:
+            last_refresh = self._ob_last_refresh.get(pair, 0)
+        return last_refresh > 0 and (dt_ts() - last_refresh) < (max_age * 1000)
 
     def schedule_orderbook(self, pair: str) -> None:
         """

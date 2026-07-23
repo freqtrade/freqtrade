@@ -52,6 +52,8 @@ class FtHas(TypedDict, total=False):
     l2_limit_range: list[int] | None
     l2_limit_range_required: bool
     l2_limit_upper: int | None
+    # Max age (seconds) of a websocket-cached orderbook before it's considered stale
+    orderbook_max_age: int
     # fetch_orders
     fetch_orders_limit_minutes: int | None
     # Futures

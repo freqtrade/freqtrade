@@ -156,6 +156,7 @@ class Exchange:
         "l2_limit_range": None,
         "l2_limit_range_required": True,  # Allow Empty L2 limit (kucoin)
         "l2_limit_upper": None,  # Upper limit for L2 limit
+        "orderbook_max_age": 5,
         "mark_ohlcv_price": "mark",
         "mark_ohlcv_timeframe": "1h",
         "funding_fee_timeframe": "1h",
@@ -2249,9 +2250,15 @@ class Exchange:
             ob = self._exchange_ws.get_orderbook(pair)
             # ccxt.pro creates the orderbook object as soon as watching starts, but it's
             # empty until the initial snapshot is applied - fall back to REST until then.
+            ob_max_age = self._ft_has["orderbook_max_age"]
             if ob.get("bids") and ob.get("asks"):
-                logger.info(f"using orderbook for {pair}")
-                return ob
+                if self._exchange_ws.orderbook_is_fresh(pair, ob_max_age):
+                    logger.debug(f"using websocket orderbook for {pair}")
+                    return ob
+                logger.warning(
+                    f"Websocket orderbook for {pair} is stale (no update within "
+                    f"{ob_max_age}s) - falling back to REST."
+                )
 
         try:
             return self._api.fetch_l2_order_book(pair, limit1)
