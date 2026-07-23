@@ -1470,8 +1470,13 @@ class Exchange:
                 rate_for_order,
                 params,
             )
-            if order.get("status") is None:
-                # Map empty status to open.
+            if order.get("status") is None or (
+                order.get("status") in ("closed", "expired")
+                and order.get("average") is None
+                and float(order["filled"]) != 0
+            ):
+                # Map empty status to open to force another round.
+                # Some exchanges don't provide the actual execution price for market orders.
                 order["status"] = "open"
 
             if order.get("type") is None:
