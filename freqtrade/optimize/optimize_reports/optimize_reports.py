@@ -137,6 +137,8 @@ def generate_trade_signal_candles(
                 continue
             # Last candle with date strictly before the trade date, for each trade.
             candle_idx = pairdf["date"].searchsorted(pairresults[date_col], side="left") - 1
+            # Drop trades with no candle strictly before the trade date (idx < 0),
+            candle_idx = candle_idx[candle_idx >= 0]
             signal_candles_only[pair] = pairdf.iloc[candle_idx].infer_objects()
     return signal_candles_only
 
@@ -152,6 +154,8 @@ def generate_rejected_signals(
             continue
 
         signals_df = DataFrame(signals, columns=["date", "enter_tag"])
+        # Drop a pre-existing enter_tag (e.g. assigned in populate_indicators)
+        pairdf = pairdf.drop(columns=["enter_tag"], errors="ignore")
         rejected = pairdf.merge(signals_df, on="date", how="inner").infer_objects()
         rejected["pair"] = pair
         # Keep the pre-existing column layout: candle columns, then pair, then enter_tag.
