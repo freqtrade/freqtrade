@@ -11,6 +11,7 @@ from ccxt import NotSupported
 from freqtrade.enums import CandleType
 from freqtrade.exceptions import TemporaryError
 from freqtrade.exchange.exchange_ws import ExchangeWS
+from freqtrade.util import dt_ts
 from ft_client.test_client.test_rest_client import log_has_re
 
 
@@ -463,6 +464,33 @@ def test_exchangews_get_orderbook_deepcopy_and_retry(mocker):
     exchange_ws.cleanup()
 
 
+def test_exchangews_orderbook_is_fresh(mocker, time_machine):
+    config = MagicMock()
+    ccxt_object = MagicMock()
+    mocker.patch("freqtrade.exchange.exchange_ws.ExchangeWS._start_forever")
+    time_machine.move_to("2024-11-01 01:00:00 +00:00", tick=False)
+
+    exchange_ws = ExchangeWS(config, ccxt_object)
+    max_age = 5
+
+    # No refresh recorded yet -> not fresh (fall back to REST).
+    assert exchange_ws.orderbook_is_fresh("ETH/BTC", max_age) is False
+
+    exchange_ws._ob_last_refresh["ETH/BTC"] = dt_ts()
+    # Just refreshed -> fresh.
+    assert exchange_ws.orderbook_is_fresh("ETH/BTC", max_age) is True
+
+    # Still within the max-age window.
+    time_machine.shift(timedelta(seconds=max_age - 1))
+    assert exchange_ws.orderbook_is_fresh("ETH/BTC", max_age) is True
+
+    # Past the max-age window -> stale (feed likely stuck).
+    time_machine.shift(timedelta(seconds=2))
+    assert exchange_ws.orderbook_is_fresh("ETH/BTC", max_age) is False
+
+    exchange_ws.cleanup()
+
+
 def test_exchangews_schedule_orderbook_loop_not_ready(mocker, caplog):
     config = MagicMock()
     ccxt_object = MagicMock()
@@ -550,6 +578,12 @@ async def test_exchangews_watch_orderbook(mocker, time_machine, caplog):
         watched_pairs = {c.args[0] for c in ccxt_object.watch_order_book.call_args_list}
         assert watched_pairs == {"ETH/BTC", "XRP/BTC"}
 
+        # Each applied frame records a refresh time, so the feed reads as fresh.
+        assert await wait_for_condition(
+            lambda: exchange_ws._ob_last_refresh.keys() == {"ETH/BTC", "XRP/BTC"}, timeout_=2.0
+        )
+        assert exchange_ws.orderbook_is_fresh("ETH/BTC", 5)
+
         # Move past the expiry window (timeout + 20s) and trigger the cleanup.
         time_machine.shift(timedelta(seconds=exchange_ws.ob_timeout + 20))
         exchange_ws.cleanup_expired()
@@ -561,6 +595,8 @@ async def test_exchangews_watch_orderbook(mocker, time_machine, caplog):
         )
         assert log_has_re("Removing ETH/BTC from orderbook watchlist", caplog)
         assert log_has_re("Removing XRP/BTC from orderbook watchlist", caplog)
+        # Refresh tracking is cleaned up alongside the watchlist entry.
+        assert exchange_ws._ob_last_refresh == {}
     finally:
         # Cleanup
         exchange_ws.cleanup()

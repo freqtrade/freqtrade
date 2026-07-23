@@ -3367,6 +3367,38 @@ def test_fetch_l2_order_book(default_conf, mocker, order_book_l2, exchange_name)
             assert api_mock.fetch_l2_order_book.call_args_list[0][0][1] == next_limit
 
 
+def test_fetch_l2_order_book_ws_stale_fallback(default_conf, mocker, order_book_l2, caplog):
+    api_mock = MagicMock()
+    api_mock.fetch_l2_order_book = order_book_l2
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+
+    ws_ob = {"bids": [[10.0, 1.0]], "asks": [[11.0, 1.0]]}
+    ws_mock = MagicMock()
+    ws_mock.get_orderbook.return_value = ws_ob
+    exchange._exchange_ws = ws_mock
+    exchange._has_watch_orderbook = True
+    # Max age is sourced from ft_has and passed through to the freshness check.
+    exchange._ft_has["ob_max_age"] = 5
+
+    # Fresh feed -> use the websocket book, no REST call.
+    ws_mock.orderbook_is_fresh.return_value = True
+    order_book = exchange.fetch_l2_order_book("ETH/BTC", limit=10)
+    assert order_book == ws_ob
+    ws_mock.schedule_orderbook.assert_called_with("ETH/BTC")
+    ws_mock.orderbook_is_fresh.assert_called_with("ETH/BTC", 5)
+    assert api_mock.fetch_l2_order_book.call_count == 0
+
+    # Stale feed (stuck websocket) -> warn and fall back to REST.
+    ws_mock.orderbook_is_fresh.return_value = False
+    order_book = exchange.fetch_l2_order_book("ETH/BTC", limit=10)
+    assert "bids" in order_book
+    assert "asks" in order_book
+    assert api_mock.fetch_l2_order_book.call_count == 1
+    assert log_has_re(
+        r"Websocket orderbook for ETH/BTC is stale .* falling back to REST", caplog
+    )
+
+
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_fetch_l2_order_book_exception(default_conf, mocker, exchange_name):
     api_mock = MagicMock()

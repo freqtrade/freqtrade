@@ -97,10 +97,11 @@ class TestCCXTExchangeWs:
         # cache without hitting the REST endpoint again.
         m_rest.reset_mock()
         caplog.clear()
+        caplog.set_level(logging.DEBUG)
         ob = exch.fetch_l2_order_book(pair)
 
         assert m_rest.call_count == 0
-        assert log_has_re(r"using orderbook for .*", caplog)
+        assert log_has_re(r"using websocket orderbook for .*", caplog)
 
         # Validate the returned orderbook structure.
         assert ob is not None
