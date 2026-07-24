@@ -36,7 +36,9 @@ from freqtrade.optimize.optimize_reports.bt_output import text_table_tags
 from freqtrade.optimize.optimize_reports.optimize_reports import (
     _get_resample_from_period,
     calc_streak,
+    generate_rejected_signals,
     generate_tag_metrics,
+    generate_trade_signal_candles,
     generate_wallet_stats,
 )
 from freqtrade.resolvers.strategy_resolver import StrategyResolver
@@ -742,3 +744,81 @@ def test_show_sorted_pairlist(testdatadir, default_conf, capsys):
     assert "Pairs for Strategy StrategyTestV3: \n[" in out
     assert "TOTAL" not in out
     assert '"ETH/BTC",  // ' in out
+
+
+def test_generate_trade_signal_candles():
+    dates = pd.date_range("2023-01-01", periods=10, freq="5min", tz="UTC")
+    pairdf = pd.DataFrame(
+        {"date": dates, "close": [float(i) for i in range(10)], "enter_long": [1] * 10}
+    )
+    results = pd.DataFrame(
+        {
+            "pair": ["UNITTEST/BTC"] * 3 + ["NO_TRADES/BTC"] * 0,
+            # trades open 1 minute after candles 3, 5 and 5 again (duplicate candle)
+            "open_date": [
+                dates[4] + pd.Timedelta(minutes=1) - pd.Timedelta(minutes=5),
+                dates[6] + pd.Timedelta(minutes=1) - pd.Timedelta(minutes=5),
+                dates[6] + pd.Timedelta(minutes=1) - pd.Timedelta(minutes=5),
+            ],
+        }
+    )
+    preprocessed = {"UNITTEST/BTC": pairdf, "NO_TRADES/BTC": pairdf.copy()}
+    res = generate_trade_signal_candles(preprocessed, {"results": results}, "open_date")
+
+    # Last candle strictly before each trade date, duplicates preserved
+    expected = pairdf.iloc[[3, 5, 5]]
+    pd.testing.assert_frame_equal(res["UNITTEST/BTC"], expected, check_dtype=False)
+    assert res["NO_TRADES/BTC"].empty
+
+
+def test_generate_trade_signal_candles_no_preceding_candle():
+    # A trade dated at/before the first candle has no candle strictly before it.
+    # It must be dropped, not silently wrap to the last candle via iloc[-1].
+    dates = pd.date_range("2023-01-01", periods=5, freq="5min", tz="UTC")
+    pairdf = pd.DataFrame({"date": dates, "close": [float(i) for i in range(5)]})
+    results = pd.DataFrame(
+        {
+            "pair": ["UNITTEST/BTC"] * 2,
+            "open_date": [dates[0], dates[3] + pd.Timedelta(minutes=1)],
+        }
+    )
+    res = generate_trade_signal_candles({"UNITTEST/BTC": pairdf}, {"results": results}, "open_date")
+
+    # Only the second trade keeps a signal candle (candle 3); the first is dropped.
+    pd.testing.assert_frame_equal(res["UNITTEST/BTC"], pairdf.iloc[[3]], check_dtype=False)
+
+
+def test_generate_rejected_signals():
+    dates = pd.date_range("2023-01-01", periods=10, freq="5min", tz="UTC")
+    pairdf = pd.DataFrame(
+        {"date": dates, "close": [float(i) for i in range(10)], "enter_long": [1] * 10}
+    )
+    rejected = {
+        "UNITTEST/BTC": [(dates[2], "tag_a"), (dates[7], "tag_b"), (dates[7], "tag_c")],
+        "NO_REJECTS/BTC": [],
+    }
+    res = generate_rejected_signals({"UNITTEST/BTC": pairdf, "NO_REJECTS/BTC": pairdf}, rejected)
+
+    df = res["UNITTEST/BTC"]
+    assert len(df) == 3
+    assert list(df.columns) == ["date", "close", "enter_long", "pair", "enter_tag"]
+    assert set(df["enter_tag"]) == {"tag_a", "tag_b", "tag_c"}
+    assert (df["pair"] == "UNITTEST/BTC").all()
+    # candle content preserved for the rejected dates
+    assert sorted(df["close"]) == [2.0, 7.0, 7.0]
+    assert res["NO_REJECTS/BTC"].empty
+
+
+def test_generate_rejected_signals_preexisting_enter_tag():
+    # populate_indicators may assign an enter_tag column - the signal's enter_tag must
+    # win instead of colliding into enter_tag_x / enter_tag_y on the merge.
+    dates = pd.date_range("2023-01-01", periods=10, freq="5min", tz="UTC")
+    pairdf = pd.DataFrame(
+        {"date": dates, "close": [float(i) for i in range(10)], "enter_tag": ["preset"] * 10}
+    )
+    rejected = {"UNITTEST/BTC": [(dates[2], "tag_a"), (dates[7], "tag_b")]}
+    res = generate_rejected_signals({"UNITTEST/BTC": pairdf}, rejected)
+
+    df = res["UNITTEST/BTC"]
+    assert list(df.columns) == ["date", "close", "pair", "enter_tag"]
+    assert list(df["enter_tag"]) == ["tag_a", "tag_b"]
