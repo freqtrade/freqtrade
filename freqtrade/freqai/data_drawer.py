@@ -293,7 +293,9 @@ class FreqaiDataDrawer:
         # historically made during downtime. The newest pred will get appended later in
         # append_model_predictions)
 
-        new_pred["date_pred"] = dataframe["date"]
+        # pred_df is always 0-indexed and corresponds row-for-row (positionally) to dataframe.
+        # Reset dataframe's index to match, to protect from strategies dropping rows.
+        new_pred["date_pred"] = dataframe["date"].reset_index(drop=True)
         # set everything to nan except date_pred
         columns_to_nan = new_pred.columns.difference(["date_pred", "date"])
         new_pred[columns_to_nan] = None
