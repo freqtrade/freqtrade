@@ -9,7 +9,7 @@ from freqtrade.configuration import TimeRange
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.exceptions import OperationalException
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
-from tests.conftest import get_patched_exchange
+from tests.conftest import get_patched_exchange, log_has_re
 from tests.freqai.conftest import get_patched_freqai_strategy
 
 
@@ -237,6 +237,52 @@ def test_set_initial_return_values_warning(mocker, freqai_conf):
 
     # Ensure logger error is not called
     mock_logger_warning.assert_called()
+
+
+def test_set_initial_return_values_shifted_index(mocker, freqai_conf, caplog):
+    """
+    Test that date_pred is assigned positionally. The prediction dataframe is always 0-indexed,
+    while a strategy dropping rows without reset_index hands over a shifted index - assigning
+    by index would null out every date and lose all predictions.
+    """
+
+    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
+    exchange = get_patched_exchange(mocker, freqai_conf)
+    strategy.dp = DataProvider(freqai_conf, exchange)
+    freqai = strategy.freqai
+    freqai.live = False
+    freqai.dk = FreqaiDataKitchen(freqai_conf)
+    # Setup
+    pair = "BTC/USD"
+    historic_dates = pd.date_range(end="2023-08-31", periods=5, tz="UTC")
+    new_dates = pd.date_range(start="2023-08-30", periods=5, tz="UTC")
+
+    freqai.dd.historic_predictions[pair] = pd.DataFrame(
+        {"date_pred": historic_dates, "value": range(1, 6)}
+    )
+
+    # predictions always come back 0-indexed from IFreqaiModel.predict()
+    new_pred_df = pd.DataFrame({"value": range(6, 11)})
+    # strategy dataframe carrying a non-0-based index
+    dataframe = pd.DataFrame({"date": new_dates, "value": range(6, 11)}, index=range(301, 306))
+
+    # Action
+    freqai.dd.set_initial_return_values(pair, new_pred_df, dataframe)
+
+    # Assertions
+    model_return_df = freqai.dd.model_return_values[pair]
+
+    assert model_return_df.shape[0] == len(dataframe)
+    assert list(model_return_df["date_pred"]) == list(new_dates)
+    # dates do line up - the "instance was offline" warning must not trigger
+    assert not log_has_re("No common dates found between new predictions and historic.*", caplog)
+
+    # values must find their way back to the strategy, aligned by date
+    result = freqai.dd.attach_return_values_to_return_dataframe(pair, dataframe)
+
+    assert len(result) == len(dataframe)
+    assert not result["date_pred"].isnull().any()
+    assert list(result["date"]) == list(result["date_pred"])
 
 
 def test_attach_return_values_to_return_dataframe(mocker, freqai_conf):
