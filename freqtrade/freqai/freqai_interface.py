@@ -698,31 +698,30 @@ class IFreqaiModel(ABC):
         """
 
         self.dd.historic_predictions[pair] = pred_df
-        hist_preds_df = self.dd.historic_predictions[pair]
 
         self.set_start_dry_live_date(strat_df)
 
-        for label in hist_preds_df.columns:
-            if pd.api.types.is_string_dtype(hist_preds_df[label].dtype):
+        for label in pred_df.columns:
+            if pd.api.types.is_string_dtype(pred_df[label].dtype):
                 continue
-            hist_preds_df[f"{label}_mean"] = 0
-            hist_preds_df[f"{label}_std"] = 0
+            pred_df[f"{label}_mean"] = 0
+            pred_df[f"{label}_std"] = 0
 
-        hist_preds_df["do_predict"] = 0
+        pred_df["do_predict"] = 0
 
         if self.freqai_info["feature_parameters"].get("DI_threshold", 0) > 0:
-            hist_preds_df["DI_values"] = 0
+            pred_df["DI_values"] = 0
 
         for return_str in dk.data["extra_returns_per_train"]:
-            hist_preds_df[return_str] = dk.data["extra_returns_per_train"][return_str]
+            pred_df[return_str] = dk.data["extra_returns_per_train"][return_str]
 
-        # pred_df (hist_preds_df) is always 0-indexed and corresponds row-for-row (positionally)
-        # to strat_df. Reset strat_df's index to match, to protect from strategies dropping rows.
+        # pred_df is always 0-indexed and corresponds row-for-row (positionally) to strat_df.
+        # Reset strat_df's index to match, to protect from strategies dropping rows.
         strat_df_fixed = strat_df.reset_index(drop=True)
-        hist_preds_df["high_price"] = strat_df_fixed["high"]
-        hist_preds_df["low_price"] = strat_df_fixed["low"]
-        hist_preds_df["close_price"] = strat_df_fixed["close"]
-        hist_preds_df["date_pred"] = strat_df_fixed["date"]
+        pred_df["high_price"] = strat_df_fixed["high"]
+        pred_df["low_price"] = strat_df_fixed["low"]
+        pred_df["close_price"] = strat_df_fixed["close"]
+        pred_df["date_pred"] = strat_df_fixed["date"]
 
     def fit_live_predictions(self, dk: FreqaiDataKitchen, pair: str) -> None:
         """
