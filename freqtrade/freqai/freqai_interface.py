@@ -716,10 +716,13 @@ class IFreqaiModel(ABC):
         for return_str in dk.data["extra_returns_per_train"]:
             hist_preds_df[return_str] = dk.data["extra_returns_per_train"][return_str]
 
-        hist_preds_df["high_price"] = strat_df["high"]
-        hist_preds_df["low_price"] = strat_df["low"]
-        hist_preds_df["close_price"] = strat_df["close"]
-        hist_preds_df["date_pred"] = strat_df["date"]
+        # pred_df (hist_preds_df) is always 0-indexed and corresponds row-for-row (positionally)
+        # to strat_df. Reset strat_df's index to match, to protect from strategies dropping rows.
+        strat_df_fixed = strat_df.reset_index(drop=True)
+        hist_preds_df["high_price"] = strat_df_fixed["high"]
+        hist_preds_df["low_price"] = strat_df_fixed["low"]
+        hist_preds_df["close_price"] = strat_df_fixed["close"]
+        hist_preds_df["date_pred"] = strat_df_fixed["date"]
 
     def fit_live_predictions(self, dk: FreqaiDataKitchen, pair: str) -> None:
         """
