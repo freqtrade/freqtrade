@@ -353,6 +353,9 @@ class FreqaiDataDrawer:
         columns = self.historic_predictions[pair].columns
 
         zeros_df = pd.DataFrame(np.zeros((1, len(columns))), index=index, columns=columns)
+        # A numeric 0 placeholder would degrade the date column to object dtype
+        # but we want to keep the date column as datetime type.
+        zeros_df["date_pred"] = pd.Series(pd.NaT, index=index, dtype="datetime64[ms, UTC]")
         self.historic_predictions[pair] = pd.concat(
             [self.historic_predictions[pair], zeros_df], ignore_index=True, axis=0
         )
@@ -409,6 +412,10 @@ class FreqaiDataDrawer:
         """
         df = self.model_return_values[pair]
         to_keep = [col for col in dataframe.columns if not col.startswith("&")]
+        if df["date_pred"].dtype.kind != "M":
+            # Predictions restored from disk (written by older versions) can carry an
+            # object dtype date column - pandas refuses to merge on that.
+            df["date_pred"] = pd.to_datetime(df["date_pred"], utc=True).dt.as_unit("ms")
         # Merge on the candle date (not on the index) to ensure alignment in case of bad
         # strategy handling like dropping candles or reindexing.
         dataframe_new = pd.merge(
