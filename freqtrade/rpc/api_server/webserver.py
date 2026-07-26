@@ -1,4 +1,5 @@
 import logging
+import secrets
 from contextlib import asynccontextmanager
 from ipaddress import ip_address
 from typing import Any
@@ -320,6 +321,7 @@ class ApiServer(RPCHandler):
                 "SECURITY WARNING - `jwt_secret_key` seems to be default."
                 "Others may be able to log into your bot."
             )
+            self._config["api_server"]["jwt_secret_key"] = secrets.token_hex()
 
         logger.info("Starting Local Rest Server.")
         verbosity = self._config["api_server"].get("verbosity", "error")
