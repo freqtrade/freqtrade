@@ -192,6 +192,14 @@ class FreqaiDataDrawer:
                     self.historic_predictions = cloudpickle.load(fp)
                 logger.warning("FreqAI successfully loaded the backup historical predictions file.")
 
+            for pair_df in self.historic_predictions.values():
+                if "date_pred" in pair_df.columns and pair_df["date_pred"].dtype.kind != "M":
+                    # Predictions written by older versions can carry an object dtype
+                    # date column - convert once at load so downstream merges work.
+                    pair_df["date_pred"] = pd.to_datetime(
+                        pair_df["date_pred"], utc=True
+                    ).dt.as_unit("ms")
+
         else:
             logger.info("Could not find existing historic_predictions, starting from scratch")
 
@@ -413,14 +421,21 @@ class FreqaiDataDrawer:
         df = self.model_return_values[pair]
         to_keep = [col for col in dataframe.columns if not col.startswith("&")]
         if df["date_pred"].dtype.kind != "M":
-            # Predictions restored from disk (written by older versions) can carry an
-            # object dtype date column - pandas refuses to merge on that.
+            # Fallback - object dtype dates are normally converted when restoring from
+            # disk, but pandas refuses to merge on them, so guard here as well.
             df["date_pred"] = pd.to_datetime(df["date_pred"], utc=True).dt.as_unit("ms")
         # Merge on the candle date (not on the index) to ensure alignment in case of bad
         # strategy handling like dropping candles or reindexing.
         dataframe_new = pd.merge(
             dataframe[to_keep], df, how="left", left_on="date", right_on="date_pred", validate="m:1"
         )
+        unmatched = int(dataframe_new["date_pred"].isna().sum())
+        if unmatched:
+            logger.warning(
+                f"{unmatched} candle(s) could not be matched to historic predictions for "
+                f"{pair} - their return values are set to NaN. This can happen after "
+                "extended downtime, or if the strategy modified the dates of the dataframe."
+            )
         return dataframe_new
 
     def return_null_values_to_strategy(self, dataframe: DataFrame, dk: FreqaiDataKitchen) -> None:
