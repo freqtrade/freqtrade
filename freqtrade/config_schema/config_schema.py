@@ -778,7 +778,6 @@ CONF_SCHEMA = {
                 "jwt_secret_key": {
                     "description": "Secret key for JWT authentication.",
                     "type": "string",
-                    "default": "somethingRandomSomethingRandom123",
                     "minLength": 32,
                 },
                 "CORS_origins": {
