@@ -31,8 +31,8 @@ updates:
       - ccxt
   schedule:
     interval: "cron"
-    # Monday at 03:00
-    cronjob: "0 3 * * 1"
+    # Monday at 01:25
+    cronjob: "25 1 * * 1"
   open-pull-requests-limit: 15
   target-branch: develop
   groups:
