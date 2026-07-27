@@ -2683,11 +2683,11 @@ class Exchange:
 
             if (
                 candles
-                and (
-                    (len(candles) > 1 and candles[-1][0] >= prev_candle_ts)
-                    # Edgecase on reconnect, where 1 candle is available but it's the current one
-                    or (len(candles) == 1 and candles[-1][0] < candle_ts)
-                )
+                # The cache must already contain the currently forming candle. If it doesn't,
+                # its newest entry is a candle that is still open - get_ohlcv() would return it
+                # with drop_hint=False, so it'd be merged as if it was closed, overwriting the
+                # close of that candle with an intra-candle price.
+                and candles[-1][0] >= candle_ts
                 and last_refresh_time >= half_candle
             ):
                 # Usable result, candle contains the previous candle.

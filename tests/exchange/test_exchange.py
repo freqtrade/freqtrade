@@ -3057,6 +3057,60 @@ def test_refresh_ohlcv_with_cache(mocker, default_conf, time_machine) -> None:
     assert len(res) == 5
 
 
+def test_try_build_from_websocket(mocker, default_conf, time_machine, caplog) -> None:
+    now = datetime(2024, 11, 1, 10, 0, 1, tzinfo=UTC)
+    time_machine.move_to(now, tick=False)
+    exchange = get_patched_exchange(mocker, default_conf)
+
+    candle_ts = dt_ts(timeframe_to_prev_date("1h", now))
+    prev_candle_ts = dt_ts(date_minus_candles("1h", 1, now))
+    half_candle = candle_ts - (candle_ts - prev_candle_ts) // 2
+
+    ws_mock = MagicMock()
+    exchange._exchange_ws = ws_mock
+    pair_args = ("ETH/BTC", "1h", CandleType.SPOT)
+
+    # Websocket stalled 15 minutes before the candle rolled over, so its newest entry is the
+    # still-forming previous candle. Reusing it would merge an unfinished candle as if it was
+    # closed - get_ohlcv() returns drop_hint=False in that case.
+    ws_mock.get_ohlcv_with_refresh.return_value = (
+        [
+            [prev_candle_ts - 3600 * 1000, 1.0, 2.0, 0.5, 1.5, 100],
+            [prev_candle_ts, 1.5, 2.5, 1.0, 2.0, 50],
+        ],
+        half_candle + 15 * 60 * 1000,
+    )
+    assert exchange._try_build_from_websocket(*pair_args) is None
+    assert log_has_re(r"Couldn't reuse watch for ETH/BTC, 1h.*", caplog)
+
+    # Same cache content, but the websocket has since received the currently forming candle.
+    # The previous candle is closed now, so the cache is usable.
+    caplog.clear()
+    ws_mock.get_ohlcv_with_refresh.return_value = (
+        [
+            [prev_candle_ts, 1.5, 2.5, 1.0, 2.0, 50],
+            [candle_ts, 2.0, 2.1, 1.9, 2.05, 5],
+        ],
+        candle_ts,
+    )
+    assert exchange._try_build_from_websocket(*pair_args) is not None
+    assert not log_has_re(r"Couldn't reuse watch for ETH/BTC, 1h.*", caplog)
+
+    # Current candle present, but the last refresh is older than half a candle.
+    ws_mock.get_ohlcv_with_refresh.return_value = (
+        [
+            [prev_candle_ts, 1.5, 2.5, 1.0, 2.0, 50],
+            [candle_ts, 2.0, 2.1, 1.9, 2.05, 5],
+        ],
+        half_candle - 1,
+    )
+    assert exchange._try_build_from_websocket(*pair_args) is None
+
+    # Empty cache
+    ws_mock.get_ohlcv_with_refresh.return_value = ([], candle_ts)
+    assert exchange._try_build_from_websocket(*pair_args) is None
+
+
 def test_refresh_latest_ohlcv_funding_rate(mocker, default_conf_usdt, caplog) -> None:
     ohlcv = generate_test_data_raw("1h", 24, "2025-01-02 12:00:00+00:00")
     funding_data = [{"timestamp": x[0], "fundingRate": x[1]} for x in ohlcv]
