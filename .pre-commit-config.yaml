@@ -70,6 +70,6 @@ repos:
 
   # Ensure github actions remain safe
   - repo: https://github.com/woodruffw/zizmor-pre-commit
-    rev: v1.27.0
+    rev: v1.28.0
     hooks:
     - id: zizmor
