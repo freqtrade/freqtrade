@@ -124,6 +124,15 @@ class Krakenfutures(Exchange):
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
+    def balance_includes_unrealized_pnl(self) -> bool:
+        """
+        Not expressible as a static flag for this exchange.
+        get_balances() above synthesizes the USD balance from marginEquity, which includes
+        unrealized PnL. Any other stake currency falls through to ccxt, which reports the
+        flex account's plain "quantity" (wallet balance) instead.
+        """
+        return str(self._config.get("stake_currency", "")).upper() == "USD"
+
     @staticmethod
     def _safe_float(value: Any) -> float | None:
         """Convert value to float, returning None if conversion fails."""

@@ -160,6 +160,7 @@ class Exchange:
         "funding_fee_timeframe": "1h",
         "ccxt_futures_name": "swap",
         "needs_trading_fees": False,  # use fetch_trading_fees to cache fees
+        "balance_includes_unrealized_pnl": False,  # ccxt "total" is plain wallet balance
         "order_props_in_contracts": ["amount", "filled", "remaining"],
         "fetch_orders_limit_minutes": None,  # "fetch_orders" is not time-limited by default
         # Override createMarketBuyOrderRequiresPrice where ccxt has it wrong
@@ -986,6 +987,16 @@ class Exchange:
         Get parameter value from _ft_has
         """
         return self._ft_has.get(param, default)
+
+    def balance_includes_unrealized_pnl(self) -> bool:
+        """
+        Whether the stake currency's "total" balance as returned by get_balances() is account
+        equity (wallet balance + unrealized PnL of open positions) rather than plain wallet
+        balance. Wallets normalizes this away, so that Wallet.total has one single meaning
+        across exchanges and between dry-run and live.
+        Overridable for exchanges where this depends on more than the exchange itself.
+        """
+        return self.get_option("balance_includes_unrealized_pnl", False)
 
     def exchange_has(self, endpoint: str) -> bool:
         """

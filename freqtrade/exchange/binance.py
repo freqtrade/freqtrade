@@ -68,6 +68,8 @@ class Binance(Exchange):
             PriceType.MARK: "MARK_PRICE",
         },
         "ws_enabled": False,
+        # ccxt maps "total" to assets[].marginBalance (= walletBalance + unrealizedProfit)
+        "balance_includes_unrealized_pnl": True,
         "proxy_coin_mapping": {
             "BNFCR": "USDC",
             "BFUSD": "USDT",

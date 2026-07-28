@@ -44,6 +44,8 @@ class Okx(Exchange):
         },
         "stoploss_blocks_assets": False,
         "ws_enabled": True,
+        # ccxt maps "total" to the currency's "eq" (equity), which includes unrealized PnL
+        "balance_includes_unrealized_pnl": True,
     }
 
     _supported_trading_mode_margin_pairs: list[tuple[TradingMode, MarginMode]] = [
