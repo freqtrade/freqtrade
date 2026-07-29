@@ -67,6 +67,7 @@ def test_balance_distribution_over_time(is_short):
                     "ft_order_side": "sell" if is_short else "buy",
                     "order_filled_timestamp": int(base_date.timestamp() * 1000),
                     "ft_is_entry": True,
+                    "funding_fee": -0.5,
                 },
                 {
                     "amount": 0.0025,
@@ -77,6 +78,7 @@ def test_balance_distribution_over_time(is_short):
                         (base_date + timedelta(hours=3)).timestamp() * 1000
                     ),
                     "ft_is_entry": False,
+                    "funding_fee": 0.2,
                 },
             ],
             # Trade 2: ETH/USDT - entry at 2000, exit at 2100
@@ -182,10 +184,19 @@ def test_balance_distribution_over_time(is_short):
     # Verify we have entries over the full time period (36h)
     assert len(result) == 36
 
-    # First trade opens 15h after the start date
+    # First trade opens 15h after the start date - collateral, fee and funding fee are
+    # all charged at the fill.
     assert result.iloc[0][stake_currency] == 1000
-    expected_first_balance = start_balance - (100.0 + 100.0 * fee)
+    expected_first_balance = start_balance - (100.0 + 100.0 * fee) - 0.5
     assert result.iloc[15][stake_currency] == pytest.approx(expected_first_balance)
+
+    # Trade 1 exits at hour 18 - the only event between 17 and 18, so its proceeds
+    # (including the 0.2 funding fee gained) are the full difference.
+    exit_value = 41000.0 * 0.0025
+    expected_exit = (exit_value if not is_short else 2 * 100.0 - exit_value) - exit_value * fee
+    assert result.iloc[18][stake_currency] - result.iloc[17][stake_currency] == pytest.approx(
+        expected_exit + 0.2
+    )
 
     # Check that pair columns have non-zero values during trade periods
     # Trade 1 (BTC/USDT) is open from hour 15 to hour 18
