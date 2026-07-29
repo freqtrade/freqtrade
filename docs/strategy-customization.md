@@ -229,7 +229,7 @@ def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame
 
 Out of the box, freqtrade installs the following technical libraries:
 
-- [ta-lib](https://ta-lib.github.io/ta-lib-python/)
+- [ta-lib](https://ta-lib.github.io/ta-lib-python/) (Detailed documentation of included functions: [Ta-Lib](https://ta-lib.org/))
 - [pandas-ta](https://twopirllc.github.io/pandas-ta/)
 - [technical](https://technical.freqtrade.io)
 

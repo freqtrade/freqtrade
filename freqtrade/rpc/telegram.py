@@ -1950,7 +1950,7 @@ class Telegram(RPCHandler):
             "*/show_config:* `Show running configuration` \n"
             "*/locks:* `Show currently locked pairs`\n"
             "*/balance:* `Show bot managed balance per currency`\n"
-            "*/balance total:* `Show account balance per currency`\n"
+            "*/balance full:* `Show account balance per currency`\n"
             "*/logs [limit]:* `Show latest logs - defaults to 10` \n"
             "*/count:* `Show number of active trades compared to allowed number of trades`\n"
             "*/health* `Show latest process timestamp - defaults to 1970-01-01 00:00:00` \n"

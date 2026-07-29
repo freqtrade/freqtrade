@@ -28,7 +28,7 @@ class Okx(Exchange):
 
     _ft_has: FtHas = {
         "ohlcv_candle_limit": 100,  # Warning, special case with data prior to X months
-        "stoploss_order_types": {"limit": "limit"},
+        "stoploss_order_types": {"limit": "limit", "market": "market"},
         "stoploss_on_exchange": True,
         "stoploss_query_requires_stop_flag": True,
         "trades_has_history": False,  # Endpoint doesn't have a "since" parameter
@@ -189,7 +189,9 @@ class Okx(Exchange):
 
     def _get_stop_params(self, side: BuySell, ordertype: str, stop_price: float) -> dict:
         params = super()._get_stop_params(side, ordertype, stop_price)
-        if self.trading_mode == TradingMode.FUTURES and self.margin_mode:
+        if self.trading_mode == TradingMode.SPOT:
+            params["tdMode"] = "cash"
+        elif self.trading_mode == TradingMode.FUTURES and self.margin_mode:
             params["tdMode"] = self.margin_mode.value
             params["posSide"] = self._get_posSide(side, True)
         return params

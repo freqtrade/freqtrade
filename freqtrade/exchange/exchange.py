@@ -314,7 +314,7 @@ class Exchange:
     def close(self):
         if self._exchange_ws:
             self._exchange_ws.cleanup()
-        logger.debug("Exchange object destroyed, closing async loop")
+
         try:
             generic_loop = asyncio.get_running_loop()
         except RuntimeError:
@@ -1470,8 +1470,13 @@ class Exchange:
                 rate_for_order,
                 params,
             )
-            if order.get("status") is None:
-                # Map empty status to open.
+            if order.get("status") is None or (
+                order.get("status") in ("closed", "expired")
+                and order.get("average") is None
+                and float(order["filled"]) != 0
+            ):
+                # Map empty status to open to force another round.
+                # Some exchanges don't provide the actual execution price for market orders.
                 order["status"] = "open"
 
             if order.get("type") is None:
@@ -3830,6 +3835,8 @@ class Exchange:
             self._log_exchange_response("set_margin_mode", res)
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
+        except ccxt.MarginModeAlreadySet as e:
+            logger.debug(f"Margin mode already set for {pair}. Message: {e}")
         except (ccxt.BadRequest, ccxt.OperationRejected) as e:
             if not accept_fail:
                 raise TemporaryError(

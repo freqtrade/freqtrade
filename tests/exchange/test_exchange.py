@@ -213,8 +213,24 @@ def test_init_ccxt_kwargs(default_conf, mocker, caplog):
 
 def test_destroy(default_conf, mocker, caplog):
     caplog.set_level(logging.DEBUG)
-    get_patched_exchange(mocker, default_conf)
-    assert log_has("Exchange object destroyed, closing async loop", caplog)
+    exchange = get_patched_exchange(mocker, default_conf)
+
+    closed = False
+
+    async def _close():
+        nonlocal closed
+        closed = True
+
+    # Simulate a "real" async session that needs closing.
+    exchange._api_async.close = _close
+    exchange._api_async.session = MagicMock()
+
+    exchange.close()
+    # Prevent the __del__ triggered close (at GC time) from touching the now-closed loop.
+    exchange._api_async.session = None
+
+    assert closed
+    assert log_has("Closing async ccxt session.", caplog)
 
 
 def test_init_exception(default_conf, mocker):
@@ -5299,7 +5315,7 @@ def test_get_stake_amount_considering_leverage(
 
 
 @pytest.mark.parametrize("margin_mode", [(MarginMode.CROSS), (MarginMode.ISOLATED)])
-def test_set_margin_mode(mocker, default_conf, margin_mode):
+def test_set_margin_mode(mocker, default_conf, margin_mode, caplog):
     api_mock = MagicMock()
     api_mock.set_margin_mode = MagicMock()
     type(api_mock).has = PropertyMock(return_value={"setMarginMode": True})
@@ -5315,6 +5331,15 @@ def test_set_margin_mode(mocker, default_conf, margin_mode):
         pair="XRP/USDT",
         margin_mode=margin_mode,
     )
+
+    # MarginModeAlreadySet is safe to ignore and should not raise.
+    caplog.set_level(logging.DEBUG)
+    api_mock.set_margin_mode = MagicMock(
+        side_effect=ccxt.MarginModeAlreadySet("Margin mode already set")
+    )
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, exchange="binance")
+    exchange.set_margin_mode("XRP/USDT", margin_mode)
+    assert log_has_re(r"Margin mode already set for XRP/USDT\..*", caplog)
 
 
 @pytest.mark.parametrize(

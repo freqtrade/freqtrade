@@ -381,6 +381,12 @@ class IFreqaiModel(ABC):
                         )
                         self.model = None
 
+                    if self.model is None:
+                        # Persist metadata (feature list) to enable freqUI after backtest
+                        self.dd.save_metadata(dk)
+                        self._append_null_backtesting_predictions(dk, dataframe_backtest)
+                        continue
+
                     self.dd.pair_dict[pair]["trained_timestamp"] = int(tr_train.stopts)
                     if self.plot_features and self.model is not None:
                         plot_feature_importance(self.model, pair, dk, self.plot_features)
@@ -402,6 +408,27 @@ class IFreqaiModel(ABC):
         dk.fill_predictions(dataframe)
 
         return dk
+
+    def _append_null_backtesting_predictions(
+        self, dk: FreqaiDataKitchen, dataframe_backtest: DataFrame
+    ) -> None:
+        """
+        Append neutral predictions for a backtest window whose model training failed.
+        """
+        labels = dk.label_list + dk.unique_class_list
+        predictions = DataFrame(0, index=range(len(dataframe_backtest)), columns=labels)
+        do_preds = np.zeros(len(dataframe_backtest), dtype=np.int_)
+        dk.DI_values = np.zeros(len(dataframe_backtest))
+
+        labels_mean = dk.data.setdefault("labels_mean", {})
+        labels_std = dk.data.setdefault("labels_std", {})
+        for label in labels:
+            labels_mean[label] = 0
+            labels_std[label] = 0
+
+        append_df = dk.get_predictions_to_append(predictions, do_preds, dataframe_backtest)
+        dk.append_predictions(append_df)
+        dk.save_backtesting_prediction(append_df)
 
     def start_live(
         self, dataframe: DataFrame, metadata: dict, strategy: IStrategy, dk: FreqaiDataKitchen
@@ -671,28 +698,30 @@ class IFreqaiModel(ABC):
         """
 
         self.dd.historic_predictions[pair] = pred_df
-        hist_preds_df = self.dd.historic_predictions[pair]
 
         self.set_start_dry_live_date(strat_df)
 
-        for label in hist_preds_df.columns:
-            if pd.api.types.is_string_dtype(hist_preds_df[label].dtype):
+        for label in pred_df.columns:
+            if pd.api.types.is_string_dtype(pred_df[label].dtype):
                 continue
-            hist_preds_df[f"{label}_mean"] = 0
-            hist_preds_df[f"{label}_std"] = 0
+            pred_df[f"{label}_mean"] = 0
+            pred_df[f"{label}_std"] = 0
 
-        hist_preds_df["do_predict"] = 0
+        pred_df["do_predict"] = 0
 
         if self.freqai_info["feature_parameters"].get("DI_threshold", 0) > 0:
-            hist_preds_df["DI_values"] = 0
+            pred_df["DI_values"] = 0
 
         for return_str in dk.data["extra_returns_per_train"]:
-            hist_preds_df[return_str] = dk.data["extra_returns_per_train"][return_str]
+            pred_df[return_str] = dk.data["extra_returns_per_train"][return_str]
 
-        hist_preds_df["high_price"] = strat_df["high"]
-        hist_preds_df["low_price"] = strat_df["low"]
-        hist_preds_df["close_price"] = strat_df["close"]
-        hist_preds_df["date_pred"] = strat_df["date"]
+        # pred_df is always 0-indexed and corresponds row-for-row (positionally) to strat_df.
+        # Reset strat_df's index to match, to protect from strategies dropping rows.
+        strat_df_fixed = strat_df.reset_index(drop=True)
+        pred_df["high_price"] = strat_df_fixed["high"]
+        pred_df["low_price"] = strat_df_fixed["low"]
+        pred_df["close_price"] = strat_df_fixed["close"]
+        pred_df["date_pred"] = strat_df_fixed["date"]
 
     def fit_live_predictions(self, dk: FreqaiDataKitchen, pair: str) -> None:
         """
