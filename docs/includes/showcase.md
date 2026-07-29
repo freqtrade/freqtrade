@@ -9,3 +9,4 @@ This section will highlight a few projects from members of the community.
 - [Freqtrade analysis notebook](https://github.com/froggleston/freqtrade_analysis_notebook) (by Froggleston).
 - [FTUI - Terminal UI for freqtrade](https://github.com/freqtrade/ftui) (by Froggleston).
 - [Bot Academy](https://botacademy.ddns.net/) (by stash86) - Blog about crypto bot projects.
+- [Shingou sentiment overlay](https://github.com/auriontech/shingou-integrations) (by auriontech) - Example strategy using an hourly news-sentiment API as an entry filter and position sizer, plus a typed-event kill switch.
