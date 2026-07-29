@@ -526,6 +526,7 @@ class FreqtradeBot(LoggingMixin):
             prev_exit_reason = trade.exit_reason
             prev_trade_state = trade.is_open
             prev_trade_amount = trade.amount
+            order_obj: Order | None = None
             for order in orders:
                 trade_order = [o for o in trade.orders if o.order_id == order["id"]]
 
@@ -551,13 +552,14 @@ class FreqtradeBot(LoggingMixin):
             Trade.session.refresh(trade)
             if not trade.is_open:
                 # Trade was just closed
-                trade.close_date = trade.date_last_filled_utc
-                self.order_close_notify(
-                    trade,
-                    order_obj,
-                    order_obj.ft_order_side == "stoploss",
-                    send_msg=prev_trade_state != trade.is_open,
-                )
+                if order_obj:
+                    trade.close_date = trade.date_last_filled_utc
+                    self.order_close_notify(
+                        trade,
+                        order_obj,
+                        order_obj.ft_order_side == "stoploss",
+                        send_msg=prev_trade_state != trade.is_open,
+                    )
             else:
                 trade.exit_reason = prev_exit_reason
                 total = (
