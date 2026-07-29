@@ -4580,6 +4580,27 @@ def test_merge_ft_has_dict(default_conf, mocker):
     assert ex._ft_has["DeadBeef"] == 20
 
 
+@pytest.mark.parametrize(
+    "exchange_name,expected",
+    [
+        # ccxt reports account equity for these - their "total" carries unrealized PnL
+        ("binance", True),
+        ("hyperliquid", True),
+        ("okx", True),
+        ("bitget", True),
+        # ccxt reports plain wallet balance for these
+        ("bybit", False),
+        ("gate", False),
+        ("kraken", False),
+    ],
+)
+def test_balance_includes_unrealized_pnl(default_conf, mocker, exchange_name, expected):
+    default_conf["trading_mode"] = "futures"
+    default_conf["margin_mode"] = "isolated"
+    exchange = get_patched_exchange(mocker, default_conf, exchange=exchange_name)
+    assert exchange.balance_includes_unrealized_pnl() is expected
+
+
 def test_get_valid_pair_combination(default_conf, mocker, markets):
     mocker.patch.multiple(
         EXMS,

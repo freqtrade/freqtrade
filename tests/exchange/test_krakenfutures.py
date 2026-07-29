@@ -36,6 +36,26 @@ def test_krakenfutures_ft_has_overrides():
     assert ft_has["stop_price_type_field"] == "triggerSignal"
 
 
+@pytest.mark.parametrize(
+    "stake_currency,expected",
+    [
+        # get_balances() synthesizes USD from marginEquity, which includes unrealized PnL
+        ("USD", True),
+        # anything else falls through to ccxt's flex "quantity" (plain wallet balance)
+        ("USDT", False),
+        ("BTC", False),
+        ("EUR", False),
+    ],
+)
+def test_krakenfutures_balance_includes_unrealized_pnl(
+    mocker, default_conf, stake_currency, expected
+):
+    # Explicit test for krakenfutures - as behavior here is odd at best.
+    default_conf["stake_currency"] = stake_currency
+    ex = get_patched_exchange(mocker, default_conf, exchange="krakenfutures")
+    assert ex.balance_includes_unrealized_pnl() is expected
+
+
 # --- _adjust_krakenfutures_order average price tests ---
 
 
