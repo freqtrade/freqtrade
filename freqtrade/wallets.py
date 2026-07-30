@@ -31,6 +31,8 @@ class PositionWallet(NamedTuple):
     leverage: float | None = 0  # Don't use this - it's not guaranteed to be set
     collateral: float = 0
     side: str = "long"
+    # Unrealized PnL as reported by the exchange. Always 0 in dry-run
+    unrealized_pnl: float = 0
 
 
 class Wallets:
@@ -208,12 +210,14 @@ class Wallets:
             if not leverage:
                 trade = Trade.get_trades_proxy(is_open=True, pair=symbol)
                 leverage = trade[0].leverage if trade else None
+            unrealized_pnl = float(position.get("unrealizedPnl") or 0.0)  # type: ignore[arg-type]
             _parsed_positions[symbol] = PositionWallet(
                 symbol,
                 position=size,
                 leverage=leverage,
                 collateral=collateral,
                 side=position["side"],
+                unrealized_pnl=unrealized_pnl,
             )
         self._positions = _parsed_positions
         self._wallets = _wallets
