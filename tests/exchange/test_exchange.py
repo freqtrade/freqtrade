@@ -2363,7 +2363,7 @@ def test_get_conversion_rate(default_conf_usdt, mocker, exchange_name):
     api_mock = MagicMock()
     tick = {
         "ETH/USDT": {
-            "last": 42,
+            "last": None,
         },
         "BCH/USDT": {
             "last": 41,
@@ -2375,7 +2375,10 @@ def test_get_conversion_rate(default_conf_usdt, mocker, exchange_name):
     tick2 = {
         "ADA/USDT:USDT": {
             "last": 2.5,
-        }
+        },
+        "ETH/USDT:USDT": {
+            "last": 42,
+        },
     }
     mocker.patch(f"{EXMS}.exchange_has", return_value=True)
     api_mock.fetch_tickers = MagicMock(side_effect=[tick, tick2])
@@ -2386,14 +2389,24 @@ def test_get_conversion_rate(default_conf_usdt, mocker, exchange_name):
     # retrieve original ticker
     assert exchange.get_conversion_rate("USDT", "USDT") == 1
     assert api_mock.fetch_tickers.call_count == 0
+    # ETH must fall back to the "others" market since ETH/USDT is None.
     assert exchange.get_conversion_rate("ETH", "USDT") == 42
     assert exchange.get_conversion_rate("ETH", "USDC") is None
     assert exchange.get_conversion_rate("ETH", "BTC") == 250
+    assert api_mock.fetch_tickers.call_count == 2
+    api_mock.fetch_tickers.reset_mock()
+    api_mock.fetch_tickers.side_effect = [tick, tick2]
+    # Cached tickers
     assert exchange.get_conversion_rate("BTC", "ETH") == 0.004
 
-    assert api_mock.fetch_tickers.call_count == 1
+    assert api_mock.fetch_tickers.call_count == 0
+    # Uncached tickers
     api_mock.fetch_tickers.reset_mock()
+    assert exchange.get_conversion_rate("BTC", "ETH", cached=False) == 0.004
+    assert api_mock.fetch_tickers.call_count == 1
 
+    api_mock.fetch_tickers.reset_mock()
+    exchange._fetch_tickers_cache.clear()
     assert exchange.get_conversion_rate("ADA", "USDT") == 2.5
     # Only the call to the "others" market
     assert api_mock.fetch_tickers.call_count == 1
