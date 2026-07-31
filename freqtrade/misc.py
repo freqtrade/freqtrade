@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, TextIO
 from urllib.parse import urlparse, urlunparse
 
+import orjson
 import pandas as pd
 import rapidjson
 
@@ -25,7 +26,9 @@ def dump_json_to_file(file_obj: TextIO, data: Any) -> None:
     :param file_obj: File object to write to
     :param data: JSON Data to save
     """
-    rapidjson.dump(data, file_obj, default=str, number_mode=rapidjson.NM_NATIVE)
+    file_obj.write(
+        orjson.dumps(data, default=str, option=orjson.OPT_SERIALIZE_NUMPY).decode("utf-8")
+    )
 
 
 def file_dump_json(filename: Path, data: Any, is_zip: bool = False, log: bool = True) -> None:

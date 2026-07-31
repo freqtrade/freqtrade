@@ -213,8 +213,24 @@ def test_init_ccxt_kwargs(default_conf, mocker, caplog):
 
 def test_destroy(default_conf, mocker, caplog):
     caplog.set_level(logging.DEBUG)
-    get_patched_exchange(mocker, default_conf)
-    assert log_has("Exchange object destroyed, closing async loop", caplog)
+    exchange = get_patched_exchange(mocker, default_conf)
+
+    closed = False
+
+    async def _close():
+        nonlocal closed
+        closed = True
+
+    # Simulate a "real" async session that needs closing.
+    exchange._api_async.close = _close
+    exchange._api_async.session = MagicMock()
+
+    exchange.close()
+    # Prevent the __del__ triggered close (at GC time) from touching the now-closed loop.
+    exchange._api_async.session = None
+
+    assert closed
+    assert log_has("Closing async ccxt session.", caplog)
 
 
 def test_init_exception(default_conf, mocker):
@@ -247,17 +263,16 @@ def test_exchange_resolver(default_conf, mocker, caplog):
     mocker.patch(f"{EXMS}.validate_pricing")
     default_conf["exchange"]["name"] = "zaif"
     exchange = ExchangeResolver.load_exchange(default_conf)
+    msg = r"No .* specific subclass found. Using the generic exchange class instead."
     assert isinstance(exchange, Exchange)
-    assert log_has_re(r"No .* specific subclass found. Using the generic class instead.", caplog)
+    assert log_has_re(msg, caplog)
     caplog.clear()
 
     default_conf["exchange"]["name"] = "Bybit"
     exchange = ExchangeResolver.load_exchange(default_conf)
     assert isinstance(exchange, Exchange)
     assert isinstance(exchange, Bybit)
-    assert not log_has_re(
-        r"No .* specific subclass found. Using the generic class instead.", caplog
-    )
+    assert not log_has_re(msg, caplog)
     caplog.clear()
 
     default_conf["exchange"]["name"] = "kraken"
@@ -265,9 +280,7 @@ def test_exchange_resolver(default_conf, mocker, caplog):
     assert isinstance(exchange, Exchange)
     assert isinstance(exchange, Kraken)
     assert not isinstance(exchange, Binance)
-    assert not log_has_re(
-        r"No .* specific subclass found. Using the generic class instead.", caplog
-    )
+    assert not log_has_re(msg, caplog)
 
     default_conf["exchange"]["name"] = "binance"
     exchange = ExchangeResolver.load_exchange(default_conf)
@@ -275,9 +288,7 @@ def test_exchange_resolver(default_conf, mocker, caplog):
     assert isinstance(exchange, Binance)
     assert not isinstance(exchange, Kraken)
 
-    assert not log_has_re(
-        r"No .* specific subclass found. Using the generic class instead.", caplog
-    )
+    assert not log_has_re(msg, caplog)
 
     # Test mapping
     default_conf["exchange"]["name"] = "binanceus"
@@ -2352,7 +2363,7 @@ def test_get_conversion_rate(default_conf_usdt, mocker, exchange_name):
     api_mock = MagicMock()
     tick = {
         "ETH/USDT": {
-            "last": 42,
+            "last": None,
         },
         "BCH/USDT": {
             "last": 41,
@@ -2364,7 +2375,10 @@ def test_get_conversion_rate(default_conf_usdt, mocker, exchange_name):
     tick2 = {
         "ADA/USDT:USDT": {
             "last": 2.5,
-        }
+        },
+        "ETH/USDT:USDT": {
+            "last": 42,
+        },
     }
     mocker.patch(f"{EXMS}.exchange_has", return_value=True)
     api_mock.fetch_tickers = MagicMock(side_effect=[tick, tick2])
@@ -2375,14 +2389,24 @@ def test_get_conversion_rate(default_conf_usdt, mocker, exchange_name):
     # retrieve original ticker
     assert exchange.get_conversion_rate("USDT", "USDT") == 1
     assert api_mock.fetch_tickers.call_count == 0
+    # ETH must fall back to the "others" market since ETH/USDT is None.
     assert exchange.get_conversion_rate("ETH", "USDT") == 42
     assert exchange.get_conversion_rate("ETH", "USDC") is None
     assert exchange.get_conversion_rate("ETH", "BTC") == 250
+    assert api_mock.fetch_tickers.call_count == 2
+    api_mock.fetch_tickers.reset_mock()
+    api_mock.fetch_tickers.side_effect = [tick, tick2]
+    # Cached tickers
     assert exchange.get_conversion_rate("BTC", "ETH") == 0.004
 
-    assert api_mock.fetch_tickers.call_count == 1
+    assert api_mock.fetch_tickers.call_count == 0
+    # Uncached tickers
     api_mock.fetch_tickers.reset_mock()
+    assert exchange.get_conversion_rate("BTC", "ETH", cached=False) == 0.004
+    assert api_mock.fetch_tickers.call_count == 1
 
+    api_mock.fetch_tickers.reset_mock()
+    exchange._fetch_tickers_cache.clear()
     assert exchange.get_conversion_rate("ADA", "USDT") == 2.5
     # Only the call to the "others" market
     assert api_mock.fetch_tickers.call_count == 1
@@ -2844,6 +2868,37 @@ def test_refresh_latest_trades(
     assert exchange._api_async.fetch_trades.call_count == 6
     exchange._api_async.fetch_trades.reset_mock()
     caplog.clear()
+
+
+def test_needed_candle_for_trades_ms(mocker, default_conf, time_machine) -> None:
+    # Freeze mid-candle; the next "5m" candle boundary is 00:05:00.
+    time_machine.move_to(dt_utc(2026, 5, 1, 0, 3), tick=False)
+    next_candle = dt_utc(2026, 5, 1, 0, 5)
+
+    default_conf["orderflow"] = {"max_candles": 1500}
+    exchange = get_patched_exchange(mocker, default_conf)
+    mocker.patch(f"{EXMS}.ohlcv_candle_limit", return_value=500)
+
+    tf = "5m"
+
+    # required_candles = min(max_candles=1500, candles_fetched=500*1=500) = 500 (+1 margin)
+    exchange.required_candle_call_count = 1
+    # 501 candles * 5m = 2505 minutes ~= 1.7 days
+    expected = dt_ts(next_candle - timedelta(minutes=501 * 5))
+    assert exchange.needed_candle_for_trades_ms(tf, CandleType.SPOT) == expected
+
+    # required_candles = min(max_candles=1500, candles_fetched=500*3=1500) = 1500 (+1 margin)
+    exchange.required_candle_call_count = 3
+    # 1501 candles * 5m = 7505 minutes ~= 5.2 days
+    expected = dt_ts(next_candle - timedelta(minutes=1501 * 5))
+    assert exchange.needed_candle_for_trades_ms(tf, CandleType.SPOT) == expected
+
+    # required_candles capped at max_candles=800 (candles_fetched=500*5=2500), +1 margin
+    default_conf["orderflow"]["max_candles"] = 800
+    exchange.required_candle_call_count = 5
+    # 801 candles * 5m = 4005 minutes ~= 2.8 days
+    expected = dt_ts(next_candle - timedelta(minutes=801 * 5))
+    assert exchange.needed_candle_for_trades_ms(tf, CandleType.SPOT) == expected
 
 
 @pytest.mark.parametrize("candle_type", [CandleType.FUTURES, CandleType.MARK, CandleType.SPOT])
@@ -5273,7 +5328,7 @@ def test_get_stake_amount_considering_leverage(
 
 
 @pytest.mark.parametrize("margin_mode", [(MarginMode.CROSS), (MarginMode.ISOLATED)])
-def test_set_margin_mode(mocker, default_conf, margin_mode):
+def test_set_margin_mode(mocker, default_conf, margin_mode, caplog):
     api_mock = MagicMock()
     api_mock.set_margin_mode = MagicMock()
     type(api_mock).has = PropertyMock(return_value={"setMarginMode": True})
@@ -5289,6 +5344,15 @@ def test_set_margin_mode(mocker, default_conf, margin_mode):
         pair="XRP/USDT",
         margin_mode=margin_mode,
     )
+
+    # MarginModeAlreadySet is safe to ignore and should not raise.
+    caplog.set_level(logging.DEBUG)
+    api_mock.set_margin_mode = MagicMock(
+        side_effect=ccxt.MarginModeAlreadySet("Margin mode already set")
+    )
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, exchange="binance")
+    exchange.set_margin_mode("XRP/USDT", margin_mode)
+    assert log_has_re(r"Margin mode already set for XRP/USDT\..*", caplog)
 
 
 @pytest.mark.parametrize(

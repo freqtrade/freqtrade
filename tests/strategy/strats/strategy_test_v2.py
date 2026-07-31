@@ -2,8 +2,8 @@
 
 import talib.abstract as ta
 from pandas import DataFrame
+from technical import qtpylib
 
-import freqtrade.vendor.qtpylib.indicators as qtpylib
 from freqtrade.strategy import IStrategy
 
 

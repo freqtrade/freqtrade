@@ -671,14 +671,24 @@ def test_stoploss_cancel_okx(mocker, default_conf):
     assert args[2] == {"stop": True}
 
 
-def test__get_stop_params_okx(mocker, default_conf):
-    default_conf["trading_mode"] = "futures"
-    default_conf["margin_mode"] = "isolated"
+@pytest.mark.parametrize(
+    "trading_mode,margin_mode,expected",
+    [
+        (TradingMode.SPOT, MarginMode.NONE, {"stopLossPrice": 1500, "tdMode": "cash"}),
+        (
+            TradingMode.FUTURES,
+            MarginMode.ISOLATED,
+            {"stopLossPrice": 1500, "tdMode": "isolated", "posSide": "net"},
+        ),
+    ],
+)
+def test__get_stop_params_okx(mocker, default_conf, trading_mode, margin_mode, expected):
+    default_conf["trading_mode"] = trading_mode
+    default_conf["margin_mode"] = margin_mode
     exchange = get_patched_exchange(mocker, default_conf, exchange="okx")
     params = exchange._get_stop_params("sell", "market", 1500)
 
-    assert params["tdMode"] == "isolated"
-    assert params["posSide"] == "net"
+    assert params == expected
 
 
 def test_fetch_orders_okx(default_conf, mocker, limit_order):

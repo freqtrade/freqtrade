@@ -1,4 +1,3 @@
-from copy import deepcopy
 from typing import Any, cast
 
 from pandas import DataFrame
@@ -21,13 +20,11 @@ class BacktestResultType(TypedDict):
 def get_BacktestResultType_default() -> BacktestResultType:
     return cast(
         BacktestResultType,
-        deepcopy(
-            {
-                "metadata": {},
-                "strategy": {},
-                "strategy_comparison": [],
-            }
-        ),
+        {
+            "metadata": {},
+            "strategy": {},
+            "strategy_comparison": [],
+        },
     )
 
 

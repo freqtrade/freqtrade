@@ -197,7 +197,7 @@ def test_strategy_updater_comments(default_conf, caplog) -> None:
 # This is the 1st comment
 import talib.abstract as ta
 # This is the 2nd comment
-import freqtrade.vendor.qtpylib.indicators as qtpylib
+from technical import qtpylib
 
 
 class someStrategy(IStrategy):

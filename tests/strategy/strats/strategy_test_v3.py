@@ -4,8 +4,8 @@ from datetime import datetime
 
 import talib.abstract as ta
 from pandas import DataFrame
+from technical import qtpylib
 
-import freqtrade.vendor.qtpylib.indicators as qtpylib
 from freqtrade.persistence import Trade
 from freqtrade.strategy import (
     BooleanParameter,

@@ -314,7 +314,7 @@ class Exchange:
     def close(self):
         if self._exchange_ws:
             self._exchange_ws.cleanup()
-        logger.debug("Exchange object destroyed, closing async loop")
+
         try:
             generic_loop = asyncio.get_running_loop()
         except RuntimeError:
@@ -1470,8 +1470,13 @@ class Exchange:
                 rate_for_order,
                 params,
             )
-            if order.get("status") is None:
-                # Map empty status to open.
+            if order.get("status") is None or (
+                order.get("status") in ("closed", "expired")
+                and order.get("average") is None
+                and float(order["filled"]) != 0
+            ):
+                # Map empty status to open to force another round.
+                # Some exchanges don't provide the actual execution price for market orders.
                 order["status"] = "open"
 
             if order.get("type") is None:
@@ -2132,9 +2137,10 @@ class Exchange:
                     ticker = tickers_other.get(pair, None)
                 if ticker:
                     rate: float | None = safe_value_fallback(ticker, "last", "ask", None)
-                    if rate and pair.startswith(currency) and not pair.endswith(currency):
-                        rate = 1.0 / rate
-                    return rate
+                    if rate:
+                        if pair.startswith(currency) and not pair.endswith(currency):
+                            rate = 1.0 / rate
+                        return rate
         except ValueError:
             return None
         return None
@@ -3080,6 +3086,10 @@ class Exchange:
     # fetch Trade data stuff
 
     def needed_candle_for_trades_ms(self, timeframe: str, candle_type: CandleType) -> int:
+        """
+        Get the timestamp in milliseconds of the earliest candle needed to fetch trades
+        for the given timeframe and candle type.
+        """
         candle_limit = self.ohlcv_candle_limit(timeframe, candle_type)
         tf_s = timeframe_to_seconds(timeframe)
         candles_fetched = candle_limit * self.required_candle_call_count
@@ -3087,11 +3097,8 @@ class Exchange:
         max_candles = self._config["orderflow"]["max_candles"]
 
         required_candles = min(max_candles, candles_fetched)
-        move_to = (
-            tf_s * candle_limit * required_candles
-            if required_candles > candle_limit
-            else (max_candles + 1) * tf_s
-        )
+        # +1 candle as a safety margin so the oldest required candle is fully covered.
+        move_to = (required_candles + 1) * tf_s
 
         now = timeframe_to_next_date(timeframe)
         return int((now - timedelta(seconds=move_to)).timestamp() * 1000)
@@ -3829,6 +3836,8 @@ class Exchange:
             self._log_exchange_response("set_margin_mode", res)
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
+        except ccxt.MarginModeAlreadySet as e:
+            logger.debug(f"Margin mode already set for {pair}. Message: {e}")
         except (ccxt.BadRequest, ccxt.OperationRejected) as e:
             if not accept_fail:
                 raise TemporaryError(

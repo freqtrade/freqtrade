@@ -4,8 +4,8 @@ import logging
 
 from pandas import DataFrame
 from strategy_test_v3 import StrategyTestV3
+from technical import qtpylib
 
-import freqtrade.vendor.qtpylib.indicators as qtpylib
 from freqtrade.strategy import BooleanParameter, DecimalParameter, IntParameter, RealParameter
 
 

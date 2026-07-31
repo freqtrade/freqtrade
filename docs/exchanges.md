@@ -275,6 +275,9 @@ Kucoin accounts may use `KCS` for fees, and if a trade happens to be on `KCS`, f
 
 ## OKX
 
+!!! Tip "Stoploss on Exchange"
+    OKX supports `stoploss_on_exchange` with both stop-limit and stop-market orders on spot and futures markets. You can use either `"limit"` or `"market"` in the `order_types.stoploss` configuration setting to select the stoploss order type.
+
 OKX requires a passphrase for each api key, you will therefore need to add this key into the configuration so your exchange section looks as follows:
 
 ```json

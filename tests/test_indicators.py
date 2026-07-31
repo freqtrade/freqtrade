@@ -1,7 +1,9 @@
+import importlib
+import warnings
+
 import numpy as np
 import pandas as pd
-
-import freqtrade.vendor.qtpylib.indicators as qtpylib
+import pytest
 
 
 def test_crossed_numpy_types():
@@ -12,8 +14,25 @@ def test_crossed_numpy_types():
     series = pd.Series([56, 97, 19, 76, 65, 25, 87, 91, 79, 79])
     expected_result = pd.Series([False, True, False, True, False, False, True, False, False, False])
 
-    assert qtpylib.crossed_above(series, 60).equals(expected_result)
-    assert qtpylib.crossed_above(series, 60.0).equals(expected_result)
-    assert qtpylib.crossed_above(series, np.int32(60)).equals(expected_result)
-    assert qtpylib.crossed_above(series, np.int64(60)).equals(expected_result)
-    assert qtpylib.crossed_above(series, np.float64(60.0)).equals(expected_result)
+    # freqtrade.vendor.qtpylib is a deprecated shim around technical and emits a
+    # FutureWarning on import - suppress it here, it's asserted below.
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", FutureWarning)
+        import freqtrade.vendor.qtpylib.indicators as qtpylib
+
+        assert qtpylib.crossed_above(series, 60).equals(expected_result)
+        assert qtpylib.crossed_above(series, 60.0).equals(expected_result)
+        assert qtpylib.crossed_above(series, np.int32(60)).equals(expected_result)
+        assert qtpylib.crossed_above(series, np.int64(60)).equals(expected_result)
+        assert qtpylib.crossed_above(series, np.float64(60.0)).equals(expected_result)
+
+
+@pytest.mark.filterwarnings("ignore:freqtrade.vendor.qtpylib.indicators' is deprecated")
+def test_qtpylib_deprecation():
+    """freqtrade.vendor.qtpylib.indicators only re-exports technical now and is deprecated."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", FutureWarning)
+        import freqtrade.vendor.qtpylib.indicators as qtpylib
+
+    with pytest.warns(FutureWarning, match="freqtrade.vendor.qtpylib.indicators' is deprecated"):
+        importlib.reload(qtpylib)

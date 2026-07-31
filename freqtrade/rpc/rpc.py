@@ -1721,9 +1721,15 @@ class RPC:
                 strategy.ft_bot_start()
 
                 df_analyzed = strategy.analyze_ticker(data, {"pair": pair})
+                prev_len = len(df_analyzed)
                 df_analyzed = trim_dataframe(
                     df_analyzed, timerange_parsed, startup_candles=startup_candles
                 )
+                if prev_len > 0 and len(df_analyzed) == 0:
+                    raise RPCException(
+                        f"After trimming by startup_candle_count, no data for "
+                        f"{pair}, {timeframe} in {config.get('timerange')} left."
+                    )
                 annotations = strategy.ft_plot_annotations(pair=pair, dataframe=df_analyzed)
 
             else:
