@@ -220,7 +220,27 @@ class Wallets:
                 unrealized_pnl=unrealized_pnl,
             )
         self._positions = _parsed_positions
-        self._wallets = _wallets
+        self._wallets = self._strip_unrealized_pnl(_wallets, _parsed_positions)
+
+    def _strip_unrealized_pnl(
+        self, wallets: dict[str, Wallet], positions: dict[str, PositionWallet]
+    ) -> dict[str, Wallet]:
+        """
+        Restore the Wallet.total for exchanges reporting account equity.
+        Their "total" for the stake currency contains the unrealized PnL of open positions,
+        which would otherwise be counted twice - once in the stake balance, and once more in
+        each PositionWallet. Uses the exchange's own unrealized PnL, not a rate-derived
+        estimate.
+        Not necessary for dry run or backtesting, since we control balance.total there.
+        """
+        if not positions or not self._exchange.balance_includes_unrealized_pnl():
+            return wallets
+        upnl = sum(pos.unrealized_pnl for pos in positions.values())
+        stake_wallet = wallets.get(self._stake_currency)
+        if not upnl or stake_wallet is None:
+            return wallets
+        wallets[self._stake_currency] = stake_wallet._replace(total=stake_wallet.total - upnl)
+        return wallets
 
     def update(self, require_update: bool = True) -> None:
         """
