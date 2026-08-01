@@ -1,8 +1,6 @@
-import asyncio
 import datetime
 import io
 import re
-import sys
 import zipfile
 from datetime import timedelta
 
@@ -23,14 +21,6 @@ from freqtrade.exchange.binance_public_data import (
 )
 from freqtrade.util.datetime_helpers import dt_ts, dt_utc
 from ft_client.test_client.test_rest_client import log_has_re
-
-
-@pytest.fixture(scope="module")
-def event_loop_policy(request):
-    if sys.platform == "win32":
-        return asyncio.WindowsSelectorEventLoopPolicy()
-    else:
-        return asyncio.DefaultEventLoopPolicy()
 
 
 class MockResponse:
@@ -69,7 +59,7 @@ def make_response_from_url(start_date, end_date):
             "taker_buy_quote_volume,ignore"
         )
         df = pd.DataFrame(columns=cols.split(","), dtype=float)
-        df["open_time"] = date_col.astype("int64") // 10**6
+        df["open_time"] = date_col.as_unit("ms").astype("int64")
         df["open"] = df["high"] = df["low"] = df["close"] = df["volume"] = 1.0
         return df
 

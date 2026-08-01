@@ -63,6 +63,11 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
         self.tb_logger = tb_logger
         self.test_batch_counter = 0
 
+        # Early stopping parameters
+        self.early_stopping_patience: int = kwargs.get("early_stopping_patience", 0)
+        self.best_val_loss: float = float("inf")
+        self.patience_counter: int = 0
+
     def fit(self, data_dictionary: dict[str, pd.DataFrame], splits: list[str]):
         """
         :param data_dictionary: the dictionary constructed by DataHandler to hold
@@ -99,15 +104,40 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
 
             # evaluation
             if "test" in splits:
-                self.estimate_loss(data_loaders_dictionary, "test")
+                val_loss = self.estimate_loss(data_loaders_dictionary, "test")
+
+                # Early stopping check
+                if self.early_stopping_patience > 0 and val_loss is not None:
+                    if val_loss < self.best_val_loss:
+                        self.best_val_loss = val_loss
+                        self.patience_counter = 0
+                    else:
+                        self.patience_counter += 1
+                        if self.patience_counter >= self.early_stopping_patience:
+                            logger.info(
+                                f"Early stopping triggered after {self.patience_counter} "
+                                f"epochs without improvement. "
+                                f"Best val_loss: {self.best_val_loss:.6f}"
+                            )
+                            break
 
     @torch.no_grad()
     def estimate_loss(
         self,
         data_loader_dictionary: dict[str, DataLoader],
         split: str,
-    ) -> None:
+    ) -> float | None:
+        """
+        Estimate loss on a data split.
+
+        :param data_loader_dictionary: dictionary of data loaders.
+        :param split: split to estimate loss on (e.g. "test").
+        :return: average loss over all batches, or None if no batches.
+        """
         self.model.eval()
+        total_loss = 0.0
+        num_batches = 0
+
         for _, batch_data in enumerate(data_loader_dictionary[split]):
             xb, yb = batch_data
             xb = xb.to(self.device)
@@ -115,10 +145,16 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
 
             yb_pred = self.model(xb)
             loss = self.criterion(yb_pred, yb)
+            total_loss += loss.item()
+            num_batches += 1
             self.tb_logger.log_scalar(f"{split}_loss", loss.item(), self.test_batch_counter)
             self.test_batch_counter += 1
 
         self.model.train()
+
+        if num_batches > 0:
+            return total_loss / num_batches
+        return None
 
     def create_data_loaders_dictionary(
         self, data_dictionary: dict[str, pd.DataFrame], splits: list[str]
@@ -179,16 +215,12 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
             path,
         )
 
-    def load(self, path: Path):
-        checkpoint = torch.load(path)
-        return self.load_from_checkpoint(checkpoint)
-
     def load_from_checkpoint(self, checkpoint: dict):
         """
         when using continual_learning, DataDrawer will load the dictionary
         (containing state dicts and model_meta_data) by calling torch.load(path).
         you can access this dict from any class that inherits IFreqaiModel by calling
-        get_init_model method.
+        the get_init_model method.
         """
         self.model.load_state_dict(checkpoint["model_state_dict"])
         self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])

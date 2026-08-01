@@ -31,9 +31,11 @@ from tests.conftest import (
 )
 
 
-# Exclude RemotePairList from tests.
-# It has a mandatory parameter, and requires special handling, which happens in test_remotepairlist.
-TESTABLE_PAIRLISTS = [p for p in AVAILABLE_PAIRLISTS if p not in ["RemotePairList"]]
+# Exclude RemotePairList and PairInformationFilter from tests.
+# They have mandatory parameters, and require special handling, which happens in explicit tests.
+TESTABLE_PAIRLISTS = [
+    p for p in AVAILABLE_PAIRLISTS if p not in ["RemotePairList", "PairInformationFilter"]
+]
 
 
 @pytest.fixture(scope="function")
@@ -2850,10 +2852,10 @@ def test_backtesting_modes(
 def test_DelistFilter_error(whitelist_conf) -> None:
     whitelist_conf["pairlists"] = [{"method": "StaticPairList"}, {"method": "DelistFilter"}]
     exchange_mock = MagicMock()
-    exchange_mock._ft_has = {"has_delisting": False}
+    exchange_mock.get_option = MagicMock(return_value=False)
     with pytest.raises(
         OperationalException,
-        match=r"DelistFilter doesn't support this exchange and trading mode combination\.",
+        match=r"DelistFilter doesn't support .* in .* mode\.",
     ):
         PairListManager(exchange_mock, whitelist_conf, MagicMock())
 

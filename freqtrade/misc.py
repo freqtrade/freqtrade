@@ -8,8 +8,9 @@ from collections.abc import Iterator, Mapping
 from io import StringIO
 from pathlib import Path
 from typing import Any, TextIO
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 
+import orjson
 import pandas as pd
 import rapidjson
 
@@ -25,7 +26,9 @@ def dump_json_to_file(file_obj: TextIO, data: Any) -> None:
     :param file_obj: File object to write to
     :param data: JSON Data to save
     """
-    rapidjson.dump(data, file_obj, default=str, number_mode=rapidjson.NM_NATIVE)
+    file_obj.write(
+        orjson.dumps(data, default=str, option=orjson.OPT_SERIALIZE_NUMPY).decode("utf-8")
+    )
 
 
 def file_dump_json(filename: Path, data: Any, is_zip: bool = False, log: bool = True) -> None:
@@ -202,10 +205,10 @@ def parse_db_uri_for_logging(uri: str):
     :param uri: DB URI to parse for logging
     """
     parsed_db_uri = urlparse(uri)
-    if not parsed_db_uri.netloc:  # No need for censoring as no password was provided
+    if parsed_db_uri.password is None:  # No need for censoring as no password was provided
         return uri
-    pwd = parsed_db_uri.netloc.split(":")[1].split("@")[0]
-    return parsed_db_uri.geturl().replace(f":{pwd}@", ":*****@")
+    netloc = parsed_db_uri.netloc.replace(f":{parsed_db_uri.password}@", ":*****@", 1)
+    return urlunparse(parsed_db_uri._replace(netloc=netloc))
 
 
 def dataframe_to_json(dataframe: pd.DataFrame) -> str:
@@ -214,6 +217,12 @@ def dataframe_to_json(dataframe: pd.DataFrame) -> str:
     :param dataframe: A pandas DataFrame
     :returns: A JSON string of the pandas DataFrame
     """
+    date_columns = dataframe.select_dtypes(include=["datetime", "datetime64", "datetimetz"])
+    # Explicit conversion to ms
+    # This used to be part of to_json, but was deprecated in pandas 3
+    for date_column in date_columns:
+        dataframe[date_column] = date_columns[date_column].dt.as_unit("ms").astype("int64")
+
     return dataframe.to_json(orient="split")
 
 

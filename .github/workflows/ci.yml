@@ -24,24 +24,37 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ "ubuntu-22.04", "ubuntu-24.04", "macos-14", "macos-15" , "windows-2022", "windows-2025" ]
+        os: [ "ubuntu-22.04", "ubuntu-24.04", "ubuntu-26.04", "ubuntu-24.04-arm", "macos-14", "macos-15" , "windows-2022", "windows-2025" ]
         python-version: ["3.11", "3.12", "3.13", "3.14"]
+        exclude:
+          - os: "ubuntu-22.04"
+            python-version: "3.13"
+          - os: "ubuntu-22.04"
+            python-version: "3.14"
+          # Reduce ARM runs to newer python versions
+          - os: "ubuntu-24.04-arm"
+            python-version: "3.11"
+          - os: "ubuntu-24.04-arm"
+            python-version: "3.12"
+          # ubuntu 26.04 has 3.14 as default python version
+          - os: "ubuntu-26.04"
+            python-version: "3.11"
+          - os: "ubuntu-26.04"
+            python-version: "3.12"
+          - os: "ubuntu-26.04"
+            python-version: "3.13"
+
 
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
 
-    - name: Set up Python 🐍
-      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: Install uv
-      uses: astral-sh/setup-uv@5a095e7a2014a4212f075830d4f7277575a9d098 # v7.3.1
+    - name: Install uv and Python 🐍
+      uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
       with:
         activate-environment: true
-        enable-cache: true
+        enable-cache: true # zizmor: ignore[cache-poisoning] - this job is not used for release builds
         python-version: ${{ matrix.python-version }}
         cache-dependency-glob: "requirements**.txt"
         cache-suffix: "${{ matrix.python-version }}"
@@ -55,7 +68,6 @@ jobs:
 
     - name: Installation (python)
       run: |
-        uv pip install --upgrade wheel
         uv pip install -r requirements-dev.txt
         uv pip install -e ft_client/
         uv pip install -e .
@@ -74,7 +86,7 @@ jobs:
       run: |
         pytest --random-order --cov=freqtrade --cov=freqtrade_client --cov-config=.coveragerc
 
-    - uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
+    - uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
       if: (runner.os == 'Linux' && matrix.python-version == '3.12' && matrix.os == 'ubuntu-24.04')
       with:
         fail_ci_if_error: true
@@ -152,51 +164,56 @@ jobs:
 
     - name: Run Pester tests (PowerShell)
       if: ${{ runner.os == 'Windows' }}
-      shell: powershell
+      shell: pwsh
       run: |
         $PSVersionTable
-        Get-PSRepository | Format-List *
-        Set-PSRepository psgallery -InstallationPolicy trusted
-        Install-Module -Name Pester -RequiredVersion 5.7.1 -Confirm:$false -Force -SkipPublisherCheck
+        Install-PSResource -Name Pester -Version '[5.7.1]' -TrustRepository -Reinstall
         $Error.clear()
+
+        # Override Clear-Host globally to prevent headless console crashes
+        Function Clear-Host { }
+
         Invoke-Pester -Path "tests" -CI
         if ($Error.Length -gt 0) {exit 1}
 
     - name: Discord notification
-      uses: rjstone/discord-webhook-notify@c2597273488aeda841dd1e891321952b51f7996f #v2.2.1
+      uses: sarisia/actions-status-discord@eb045afee445dc055c18d3d90bd0f244fd062708 # v1.16.0
       if: ${{ failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false) }}
       with:
-          severity: error
-          details: Freqtrade CI failed on ${{ matrix.os }} with Python ${{ matrix.python-version }}!
-          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}  # zizmor: ignore[secrets-outside-env] Intentionally not using environment variable.
+          color: '#FF0000' # red
+          title: Freqtrade CI failed on ${{ matrix.os }} with Python ${{ matrix.python-version }}!
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}  # zizmor: ignore[secrets-outside-env] Intentionally not using environment variable.
 
   mypy-version-check:
     name: "Mypy Version Check"
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
 
-    - name: Set up Python 🐍
-      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 #v6.2.0
+    - name: Install uv and Python 🐍
+      uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
       with:
-        python-version: "3.12"
+        activate-environment: true
+        python-version: "3.13"
+        enable-cache: false
 
     - name: pre-commit dependencies
       run: |
-        pip install pyaml
+        uv pip install $(grep -E "^pyyaml==" requirements-dev.txt)
         python build_helpers/pre_commit_update.py
 
   pre-commit:
     name: "Pre-commit checks"
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
 
-    - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+    - name: Set up Python 🐍
+      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
       with:
         python-version: "3.13"
 
@@ -206,7 +223,7 @@ jobs:
     name: "Documentation build"
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
 
@@ -214,16 +231,12 @@ jobs:
       run: |
         ./tests/test_docs.sh
 
-    - name: Set up Python 🐍
-      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
-      with:
-        python-version: "3.13"
-
-    - name: Install uv
-      uses: astral-sh/setup-uv@5a095e7a2014a4212f075830d4f7277575a9d098 # v7.3.1
+    - name: Install uv and Python 🐍
+      uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
       with:
         activate-environment: true
         python-version: "3.13"
+        enable-cache: false
 
     - name: Documentation build
       run: |
@@ -231,12 +244,12 @@ jobs:
         mkdocs build
 
     - name: Discord notification
-      uses: rjstone/discord-webhook-notify@c2597273488aeda841dd1e891321952b51f7996f #v2.2.1
+      uses: sarisia/actions-status-discord@eb045afee445dc055c18d3d90bd0f244fd062708 # v1.16.0
       if: failure() && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
       with:
-          severity: error
-          details: Freqtrade doc test failed!
-          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}  # zizmor: ignore[secrets-outside-env] Intentionally not using environment variable.
+          color: '#FF0000' # red
+          title: Freqtrade doc test failed!
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}  # zizmor: ignore[secrets-outside-env] Intentionally not using environment variable.
 
 
   build-linux-online:
@@ -247,27 +260,21 @@ jobs:
       matrix:
         python-version: ["3.12"]
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
 
-    - name: Set up Python 🐍
-      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
-      with:
-        python-version: "${{ matrix.python-version }}"
-
-    - name: Install uv
-      uses: astral-sh/setup-uv@5a095e7a2014a4212f075830d4f7277575a9d098 # v7.3.1
+    - name: Install uv and Python 🐍
+      uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
       with:
         activate-environment: true
-        enable-cache: true
+        enable-cache: true # zizmor: ignore[cache-poisoning] - this job is not used for release builds
         python-version: "${{ matrix.python-version }}"
         cache-dependency-glob: "requirements**.txt"
         cache-suffix: "3.12"
 
     - name: Installation - *nix
       run: |
-        uv pip install --upgrade wheel
         uv pip install -r requirements-dev.txt
         uv pip install -e ft_client/
         uv pip install -e .
@@ -291,22 +298,13 @@ jobs:
     if: github.event_name != 'schedule' && github.repository == 'freqtrade/freqtrade'
     steps:
 
-    - name: Check user permission
-      id: check
-      continue-on-error: true
-      uses: prince-chrismc/check-actor-permissions-action@d504e74ba31658f4cdf4fcfeb509d4c09736d88e # v3.0.2
-      with:
-        permission: "write"
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
     - name: Discord notification
-      uses: rjstone/discord-webhook-notify@c2597273488aeda841dd1e891321952b51f7996f #v2.2.1
-      if: steps.check.outputs.permitted == 'true' && ( github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
+      uses: sarisia/actions-status-discord@eb045afee445dc055c18d3d90bd0f244fd062708 # v1.16.0
+      if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
       with:
-          severity: info
-          details: Test Completed!
-          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}  # zizmor: ignore[secrets-outside-env] Intentionally not using environment variable.
+          color: '#00FF00' # green
+          title: Test Completed!
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}  # zizmor: ignore[secrets-outside-env] Intentionally not using environment variable.
 
   build:
     if: always()
@@ -329,28 +327,25 @@ jobs:
       with:
         jobs: ${{ toJSON(needs) }}
 
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
 
-    - name: Set up Python 🐍
-      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
-      with:
-        python-version: "${{ matrix.python-version }}"
-
-    - name: Install uv
-      uses: astral-sh/setup-uv@5a095e7a2014a4212f075830d4f7277575a9d098 # v7.3.1
+    - name: Install uv and Python 🐍
+      uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
       with:
         activate-environment: true
         python-version: "${{ matrix.python-version }}"
+        # Don't cache to avoid cache poisoning
+        enable-cache: false
 
     - name: Build distribution
       run: |
-        uv pip install -U build
+        uv pip install $(grep -E "^build==" requirements-dev.txt)
         python -m build --sdist --wheel
 
     - name: Upload artifacts 📦
-      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: freqtrade-build
         path: |
@@ -362,7 +357,7 @@ jobs:
         python -m build --sdist --wheel ft_client
 
     - name: Upload artifacts 📦
-      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: freqtrade-client-build
         path: |
@@ -381,19 +376,19 @@ jobs:
       id-token: write # Needed for pypa/gh-action-pypi-publish
 
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
 
     - name: Download artifact  📦
-      uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8.0.0
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
       with:
         pattern: freqtrade*-build
         path: dist
         merge-multiple: true
 
     - name: Publish to PyPI (Test)
-      uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
+      uses: pypa/gh-action-pypi-publish@ba38be9e461d3875417946c167d0b5f3d385a247 # v1.14.1
       with:
         repository-url: https://test.pypi.org/legacy/
 
@@ -410,19 +405,19 @@ jobs:
       id-token: write # Needed for pypa/gh-action-pypi-publish
 
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
 
     - name: Download artifact  📦
-      uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8.0.0
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
       with:
         pattern: freqtrade*-build
         path: dist
         merge-multiple: true
 
     - name: Publish to PyPI
-      uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
+      uses: pypa/gh-action-pypi-publish@ba38be9e461d3875417946c167d0b5f3d385a247 # v1.14.1
 
 
   docker-build:

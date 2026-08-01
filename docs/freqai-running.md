@@ -87,6 +87,10 @@ To save the models generated during a particular backtest so that you can start 
     To ensure that the model can be reused, freqAI will call your strategy with a dataframe of length 1. 
     If your strategy requires more data than this to generate the same features, you can't reuse backtest predictions for live deployment and need to update your `identifier` for each new backtest.
 
+!!! Danger "Security notice"
+    Loading saved models from disk can cause security issues if using remote model files (files you downloaded from the internet or received from an untrusted source) due to having the necessity to have `weights_only=False`, which can cause security problems.
+    As long as you only load models that you have trained yourself, there is no risk.
+
 ### Backtest live collected predictions
 
 FreqAI allow you to reuse live historic predictions through the backtest parameter `--freqai-backtest-live-models`. This can be useful when you want to reuse predictions generated in dry/run for comparison or other study.

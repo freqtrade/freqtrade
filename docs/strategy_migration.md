@@ -730,7 +730,6 @@ Targets now get their own, dedicated method.
         return dataframe
 ```
 
-
 ### FreqAI - New data Pipeline
 
 If you have created your own custom `IFreqaiModel` with a custom `train()`/`predict()` function, *and* you still rely on `data_cleaning_train/predict()`, then you will need to migrate to the new pipeline. If your model does *not* rely on `data_cleaning_train/predict()`, then you do not need to worry about this migration. That means that this migration guide is relevant for a very small percentage of power-users. If you stumbled upon this guide by mistake, feel free to inquire in depth about your problem in the Freqtrade discord server.
@@ -807,7 +806,6 @@ class MyCoolFreqaiModel(BaseRegressionModel):
         # ... your custom code
         return (pred_df, dk.do_predict)
 ```
-
 
 1. Data normalization and cleaning is now homogenized with the new pipeline definition. This is created in the new `define_data_pipeline()` and `define_label_pipeline()` functions. The `data_cleaning_train()` and `data_cleaning_predict()` functions are no longer used. You can override `define_data_pipeline()` to create your own custom pipeline if you wish.
 2. Data normalization and cleaning is now homogenized with the new pipeline definition. This is created in the new `define_data_pipeline()` and `define_label_pipeline()` functions. The `data_cleaning_train()` and `data_cleaning_predict()` functions are no longer used. You can override `define_data_pipeline()` to create your own custom pipeline if you wish.

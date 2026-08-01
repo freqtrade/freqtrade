@@ -7,6 +7,7 @@ from .bt_fileutils import (
     get_backtest_market_change,
     get_backtest_result,
     get_backtest_resultlist,
+    get_backtest_wallet_change,
     get_latest_backtest_filename,
     get_latest_hyperopt_file,
     get_latest_hyperopt_filename,

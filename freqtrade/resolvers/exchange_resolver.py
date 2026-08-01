@@ -52,7 +52,8 @@ class ExchangeResolver(IResolver):
             )
         except ImportError:
             logger.info(
-                f"No {exchange_name} specific subclass found. Using the generic class instead."
+                f"No {exchange_name} specific subclass found. "
+                "Using the generic exchange class instead."
             )
         if not exchange:
             exchange = Exchange(
@@ -76,7 +77,7 @@ class ExchangeResolver(IResolver):
 
             exchange = ex_class(**kwargs)
             if exchange:
-                logger.info(f"Using resolved exchange '{exchange_name}'...")
+                logger.info(f"Using resolved exchange class '{exchange_name}' ...")
                 return exchange
         except AttributeError:
             # Pass and raise ImportError instead

@@ -9,7 +9,7 @@ class SKDecimal(FloatDistribution):
         *,
         step: float | None = None,
         decimals: int | None = None,
-        name=None,
+        name: str | None = None,
     ):
         """
         FloatDistribution with a fixed step size.
@@ -26,7 +26,7 @@ class SKDecimal(FloatDistribution):
             raise ValueError("You must set one of decimals or step")
         # Convert decimals to step
         self.step = step or (1 / 10**decimals if decimals else 1)
-        self.name = name
+        self.name = name or ""
 
         super().__init__(
             low=round(low, decimals) if decimals else low,

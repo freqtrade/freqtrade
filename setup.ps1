@@ -9,8 +9,8 @@ $VenvName = ".venv"
 $VenvDir = Join-Path $PSScriptRoot $VenvName
 
 # Supported Python minor versions (detection order: prefer newest first)
-$SupportedMinorVersions = @(13,12,11)
-# Build a human-readable supported versions string like "3.11, 3.12 and 3.13"
+$SupportedMinorVersions = @(14,13,12,11)
+# Build a human-readable supported versions string like "3.11, 3.12 3.13 and 3.14"
 $asc = $SupportedMinorVersions | Sort-Object
 if ($asc.Count -eq 1) {
   $SupportedPythonVersions = "3.$($asc[0])"

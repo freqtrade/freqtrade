@@ -393,7 +393,7 @@ def start_show_trades(args: dict[str, Any]) -> None:
     tfilter = []
 
     if config.get("trade_ids"):
-        tfilter.append(Trade.id.in_(config["trade_ids"]))
+        tfilter.append(Trade.id.in_(int(tid) for tid in config["trade_ids"]))
 
     trades = Trade.get_trades(tfilter).all()
     logger.info(f"Printing {len(trades)} Trades: ")

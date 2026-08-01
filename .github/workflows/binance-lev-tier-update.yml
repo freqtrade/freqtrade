@@ -2,7 +2,7 @@ name: Binance Leverage tiers update
 
 on:
   schedule:
-    - cron: "25 3 * * 4"
+    - cron: "25 2 * * 4"
   # on demand
   workflow_dispatch:
 
@@ -20,23 +20,19 @@ jobs:
     environment:
       name: develop
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
 
-    - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
-      with:
-        python-version: "3.14"
-
-    - name: Install uv
-      uses: astral-sh/setup-uv@5a095e7a2014a4212f075830d4f7277575a9d098 # v7.3.1
+    - name: Install uv and Python 🐍
+      uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
       with:
         activate-environment: true
         enable-cache: false
         python-version: "3.14"
 
     - name: Install ccxt
-      run: uv pip install ccxt orjson
+      run: uv pip install $(grep -E "^ccxt==" requirements.txt) $(grep -E "^orjson==" requirements.txt)
 
     - name: Run leverage tier update
       env:
@@ -46,7 +42,7 @@ jobs:
       run: python build_helpers/binance_update_lev_tiers.py
 
 
-    - uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0 # v8.1.0
+    - uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
       with:
         token: ${{ secrets.REPO_SCOPED_TOKEN }}
         add-paths: freqtrade/exchange/binance_leverage_tiers.json
@@ -55,7 +51,7 @@ jobs:
           Dependencies
         branch: update/binance-leverage-tiers
         title: Update Binance Leverage Tiers
-        commit-message: "chore: update pre-commit hooks"
+        commit-message: "chore: update binance leverage tiers"
         committer: Freqtrade Bot <154552126+freqtrade-bot@users.noreply.github.com>
         author: Freqtrade Bot <154552126+freqtrade-bot@users.noreply.github.com>
         body: Update binance leverage tiers.

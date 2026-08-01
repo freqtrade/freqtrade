@@ -39,6 +39,22 @@ The Order-type will be ignored if only one mode is available.
     In that case, the bot will fallback to using the `emergency_exit` order type to place a market order as placing the stoploss order failed.
     Freqtrade currently does not implement a limitation to avoid this situation, so please ensure your stoploss values are within reasonable limits for your exchange or disable stoploss on exchange.
 
+### Which order type is used for stoploss on exchange?
+
+The order type used for stoploss on exchange is determined by the `stoploss` value and the exchange capabilities.
+If your selected exchange supports both stop-limit and stop-market orders, then the `stoploss` value will determine which order type is used for stoploss on exchange.
+If your exchange only supports one of the two order types, you must configure your `stoploss` value accordingly, otherwise the bot will fail to start.
+
+### Which order type should i use for stoploss on exchange?
+
+If we translate the two stoploss order types into human words - they would be something like this:
+
+* **stoploss-market** -> "when stop triggers, get me the hell out of here at whatever price".
+* **stoploss-limit** -> "when stop triggers, place a limit order x% below the stoploss price. I accept a loss of "stoploss + 1%" at worst - but if price jumps further - i accept to wait for price to get back down to me, potentially resulting in a much bigger loss than "stoploss + 1%".
+
+As a consequence, we recommend using stoploss-market orders whenever possible, as the main point of a stoploss is to get you out of a position when the market is crashing, and in such situations, you'll want to exit the position immediately at the best available price, rather than risking a limit order not getting filled and potentially incurring even greater losses.
+The choice is ultimately up to you, but please be aware of the risk of using stoploss-limit orders, especially in volatile markets.
+
 ### stoploss_on_exchange and stoploss_on_exchange_limit_ratio
 
 Enable or Disable stop loss on exchange.
@@ -66,9 +82,10 @@ This same logic will reapply a stoploss order on the exchange should you cancel 
 ### stoploss_price_type
 
 !!! Warning "Only applies to futures"
-    `stoploss_price_type` only applies to futures markets (on exchanges where it's available).
+    `stoploss_price_type` only applies to futures markets (on exchanges where it's available).  
     Freqtrade will perform a validation of this setting on startup, failing to start if an invalid setting for your exchange has been selected.
-    Supported price types are gonna differs between each exchanges. Please check with your exchange on which price types it supports.
+    Supported price types are gonna differs between each exchanges. Please check with your exchange on which price types it supports.  
+    In spot markets, this setting is ignored and not validated, as most exchanges only support one price type for stoploss orders on spot markets.
 
 Stoploss on exchange on futures markets can trigger on different price types.
 The naming for these prices in exchange terminology often varies, but is usually something around "last" (or "contract price" ), "mark" and "index".

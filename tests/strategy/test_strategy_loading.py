@@ -531,7 +531,7 @@ def test_strategy_interface_versioning(dataframe_1m, default_conf):
     assert "exit_long" in exitdf
 
 
-def test_strategy_ft_load_params_from_file(mocker, default_conf):
+def test_strategy_ft_set_special_params_from_file(mocker, default_conf):
     default_conf.update({"strategy": "StrategyTestV2"})
     del default_conf["max_open_trades"]
     mocker.patch(

@@ -35,6 +35,9 @@ class Bybit(Exchange):
             # TODO: Can be removed once bybit fully forces all accounts to unified mode.
             "fetchOrder": False,
         },
+        # Demo trading
+        # https://learn.bybit.com/en/bybit-guide/how-to-use-bybit-demo-trading
+        "supports_demo_trading": True,
     }
     _ft_has_futures: FtHas = {
         "ohlcv_has_history": True,
@@ -326,3 +329,13 @@ class Bybit(Exchange):
                 return dt_from_ts(delivery_time)
 
         return None
+
+
+class BybitEU(Bybit):
+    """Bybit EU exchange class.
+    Minimal adjustment to disable futures trading for the EU version of Bybit.
+    """
+
+    _supported_trading_mode_margin_pairs: list[tuple[TradingMode, MarginMode]] = [
+        (TradingMode.SPOT, MarginMode.NONE),
+    ]

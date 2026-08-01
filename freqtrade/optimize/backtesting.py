@@ -4,10 +4,14 @@
 This module contains the backtesting logic
 """
 
+from __future__ import annotations
+
 import logging
 from collections import defaultdict
+from contextlib import nullcontext
 from copy import deepcopy
 from datetime import datetime, timedelta
+from typing import TYPE_CHECKING
 
 from numpy import isnan, nan
 from pandas import DataFrame, Series
@@ -49,8 +53,8 @@ from freqtrade.ft_types import (
 from freqtrade.leverage.liquidation_price import update_liquidation_prices
 from freqtrade.mixins import LoggingMixin
 from freqtrade.optimize.backtest_caching import get_strategy_run_id
-from freqtrade.optimize.bt_progress import BTProgress
 from freqtrade.optimize.optimize_reports import (
+    convert_bt_wallet_collection,
     generate_backtest_stats,
     generate_rejected_signals,
     generate_trade_signal_candles,
@@ -71,9 +75,17 @@ from freqtrade.plugins.protectionmanager import ProtectionManager
 from freqtrade.resolvers import ExchangeResolver, StrategyResolver
 from freqtrade.strategy.interface import IStrategy
 from freqtrade.strategy.strategy_wrapper import strategy_safe_wrapper
-from freqtrade.util import FtPrecise, dt_now
+from freqtrade.util import FtPrecise, dt_now, get_progress_tracker
 from freqtrade.util.migrations import migrate_data
 from freqtrade.wallets import Wallets
+
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from rich.progress import Task
+
+    from freqtrade.util.rich_progress import CustomProgress
 
 
 logger = logging.getLogger(__name__)
@@ -117,9 +129,22 @@ class Backtesting:
     backtesting.start()
     """
 
-    def __init__(self, config: Config, exchange: Exchange | None = None) -> None:
+    def __init__(
+        self,
+        config: Config,
+        exchange: Exchange | None = None,
+        *,
+        progress_callback: Callable[[Task], None] | None = None,
+    ) -> None:
+        """
+        :param progress_callback: Optional callback invoked on every progress update.
+            Setting this disables the terminal progress bars (intended for external
+            progress tracking, e.g. in the webserver).
+        """
         LoggingMixin.show_output = False
         self.config = config
+        self.progress: CustomProgress | None = None
+        self._progress_callback = progress_callback
         self.results: BacktestResultType = get_BacktestResultType_default()
         self.trade_id_counter: int = 0
         self.order_id_counter: int = 0
@@ -137,6 +162,7 @@ class Backtesting:
         }
         self.rejected_dict: dict[str, list] = {}
         self.starting_balance: float = 0.0
+        self.wallet_captures: list = []
 
         self._exchange_name = self.config["exchange"]["name"]
         self.__initial_backtest = exchange is None
@@ -172,6 +198,7 @@ class Backtesting:
         self.timeframe_secs = timeframe_to_seconds(self.timeframe)
         self.timeframe_min = self.timeframe_secs // 60
         self.timeframe_td = timedelta(seconds=self.timeframe_secs)
+        self._is_backtest_runmode = self.dataprovider.runmode == RunMode.BACKTEST
         self.disable_database_use()
         self.init_backtest_detail()
         self.pairlists = PairListManager(self.exchange, self.config, self.dataprovider)
@@ -280,8 +307,31 @@ class Backtesting:
         self.wallets = Wallets(self.config, self.exchange, is_backtest=True)
         self.starting_balance = self.wallets.get_starting_balance()
 
-        self.progress = BTProgress()
+        # Progress tracker with two tasks: an "overall" bar tracking the 4 phases and a
+        # "detail" bar tracking the progress within the current phase.
+        # Only active in Backtest mode
+        if self.dataprovider.runmode in (RunMode.BACKTEST, RunMode.WEBSERVER):
+            self.progress = get_progress_tracker(ft_callback=self._progress_callback)
+            self._progress_task_overall = self.progress.add_task("Backtest", total=4)
+            self._progress_task = self.progress.add_task("Backtesting", total=0)
         self.abort = False
+
+    def _set_progress_step(self, action: BacktestState, total: float) -> None:
+        """Advance the overall phase bar and (re)start the detail bar for the new phase."""
+        if self.progress is None:
+            return
+        self.progress.update(
+            self._progress_task_overall,
+            completed=action.value - 1,
+            description=str(action),
+        )
+        self.progress.update(self._progress_task, description=str(action), total=total, completed=0)
+
+    def _increment_progress(self, advance: float = 1) -> None:
+        """Advance the detail bar within the current phase."""
+        if self.progress is None:
+            return
+        self.progress.update(self._progress_task, advance=advance)
 
     def _set_strategy(self, strategy: IStrategy):
         """
@@ -309,7 +359,7 @@ class Backtesting:
         Loads backtest data and returns the data combined with the timerange
         as tuple.
         """
-        self.progress.init_step(BacktestState.DATALOAD, 1)
+        self._set_progress_step(BacktestState.DATALOAD, 1)
 
         data = history.load_data(
             datadir=self.config["datadir"],
@@ -335,7 +385,7 @@ class Backtesting:
             timeframe_to_seconds(self.timeframe), self.required_startup, min_date
         )
 
-        self.progress.set_new_value(1)
+        self._increment_progress()
         self._load_bt_data_detail()
         self.price_pair_prec = {}
 
@@ -451,6 +501,7 @@ class Backtesting:
         self.replaced_entry_orders = 0
         self.canceled_exit_orders = 0
         self.replaced_exit_orders = 0
+        self.wallet_captures = []
         self.dataprovider.clear_cache()
         if enable_protections:
             self._load_protections(self.strategy)
@@ -475,13 +526,13 @@ class Backtesting:
         """
 
         data: dict = {}
-        self.progress.init_step(BacktestState.CONVERT, len(processed))
+        self._set_progress_step(BacktestState.CONVERT, len(processed))
 
         # Create dict with data
         for pair in processed.keys():
             pair_data = processed[pair]
             self.check_abort()
-            self.progress.increment()
+            self._increment_progress()
 
             if not pair_data.empty:
                 # Cleanup from prior runs
@@ -754,7 +805,7 @@ class Backtesting:
     ) -> bool:
         """
         Check if an order is open and if it should've filled.
-        :return:  True if the order filled.
+        :return: True if the order filled.
         """
         if order and self._get_order_filled(order.ft_price, row):
             order.close_bt_order(current_date, trade)
@@ -1439,16 +1490,30 @@ class Backtesting:
             return None
         return row
 
+    def _sync_pair_index(
+        self, data: dict, pair: str, row_index: int, current_time: datetime
+    ) -> int:
+        """
+        Fast-forward a stale row index to the row dated current_time.
+
+        A dynamic pairlist can drop a pair and re-add it later. indexes[pair] only
+        advances while the pair is processed, so on re-entry it points at old rows
+        the pair would otherwise replay.
+        """
+        if not self.dynamic_pairlist:
+            return row_index
+        pair_rows = data[pair]
+        while row_index < len(pair_rows) and pair_rows[row_index][DATE_IDX] < current_time:
+            row_index += 1
+        return row_index
+
     def _collate_rejected(self, pair, row):
         """
         Temporarily store rejected signal information for downstream use in backtesting_analysis
         """
         # It could be fun to enable hyperopt mode to write
         # a loss function to reduce rejected signals
-        if (
-            self.config.get("export", "none") == "signals"
-            and self.dataprovider.runmode == RunMode.BACKTEST
-        ):
+        if self.config.get("export", "none") == "signals" and self._is_backtest_runmode:
             if pair not in self.rejected_dict:
                 self.rejected_dict[pair] = []
             self.rejected_dict[pair].append([row[DATE_IDX], row[ENTER_TAG_IDX]])
@@ -1519,22 +1584,28 @@ class Backtesting:
         """
         Spread into detail data
         """
-        current_detail_time: datetime = row[DATE_IDX].to_pydatetime()
+        current_detail_time: datetime = row[DATE_IDX]
         exit_candle_end = current_detail_time + self.timeframe_td
         detail_data = self.detail_data[pair]
-        detail_data = detail_data.loc[
-            (detail_data["date"] >= current_detail_time) & (detail_data["date"] < exit_candle_end)
-        ].copy()
-
-        if len(detail_data) == 0:
+        dates = detail_data["date"]
+        # "date" is sorted ascending, so the window
+        # (current_detail_time, exit_candle_end) can be located with searchsorted -
+        # equivalent to (dates >= current_detail_time) & (dates < exit_candle_end).
+        start_idx = dates.searchsorted(current_detail_time, side="left")
+        end_idx = dates.searchsorted(exit_candle_end, side="left")
+        if end_idx <= start_idx:
             return None
-        detail_data.loc[:, "enter_long"] = row[LONG_IDX]
-        detail_data.loc[:, "exit_long"] = row[ELONG_IDX]
-        detail_data.loc[:, "enter_short"] = row[SHORT_IDX]
-        detail_data.loc[:, "exit_short"] = row[ESHORT_IDX]
-        detail_data.loc[:, "enter_tag"] = row[ENTER_TAG_IDX]
-        detail_data.loc[:, "exit_tag"] = row[EXIT_TAG_IDX]
-        return detail_data[HEADERS].values.tolist()
+        detail_rows = detail_data.iloc[start_idx:end_idx, : CLOSE_IDX + 1].values.tolist()
+        signals = [
+            row[LONG_IDX],
+            row[ELONG_IDX],
+            row[SHORT_IDX],
+            row[ESHORT_IDX],
+            row[ENTER_TAG_IDX],
+            row[EXIT_TAG_IDX],
+        ]
+        # Column sequence per row must correspond to HEADERS
+        return [candle + signals for candle in detail_rows]
 
     def _time_generator(self, start_date: datetime, end_date: datetime):
         current_time = start_date + self.timeframe_td
@@ -1580,7 +1651,7 @@ class Backtesting:
             where is_last_row is a boolean indicating if this is the data end date.
         """
         current_time = start_date + self.timeframe_td
-        self.progress.init_step(
+        self._set_progress_step(
             BacktestState.BACKTEST, int((end_date - start_date) / self.timeframe_td)
         )
         # Indexes per pair, so some pairs are allowed to have a missing start.
@@ -1603,6 +1674,7 @@ class Backtesting:
             pair_detail_cache: dict[str, list[tuple]] = {}
             pair_tradedir_cache: dict[str, LongShort | None] = {}
             pairs_with_open_trades = [t.pair for t in LocalTrade.bt_trades_open]
+            self._capture_wallet(current_time, self.strategy.config["stake_currency"], 1)
 
             for current_time_det, is_first, has_detail, idx, pair in self._time_pair_generator_det(
                 current_time, pairs
@@ -1614,7 +1686,7 @@ class Backtesting:
                 trade_dir: LongShort | None = None
                 if is_first:
                     # Main candle
-                    row_index = indexes[pair]
+                    row_index = self._sync_pair_index(data, pair, indexes[pair], current_time)
                     row = self.validate_row(data, pair, row_index, current_time)
                     if not row:
                         continue
@@ -1627,6 +1699,7 @@ class Backtesting:
                     )
                     trade_dir = self.check_for_trade_entry(row)
                     pair_tradedir_cache[pair] = trade_dir
+                    self._capture_wallet(current_time, pair.split("/")[0], row[OPEN_IDX])
 
                 else:
                     # Detail candle - from cache.
@@ -1678,7 +1751,16 @@ class Backtesting:
                 is_last_row = current_time_det == end_date
 
                 yield current_time_det, pair, row, is_last_row, trade_dir
-            self.progress.increment()
+            self._increment_progress()
+
+    def _capture_wallet(self, current_time: datetime, currency: str, price: float) -> None:
+        """
+        Capture the current wallet state.
+        """
+        if not self._is_backtest_runmode:
+            return
+        if total := self.wallets.get_total(currency):
+            self.wallet_captures.append((current_time, currency, price, total))
 
     def backtest(
         self, processed: dict, start_date: datetime, end_date: datetime
@@ -1739,12 +1821,13 @@ class Backtesting:
             "canceled_entry_orders": self.canceled_entry_orders,
             "replaced_entry_orders": self.replaced_entry_orders,
             "final_balance": self.wallets.get_total(self.strategy.config["stake_currency"]),
+            "wallet_summary": convert_bt_wallet_collection(self.wallet_captures),
         }
 
     def backtest_one_strategy(
         self, strat: IStrategy, data: dict[str, DataFrame], timerange: TimeRange
     ):
-        self.progress.init_step(BacktestState.ANALYZE, 0)
+        self._set_progress_step(BacktestState.ANALYZE, 0)
         strategy_name = strat.get_strategy_name()
         logger.info(f"Running backtesting for Strategy {strategy_name}")
         backtest_start_time = dt_now()
@@ -1784,10 +1867,7 @@ class Backtesting:
         )
         self.all_bt_content[strategy_name] = results
 
-        if (
-            self.config.get("export", "none") == "signals"
-            and self.dataprovider.runmode == RunMode.BACKTEST
-        ):
+        if self.config.get("export", "none") == "signals" and self._is_backtest_runmode:
             signals = generate_trade_signal_candles(preprocessed_tmp, results, "open_date")
             rejected = generate_rejected_signals(preprocessed_tmp, self.rejected_dict)
             exited = generate_trade_signal_candles(preprocessed_tmp, results, "close_date")
@@ -1831,17 +1911,23 @@ class Backtesting:
         """
         data: dict[str, DataFrame] = {}
 
-        data, timerange = self.load_bt_data()
-        logger.info("Dataload complete. Calculating indicators")
+        # Render the live progress bars for the duration of the run. The context must stop
+        # before show_backtest_results() so the result tables render cleanly afterwards.
+        # Progress may be disabled for hyperopt or other utility commands.
+        with self.progress or nullcontext():
+            data, timerange = self.load_bt_data()
+            logger.info("Dataload complete. Calculating indicators")
 
-        self.load_prior_backtest()
+            self.load_prior_backtest()
 
-        for strat in self.strategylist:
-            if self.results and strat.get_strategy_name() in self.results["strategy"]:
-                # When previous result hash matches - reuse that result and skip backtesting.
-                logger.info(f"Reusing result of previous backtest for {strat.get_strategy_name()}")
-                continue
-            min_date, max_date = self.backtest_one_strategy(strat, data, timerange)
+            for strat in self.strategylist:
+                if self.results and strat.get_strategy_name() in self.results["strategy"]:
+                    # When previous result hash matches - reuse that result and skip backtesting.
+                    logger.info(
+                        f"Reusing result of previous backtest for {strat.get_strategy_name()}"
+                    )
+                    continue
+                min_date, max_date = self.backtest_one_strategy(strat, data, timerange)
 
         # Update old results with new ones.
         if len(self.all_bt_content) > 0:
@@ -1867,6 +1953,11 @@ class Backtesting:
                     dt_appendix,
                     market_change_data=combined_res,
                     analysis_results=self.analysis_results,
+                    wallet_summary={
+                        s: x["wallet_summary"]
+                        for s, x in self.all_bt_content.items()
+                        if "wallet_summary" in x
+                    },
                     strategy_files={s.get_strategy_name(): s.__file__ for s in self.strategylist},
                 )
 

@@ -3,7 +3,6 @@ Minimum age (days listed) pair list filter
 """
 
 import logging
-from copy import deepcopy
 from datetime import timedelta
 
 from pandas import DataFrame
@@ -106,7 +105,7 @@ class AgeFilter(IPairList):
         since_ms = dt_ts(dt_floor_day(dt_now()) + timedelta(days=since_days))
         candles = self._exchange.refresh_latest_ohlcv(needed_pairs, since_ms=since_ms, cache=False)
         if self._enabled:
-            for p in deepcopy(pairlist):
+            for p in pairlist.copy():
                 daily_candles = (
                     candles[(p, "1d", self._def_candletype)]
                     if (p, "1d", self._def_candletype) in candles

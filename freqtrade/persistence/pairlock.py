@@ -29,6 +29,11 @@ class PairLock(ModelBase):
 
     active: Mapped[bool] = mapped_column(nullable=False, default=True, index=True)
 
+    @property
+    def lock_end_time_utc(self) -> datetime:
+        """Lock end time with UTC timezoneinfo"""
+        return self.lock_end_time.replace(tzinfo=UTC)
+
     def __repr__(self) -> str:
         lock_time = self.lock_time.strftime(DATETIME_PRINT_FORMAT)
         lock_end_time = self.lock_end_time.strftime(DATETIME_PRINT_FORMAT)

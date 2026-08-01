@@ -24,7 +24,7 @@ from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.exchange import timeframe_to_next_date, timeframe_to_prev_date
 from freqtrade.exchange.exchange_utils import DECIMAL_PLACES, TICK_SIZE
 from freqtrade.optimize.backtest_caching import get_backtest_metadata_filename, get_strategy_run_id
-from freqtrade.optimize.backtesting import Backtesting
+from freqtrade.optimize.backtesting import DATE_IDX, HEADERS, Backtesting
 from freqtrade.persistence import LocalTrade, Trade
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.util import dt_now, dt_utc
@@ -32,6 +32,7 @@ from tests.conftest import (
     CURRENT_TEST_STRATEGY,
     EXMS,
     generate_test_data,
+    generate_test_data_raw,
     get_args,
     log_has,
     log_has_re,
@@ -375,8 +376,9 @@ def test_get_pair_precision_bt(default_conf, mocker) -> None:
     assert ex_mock.call_count == 2
 
 
-def test_backtest_abort(default_conf, mocker, testdatadir) -> None:
+def test_backtest_abort(default_conf, mocker) -> None:
     patch_exchange(mocker)
+    default_conf["runmode"] = RunMode.BACKTEST
     backtesting = Backtesting(default_conf)
     backtesting.check_abort()
 
@@ -386,7 +388,7 @@ def test_backtest_abort(default_conf, mocker, testdatadir) -> None:
         backtesting.check_abort()
     # abort flag resets
     assert backtesting.abort is False
-    assert backtesting.progress.progress == 0
+    assert backtesting.progress.tasks[backtesting._progress_task].completed == 0
 
 
 def test_backtesting_start(default_conf, mocker, caplog) -> None:
@@ -754,13 +756,74 @@ def test_backtest__check_trade_exit(default_conf, mocker) -> None:
     assert res is None
 
 
+def test_get_detail_data(default_conf, mocker) -> None:
+    # get_detail_data returns the detail candles whose "date" falls in the half-open
+    # window (current, current + timeframe_td) of the current main candle, with the
+    # signal/tag columns filled from the main row. A boolean mask over the detail
+    # frame is used here as an independent oracle for that window, exercised across
+    # interior, boundary, empty, and out-of-range inputs.
+    patch_exchange(mocker)
+    default_conf["timeframe"] = "1h"
+    default_conf["timeframe_detail"] = "1m"
+    backtesting = Backtesting(default_conf)
+    backtesting._set_strategy(backtesting.strategylist[0])
+    backtesting.timeframe_td = timedelta(hours=1)
+    pair = "UNITTEST/BTC"
+
+    # 4h of 1m candles starting at 04:00 (04:00 .. 07:59).
+    detail = generate_test_data("1m", 240, "2020-01-01 04:00:00+00:00")
+    backtesting.detail_data[pair] = detail
+
+    def make_row(ts):
+        # date, O, H, L, C, enter_long, exit_long, enter_short, exit_short,
+        # enter_tag, exit_tag
+        return [ts, 200.0, 201.5, 195.0, 201.0, 1, 0, 0, 0, "ent", "ext"]
+
+    def mask_oracle(ts):
+        """Reference window selection via a boolean mask over the detail frame."""
+        end = ts + backtesting.timeframe_td
+        sub = detail.loc[(detail["date"] >= ts) & (detail["date"] < end)].copy()
+        if len(sub) == 0:
+            return None
+        sub.loc[:, "enter_long"] = 1
+        sub.loc[:, "exit_long"] = 0
+        sub.loc[:, "enter_short"] = 0
+        sub.loc[:, "exit_short"] = 0
+        sub.loc[:, "enter_tag"] = "ent"
+        sub.loc[:, "exit_tag"] = "ext"
+        return sub[HEADERS].values.tolist()
+
+    test_times = [
+        pd.Timestamp("2020-01-01 03:00", tz="UTC"),  # before all data -> None
+        pd.Timestamp("2020-01-01 04:00", tz="UTC"),  # aligned to first detail row
+        pd.Timestamp("2020-01-01 05:00", tz="UTC"),  # interior, full 60-row window
+        pd.Timestamp("2020-01-01 06:30", tz="UTC"),  # interior, offset from data start
+        pd.Timestamp("2020-01-01 07:30", tz="UTC"),  # straddles end of data (30 rows)
+        pd.Timestamp("2020-01-01 08:00", tz="UTC"),  # exactly at end -> None
+        pd.Timestamp("2020-01-01 09:00", tz="UTC"),  # after all data -> None
+    ]
+    for ts in test_times:
+        assert backtesting.get_detail_data(pair, make_row(ts)) == mask_oracle(ts)
+
+    # Boundary: a candle whose date == exit_candle_end must be excluded.
+    res = backtesting.get_detail_data(pair, make_row(pd.Timestamp("2020-01-01 04:00", tz="UTC")))
+    assert res is not None
+    assert len(res) == 60
+    assert res[-1][0] == pd.Timestamp("2020-01-01 04:59", tz="UTC")  # not 05:00
+    # Signal columns are taken from the row, not the detail frame.
+    assert res[0][HEADERS.index("enter_long")] == 1
+    assert res[0][HEADERS.index("enter_tag")] == "ent"
+
+
 def test_backtest_one(default_conf, mocker, testdatadir) -> None:
     default_conf["use_exit_signal"] = False
     default_conf["max_open_trades"] = 10
+    default_conf["runmode"] = RunMode.BACKTEST
 
     patch_exchange(mocker)
     mocker.patch(f"{EXMS}.get_min_pair_stake_amount", return_value=0.00001)
     mocker.patch(f"{EXMS}.get_max_pair_stake_amount", return_value=float("inf"))
+    mocker.patch(f"{EXMS}.get_pair_base_currency", lambda _, x: x.split("/")[0])
     backtesting = Backtesting(default_conf)
     backtesting._set_strategy(backtesting.strategylist[0])
     pair = "UNITTEST/BTC"
@@ -858,6 +921,9 @@ def test_backtest_one(default_conf, mocker, testdatadir) -> None:
             "funding_fees": [0.0, 0.0],
         }
     )
+    # TODO: pandas3 - create correctly above ?!?
+    expected["open_date"] = expected["open_date"].astype("datetime64[ms, UTC]")
+    expected["close_date"] = expected["close_date"].astype("datetime64[ms, UTC]")
     pd.testing.assert_frame_equal(results, expected)
     assert "orders" in results.columns
     data_pair = processed[pair]
@@ -875,13 +941,23 @@ def test_backtest_one(default_conf, mocker, testdatadir) -> None:
             ln1.iloc[0]["low"], 6
         ) < round(t["close_rate"], 6) < round(ln1.iloc[0]["high"], 6)
 
+    wallet_summary = result["wallet_summary"]
+    assert isinstance(wallet_summary, pd.DataFrame)
+    assert len(wallet_summary) == 255
+    unique_currencies = wallet_summary["currency"].value_counts()
+    assert unique_currencies["BTC"] == 200
+    assert unique_currencies["UNITTEST"] == 55
+
 
 @pytest.mark.parametrize("use_detail", [True, False])
 def test_backtest_one_detail(default_conf_usdt, mocker, testdatadir, use_detail) -> None:
     default_conf_usdt["use_exit_signal"] = False
+    default_conf_usdt["runmode"] = RunMode.BACKTEST
     patch_exchange(mocker)
     mocker.patch(f"{EXMS}.get_min_pair_stake_amount", return_value=0.00001)
     mocker.patch(f"{EXMS}.get_max_pair_stake_amount", return_value=float("inf"))
+    mocker.patch(f"{EXMS}.get_pair_base_currency", lambda _, x: x.split("/")[0])
+
     default_conf_usdt["unfilledtimeout"] = {
         "entry": 11,
         "exit": 30,
@@ -968,6 +1044,12 @@ def test_backtest_one_detail(default_conf_usdt, mocker, testdatadir, use_detail)
         )
 
     assert late_entry > 0
+    wallet_summary = result["wallet_summary"]
+    assert isinstance(wallet_summary, pd.DataFrame)
+    assert len(wallet_summary) == 591 if use_detail else 597
+    unique_currencies = wallet_summary["currency"].value_counts()
+    assert unique_currencies["USDT"] == 576
+    assert unique_currencies["XRP"] == 15 if use_detail else 21
 
 
 @pytest.mark.parametrize(
@@ -2795,3 +2877,84 @@ def test_time_pair_generator_open_trades_first(mocker, default_conf, dynamic_pai
         assert processed_pairs == ["XRP/BTC", "NEO/BTC", "ETH/BTC", "LTC/BTC"]
     else:
         assert processed_pairs == ["XRP/BTC", "NEO/BTC", "LTC/BTC", "ETH/BTC"]
+
+
+def test_time_pair_generator_dynamic_pairlist_no_stale_replay(mocker, default_conf):
+    patch_exchange(mocker)
+    default_conf["enable_dynamic_pairlist"] = True
+    backtesting = Backtesting(default_conf)
+    backtesting._set_strategy(backtesting.strategylist[0])
+
+    n = 10
+    tf = backtesting.timeframe_td
+    start = datetime(2025, 1, 1, tzinfo=UTC)
+    # data[pair][0] is dated start + tf
+    candles = generate_test_data_raw(backtesting.timeframe, n, start=start)
+    rows = [
+        [start + tf * (i + 1), c[1], c[2], c[3], c[4], 0, 0, 0, 0, None, None]
+        for i, c in enumerate(candles)
+    ]
+    pairs = ["A/BTC", "B/BTC"]
+    data = {p: list(rows) for p in pairs}
+
+    # B/BTC absent for candles 3-5, then re-enters
+    absent = {3, 4, 5}
+    calls = {"n": -1}
+
+    def mock_refresh(self, **kwargs):
+        calls["n"] += 1
+        self._whitelist = ["A/BTC"] if calls["n"] in absent else ["A/BTC", "B/BTC"]
+
+    mocker.patch("freqtrade.plugins.pairlistmanager.PairListManager.refresh_pairlist", mock_refresh)
+
+    end = start + tf * n
+    a_rows, b_rows = [], []
+    for current_time, pair, r, _, _ in backtesting.time_pair_generator(start, end, pairs, data):
+        (a_rows if pair == "A/BTC" else b_rows).append((current_time, r[DATE_IDX]))
+
+    # Every row is dated at its candle, and B resumes with no replay on re-entry
+    assert all(ct == d for ct, d in a_rows)
+    assert len(a_rows) == n
+    b_present = [a for a in a_rows if a[0] not in {start + tf * (i + 1) for i in absent}]
+    assert b_rows == b_present
+
+
+def test_time_pair_generator_dynamic_pairlist_real_filters(mocker, default_conf):
+    patch_exchange(mocker)
+    pairs = ["ETH/BTC", "LTC/BTC", "XRP/BTC", "NEO/BTC", "ADA/BTC", "DASH/BTC"]
+    default_conf["exchange"]["pair_whitelist"] = pairs
+    default_conf["enable_dynamic_pairlist"] = True
+    # Rotates the active 2 pairs each candle, so pairs leave and re-enter (seeded)
+    default_conf["pairlists"] = [
+        {"method": "StaticPairList"},
+        {"method": "ShuffleFilter", "seed": 42, "shuffle_frequency": "iteration"},
+        {"method": "OffsetFilter", "number_assets": 2},
+    ]
+    backtesting = Backtesting(default_conf)
+    backtesting._set_strategy(backtesting.strategylist[0])
+    backtesting.available_pairs = list(pairs)
+
+    n = 20
+    tf = backtesting.timeframe_td
+    start = datetime(2025, 1, 1, tzinfo=UTC)
+    grid = [start + tf * (i + 1) for i in range(n)]
+
+    def row(t):
+        return [t, 1.0, 1.1, 0.9, 1.0, 0, 0, 0, 0, None, None]
+
+    data = {p: [row(t) for t in grid] for p in pairs}
+    end = start + tf * n
+
+    present_at: dict = {}
+    for current_time, pair, r, _, _ in backtesting.time_pair_generator(start, end, pairs, data):
+        assert r[DATE_IDX] == current_time
+        present_at.setdefault(pair, []).append(current_time)
+
+    # Confirm the rotation drops and re-adds a pair, so re-entry was exercised
+    candles = sorted({c for cs in present_at.values() for c in cs})
+    reentered = [
+        p
+        for p, cs in present_at.items()
+        if any(c not in cs for c in candles[candles.index(cs[0]) : candles.index(cs[-1])])
+    ]
+    assert reentered

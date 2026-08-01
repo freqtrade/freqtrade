@@ -1,11 +1,9 @@
 """Kraken exchange subclass"""
 
 import logging
-from datetime import datetime
 from typing import Any
 
 import ccxt
-from pandas import DataFrame
 
 from freqtrade.constants import BuySell
 from freqtrade.enums import MarginMode, TradingMode
@@ -40,7 +38,6 @@ class Kraken(Exchange):
     _supported_trading_mode_margin_pairs: list[tuple[TradingMode, MarginMode]] = [
         (TradingMode.SPOT, MarginMode.NONE),
         # (TradingMode.MARGIN, MarginMode.CROSS),
-        # (TradingMode.FUTURES, MarginMode.CROSS)
     ]
 
     def market_is_tradable(self, market: dict[str, Any]) -> bool:
@@ -114,18 +111,6 @@ class Kraken(Exchange):
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
 
-    def _set_leverage(
-        self,
-        leverage: float,
-        pair: str | None = None,
-        accept_fail: bool = False,
-    ):
-        """
-        Kraken set's the leverage as an option in the order object, so we need to
-        add it to params
-        """
-        return
-
     def _get_params(
         self,
         side: BuySell,
@@ -147,41 +132,6 @@ class Kraken(Exchange):
             params.pop("timeInForce", None)
             params["postOnly"] = True
         return params
-
-    def calculate_funding_fees(
-        self,
-        df: DataFrame,
-        amount: float,
-        is_short: bool,
-        open_date: datetime,
-        close_date: datetime,
-        time_in_ratio: float | None = None,
-    ) -> float:
-        """
-        # ! This method will always error when run by Freqtrade because time_in_ratio is never
-        # ! passed to _get_funding_fee. For kraken futures to work in dry run and backtesting
-        # ! functionality must be added that passes the parameter time_in_ratio to
-        # ! _get_funding_fee when using Kraken
-        calculates the sum of all funding fees that occurred for a pair during a futures trade
-        :param df: Dataframe containing combined funding and mark rates
-                   as `open_fund` and `open_mark`.
-        :param amount: The quantity of the trade
-        :param is_short: trade direction
-        :param open_date: The date and time that the trade started
-        :param close_date: The date and time that the trade ended
-        :param time_in_ratio: Not used by most exchange classes
-        """
-        if not time_in_ratio:
-            raise OperationalException(
-                f"time_in_ratio is required for {self.name}._get_funding_fee"
-            )
-        fees: float = 0
-
-        if not df.empty:
-            df = df[(df["date"] >= open_date) & (df["date"] <= close_date)]
-            fees = sum(df["open_fund"] * df["open_mark"] * amount * time_in_ratio)
-
-        return fees if is_short else -fees
 
     def _get_trade_pagination_next_value(self, trades: list[dict]):
         """

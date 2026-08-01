@@ -1045,6 +1045,22 @@ def test__validate_orderflow(default_conf) -> None:
     validate_config_consistency(conf)
 
 
+def test__validate_demo_trading(default_conf_usdt) -> None:
+    conf = deepcopy(default_conf_usdt)
+    validate_config_consistency(conf)
+    # explicitly set dry-run to clarify intent
+    conf["dry_run"] = True
+    conf["exchange"]["demo_trading"] = True
+
+    with pytest.raises(
+        ConfigurationError,
+        match=r"Demo trading cannot be used together with dry_run\.",
+    ):
+        validate_config_consistency(conf)
+    conf["dry_run"] = False
+    validate_config_consistency(conf)
+
+
 def test_validate_edge_removal(default_conf):
     default_conf["edge"] = {
         "enabled": True,

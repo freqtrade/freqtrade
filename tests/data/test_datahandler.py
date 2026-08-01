@@ -1,13 +1,14 @@
 # pragma pylint: disable=missing-docstring, protected-access, C0103
 
 import re
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
 from pandas import DataFrame, Timestamp
 from pandas.testing import assert_frame_equal
+from pyarrow import ArrowNotImplementedError
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import AVAILABLE_DATAHANDLERS
@@ -362,7 +363,12 @@ def test_generic_datahandler_ohlcv_load_and_resave(
     ohlcv = dh1.ohlcv_load("UNITTEST/NONEXIST", timeframe, candle_type=candle_type)
     assert ohlcv.empty
 
-    # Try loading a file that exists but errors
+    # Try loading a file that exists but errors - Arrow fails, so the pandas reader is
+    # used as fallback, which errors as well.
+    mocker.patch(
+        "freqtrade.data.history.datahandlers.arrowdatahandler.dataset.dataset",
+        side_effect=ValueError("Test"),
+    )
     mocker.patch(
         "freqtrade.data.history.datahandlers.featherdatahandler.read_feather",
         side_effect=Exception("Test"),
@@ -524,17 +530,15 @@ def test_feather_trades_timerange_filter_subset(feather_dh, trades_full, timeran
     assert len(subset) < len(trades_full)
 
 
+@pytest.mark.parametrize("exception", [ValueError("fail"), ArrowNotImplementedError("fail")])
 def test_feather_trades_timerange_pushdown_fallback(
-    feather_dh, trades_full, timerange_mid, monkeypatch, caplog
+    feather_dh, trades_full, timerange_mid, mocker, caplog, exception
 ):
     # Pushdown filter should fail, so fallback should load the entire file
-    import freqtrade.data.history.datahandlers.featherdatahandler as fdh
-
-    def raise_err(*args, **kwargs):
-        raise ValueError("fail")
-
-    # Mock the dataset loading to raise an error
-    monkeypatch.setattr(fdh.dataset, "dataset", raise_err)
+    mocker.patch(
+        "freqtrade.data.history.datahandlers.arrowdatahandler.dataset.dataset",
+        side_effect=exception,
+    )
 
     with caplog.at_level("WARNING"):
         out = feather_dh.trades_load("XRP/ETH", TradingMode.SPOT, timerange=timerange_mid)
@@ -581,17 +585,17 @@ def test_feather_trades_timerange_fully_open(feather_dh, trades_full):
     )
 
 
-def test_feather_build_arrow_time_filter(feather_dh):
+def test_feather_build_arrow_trades_filter(feather_dh):
     # None timerange should return None
-    assert feather_dh._build_arrow_time_filter(None) is None
+    assert feather_dh._build_arrow_trades_filter(None) is None
 
     # Fully open (both bounds 0) should return None
     tr_fully_open = TimeRange(None, None, startts=0, stopts=0)
-    assert feather_dh._build_arrow_time_filter(tr_fully_open) is None
+    assert feather_dh._build_arrow_trades_filter(tr_fully_open) is None
 
     # Open start (startts=0) should return stop filter only
     tr_open_start = TimeRange(None, "date", startts=0, stopts=1000)
-    filter_open_start = feather_dh._build_arrow_time_filter(tr_open_start)
+    filter_open_start = feather_dh._build_arrow_trades_filter(tr_open_start)
     assert filter_open_start is not None
     # Should be a single expression (timestamp <= stopts)
     assert str(filter_open_start).count("<=") == 1
@@ -599,7 +603,7 @@ def test_feather_build_arrow_time_filter(feather_dh):
 
     # Open end (stopts=0) should return start filter only
     tr_open_end = TimeRange("date", None, startts=500, stopts=0)
-    filter_open_end = feather_dh._build_arrow_time_filter(tr_open_end)
+    filter_open_end = feather_dh._build_arrow_trades_filter(tr_open_end)
     assert filter_open_end is not None
     # Should be a single expression (timestamp >= startts)
     assert str(filter_open_end).count(">=") == 1
@@ -607,9 +611,130 @@ def test_feather_build_arrow_time_filter(feather_dh):
 
     # Closed range should return combined filter
     tr_closed = TimeRange("date", "date", startts=500, stopts=1000)
-    filter_closed = feather_dh._build_arrow_time_filter(tr_closed)
+    filter_closed = feather_dh._build_arrow_trades_filter(tr_closed)
     assert filter_closed is not None
     # Should contain both >= and <= (combined with &)
     filter_str = str(filter_closed)
     assert ">=" in filter_str
     assert "<=" in filter_str
+
+
+def test_build_arrow_ohlcv_filter(feather_dh):
+    # No timerange should return None
+    assert feather_dh._build_arrow_ohlcv_filter(None, "5m") is None
+    # Unbounded timerange should return None
+    assert feather_dh._build_arrow_ohlcv_filter(TimeRange(), "5m") is None
+
+    # Open start should return stop filter only - widened by one candle
+    tr_open_start = TimeRange.parse_timerange("-20260119")
+    filter_open_start = str(feather_dh._build_arrow_ohlcv_filter(tr_open_start, "5m"))
+    assert filter_open_start.count("<=") == 1
+    assert filter_open_start.count(">=") == 0
+    assert "2026-01-19 00:05:00" in filter_open_start
+
+    # Open end should return start filter only - widened by one candle
+    tr_open_end = TimeRange.parse_timerange("20260115-")
+    filter_open_end = str(feather_dh._build_arrow_ohlcv_filter(tr_open_end, "5m"))
+    assert filter_open_end.count(">=") == 1
+    assert filter_open_end.count("<=") == 0
+    assert "2026-01-14 23:55:00" in filter_open_end
+
+    # Closed range should combine both, widened by one candle on each side
+    tr_closed = TimeRange.parse_timerange("20260115-20260119")
+    filter_closed = str(feather_dh._build_arrow_ohlcv_filter(tr_closed, "1h"))
+    assert "2026-01-14 23:00:00" in filter_closed
+    assert "2026-01-19 01:00:00" in filter_closed
+
+
+# UNITTEST/BTC 5m spans 2018-01-10 04:55 to 2018-01-30 04:50.
+@pytest.mark.parametrize("datahandler", ["feather", "parquet"])
+@pytest.mark.parametrize(
+    "timerange,same_warnings",
+    [
+        ("20180115-20180119", True),  # aligned to the candle grid
+        ("-20180119", True),  # open start
+        ("20180115-", True),  # open end
+        ("20180101-20180119", True),  # starts before the available data
+        ("20180115-20180201", True),  # ends after the available data
+        ("20250101-20250201", True),  # no data in range at all
+        ("1516003320-1516348980", True),  # not aligned to the candle grid (08:02 / 08:03)
+        # Starts inside the gap punched below, which is wider than the one candle the bounds
+        # are widened by. The pushdown then sees no candle before the requested start and
+        # warns that the data starts late - a full read, seeing the whole file, does not.
+        ("1516082400-1516233600", False),  # 2018-01-16 06:00 (in the gap) - 2018-01-18
+    ],
+)
+def test_ohlcv_load_pushdown_matches_full_read(
+    testdatadir, tmp_path, datahandler, timerange, same_warnings, mocker, caplog
+):
+    # Pushing the timerange filter into Arrow must not change data or warnings.
+    dh = get_datahandler(tmp_path, datahandler)
+    ohlcv = get_datahandler(testdatadir, "feather")._ohlcv_load("UNITTEST/BTC", "5m", None, "spot")
+    # Drop 2018-01-16 00:00 - 12:00, so gaps (exchange downtime) are covered as well.
+    gap = (ohlcv["date"] >= Timestamp("2018-01-16", tz="UTC")) & (
+        ohlcv["date"] < Timestamp("2018-01-16 12:00", tz="UTC")
+    )
+    dh.ohlcv_store("UNITTEST/BTC", "5m", ohlcv[~gap], "spot")
+
+    tr = TimeRange.parse_timerange(timerange)
+
+    caplog.clear()
+    pushdown = dh.ohlcv_load("UNITTEST/BTC", "5m", "spot", timerange=tr)
+    pushdown_logs = sorted(caplog.messages)
+
+    # Disable the pushdown - the full file is read and trimmed by ohlcv_load instead.
+    caplog.clear()
+    mocker.patch.object(dh, "_build_arrow_ohlcv_filter", return_value=None)
+    full_read = dh.ohlcv_load(
+        "UNITTEST/BTC", "5m", "spot", timerange=TimeRange.parse_timerange(timerange)
+    )
+
+    assert_frame_equal(full_read, pushdown, check_exact=True)
+    if same_warnings:
+        assert sorted(caplog.messages) == pushdown_logs
+
+
+@pytest.mark.parametrize("datahandler", ["feather", "parquet"])
+def test_ohlcv_load_pushdown_limits_read(testdatadir, tmp_path, datahandler):
+    # The timerange must actually reach Arrow - _ohlcv_load does not trim by itself.
+    dh = get_datahandler(tmp_path, datahandler)
+    ohlcv = get_datahandler(testdatadir, "feather")._ohlcv_load("UNITTEST/BTC", "5m", None, "spot")
+    dh.ohlcv_store("UNITTEST/BTC", "5m", ohlcv, "spot")
+
+    timerange = TimeRange.parse_timerange("20180115-20180119")
+    full = dh._ohlcv_load("UNITTEST/BTC", "5m", None, "spot")
+    limited = dh._ohlcv_load("UNITTEST/BTC", "5m", timerange, "spot")
+
+    assert len(limited) < len(full)
+    # Bounds are widened by exactly one candle - ohlcv_load trims the rest.
+    assert limited.iloc[0]["date"] == timerange.startdt - timedelta(minutes=5)
+    assert limited.iloc[-1]["date"] == timerange.stopdt + timedelta(minutes=5)
+
+
+@pytest.mark.parametrize(
+    "exception",
+    [
+        ValueError("fail"),
+        # Arrow raises this when a filter can't be bound to the column - e.g. a tz-aware
+        # bound against a tz-naive date column. It's a NotImplementedError, not a
+        # ValueError, so it only reaches the fallback via ArrowException.
+        ArrowNotImplementedError("fail"),
+    ],
+)
+def test_ohlcv_load_pushdown_fallback(feather_dh, mocker, caplog, exception):
+    # If Arrow filtering is unavailable, the whole file is read (and trimmed later).
+    tr = TimeRange.parse_timerange("20180115-20180119")
+    expected = feather_dh.ohlcv_load("UNITTEST/BTC", "5m", "spot", timerange=tr)
+
+    mocker.patch(
+        "freqtrade.data.history.datahandlers.arrowdatahandler.dataset.dataset",
+        side_effect=exception,
+    )
+
+    with caplog.at_level("WARNING"):
+        out = feather_dh.ohlcv_load(
+            "UNITTEST/BTC", "5m", "spot", timerange=TimeRange.parse_timerange("20180115-20180119")
+        )
+
+    assert log_has_re("Unable to use Arrow filtering, loading entire ohlcv file.*", caplog)
+    assert_frame_equal(expected, out, check_exact=True)

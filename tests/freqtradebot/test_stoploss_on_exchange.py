@@ -47,7 +47,7 @@ def test_add_stoploss_on_exchange(mocker, default_conf_usdt, limit_order, is_sho
 
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
     trade.is_open = True
@@ -88,7 +88,7 @@ def test_handle_stoploss_on_exchange(
     # should get the stoploss order id immediately
     # and should return false as no trade actually happened
 
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
     trade = Trade.session.scalars(select(Trade)).first()
     assert trade.is_short == is_short
     assert trade.is_open
@@ -215,7 +215,7 @@ def test_handle_stoploss_on_exchange_emergency(
     freqtrade = FreqtradeBot(default_conf_usdt)
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
     trade = Trade.session.scalars(select(Trade)).first()
     assert trade.is_short == is_short
     assert trade.is_open
@@ -293,7 +293,7 @@ def test_handle_stoploss_on_exchange_partial(
     freqtrade = FreqtradeBot(default_conf_usdt)
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
     trade.is_open = True
@@ -353,7 +353,7 @@ def test_handle_stoploss_on_exchange_partial_cancel_here(
     freqtrade = FreqtradeBot(default_conf_usdt)
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
     trade.is_open = True
@@ -434,7 +434,7 @@ def test_handle_sle_cancel_cant_recreate(
     )
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
     trade = Trade.session.scalars(select(Trade)).first()
     assert trade.is_short == is_short
     trade.is_open = True
@@ -486,7 +486,7 @@ def test_create_stoploss_order_invalid_order(
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
     freqtrade.strategy.order_types["stoploss_on_exchange"] = True
 
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
     caplog.clear()
@@ -538,7 +538,7 @@ def test_create_stoploss_order_insufficient_funds(
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
     freqtrade.strategy.order_types["stoploss_on_exchange"] = True
 
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
     caplog.clear()
@@ -623,7 +623,7 @@ def test_handle_stoploss_on_exchange_trailing(
 
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
     trade.is_open = True
@@ -778,7 +778,7 @@ def test_handle_stoploss_on_exchange_trailing_error(
     # setting stoploss_on_exchange_interval to 60 seconds
     freqtrade.strategy.order_types["stoploss_on_exchange_interval"] = 60
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
     trade.is_open = True
@@ -901,7 +901,7 @@ def test_handle_stoploss_on_exchange_custom_stop(
 
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
     trade.is_open = True
@@ -1020,7 +1020,7 @@ def test_execute_trade_exit_down_stoploss_on_exchange_dry_run(
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
     # Create some test data
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
 
     trade = Trade.session.scalars(select(Trade)).first()
     assert trade.is_short == is_short
@@ -1097,11 +1097,14 @@ def test_execute_trade_exit_sloe_cancel_exception(
         fetch_ticker=ticker_usdt,
         get_fee=fee,
         create_order=create_order_mock,
+        fetch_order=MagicMock(
+            return_value={"id": "12345554", "side": "buy", "status": "canceled", "filled": 0.0}
+        ),
     )
 
     freqtrade.strategy.order_types["stoploss_on_exchange"] = True
     patch_get_signal(freqtrade)
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
 
     trade = Trade.session.scalars(select(Trade)).first()
     PairLock.session = MagicMock()
@@ -1156,7 +1159,7 @@ def test_execute_trade_exit_with_stoploss_on_exchange(
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
 
     # Create some test data
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
 
     trade = Trade.session.scalars(select(Trade)).first()
     trade.is_short = is_short
@@ -1207,7 +1210,7 @@ def test_may_execute_trade_exit_after_stoploss_on_exchange_hit(
     patch_get_signal(freqtrade, enter_long=not is_short, enter_short=is_short)
 
     # Create some test data
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
     freqtrade.manage_open_orders()
     trade = Trade.session.scalars(select(Trade)).first()
     trades = [trade]

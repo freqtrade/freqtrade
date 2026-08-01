@@ -1,15 +1,20 @@
 # pragma pylint: disable=missing-docstring,C0103
 
 from copy import deepcopy
+from datetime import UTC, datetime
+from fractions import Fraction
+from io import StringIO
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import numpy as np
 import pandas as pd
 import pytest
 
 from freqtrade.misc import (
     dataframe_to_json,
     deep_merge_dicts,
+    dump_json_to_file,
     file_dump_json,
     file_load_json,
     is_file_in_dir,
@@ -23,14 +28,46 @@ from freqtrade.misc import (
 )
 
 
+def test_dump_json_to_file_non_finite_values() -> None:
+    buffer = StringIO()
+    data = {
+        "finite": 1.23,
+        "numpy_finite": [np.float32(1.5), np.int64(2)],
+        "nested": [float("nan"), (np.float32("inf"), np.float64("-inf"))],
+    }
+
+    dump_json_to_file(buffer, data)
+
+    assert buffer.getvalue() == (
+        '{"finite":1.23,"numpy_finite":[1.5,2],"nested":[null,[null,null]]}'
+    )
+
+
+def test_dump_json_to_file_large_fraction() -> None:
+    buffer = StringIO()
+    fraction = Fraction(10**1000, 3)
+
+    dump_json_to_file(buffer, {"fraction": fraction})
+
+    assert buffer.getvalue() == f'{{"fraction":"{fraction}"}}'
+
+
+def test_dump_json_to_file_datetime_format() -> None:
+    buffer = StringIO()
+
+    dump_json_to_file(buffer, {"date": datetime(2026, 7, 11, 1, 2, 3, tzinfo=UTC)})
+
+    assert buffer.getvalue() == '{"date":"2026-07-11T01:02:03+00:00"}'
+
+
 def test_file_dump_json(mocker) -> None:
     file_open = mocker.patch("freqtrade.misc.Path.open", MagicMock())
-    json_dump = mocker.patch("rapidjson.dump", MagicMock())
+    json_dump = mocker.patch("orjson.dumps", MagicMock(return_value=b"[1,2,3]"))
     file_dump_json(Path("somefile"), [1, 2, 3])
     assert file_open.call_count == 1
     assert json_dump.call_count == 1
     file_open = mocker.patch("freqtrade.misc.gzip.open", MagicMock())
-    json_dump = mocker.patch("rapidjson.dump", MagicMock())
+    json_dump = mocker.patch("orjson.dumps", MagicMock(return_value=b"[1,2,3]"))
     file_dump_json(Path("somefile"), [1, 2, 3], True)
     assert file_open.call_count == 1
     assert json_dump.call_count == 1
@@ -205,6 +242,26 @@ def test_plural() -> None:
             "mysql+pymysql://user:*****@some_mariadb/dbname?charset=utf8mb4",
         ),
         (
+            "postgresql+psycopg://scott:p%40ss@host/dbname",
+            "postgresql+psycopg://scott:*****@host/dbname",
+        ),
+        (
+            "postgresql+psycopg://scott:pa:ss@host/dbname",
+            "postgresql+psycopg://scott:*****@host/dbname",
+        ),
+        (
+            "postgresql+psycopg://scott:scott@[::1]:5432/dbname",
+            "postgresql+psycopg://scott:*****@[::1]:5432/dbname",
+        ),
+        (
+            "postgresql+psycopg://scott@host/dbname",
+            "postgresql+psycopg://scott@host/dbname",
+        ),
+        (
+            "postgresql+psycopg://host/dbname",
+            "postgresql+psycopg://host/dbname",
+        ),
+        (
             "sqlite:////freqtrade/user_data/tradesv3.sqlite",
             "sqlite:////freqtrade/user_data/tradesv3.sqlite",
         ),
@@ -230,7 +287,7 @@ def test_deep_merge_dicts():
 def test_dataframe_json(ohlcv_history):
     from pandas.testing import assert_frame_equal
 
-    json = dataframe_to_json(ohlcv_history)
+    json = dataframe_to_json(ohlcv_history.copy())
     dataframe = json_to_dataframe(json)
 
     assert list(ohlcv_history.columns) == list(dataframe.columns)
@@ -238,6 +295,6 @@ def test_dataframe_json(ohlcv_history):
 
     assert_frame_equal(ohlcv_history, dataframe)
     ohlcv_history.at[1, "date"] = pd.NaT
-    json = dataframe_to_json(ohlcv_history)
+    json = dataframe_to_json(ohlcv_history.copy())
 
     dataframe = json_to_dataframe(json)

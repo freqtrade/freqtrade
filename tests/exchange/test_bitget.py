@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, PropertyMock
 import pytest
 
 from freqtrade.enums import CandleType, MarginMode, RunMode, TradingMode
-from freqtrade.exceptions import OperationalException, RetryableOrderError
+from freqtrade.exceptions import InvalidOrderException, OperationalException, RetryableOrderError
 from freqtrade.exchange.common import API_RETRY_COUNT
 from freqtrade.util import dt_now, dt_ts, dt_utc
 from tests.conftest import EXMS, get_patched_exchange
@@ -75,6 +75,41 @@ def test_fetch_stoploss_order_bitget_exceptions(default_conf_usdt, mocker):
         order_id="12345",
         pair="ETH/USDT",
     )
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_cancel_stoploss_order_bitget(default_conf_usdt, mocker):
+    default_conf_usdt["dry_run"] = False
+    api_mock = MagicMock()
+
+    exchange = get_patched_exchange(mocker, default_conf_usdt, api_mock, exchange="bitget")
+
+    # Spot scenario
+    exchange.cancel_order = MagicMock(return_value={"id": "1234"})
+    assert exchange.cancel_stoploss_order("1234", "ETH/USDT", {}) == {"id": "1234"}
+    assert exchange.cancel_order.call_count == 1
+    exchange.cancel_order.assert_called_once_with("1234", "ETH/USDT", {"stop": True})
+
+    # Futures scenario
+    default_conf_usdt["trading_mode"] = TradingMode.FUTURES
+    default_conf_usdt["margin_mode"] = MarginMode.ISOLATED
+    exchange = get_patched_exchange(mocker, default_conf_usdt, api_mock, exchange="bitget")
+    exchange.cancel_order = MagicMock(return_value={"id": "1234"})
+    assert exchange.cancel_stoploss_order("1234", "ETH/USDT:USDT", {}) == {"id": "1234"}
+    assert exchange.cancel_order.call_count == 1
+    exchange.cancel_order.assert_called_once_with(
+        "1234", "ETH/USDT:USDT", {"stop": True, "planType": "pos_loss"}
+    )
+
+    exchange.cancel_order = MagicMock(
+        side_effect=[InvalidOrderException("API error"), {"id": "1234"}]
+    )
+    assert exchange.cancel_stoploss_order("1234", "ETH/USDT:USDT", {}) == {"id": "1234"}
+    assert exchange.cancel_order.call_count == 2
+    exchange.cancel_order.assert_any_call(
+        "1234", "ETH/USDT:USDT", {"stop": True, "planType": "pos_loss"}
+    )
+    exchange.cancel_order.assert_any_call("1234", "ETH/USDT:USDT", {"stop": True})
 
 
 def test_bitget_ohlcv_candle_limit(mocker, default_conf_usdt):
@@ -183,7 +218,7 @@ def test__lev_prep_bitget(default_conf, mocker):
     exchange = get_patched_exchange(mocker, default_conf, api_mock, exchange="bitget")
     exchange._lev_prep("BTC/USDC:USDC", 3.2, "buy")
 
-    assert api_mock.set_margin_mode.call_count == 0
+    assert api_mock.set_margin_mode.call_count == 1
     assert api_mock.set_leverage.call_count == 1
     api_mock.set_leverage.assert_called_with(symbol="BTC/USDC:USDC", leverage=3.2)
 
@@ -191,7 +226,7 @@ def test__lev_prep_bitget(default_conf, mocker):
 
     exchange._lev_prep("BTC/USDC:USDC", 19.99, "sell")
 
-    assert api_mock.set_margin_mode.call_count == 0
+    assert api_mock.set_margin_mode.call_count == 1
     assert api_mock.set_leverage.call_count == 1
     api_mock.set_leverage.assert_called_with(symbol="BTC/USDC:USDC", leverage=19.99)
 

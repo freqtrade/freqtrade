@@ -106,6 +106,7 @@ Mandatory parameters are marked as **Required** and have to be set in one of the
 | `n_epochs`   | The `n_epochs` parameter is a crucial setting in the PyTorch training loop that determines the number of times the entire training dataset will be used to update the model's parameters. An epoch represents one full pass through the entire training dataset. Overrides `n_steps`. Either `n_epochs` or `n_steps` must be set. <br><br> **Datatype:** int. optional. <br> Default: `10`.
 | `n_steps`    | An alternative way of setting `n_epochs` -  the number of training iterations to run. Iteration here refer to the number of times we call `optimizer.step()`. Ignored if `n_epochs` is set. A simplified version of the function: <br><br> n_epochs = n_steps / (n_obs / batch_size) <br><br> The motivation here is that `n_steps` is easier to optimize and keep stable across different n_obs - the number of data points.  <br> <br> **Datatype:** int. optional. <br> Default: `None`.
 | `batch_size` | The size of the batches to use during training. <br><br> **Datatype:** int. <br> Default: `64`.
+| `early_stopping_patience` | Number of epochs with no improvement in validation loss before training is stopped early. This helps prevent overfitting by halting training when the model stops improving. Set to `0` to disable early stopping. Requires a test/validation split (`test_size > 0`). <br><br> **Datatype:** int. <br> Default: `0` (disabled).
 
 ### Additional parameters
 

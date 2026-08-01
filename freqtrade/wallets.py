@@ -10,8 +10,8 @@ from freqtrade.enums import RunMode, TradingMode
 from freqtrade.exceptions import DependencyException
 from freqtrade.exchange import Exchange
 from freqtrade.misc import safe_value_fallback
-from freqtrade.persistence import LocalTrade, Trade
-from freqtrade.util.datetime_helpers import dt_now
+from freqtrade.persistence import LocalTrade, Trade, WalletHistory
+from freqtrade.util import dt_floor_day, dt_now
 
 
 logger = logging.getLogger(__name__)
@@ -31,6 +31,8 @@ class PositionWallet(NamedTuple):
     leverage: float | None = 0  # Don't use this - it's not guaranteed to be set
     collateral: float = 0
     side: str = "long"
+    # Unrealized PnL as reported by the exchange. Always 0 in dry-run
+    unrealized_pnl: float = 0
 
 
 class Wallets:
@@ -208,15 +210,37 @@ class Wallets:
             if not leverage:
                 trade = Trade.get_trades_proxy(is_open=True, pair=symbol)
                 leverage = trade[0].leverage if trade else None
+            unrealized_pnl = float(position.get("unrealizedPnl") or 0.0)  # type: ignore[arg-type]
             _parsed_positions[symbol] = PositionWallet(
                 symbol,
                 position=size,
                 leverage=leverage,
                 collateral=collateral,
                 side=position["side"],
+                unrealized_pnl=unrealized_pnl,
             )
         self._positions = _parsed_positions
-        self._wallets = _wallets
+        self._wallets = self._strip_unrealized_pnl(_wallets, _parsed_positions)
+
+    def _strip_unrealized_pnl(
+        self, wallets: dict[str, Wallet], positions: dict[str, PositionWallet]
+    ) -> dict[str, Wallet]:
+        """
+        Restore the Wallet.total for exchanges reporting account equity.
+        Their "total" for the stake currency contains the unrealized PnL of open positions,
+        which would otherwise be counted twice - once in the stake balance, and once more in
+        each PositionWallet. Uses the exchange's own unrealized PnL, not a rate-derived
+        estimate.
+        Not necessary for dry run or backtesting, since we control balance.total there.
+        """
+        if not positions or not self._exchange.balance_includes_unrealized_pnl():
+            return wallets
+        upnl = sum(pos.unrealized_pnl for pos in positions.values())
+        stake_wallet = wallets.get(self._stake_currency)
+        if not upnl or stake_wallet is None:
+            return wallets
+        wallets[self._stake_currency] = stake_wallet._replace(total=stake_wallet.total - upnl)
+        return wallets
 
     def update(self, require_update: bool = True) -> None:
         """
@@ -445,3 +469,72 @@ class Wallets:
                 logger.debug(msg)
             else:
                 logger.info(msg)
+
+    def record_wallet_state(self) -> None:
+        """Record daily wallet totals to database"""
+        if self._is_backtest:
+            # only record in live mode.
+            return
+        timestamp = dt_floor_day(dt_now())
+
+        # Record total balances for all currencies
+        wallet_records = []
+        position_collaterals = 0.0
+        open_assets: dict[str, Trade] = {t.safe_base_currency: t for t in Trade.get_open_trades()}
+        for pos in self.get_all_positions().values():
+            base = self._exchange.get_pair_base_currency(pos.symbol)
+            rate = self._exchange.get_conversion_rate(base, self._stake_currency)
+            total_quote = None
+            leverage = pos.leverage or 1.0
+            if rate:
+                # Same formula than in rpc's _rpc_balance
+                total_quote = (
+                    rate * pos.position - pos.collateral * (leverage - 1)
+                    if pos.side == "long"
+                    else pos.collateral * (1 + leverage) - rate * pos.position
+                )
+
+            position_record = WalletHistory(
+                timestamp=timestamp,
+                currency=pos.symbol,
+                quote_currency=self._stake_currency,
+                rate=rate,
+                balance=pos.position,
+                total_quote=total_quote,
+                total_position_value=rate * pos.position if rate else None,
+                collateral=pos.collateral,
+                leverage=leverage,
+                bot_managed=base in open_assets,
+            )
+            position_collaterals += pos.collateral
+            wallet_records.append(position_record)
+
+        for wallet in self.get_all_balances().values():
+            if wallet.total == 0:
+                continue
+            rate = self._exchange.get_conversion_rate(wallet.currency, self._stake_currency)
+            is_bot_managed = (
+                self._stake_currency == wallet.currency or wallet.currency in open_assets
+            )
+            balance = wallet.total - (
+                position_collaterals if wallet.currency == self._stake_currency else 0
+            )
+            total_quote = rate * balance if rate else None
+
+            wallet_record = WalletHistory(
+                timestamp=timestamp,
+                currency=wallet.currency,
+                quote_currency=self._stake_currency,
+                rate=rate,
+                balance=balance,
+                leverage=1.0,
+                total_quote=total_quote,
+                bot_managed=is_bot_managed,
+            )
+            wallet_records.append(wallet_record)
+        try:
+            WalletHistory.session.bulk_save_objects(wallet_records)
+            WalletHistory.session.commit()
+        except Exception as e:
+            WalletHistory.session.rollback()
+            logger.error(f"Error saving wallet balance records: {e}")

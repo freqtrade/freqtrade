@@ -23,9 +23,11 @@ def test_pip_audit_no_vulnerabilities():
     Run pip-audit to check for known security vulnerabilities.
 
     This test will fail if any vulnerabilities are detected in the installed packages.
+    Note: Document ignores here if vulnerabilities are acceptable.
 
-    Note: CVE-2025-53000 (nbconvert Windows vulnerability) is ignored as it only affects
-    Windows platforms and is a known acceptable risk for this project.
+    pygments: CVE-2026-4539 - https://github.com/pygments/pygments/issues/3065
+        not considered a security vulnerability by pygments.
+
     """
     # Get the project root directory
     project_root = Path(__file__).parent.parent
@@ -36,7 +38,7 @@ def test_pip_audit_no_vulnerabilities():
         # "--format=json",
         "--progress-spinner=off",
         "--ignore-vuln",
-        "CVE-2025-53000",
+        "CVE-2026-4539",
         "--skip-editable",
     ]
 

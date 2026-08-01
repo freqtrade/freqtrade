@@ -192,6 +192,14 @@ class FreqaiDataDrawer:
                     self.historic_predictions = cloudpickle.load(fp)
                 logger.warning("FreqAI successfully loaded the backup historical predictions file.")
 
+            for pair_df in self.historic_predictions.values():
+                if "date_pred" in pair_df.columns and pair_df["date_pred"].dtype.kind != "M":
+                    # Predictions written by older versions can carry an object dtype
+                    # date column - convert once at load so downstream merges work.
+                    pair_df["date_pred"] = pd.to_datetime(
+                        pair_df["date_pred"], utc=True
+                    ).dt.as_unit("ms")
+
         else:
             logger.info("Could not find existing historic_predictions, starting from scratch")
 
@@ -293,7 +301,9 @@ class FreqaiDataDrawer:
         # historically made during downtime. The newest pred will get appended later in
         # append_model_predictions)
 
-        new_pred["date_pred"] = dataframe["date"]
+        # pred_df is always 0-indexed and corresponds row-for-row (positionally) to dataframe.
+        # Reset dataframe's index to match, to protect from strategies dropping rows.
+        new_pred["date_pred"] = dataframe["date"].reset_index(drop=True)
         # set everything to nan except date_pred
         columns_to_nan = new_pred.columns.difference(["date_pred", "date"])
         new_pred[columns_to_nan] = None
@@ -351,6 +361,9 @@ class FreqaiDataDrawer:
         columns = self.historic_predictions[pair].columns
 
         zeros_df = pd.DataFrame(np.zeros((1, len(columns))), index=index, columns=columns)
+        # A numeric 0 placeholder would degrade the date column to object dtype
+        # but we want to keep the date column as datetime type.
+        zeros_df["date_pred"] = pd.Series(pd.NaT, index=index, dtype="datetime64[ms, UTC]")
         self.historic_predictions[pair] = pd.concat(
             [self.historic_predictions[pair], zeros_df], ignore_index=True, axis=0
         )
@@ -361,7 +374,7 @@ class FreqaiDataDrawer:
             label_loc = df.columns.get_loc(label)
             pred_label_loc = predictions.columns.get_loc(label)
             df.iloc[-1, label_loc] = predictions.iloc[-1, pred_label_loc]
-            if df[label].dtype == object:
+            if pd.api.types.is_string_dtype(df[label].dtype):
                 continue
             label_mean_loc = df.columns.get_loc(f"{label}_mean")
             label_std_loc = df.columns.get_loc(f"{label}_std")
@@ -403,12 +416,27 @@ class FreqaiDataDrawer:
         """
         Attach the return values to the strat dataframe
         :param dataframe: DataFrame = strategy dataframe
-        :return: DataFrame = strat dataframe with return values attached
+        :return: DataFrame = strategy dataframe with return values attached
         """
         df = self.model_return_values[pair]
         to_keep = [col for col in dataframe.columns if not col.startswith("&")]
-        dataframe = pd.concat([dataframe[to_keep], df], axis=1)
-        return dataframe
+        if df["date_pred"].dtype.kind != "M":
+            # Fallback - object dtype dates are normally converted when restoring from
+            # disk, but pandas refuses to merge on them, so guard here as well.
+            df["date_pred"] = pd.to_datetime(df["date_pred"], utc=True).dt.as_unit("ms")
+        # Merge on the candle date (not on the index) to ensure alignment in case of bad
+        # strategy handling like dropping candles or reindexing.
+        dataframe_new = pd.merge(
+            dataframe[to_keep], df, how="left", left_on="date", right_on="date_pred", validate="m:1"
+        )
+        unmatched = int(dataframe_new["date_pred"].isna().sum())
+        if unmatched:
+            logger.warning(
+                f"{unmatched} candle(s) could not be matched to historic predictions for "
+                f"{pair} - their return values are set to NaN. This can happen after "
+                "extended downtime, or if the strategy modified the dates of the dataframe."
+            )
+        return dataframe_new
 
     def return_null_values_to_strategy(self, dataframe: DataFrame, dk: FreqaiDataKitchen) -> None:
         """
@@ -614,9 +642,13 @@ class FreqaiDataDrawer:
         elif self.model_type == "pytorch":
             import torch
 
-            zipfile = torch.load(dk.data_path / f"{dk.model_filename}_model.zip")
-            model = zipfile["pytrainer"]
-            model = model.load_from_checkpoint(zipfile)
+            zipfile = torch.load(
+                dk.data_path / f"{dk.model_filename}_model.zip",
+                weights_only=False,
+            )
+            # weights_only is necessary due to pytrainer being a serialized python object.
+            _trainer = zipfile["pytrainer"]
+            model = _trainer.load_from_checkpoint(zipfile)
 
         if not model:
             raise OperationalException(

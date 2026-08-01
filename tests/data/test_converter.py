@@ -207,10 +207,13 @@ def test_ohlcv_to_dataframe_multi(timeframe):
 
     data1 = data.copy()
     if timeframe in ("1M", "3M", "1y"):
-        data1.loc[:, "date"] = data1.loc[:, "date"] + pd.to_timedelta("1w")
+        data1.loc[:, "date"] = data1.loc[:, "date"] + pd.to_timedelta("1W")
     else:
         # Shift by half a timeframe
-        data1.loc[:, "date"] = data1.loc[:, "date"] + (pd.to_timedelta(timeframe) / 2)
+        timeframe_f = (
+            timeframe.upper() if timeframe.endswith("d") or timeframe.endswith("w") else timeframe
+        )
+        data1.loc[:, "date"] = data1.loc[:, "date"] + (pd.to_timedelta(timeframe_f) / 2)
     df2 = ohlcv_to_dataframe(data1, timeframe, "UNITTEST/USDT")
 
     assert len(df2) == len(data) - 1

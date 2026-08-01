@@ -91,7 +91,7 @@ def test_may_execute_exit_stoploss_on_exchange_multi(default_conf, ticker, fee, 
     patch_get_signal(freqtrade)
 
     # Create some test data
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(3)
     assert freqtrade.strategy.confirm_trade_entry.call_count == 3
     freqtrade.strategy.confirm_trade_entry.reset_mock()
     assert freqtrade.strategy.confirm_trade_exit.call_count == 0
@@ -183,7 +183,7 @@ def test_forcebuy_last_unlimited(default_conf, ticker, fee, mocker, balance_rati
     patch_get_signal(freqtrade)
 
     # Create 4 trades
-    n = freqtrade.enter_positions()
+    n = freqtrade.enter_positions(5)
     assert n == 4
 
     trades = Trade.session.scalars(select(Trade)).all()
@@ -229,7 +229,7 @@ def test_dca_buying(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     )
 
     patch_get_signal(freqtrade)
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
 
     assert len(Trade.get_trades().all()) == 1
     trade = Trade.get_trades().first()
@@ -300,7 +300,7 @@ def test_dca_short(default_conf_usdt, ticker_usdt, fee, mocker) -> None:
     )
 
     patch_get_signal(freqtrade, enter_long=False, enter_short=True)
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
 
     assert len(Trade.get_trades().all()) == 1
     trade = Trade.get_trades().first()
@@ -381,7 +381,7 @@ def test_dca_order_adjust(default_conf_usdt, ticker_usdt, leverage, fee, mocker)
     freqtrade.strategy.leverage = MagicMock(return_value=leverage)
     freqtrade.strategy.minimal_roi = {0: 0.2}
 
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
 
     assert len(Trade.get_trades().all()) == 1
     trade: Trade = Trade.get_trades().first()
@@ -544,7 +544,7 @@ def test_dca_order_adjust_entry_replace_fails(
     # no order fills.
     mocker.patch(f"{EXMS}._dry_is_price_crossed", side_effect=[False, True])
     patch_get_signal(freqtrade, enter_short=is_short, enter_long=not is_short)
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(2)
 
     trades = Trade.session.scalars(
         select(Trade)
@@ -629,7 +629,7 @@ def test_dca_exiting(default_conf_usdt, ticker_usdt, fee, mocker, caplog, levera
 
     patch_get_signal(freqtrade)
     freqtrade.strategy.leverage = MagicMock(return_value=leverage)
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
 
     assert len(Trade.get_trades().all()) == 1
     trade = Trade.get_trades().first()
@@ -754,7 +754,7 @@ def test_dca_handle_similar_open_order(
     freqtrade.strategy.minimal_roi = {0: 0.2}
 
     # Create trade and initial entry order
-    freqtrade.enter_positions()
+    freqtrade.enter_positions(1)
 
     assert len(Trade.get_trades().all()) == 1
     trade: Trade = Trade.get_trades().first()

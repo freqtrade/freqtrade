@@ -229,7 +229,7 @@ def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame
 
 Out of the box, freqtrade installs the following technical libraries:
 
-- [ta-lib](https://ta-lib.github.io/ta-lib-python/)
+- [ta-lib](https://ta-lib.github.io/ta-lib-python/) (Detailed documentation of included functions: [Ta-Lib](https://ta-lib.org/))
 - [pandas-ta](https://twopirllc.github.io/pandas-ta/)
 - [technical](https://technical.freqtrade.io)
 
@@ -909,6 +909,8 @@ if self.dp.runmode.value in ('live', 'dry_run'):
     This method will always return up-to-date / real-time values. As such, usage during backtesting / hyperopt without runmode checks will lead to wrong results, e.g. your whole dataframe will contain the same single value in all rows.
 
 ### *check_delisting(pair)*
+
+Return Datetime of the pair delisting schedule if any, otherwise return None
 
 ```python
 def custom_exit(self, pair: str, trade: Trade, current_time: datetime, current_rate: float, current_profit: float, **kwargs):

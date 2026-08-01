@@ -20,6 +20,7 @@ from freqtrade.persistence.key_value_store import _KeyValueStoreModel
 from freqtrade.persistence.migrations import check_migrate
 from freqtrade.persistence.pairlock import PairLock
 from freqtrade.persistence.trade_model import Order, Trade
+from freqtrade.persistence.wallet_history import WalletHistory
 
 
 logger = logging.getLogger(__name__)
@@ -91,6 +92,7 @@ def init_db(db_url: str) -> None:
     _CustomData.session = scoped_session(
         sessionmaker(bind=engine, autoflush=True), scopefunc=get_request_or_thread_id
     )
+    WalletHistory.session = Trade.session
 
     previous_tables = inspect(engine).get_table_names()
     ModelBase.metadata.create_all(engine)

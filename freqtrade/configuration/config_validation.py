@@ -92,6 +92,7 @@ def validate_config_consistency(conf: dict[str, Any], *, preliminary: bool = Fal
     _validate_consumers(conf)
     validate_migrated_strategy_settings(conf)
     _validate_orderflow(conf)
+    _validate_demo_trading(conf)
 
     # validate configuration before returning
     logger.info("Validating configuration ...")
@@ -411,6 +412,11 @@ def _validate_orderflow(conf: dict[str, Any]) -> None:
             raise ConfigurationError(
                 "Orderflow is a required configuration key when using public trades."
             )
+
+
+def _validate_demo_trading(conf: dict[str, Any]) -> None:
+    if conf.get("exchange", {}).get("demo_trading", False) and conf.get("dry_run", False):
+        raise ConfigurationError("Demo trading cannot be used together with dry_run.")
 
 
 def _strategy_settings(conf: dict[str, Any]) -> None:

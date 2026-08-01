@@ -10,6 +10,7 @@ from freqtrade.data.history import get_timerange
 from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.analysis.recursive import RecursiveAnalysis
 from freqtrade.optimize.analysis.recursive_helpers import RecursiveAnalysisSubFunctions
+from freqtrade.util import get_progress_tracker
 from tests.conftest import EXMS, get_args, log_has_re, patch_exchange
 
 
@@ -96,7 +97,7 @@ def test_recursive_helper_start(recursive_conf, mocker) -> None:
 def test_recursive_helper_text_table_recursive_analysis_instances(recursive_conf):
     dict_diff = dict()
     dict_diff["rsi"] = {}
-    dict_diff["rsi"][100] = "0.078%"
+    dict_diff["rsi"][100] = 0.00078
 
     strategy_obj = {
         "name": "strategy_test_v3_recursive_issue",
@@ -138,7 +139,7 @@ def test_initialize_single_recursive_analysis(recursive_conf, mocker, caplog):
     }
 
     instance = RecursiveAnalysisSubFunctions.initialize_single_recursive_analysis(
-        recursive_conf, strategy_obj
+        recursive_conf, strategy_obj, get_progress_tracker()
     )
     assert log_has_re(r"Recursive test of .* started\.", caplog)
     assert start_mock.call_count == 1
@@ -169,16 +170,16 @@ def test_recursive_biased_strategy(recursive_conf, mocker, caplog, scenario) -> 
 
     strategy_obj = {"name": "strategy_test_v3_recursive_issue"}
     instance = RecursiveAnalysis(recursive_conf, strategy_obj)
-    instance.start()
+    instance.start(get_progress_tracker())
     # Assert init correct
     assert log_has_re(f"Strategy Parameter: scenario = {scenario}", caplog)
 
     if scenario == "bias2":
         assert log_has_re("=> found lookahead in indicator rsi", caplog)
-    diff_pct = abs(float(instance.dict_recursive["rsi"][100].replace("%", "")))
+    diff_pct = abs(instance.dict_recursive["rsi"][100])
     # check non-biased strategy
     if scenario == "no_bias":
-        assert diff_pct < 0.01
+        assert diff_pct < 0.001
     # check biased strategy
     elif scenario in ("bias1", "bias2"):
-        assert diff_pct >= 0.01
+        assert diff_pct >= 0.001

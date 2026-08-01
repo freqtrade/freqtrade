@@ -15,6 +15,7 @@ from freqtrade.loggers.set_log_levels import (
 )
 from freqtrade.optimize.analysis.base_analysis import BaseAnalysis, VarHolder
 from freqtrade.optimize.backtesting import Backtesting
+from freqtrade.util import CustomProgress
 
 
 logger = logging.getLogger(__name__)
@@ -200,8 +201,8 @@ class LookaheadAnalysis(BaseAnalysis):
         self.analyze_indicators(self.full_varHolder, self.entry_varHolders[idx], result_row["pair"])
         self.analyze_indicators(self.full_varHolder, self.exit_varHolders[idx], result_row["pair"])
 
-    def start(self) -> None:
-        super().start()
+    def start(self, progress: CustomProgress) -> None:
+        self.fill_full_varholder()
 
         reduce_verbosity_for_bias_tester()
 
@@ -223,6 +224,9 @@ class LookaheadAnalysis(BaseAnalysis):
 
         # now we loop through all signals
         # starting from the same datetime to avoid miss-reports of bias
+        trade_task = progress.add_task(
+            "Analyzing trades", total=min(found_signals, self.targeted_trade_amount)
+        )
         for idx, result_row in self.full_varHolder.result["results"].iterrows():
             if self.current_analysis.total_signals == self.targeted_trade_amount:
                 logger.info(f"Found targeted trade amount = {self.targeted_trade_amount} signals.")
@@ -249,6 +253,7 @@ class LookaheadAnalysis(BaseAnalysis):
                 continue
 
             self.analyze_row(idx, result_row)
+            progress.update(trade_task, advance=1)
 
         if len(self.entry_varHolders) < self.minimum_trade_amount:
             logger.info(
