@@ -66,7 +66,6 @@ class FreqaiDataKitchen:
         self.config = config
         self.freqai_config: dict[str, Any] = config["freqai"]
         self.full_df: DataFrame = DataFrame()
-        self.full_df_parts: list[DataFrame] = []
         self.append_df: DataFrame = DataFrame()
         self.data_path = Path()
         self.label_list: list = []
@@ -459,19 +458,17 @@ class FreqaiDataKitchen:
         """
         Append backtest prediction from current backtest period to all previous periods
         """
-        self.full_df_parts.append(append_df)
+
+        if self.full_df.empty:
+            self.full_df = append_df
+        else:
+            self.full_df = pd.concat([self.full_df, append_df], axis=0, ignore_index=True)
 
     def fill_predictions(self, dataframe):
         """
         Back fill values to before the backtesting range so that the dataframe matches size
         when it goes back to the strategy. These rows are not included in the backtest.
         """
-        # Concatenate all parts at once (collected as list in append_predictions)
-        # instead of repeatedly concatenating, which is O(n^2).
-        if self.full_df_parts:
-            self.full_df = pd.concat(self.full_df_parts, axis=0, ignore_index=True)
-            self.full_df_parts = []
-
         to_keep = [
             col for col in dataframe.columns if not col.startswith("&") and not col.startswith("%%")
         ]
