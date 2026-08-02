@@ -367,14 +367,37 @@ class ExchangeWS:
         return pair, timeframe, candle_type, candles, drop_hint
 
     @retrier(retries=3)
-    def get_orderbook(self, pair: str) -> OrderBook:
+    def get_orderbook(self, pair: str, limit: int) -> OrderBook:
         """
-        Returns a copy of the cached orderbook from ccxt's "watch" cache.
-        Deep-copies so callers get a stable snapshot that's decoupled from the
-        live cache the websocket thread keeps mutating.
+        Returns a copy of the cached orderbook from ccxt's "watch" cache,
+        truncated to `limit` entries per side.
+        Copies so callers get a stable snapshot that's decoupled from the live cache
+        the websocket thread keeps mutating. Slicing before copying keeps this cheap
+        (the cached book can hold thousands of levels) and narrows the window in which
+        the websocket thread can mutate the book mid-copy.
+        :param pair: Pair to get the orderbook for
+        :param limit: Maximum number of entries per side to return.
         """
+        ob = self._ccxt_object.orderbooks.get(pair)
+        if ob is None:
+            # return an Empty orderbook
+            return {
+                "symbol": pair,
+                "bids": [],
+                "asks": [],
+                "timestamp": None,
+                "datetime": None,
+                "nonce": None,
+            }
         try:
-            return deepcopy(self._ccxt_object.orderbooks.get(pair, {}))
+            return {
+                "symbol": ob.get("symbol", pair),
+                "bids": deepcopy(ob.get("bids", [])[:limit]),
+                "asks": deepcopy(ob.get("asks", [])[:limit]),
+                "timestamp": ob.get("timestamp"),
+                "datetime": ob.get("datetime"),
+                "nonce": ob.get("nonce"),
+            }
         except RuntimeError as e:
             # Capture runtime errors (raised when the ws thread mutates the book
             # mid-copy) and retry.

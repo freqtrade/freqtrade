@@ -2247,18 +2247,32 @@ class Exchange:
         if self._has_watch_orderbook and self._exchange_ws:
             self._exchange_ws.schedule_orderbook(pair)
 
-            ob = self._exchange_ws.get_orderbook(pair)
+            # Effective limit or 100 (limit could be None from a user call).
+            limit_eff = limit1 or limit or 100
+
+            ob = self._exchange_ws.get_orderbook(pair, limit_eff)
             # ccxt.pro creates the orderbook object as soon as watching starts, but it's
             # empty until the initial snapshot is applied - fall back to REST until then.
             ob_max_age = self._ft_has["orderbook_max_age"]
             if ob.get("bids") and ob.get("asks"):
-                if self._exchange_ws.orderbook_is_fresh(pair, ob_max_age):
+                if not self._exchange_ws.orderbook_is_fresh(pair, ob_max_age):
+                    logger.warning(
+                        f"Websocket orderbook for {pair} is stale (no update within "
+                        f"{ob_max_age}s) - falling back to REST."
+                    )
+                elif len(ob["bids"]) < limit_eff or len(ob["asks"]) < limit_eff:
+                    # The websocket book isn't as deep as the REST response would be.
+                    # Returning it anyway would silently change the result of depth-based
+                    # calculations (e.g. check_depth_of_market) - use REST instead.
+                    logger.debug(
+                        "Websocket orderbook for %s only has %s/%s entries - falling back to REST.",
+                        pair,
+                        min(len(ob["bids"]), len(ob["asks"])),
+                        limit_eff,
+                    )
+                else:
                     logger.debug("Using websocket orderbook for %s", pair)
                     return ob
-                logger.warning(
-                    f"Websocket orderbook for {pair} is stale (no update within "
-                    f"{ob_max_age}s) - falling back to REST."
-                )
 
         try:
             return self._api.fetch_l2_order_book(pair, limit1)
