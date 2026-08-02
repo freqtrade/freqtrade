@@ -2253,7 +2253,7 @@ class Exchange:
             ob_max_age = self._ft_has["orderbook_max_age"]
             if ob.get("bids") and ob.get("asks"):
                 if self._exchange_ws.orderbook_is_fresh(pair, ob_max_age):
-                    logger.debug(f"using websocket orderbook for {pair}")
+                    logger.debug("Using websocket orderbook for %s", pair)
                     return ob
                 logger.warning(
                     f"Websocket orderbook for {pair} is stale (no update within "

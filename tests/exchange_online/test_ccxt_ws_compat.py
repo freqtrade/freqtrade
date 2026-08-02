@@ -101,7 +101,7 @@ class TestCCXTExchangeWs:
         ob = exch.fetch_l2_order_book(pair)
 
         assert m_rest.call_count == 0
-        assert log_has_re(r"using websocket orderbook for .*", caplog)
+        assert log_has_re(r"Using websocket orderbook for .*", caplog)
 
         # Validate the returned orderbook structure.
         assert ob is not None
