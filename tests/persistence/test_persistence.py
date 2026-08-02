@@ -2850,6 +2850,8 @@ def test_order_to_ccxt(limit_buy_order_open, limit_sell_order_usdt_open):
 
     order_resp = Order.order_by_id(limit_buy_order_open["id"])
     assert order_resp
+    assert Order.order_by_id(limit_buy_order_open["id"], "mocked") is order_resp
+    assert Order.order_by_id(limit_buy_order_open["id"], "ETH/USDT") is None
 
     raw_order = order_resp.to_ccxt_object()
     del raw_order["fee"]
