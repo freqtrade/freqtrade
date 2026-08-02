@@ -5123,6 +5123,46 @@ def test_handle_onexchange_order_fully_canceled_enter(
     assert len(trades) == 0
 
 
+@pytest.mark.usefixtures("init_persistence")
+def test_handle_onexchange_order_rollback(mocker, default_conf_usdt, limit_order, caplog):
+    # Recovery picking up an order that's already owned by another trade on the same pair
+    # violates the (ft_pair, order_id) unique constraint. The session must be rolled back,
+    # otherwise every subsequent db access fails with PendingRollbackError.
+    default_conf_usdt["dry_run"] = False
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+
+    entry_order = limit_order["buy"]
+    exit_order = limit_order["sell"]
+    mocker.patch(f"{EXMS}.fetch_orders", return_value=[exit_order])
+
+    def _make_trade(order):
+        trade = Trade(
+            pair="ETH/USDT",
+            fee_open=0.001,
+            fee_close=0.001,
+            open_rate=order["price"],
+            open_date=dt_now(),
+            stake_amount=order["cost"],
+            amount=order["amount"],
+            exchange="binance",
+            leverage=1,
+        )
+        trade.orders.append(Order.parse_from_ccxt_object(order, "ETH/USDT", order["side"]))
+        Trade.session.add(trade)
+        return trade
+
+    # Previous trade already owns the exit order
+    _make_trade(exit_order)
+    trade = _make_trade(entry_order)
+    Trade.commit()
+
+    assert freqtrade.handle_onexchange_order(trade) is False
+    assert log_has_re(r"Error finding onexchange order", caplog)
+
+    # Session is usable again - no PendingRollbackError
+    assert len(Trade.get_trades().all()) == 2
+
+
 def test_get_valid_price(mocker, default_conf_usdt) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
