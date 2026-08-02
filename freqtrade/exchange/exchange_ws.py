@@ -33,15 +33,16 @@ class ExchangeWS:
         self._klines_scheduled: set[PairWithTimeframe] = set()
         self._klines_last_refresh: dict[PairWithTimeframe, float] = {}
         self._klines_last_request: dict[PairWithTimeframe, float] = {}
-        self._thread = Thread(name="ccxt_ws", target=self._start_forever)
-        self._thread.start()
 
         self._ob_watching: set[str] = set()
         self._ob_scheduled: set[str] = set()
-        self.ob_last_request: dict[str, float] = {}
+        self._ob_last_request: dict[str, float] = {}
         # Timestamp (ms) of the last orderbook update received from the websocket, per pair.
         # Used by orderbook_is_fresh() to detect a stuck feed.
         self._ob_last_refresh: dict[str, float] = {}
+
+        self._thread = Thread(name="ccxt_ws", target=self._start_forever)
+        self._thread.start()
 
     def _start_forever(self) -> None:
         self._loop = asyncio.new_event_loop()
@@ -74,6 +75,7 @@ class ExchangeWS:
         logger.debug("Cleanup called - stopping")
         with self._state_lock:
             self._klines_watching.clear()
+            self._ob_watching.clear()
             tasks = list(self._background_tasks)
         for task in tasks:
             task.cancel()
@@ -105,6 +107,9 @@ class ExchangeWS:
             # Clear the cache.
             # Not doing this will cause problems on startup with dynamic pairlists
             self._ccxt_object.ohlcvs.clear()
+            self._ccxt_object.orderbooks.clear()
+            with self._state_lock:
+                self._ob_last_refresh.clear()
         except Exception:
             logger.exception("Exception in _cleanup_async")
 
@@ -115,6 +120,16 @@ class ExchangeWS:
         with self._state_lock:
             self._ccxt_object.ohlcvs.get(paircomb[0], {}).pop(paircomb[1], None)
             self._klines_last_refresh.pop(paircomb, None)
+
+    def _pop_orderbook(self, pair: str) -> None:
+        """
+        Remove a pair's orderbook from the ccxt cache.
+        Avoids unbounded growth for pairs we no longer watch - and ensures a stale book
+        can't be served should the pair be re-scheduled later.
+        """
+        with self._state_lock:
+            self._ccxt_object.orderbooks.pop(pair, None)
+            self._ob_last_refresh.pop(pair, None)
 
     @retrier(retries=3)
     def ohlcvs(self, pair: str, timeframe: str) -> list[list]:
@@ -163,11 +178,11 @@ class ExchangeWS:
 
         with self._state_lock:
             for pair in list(self._ob_watching):
-                last_refresh = self.ob_last_request.get(pair, 0)
+                last_refresh = self._ob_last_request.get(pair, 0)
                 if last_refresh > 0 and (dt_ts() - last_refresh) > ((self.ob_timeout + 20) * 1000):
                     logger.info(f"Removing {pair} from orderbook watchlist")
                     self._ob_watching.discard(pair)
-                    self._ob_last_refresh.pop(pair, None)
+                    self._pop_orderbook(pair)
 
     async def _schedule_while_true(self) -> None:
         # For the ones we should be watching
@@ -385,6 +400,6 @@ class ExchangeWS:
             return
         with self._state_lock:
             self._ob_watching.add(pair)
-            self.ob_last_request[pair] = dt_ts()
+            self._ob_last_request[pair] = dt_ts()
         asyncio.run_coroutine_threadsafe(self._schedule_while_true(), loop=self._loop)
         self.cleanup_expired()
