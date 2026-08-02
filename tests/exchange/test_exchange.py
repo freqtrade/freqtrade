@@ -3378,7 +3378,7 @@ def test_fetch_l2_order_book_ws_stale_fallback(default_conf, mocker, order_book_
     exchange._exchange_ws = ws_mock
     exchange._has_watch_orderbook = True
     # Max age is sourced from ft_has and passed through to the freshness check.
-    exchange._ft_has["ob_max_age"] = 5
+    exchange._ft_has["orderbook_max_age"] = 5
 
     # Fresh feed -> use the websocket book, no REST call.
     ws_mock.orderbook_is_fresh.return_value = True
@@ -3394,9 +3394,7 @@ def test_fetch_l2_order_book_ws_stale_fallback(default_conf, mocker, order_book_
     assert "bids" in order_book
     assert "asks" in order_book
     assert api_mock.fetch_l2_order_book.call_count == 1
-    assert log_has_re(
-        r"Websocket orderbook for ETH/BTC is stale .* falling back to REST", caplog
-    )
+    assert log_has_re(r"Websocket orderbook for ETH/BTC is stale .* falling back to REST", caplog)
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
