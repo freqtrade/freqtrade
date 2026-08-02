@@ -3372,28 +3372,58 @@ def test_fetch_l2_order_book_ws_stale_fallback(default_conf, mocker, order_book_
     api_mock.fetch_l2_order_book = order_book_l2
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
 
-    ws_ob = {"bids": [[10.0, 1.0]], "asks": [[11.0, 1.0]]}
+    ws_ob = {
+        "bids": [[10.0 - i, 1.0] for i in range(20)],
+        "asks": [[11.0 + i, 1.0] for i in range(20)],
+    }
     ws_mock = MagicMock()
     ws_mock.get_orderbook.return_value = ws_ob
     exchange._exchange_ws = ws_mock
     exchange._has_watch_orderbook = True
     # Max age is sourced from ft_has and passed through to the freshness check.
-    exchange._ft_has["orderbook_max_age"] = 5
+    exchange._ft_has["orderbook_max_age"] = 7
 
-    # Fresh feed -> use the websocket book, no REST call.
+    # Fresh feed with sufficient depth -> use the websocket book, no REST call.
     ws_mock.orderbook_is_fresh.return_value = True
     order_book = exchange.fetch_l2_order_book("ETH/BTC", limit=10)
     assert order_book == ws_ob
     ws_mock.schedule_orderbook.assert_called_with("ETH/BTC")
-    ws_mock.orderbook_is_fresh.assert_called_with("ETH/BTC", 5)
+    # The depth is passed down, so the copy stays cheap.
+    ws_mock.get_orderbook.assert_called_with("ETH/BTC", 10)
+    ws_mock.orderbook_is_fresh.assert_called_with("ETH/BTC", 7)
     assert api_mock.fetch_l2_order_book.call_count == 0
 
+    # The limit is rounded up to what the exchange's REST endpoint would return
+    # (binance l2_limit_range), so both paths yield the same number of entries.
+    exchange.fetch_l2_order_book("ETH/BTC", limit=15)
+    ws_mock.get_orderbook.assert_called_with("ETH/BTC", 20)
+    assert api_mock.fetch_l2_order_book.call_count == 0
+
+    # Book is shallower than the REST response would be -> fall back to REST rather
+    # than silently returning fewer entries.
+    caplog.set_level(logging.DEBUG)
+    order_book = exchange.fetch_l2_order_book("ETH/BTC", limit=50)
+    assert order_book != ws_ob
+    assert api_mock.fetch_l2_order_book.call_count == 1
+    assert log_has_re(r"Websocket orderbook for ETH/BTC only has 20/50 entries", caplog)
+
+    # Exchanges capping the REST depth (e.g. hyperliquid's [20]) can serve deep
+    # requests from the websocket - REST wouldn't return more either.
+    caplog.clear()
+    exchange._ft_has["l2_limit_range"] = [20]
+    order_book = exchange.fetch_l2_order_book("ETH/BTC", limit=1000)
+    assert order_book == ws_ob
+    ws_mock.get_orderbook.assert_called_with("ETH/BTC", 20)
+    assert api_mock.fetch_l2_order_book.call_count == 1
+    exchange._ft_has["l2_limit_range"] = [5, 10, 20, 50, 100, 500, 1000]
+
     # Stale feed (stuck websocket) -> warn and fall back to REST.
+    caplog.clear()
     ws_mock.orderbook_is_fresh.return_value = False
     order_book = exchange.fetch_l2_order_book("ETH/BTC", limit=10)
     assert "bids" in order_book
     assert "asks" in order_book
-    assert api_mock.fetch_l2_order_book.call_count == 1
+    assert api_mock.fetch_l2_order_book.call_count == 2
     assert log_has_re(r"Websocket orderbook for ETH/BTC is stale .* falling back to REST", caplog)
 
 
