@@ -602,9 +602,11 @@ class FreqtradeBot(LoggingMixin):
             Trade.commit()
 
         except ExchangeError:
+            Trade.rollback()
             logger.warning("Error finding onexchange order.")
         except Exception:
             # catching https://github.com/freqtrade/freqtrade/issues/9025
+            Trade.rollback()
             logger.warning("Error finding onexchange order", exc_info=True)
         return False
 
