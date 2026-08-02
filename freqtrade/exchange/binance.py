@@ -67,7 +67,7 @@ class Binance(Exchange):
             PriceType.LAST: "CONTRACT_PRICE",
             PriceType.MARK: "MARK_PRICE",
         },
-        "ws_enabled": {"ohlcv": False, "orderbook": False},
+        "ws_enabled": {"ohlcv": False, "orderbook": True},
         # ccxt maps "total" to assets[].marginBalance (= walletBalance + unrealizedProfit)
         "balance_includes_unrealized_pnl": True,
         "proxy_coin_mapping": {
