@@ -415,17 +415,39 @@ def test_exchangews_get_orderbook(mocker):
 
     exchange_ws = ExchangeWS(config, ccxt_object)
 
-    result = exchange_ws.get_orderbook("ETH/USDT")
-    assert result == ob
+    result = exchange_ws.get_orderbook("ETH/USDT", 10)
+    assert result["bids"] == ob["bids"]
+    assert result["asks"] == ob["asks"]
+    assert result["timestamp"] == ob["timestamp"]
+    assert result["nonce"] == ob["nonce"]
+    # Keys the cached book doesn't carry are filled in, so the shape always matches
+    # what the REST endpoint returns.
+    assert result["symbol"] == "ETH/USDT"
+    assert result["datetime"] is None
     # A deep copy is returned - decoupled from the live cache (nested lists copied too).
     assert result is not ob
     assert result["bids"] is not ob["bids"]
     # Mutating the live cache must not affect an already-returned snapshot.
     ccxt_object.orderbooks["ETH/USDT"]["bids"][0][1] = 999
     assert result["bids"][0][1] == 1.0
+    ccxt_object.orderbooks["ETH/USDT"]["bids"][0][1] = 1.0
 
-    # Unknown pair returns an empty dict (caller falls back to REST).
-    assert exchange_ws.get_orderbook("BTC/USDT") == {}
+    # The book is truncated to the requested limit ...
+    limited = exchange_ws.get_orderbook("ETH/USDT", 1)
+    assert limited["bids"] == [[100.0, 1.0]]
+    assert limited["asks"] == [[101.0, 1.5]]
+    # ... while metadata is passed through unchanged.
+    assert limited["timestamp"] == ob["timestamp"]
+    assert limited["nonce"] == ob["nonce"]
+
+    # Requesting more than the book holds returns what's there (caller decides).
+    assert len(exchange_ws.get_orderbook("ETH/USDT", 100)["bids"]) == 2
+
+    # Unknown pair returns an empty book (caller falls back to REST).
+    empty = exchange_ws.get_orderbook("BTC/USDT", 10)
+    assert empty["bids"] == []
+    assert empty["asks"] == []
+    assert empty["symbol"] == "BTC/USDT"
 
     exchange_ws.cleanup()
 
@@ -446,20 +468,22 @@ def test_exchangews_get_orderbook_deepcopy_and_retry(mocker):
         call_count["count"] += 1
         if call_count["count"] < 3:
             raise RuntimeError("copy failed")
-        return {k: [row.copy() for row in v] for k, v in value.items()}
+        return [row.copy() for row in value]
 
     mocker.patch("freqtrade.exchange.exchange_ws.deepcopy", deepcopy_side_effect)
 
-    result = exchange_ws.get_orderbook("ETH/USDT")
+    result = exchange_ws.get_orderbook("ETH/USDT", 10)
 
-    assert call_count["count"] == 3
-    assert result == {"bids": [[1, 2]], "asks": [[3, 4]]}
+    # 2 failures, then one successful copy per side.
+    assert call_count["count"] == 4
+    assert result["bids"] == [[1, 2]]
+    assert result["asks"] == [[3, 4]]
     assert result is not ccxt_object.orderbooks["ETH/USDT"]
 
     # Fail every time -> surfaces as TemporaryError once retries are exhausted.
     mocker.patch("freqtrade.exchange.exchange_ws.deepcopy", side_effect=RuntimeError("copy failed"))
     with pytest.raises(TemporaryError, match=r"Error deepcopying: copy failed"):
-        exchange_ws.get_orderbook("ETH/USDT")
+        exchange_ws.get_orderbook("ETH/USDT", 10)
 
     exchange_ws.cleanup()
 
@@ -501,7 +525,7 @@ def test_exchangews_schedule_orderbook_loop_not_ready(mocker, caplog):
     exchange_ws.schedule_orderbook("ETH/BTC")
 
     assert exchange_ws._ob_watching == set()
-    assert exchange_ws.ob_last_request == {}
+    assert exchange_ws._ob_last_request == {}
     assert run_threadsafe.call_count == 0
     assert log_has_re("Websocket loop not ready. Could not schedule orderbook for ETH/BTC", caplog)
 
@@ -515,14 +539,63 @@ def test_exchangews_orderbook_stopped(mocker):
 
     exchange_ws = ExchangeWS(config, ccxt_object)
 
+    ccxt_object.orderbooks = {"ETH/BTC": {"bids": [], "asks": []}}
     task = MagicMock()
+    task.cancelled.return_value = False
     exchange_ws._background_tasks.add(task)
     exchange_ws._ob_scheduled.add("ETH/BTC")
+    exchange_ws._ob_last_refresh["ETH/BTC"] = 1
 
     exchange_ws._orderbook_stopped(task, "ETH/BTC")
 
     assert task not in exchange_ws._background_tasks
     assert "ETH/BTC" not in exchange_ws._ob_scheduled
+    # The cached book is evicted so a re-scheduled pair can't be served stale data.
+    assert ccxt_object.orderbooks == {}
+    assert exchange_ws._ob_last_refresh == {}
+
+    exchange_ws.cleanup()
+
+
+@pytest.mark.parametrize(
+    "has,expected_call",
+    [
+        ({"unWatchOrderBookForSymbols": True}, "un_watch_order_book_for_symbols"),
+        ({"unWatchOrderBook": True}, "un_watch_order_book"),
+        ({}, None),
+    ],
+)
+async def test_exchangews_unwatch_orderbook(mocker, has, expected_call, caplog):
+    config = MagicMock()
+    ccxt_object = MagicMock()
+    ccxt_object.has = has
+    ccxt_object.un_watch_order_book_for_symbols = AsyncMock()
+    ccxt_object.un_watch_order_book = AsyncMock()
+    mocker.patch("freqtrade.exchange.exchange_ws.ExchangeWS._start_forever")
+    caplog.set_level(logging.DEBUG)
+
+    exchange_ws = ExchangeWS(config, ccxt_object)
+    await exchange_ws._unwatch_orderbook("ETH/BTC")
+
+    if expected_call == "un_watch_order_book_for_symbols":
+        ccxt_object.un_watch_order_book_for_symbols.assert_awaited_once_with(["ETH/BTC"])
+        assert ccxt_object.un_watch_order_book.call_count == 0
+    elif expected_call == "un_watch_order_book":
+        ccxt_object.un_watch_order_book.assert_awaited_once_with("ETH/BTC")
+        assert ccxt_object.un_watch_order_book_for_symbols.call_count == 0
+    else:
+        assert ccxt_object.un_watch_order_book.call_count == 0
+        assert ccxt_object.un_watch_order_book_for_symbols.call_count == 0
+        assert log_has_re("un_watch_order_book not supported for ETH/BTC", caplog)
+
+    # Errors must not escape - they'd end up as unhandled exceptions on the ws loop.
+    ccxt_object.has = {"unWatchOrderBook": True}
+    ccxt_object.un_watch_order_book = AsyncMock(side_effect=NotSupported("nope"))
+    await exchange_ws._unwatch_orderbook("ETH/BTC")
+
+    ccxt_object.un_watch_order_book = AsyncMock(side_effect=Exception("boom"))
+    await exchange_ws._unwatch_orderbook("ETH/BTC")
+    assert log_has_re("Exception in _unwatch_orderbook for ETH/BTC", caplog)
 
     exchange_ws.cleanup()
 
