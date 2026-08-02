@@ -1,4 +1,5 @@
 from collections import Counter
+from dataclasses import replace
 from unittest.mock import MagicMock
 
 import numpy as np
@@ -8,6 +9,7 @@ import pytest
 import freqtrade.strategy.informative_decorator as informative_decorator_module
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import CandleType, RunMode
+from freqtrade.exceptions import OperationalException
 from freqtrade.resolvers.strategy_resolver import StrategyResolver
 from freqtrade.strategy import (
     IStrategy,
@@ -98,8 +100,7 @@ class SameSourceInformativeCacheStrategy(IStrategy):
     def populate_indicators_btc(self, dataframe: pd.DataFrame, metadata: dict) -> pd.DataFrame:
         self.informative_calls += 1
         dataframe["double_close"] = dataframe["close"] * 2
-        # A user column with this name must not collide with the private prepared merge column.
-        dataframe["date_merge"] = dataframe["close"] * 3
+        dataframe["custom_date_merge"] = dataframe["close"] * 3
         return dataframe
 
     def populate_indicators(self, dataframe: pd.DataFrame, metadata: dict) -> pd.DataFrame:
@@ -734,25 +735,32 @@ def test_informative_cache_shares_preparation_across_formatters(mocker, default_
     for dataframe in (first, second):
         assert "btc_double_close_first" in dataframe.columns
         assert "btc_double_close_second" in dataframe.columns
-        assert "btc_date_merge_first" in dataframe.columns
-        assert "btc_date_merge_second" in dataframe.columns
+        assert "btc_custom_date_merge_first" in dataframe.columns
+        assert "btc_custom_date_merge_second" in dataframe.columns
         assert (
             dataframe["btc_double_close_first"].notna().sum()
             > dataframe["btc_double_close_second"].notna().sum()
         )
 
 
-def test_informative_cache_avoids_date_merge_column_collisions(default_conf_usdt):
-    strategy = _same_source_informative_cache_strategy(default_conf_usdt)
+@pytest.mark.parametrize("location", ["base", "informative", "formatter"])
+def test_informative_cache_rejects_reserved_date_merge_column(default_conf_usdt, location):
+    strategy, informative_data = _shared_informative_call_count_strategy(default_conf_usdt)
     base_data = generate_test_data("5m", 40)
-    base_data["date_merge"] = base_data["close"] * 2
-    base_data["_date_merge"] = base_data["close"] * 3
 
-    result = strategy.advise_indicators(base_data.copy(), {"pair": "XRP/USDT"})
+    if location == "base":
+        base_data["date_merge"] = base_data["close"]
+    elif location == "informative":
+        informative_data["30m"]["date_merge"] = informative_data["30m"]["close"]
+    else:
+        inf_data, populate_indicators = strategy._ft_informative[0]
+        strategy._ft_informative[0] = (
+            replace(inf_data, fmt="date_merge"),
+            populate_indicators,
+        )
 
-    pd.testing.assert_series_equal(result["date_merge"], base_data["date_merge"])
-    pd.testing.assert_series_equal(result["_date_merge"], base_data["_date_merge"])
-    assert "__date_merge" not in result.columns
+    with pytest.raises(OperationalException, match="Column name 'date_merge' is reserved"):
+        strategy.advise_indicators(base_data, {"pair": "XRP/USDT"})
 
 
 def test_informative_cache_reuses_result_for_new_base_candle(default_conf_usdt):

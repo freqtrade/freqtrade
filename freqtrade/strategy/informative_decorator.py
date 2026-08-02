@@ -19,7 +19,7 @@ from freqtrade.strategy.strategy_helper import (
 PopulateIndicators = Callable[[Any, DataFrame, dict], DataFrame]
 InformativeCacheKey = tuple[PopulateIndicators, str, str, str, CandleType | None, str]
 
-_INFORMATIVE_DATE_MERGE = object()
+_INFORMATIVE_DATE_MERGE = "date_merge"
 
 
 @dataclass(slots=True)
@@ -127,6 +127,26 @@ def _informative_dataframe_fingerprint(dataframe: DataFrame) -> tuple[Any, ...]:
     return (len(dataframe), *(last_candle[column] for column in DEFAULT_DATAFRAME_COLUMNS))
 
 
+def _raise_reserved_column_name() -> None:
+    raise OperationalException(
+        f"Column name '{_INFORMATIVE_DATE_MERGE}' is reserved for informative merging."
+    )
+
+
+def _format_informative_column(
+    column: Any,
+    formatter: Callable[..., str],
+    fmt_args: dict[str, str],
+    preserve_date_merge: bool = False,
+) -> Any:
+    if preserve_date_merge and column == _INFORMATIVE_DATE_MERGE:
+        return column
+    formatted_column = formatter(column=column, **fmt_args)
+    if formatted_column == _INFORMATIVE_DATE_MERGE:
+        _raise_reserved_column_name()
+    return formatted_column
+
+
 def _get_populated_informative_dataframe(
     strategy,
     populate_indicators_fn: PopulateIndicators,
@@ -136,15 +156,21 @@ def _get_populated_informative_dataframe(
     cache: InformativeCache | None,
     timeframe: str,
 ) -> tuple[DataFrame, bool]:
-    if cache is None:
-        return populate_indicators_fn(strategy, dataframe, metadata), False
+    if _INFORMATIVE_DATE_MERGE in dataframe.columns:
+        _raise_reserved_column_name()
 
-    fingerprint = _informative_dataframe_fingerprint(dataframe)
-    cached: _InformativeCacheEntry | None = cache.get(cache_key)
-    if cached is not None and cached.fingerprint == fingerprint:
-        return cached.prepared.dataframe.copy(), True
+    if cache is not None:
+        fingerprint = _informative_dataframe_fingerprint(dataframe)
+        cached: _InformativeCacheEntry | None = cache.get(cache_key)
+        if cached is not None and cached.fingerprint == fingerprint:
+            return cached.prepared.dataframe.copy(), True
 
     dataframe = populate_indicators_fn(strategy, dataframe, metadata)
+    if _INFORMATIVE_DATE_MERGE in dataframe.columns:
+        _raise_reserved_column_name()
+    if cache is None:
+        return dataframe, False
+
     prepared = _prepare_informative_pair(
         dataframe,
         strategy.timeframe,
@@ -163,6 +189,9 @@ def _create_and_merge_informative_pair(
     inf_data: InformativeData,
     populate_indicators_fn: PopulateIndicators,
 ):
+    if _INFORMATIVE_DATE_MERGE in dataframe.columns:
+        _raise_reserved_column_name()
+
     asset = inf_data.asset or ""
     timeframe = inf_data.timeframe
     timeframe1 = inf_data.timeframe
@@ -235,31 +264,22 @@ def _create_and_merge_informative_pair(
         "timeframe": timeframe,
     }
     inf_dataframe.rename(
-        columns=lambda column: (
-            column
-            if prepared and column is _INFORMATIVE_DATE_MERGE
-            else formatter(column=column, **fmt_args)
+        columns=lambda column: _format_informative_column(
+            column, formatter, fmt_args, preserve_date_merge=prepared
         ),
         inplace=True,
     )
 
-    date_column = formatter(column="date", **fmt_args)
+    date_column = _format_informative_column("date", formatter, fmt_args)
     if date_column in dataframe.columns:
         raise OperationalException(
             f"Duplicate column name {date_column} exists in "
             f"dataframe! Ensure column names are unique!"
         )
     if prepared:
-        date_merge_column = "date_merge"
-        while date_merge_column in dataframe.columns or date_merge_column in inf_dataframe.columns:
-            date_merge_column = f"_{date_merge_column}"
-        inf_dataframe.columns = [
-            date_merge_column if column is _INFORMATIVE_DATE_MERGE else column
-            for column in inf_dataframe.columns
-        ]
         dataframe = _merge_prepared_informative_pair(
             dataframe,
-            _PreparedInformative(inf_dataframe, date_merge_column),
+            _PreparedInformative(inf_dataframe, _INFORMATIVE_DATE_MERGE),
             ffill=inf_data.ffill,
         )
     else:

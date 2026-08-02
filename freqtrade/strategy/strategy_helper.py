@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Any
 
 import pandas as pd
 
@@ -11,7 +10,7 @@ class _PreparedInformative:
     """An informative dataframe prepared for merging and treated as read-only."""
 
     dataframe: pd.DataFrame
-    date_merge: Any
+    date_merge: str
 
 
 def _prepare_informative_pair(
@@ -22,7 +21,7 @@ def _prepare_informative_pair(
     append_timeframe: bool = True,
     date_column: str = "date",
     suffix: str | None = None,
-    date_merge_column: Any = "date_merge",
+    date_merge_column: str = "date_merge",
 ) -> _PreparedInformative:
     """Prepare an informative dataframe without merging it into a base dataframe."""
     informative = informative.copy()

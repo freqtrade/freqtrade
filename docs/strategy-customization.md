@@ -631,6 +631,10 @@ Caching is enabled by default. Use `cache=False` on methods that use non-OHLCV d
 effects, or otherwise need to run for every base pair and/or every new main timeframe candles.
 When decorators are stacked, each decorator is configured independently.
 
+The `date_merge` column name is reserved while informative decorators are being merged. It must not
+be returned by informative callbacks or column formatters, or exist in the base dataframe before
+informative merging.
+
 ??? Example "Fast and easy way to define informative pairs"
 
     Most of the time we do not need power and flexibility offered by `merge_informative_pair()`, therefore we can use a decorator to quickly define informative pairs.
