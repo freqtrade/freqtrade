@@ -227,7 +227,25 @@ class ExchangeWS:
     def _orderbook_stopped(self, task: asyncio.Task, pair: str) -> None:
         with self._state_lock:
             self._background_tasks.discard(task)
-            self._ob_scheduled.discard(pair)
+        result = "done"
+        try:
+            if task.cancelled():
+                result = "cancelled"
+            else:
+                # Retrieve the result - surfaces exceptions the watch loop didn't handle,
+                # which would otherwise sit unretrieved on the task.
+                task.result()
+        except Exception:
+            result = "error"
+            logger.exception(f"Unhandled exception in orderbook watch task callback for {pair}")
+        finally:
+            logger.info(f"{pair} - Orderbook task finished - {result}")
+            if hasattr(self, "_loop") and not self._loop.is_closed():
+                asyncio.run_coroutine_threadsafe(self._unwatch_orderbook(pair), loop=self._loop)
+
+            with self._state_lock:
+                self._ob_scheduled.discard(pair)
+            self._pop_orderbook(pair)
 
     def exchange_has(self, endpoint: str) -> bool:
         """
@@ -256,6 +274,24 @@ class ExchangeWS:
             logger.debug("Network error during unwatch for %s, %s: %s", pair, timeframe, e)
         except Exception:
             logger.exception(f"Exception in _unwatch_ohlcv for {pair}, {timeframe},")
+
+    async def _unwatch_orderbook(self, pair: str) -> None:
+        try:
+            if self.exchange_has("unWatchOrderBookForSymbols"):
+                await self._ccxt_object.un_watch_order_book_for_symbols([pair])
+            elif self.exchange_has("unWatchOrderBook"):
+                await self._ccxt_object.un_watch_order_book(pair)
+            else:
+                logger.debug("un_watch_order_book not supported for %s", pair)
+
+        except ccxt.NotSupported as e:
+            logger.debug("un_watch_order_book not supported: %s", e)
+        except ccxt.NetworkError as e:
+            # Network errors are common on shutdown so we can ignore them.
+            # It's a network error - which most likely means that the connection is already closed.
+            logger.debug("Network error during orderbook unwatch for %s: %s", pair, e)
+        except Exception:
+            logger.exception(f"Exception in _unwatch_orderbook for {pair}")
 
     def _continuous_stopped(
         self, task: asyncio.Task, pair: str, timeframe: str, candle_type: CandleType
