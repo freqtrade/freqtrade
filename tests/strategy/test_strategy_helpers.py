@@ -5,11 +5,7 @@ import pytest
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import CandleType, RunMode
 from freqtrade.resolvers.strategy_resolver import StrategyResolver
-from freqtrade.strategy import (
-    merge_informative_pair,
-    stoploss_from_absolute,
-    stoploss_from_open,
-)
+from freqtrade.strategy import merge_informative_pair, stoploss_from_absolute, stoploss_from_open
 from tests.conftest import generate_test_data, get_patched_exchange
 
 
