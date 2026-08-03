@@ -5124,43 +5124,59 @@ def test_handle_onexchange_order_fully_canceled_enter(
 
 
 @pytest.mark.usefixtures("init_persistence")
-def test_handle_onexchange_order_rollback(mocker, default_conf_usdt, limit_order, caplog):
-    # Recovery picking up an order that's already owned by another trade on the same pair
-    # violates the (ft_pair, order_id) unique constraint. The session must be rolled back,
+def test_handle_onexchange_order_other_trade(mocker, default_conf_usdt, fee, caplog):
+    # trades 1 and 6 are both on LTC/USDT, trade 1 being the closed, preceding one.
+    # Its exit order falls into the lookback window of the recovery running for trade 6,
+    # and must not be assigned to (and inflate the amount of) trade 6.
+    default_conf_usdt["dry_run"] = False
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    create_mock_trades_usdt(fee)
+
+    prev_exit_order = Trade.get_trades([Trade.id == 1]).first().orders[-1].to_ccxt_object()
+    prev_exit_order.update({"status": "closed", "filled": prev_exit_order["amount"]})
+    mocker.patch(f"{EXMS}.fetch_orders", return_value=[prev_exit_order])
+
+    trade = Trade.get_trades([Trade.id == 6]).first()
+    freqtrade.wallets = MagicMock()
+    freqtrade.wallets.get_owned = MagicMock(return_value=trade.amount)
+    prev_amount = trade.amount
+
+    assert freqtrade.handle_onexchange_order(trade) is False
+    assert log_has_re(r"Order prod_exit_1_long .* already belongs to trade 1 - skipping\.", caplog)
+    assert not log_has_re(r"Found previously unknown order .*", caplog)
+
+    # Order stayed with the preceding trade - the recovered trade is unchanged.
+    assert len(Trade.get_trades([Trade.id == 1]).first().orders) == 2
+    trade = Trade.get_trades([Trade.id == 6]).first()
+    assert len(trade.orders) == 2
+    assert trade.amount == prev_amount
+    assert trade.is_open is True
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_handle_onexchange_order_rollback(mocker, default_conf_usdt, fee, caplog):
+    # Assigning an order that's already owned by another trade on the same pair violates the
+    # (ft_pair, order_id) unique constraint. The session must be rolled back in that case,
     # otherwise every subsequent db access fails with PendingRollbackError.
     default_conf_usdt["dry_run"] = False
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    create_mock_trades_usdt(fee)
 
-    entry_order = limit_order["buy"]
-    exit_order = limit_order["sell"]
-    mocker.patch(f"{EXMS}.fetch_orders", return_value=[exit_order])
+    prev_exit_order = Trade.get_trades([Trade.id == 1]).first().orders[-1].to_ccxt_object()
+    prev_exit_order.update({"status": "closed", "filled": prev_exit_order["amount"]})
+    mocker.patch(f"{EXMS}.fetch_orders", return_value=[prev_exit_order])
 
-    def _make_trade(order):
-        trade = Trade(
-            pair="ETH/USDT",
-            fee_open=0.001,
-            fee_close=0.001,
-            open_rate=order["price"],
-            open_date=dt_now(),
-            stake_amount=order["cost"],
-            amount=order["amount"],
-            exchange="binance",
-            leverage=1,
-        )
-        trade.orders.append(Order.parse_from_ccxt_object(order, "ETH/USDT", order["side"]))
-        Trade.session.add(trade)
-        return trade
-
-    # Previous trade already owns the exit order
-    _make_trade(exit_order)
-    trade = _make_trade(entry_order)
-    Trade.commit()
+    trade = Trade.get_trades([Trade.id == 6]).first()
+    freqtrade.wallets = MagicMock()
+    freqtrade.wallets.get_owned = MagicMock(return_value=trade.amount)
+    # Disable the ownership check to trigger the constraint violation.
+    mocker.patch("freqtrade.freqtradebot.Order.order_by_id", return_value=None)
 
     assert freqtrade.handle_onexchange_order(trade) is False
     assert log_has_re(r"Error finding onexchange order", caplog)
 
     # Session is usable again - no PendingRollbackError
-    assert len(Trade.get_trades().all()) == 2
+    assert len(Trade.get_trades().all()) == 7
 
 
 def test_get_valid_price(mocker, default_conf_usdt) -> None:
