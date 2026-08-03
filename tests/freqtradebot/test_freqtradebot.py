@@ -3474,7 +3474,6 @@ def test__safe_exit_amount(default_conf_usdt, fee, caplog, mocker, amount_wallet
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     amount = 95.33
-    amount_wallet = amount_wallet
     mocker.patch("freqtrade.wallets.Wallets.get_free", MagicMock(return_value=amount_wallet))
     wallet_update = mocker.patch("freqtrade.wallets.Wallets.update")
     trade = Trade(
