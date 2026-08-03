@@ -6,7 +6,7 @@ scipy==1.17.1
 # Indicator libraries
 ft-pandas-ta==0.3.16
 ta-lib==0.7.1
-technical==1.6.0
+technical==1.7.0
 
 ccxt==4.5.68
 cryptography==49.0.0
