@@ -3186,11 +3186,7 @@ class Exchange:
                             last_cached_ms = all_stored_ticks_df.iloc[-1]["timestamp"]
                             from_id = all_stored_ticks_df.iloc[-1]["id"]
                             # only use cached if it's closer than first_candle_ms
-                            since_ms = (
-                                last_cached_ms
-                                if last_cached_ms > first_candle_ms
-                                else first_candle_ms
-                            )
+                            since_ms = max(first_candle_ms, last_cached_ms)
                         else:
                             # Skip cache, it's too old
                             all_stored_ticks_df = DataFrame(
