@@ -68,13 +68,13 @@ def get_message_stream():
 def is_webserver_mode(config=Depends(get_config)):
     if config["runmode"] != RunMode.WEBSERVER:
         raise HTTPException(status_code=503, detail="Bot is not in the correct state.")
-    return None
+    return
 
 
 def is_trading_mode(config=Depends(get_config)):
     if config["runmode"] not in TRADE_MODES:
         raise HTTPException(status_code=503, detail="Bot is not in the correct state.")
-    return None
+    return
 
 
 def verify_strategy(strategy: str | None):

@@ -699,7 +699,7 @@ class Exchange:
 
             if isinstance(markets, Exception):
                 raise markets
-            return None
+            return
         except TimeoutError as e:
             logger.warning("Could not load markets. Reason: %s", e)
             raise TemporaryError from e
@@ -716,7 +716,7 @@ class Exchange:
             and self._last_markets_refresh > 0
             and (self._last_markets_refresh + self.markets_refresh_interval > dt_ts())
         ):
-            return None
+            return
         logger.debug("Performing scheduled market reload..")
         try:
             # on initial load, we retry 3 times to ensure we get the markets
