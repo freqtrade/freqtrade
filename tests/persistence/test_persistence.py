@@ -781,10 +781,6 @@ def test_update_invalid_order(limit_buy_order_usdt):
     [
         (False, 0.003, 60.18),
         (False, 0.0025, 60.15),
-        (False, 0.003, 60.18),
-        (False, 0.0025, 60.15),
-        (True, 0.003, 59.82),
-        (True, 0.0025, 59.85),
         (True, 0.003, 59.82),
         (True, 0.0025, 59.85),
     ],

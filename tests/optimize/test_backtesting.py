@@ -1460,13 +1460,9 @@ def test_backtest_pricecontours_protections(default_conf, fee, mocker, testdatad
         (None, "sine", 35),
         (None, "raise", 19),
         (None, "lower", 0),
-        (None, "sine", 35),
-        (None, "raise", 19),
         ([{"method": "CooldownPeriod", "stop_duration": 3}], "sine", 10),
         ([{"method": "CooldownPeriod", "stop_duration": 3}], "raise", 11),
         ([{"method": "CooldownPeriod", "stop_duration": 3}], "lower", 0),
-        ([{"method": "CooldownPeriod", "stop_duration": 3}], "sine", 10),
-        ([{"method": "CooldownPeriod", "stop_duration": 3}], "raise", 11),
     ],
 )
 def test_backtest_pricecontours(

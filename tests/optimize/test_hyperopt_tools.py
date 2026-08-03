@@ -221,18 +221,6 @@ def test_load_previous_results2(mocker, testdatadir, caplog) -> None:
             },
         ),
         (
-            ["all"],
-            {
-                "buy": True,
-                "sell": True,
-                "roi": True,
-                "stoploss": True,
-                "trailing": True,
-                "protection": True,
-                "trades": True,
-            },
-        ),
-        (
             ["protection"],
             {
                 "buy": False,
