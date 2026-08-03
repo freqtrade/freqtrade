@@ -748,6 +748,19 @@ If you have not set this value explicitly in the command line options, Hyperopt 
 
 If you have not changed anything in the command line options, configuration, timerange, Strategy and Hyperopt classes, historical data and the Loss Function -- you should obtain same hyper-optimization results with same random state value used.
 
+### Start from current parameters
+
+You can use the `--params-as-seed` command line option to tell Hyperopt to use the current strategy parameters (as defined in your strategy file or loaded from a parameters file) as the initial trial.
+
+```bash
+freqtrade hyperopt --params-as-seed --spaces buy sell stoploss --config config.json
+```
+
+This is useful if you have a good working strategy and want to see if Hyperopt can find slight improvements, rather than starting from completely random points.
+
+*   **Fully Seeded:** If all optimized spaces (e.g., `buy`, `sell`) are covered by your current parameters, Hyperopt will run exactly one initial trial with these values.
+*   **Partially Seeded:** If you include spaces that cannot be fully defined by existing parameters (such as `roi`, which uses a generated table rather than raw parameters), Hyperopt will run **5 initial trials**. Each trial will use your fixed known parameters (like `buy`/`sell`) combined with different random values for the missing spaces (like `roi`).
+
 ## Output formatting
 
 By default, hyperopt prints colorized results -- epochs with positive profit are printed in the green color. This highlighting helps you find epochs that can be interesting for later analysis. Epochs with zero total profit or with negative profits (losses) are printed in the normal color. If you do not need colorization of results (for instance, when you are redirecting hyperopt output to a file) you can switch colorization off by specifying the `--no-color` option in the command line.

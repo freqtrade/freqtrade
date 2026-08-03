@@ -370,6 +370,11 @@ AVAILABLE_CLI_OPTIONS = {
         f"{', '.join(HYPEROPT_LOSS_BUILTIN)}",
         metavar="NAME",
     ),
+    "hyperopt_params_as_seed": Arg(
+        "--params-as-seed",
+        help="Use the current strategy parameters as the first trial in hyperopt.",
+        action="store_true",
+    ),
     "hyperoptexportfilename": Arg(
         "--hyperopt-filename",
         help="Hyperopt result filename."
