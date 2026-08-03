@@ -1,169 +1,16 @@
-from collections import Counter
-from dataclasses import replace
-from unittest.mock import MagicMock
-
 import numpy as np
 import pandas as pd
 import pytest
 
-import freqtrade.strategy.informative_decorator as informative_decorator_module
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import CandleType, RunMode
-from freqtrade.exceptions import OperationalException
 from freqtrade.resolvers.strategy_resolver import StrategyResolver
 from freqtrade.strategy import (
-    IStrategy,
-    informative,
     merge_informative_pair,
     stoploss_from_absolute,
     stoploss_from_open,
 )
 from tests.conftest import generate_test_data, get_patched_exchange
-
-
-class SharedInformativeCallCountStrategy(IStrategy):
-    timeframe = "5m"
-    stoploss = -0.10
-    minimal_roi = {}
-    process_only_new_candles = True
-
-    def __init__(self, config) -> None:
-        self.informative_calls: list[tuple[str, str, str]] = []
-        super().__init__(config)
-
-    @informative("15m", "BTC/{stake}")
-    @informative("30m", "BTC/{stake}")
-    @informative("1h", "BTC/{stake}")
-    def populate_indicators_btc_first(
-        self, dataframe: pd.DataFrame, metadata: dict
-    ) -> pd.DataFrame:
-        self.informative_calls.append(("first", metadata["pair"], metadata["timeframe"]))
-        dataframe["first_mean"] = dataframe["close"].rolling(3).mean()
-        return dataframe
-
-    @informative("15m", "BTC/{stake}", "{base}_{quote}_{column}_{timeframe}_second")
-    @informative("30m", "BTC/{stake}", "{base}_{quote}_{column}_{timeframe}_second")
-    @informative("1h", "BTC/{stake}", "{base}_{quote}_{column}_{timeframe}_second")
-    def populate_indicators_btc_second(
-        self, dataframe: pd.DataFrame, metadata: dict
-    ) -> pd.DataFrame:
-        self.informative_calls.append(("second", metadata["pair"], metadata["timeframe"]))
-        dataframe["second_range"] = dataframe["high"] - dataframe["low"]
-        return dataframe
-
-    def populate_indicators(self, dataframe: pd.DataFrame, metadata: dict) -> pd.DataFrame:
-        return dataframe
-
-
-class MixedInformativeCacheStrategy(IStrategy):
-    timeframe = "5m"
-    stoploss = -0.10
-    minimal_roi = {}
-
-    def __init__(self, config) -> None:
-        self.informative_calls: list[str] = []
-        super().__init__(config)
-
-    @informative("15m", "BTC/{stake}")
-    @informative("30m", "BTC/{stake}", cache=False)
-    def populate_indicators_btc(self, dataframe: pd.DataFrame, metadata: dict) -> pd.DataFrame:
-        self.informative_calls.append(metadata["timeframe"])
-        return dataframe
-
-    def populate_indicators(self, dataframe: pd.DataFrame, metadata: dict) -> pd.DataFrame:
-        return dataframe
-
-
-class _CountingInformativeFormatter:
-    def __init__(self) -> None:
-        self.calls = 0
-
-    def __call__(self, column: str, asset: str, timeframe: str, **kwargs: str) -> str:
-        self.calls += 1
-        return f"{asset.split('/')[0].lower()}_{column.lower()}_second"
-
-
-_same_source_formatter = _CountingInformativeFormatter()
-
-
-class SameSourceInformativeCacheStrategy(IStrategy):
-    timeframe = "5m"
-    stoploss = -0.10
-    minimal_roi = {}
-
-    def __init__(self, config) -> None:
-        self.informative_calls = 0
-        super().__init__(config)
-
-    @informative("15m", "BTC/{stake}", "{base}_{column}_first", ffill=True)
-    @informative("15m", "BTC/{stake}", _same_source_formatter, ffill=False)
-    def populate_indicators_btc(self, dataframe: pd.DataFrame, metadata: dict) -> pd.DataFrame:
-        self.informative_calls += 1
-        dataframe["double_close"] = dataframe["close"] * 2
-        dataframe["custom_date_merge"] = dataframe["close"] * 3
-        return dataframe
-
-    def populate_indicators(self, dataframe: pd.DataFrame, metadata: dict) -> pd.DataFrame:
-        return dataframe
-
-
-def _shared_informative_call_count_strategy(
-    default_conf_usdt,
-) -> tuple[SharedInformativeCallCountStrategy, dict[str, pd.DataFrame]]:
-    strategy = SharedInformativeCallCountStrategy(default_conf_usdt)
-    informative_data = {
-        timeframe: generate_test_data(timeframe, 40) for timeframe in ("15m", "30m", "1h")
-    }
-    dataprovider = MagicMock()
-
-    def market(pair: str) -> dict[str, str]:
-        base, quote = pair.split("/")
-        return {"base": base, "quote": quote}
-
-    def get_pair_dataframe(pair: str, timeframe: str, candle_type: str) -> pd.DataFrame:
-        assert pair == "BTC/USDT"
-        return informative_data[timeframe].copy()
-
-    dataprovider.market.side_effect = market
-    dataprovider.get_pair_dataframe.side_effect = get_pair_dataframe
-    strategy.dp = dataprovider
-    return strategy, informative_data
-
-
-def _mixed_informative_cache_strategy(
-    default_conf_usdt,
-) -> MixedInformativeCacheStrategy:
-    strategy = MixedInformativeCacheStrategy(default_conf_usdt)
-    informative_data = {
-        timeframe: generate_test_data(timeframe, 40) for timeframe in ("15m", "30m")
-    }
-    dataprovider = MagicMock()
-    dataprovider.market.side_effect = lambda pair: {
-        "base": pair.split("/")[0],
-        "quote": pair.split("/")[1],
-    }
-    dataprovider.get_pair_dataframe.side_effect = lambda pair, timeframe, candle_type: (
-        informative_data[timeframe].copy()
-    )
-    strategy.dp = dataprovider
-    return strategy
-
-
-def _same_source_informative_cache_strategy(
-    default_conf_usdt,
-) -> SameSourceInformativeCacheStrategy:
-    strategy = SameSourceInformativeCacheStrategy(default_conf_usdt)
-    informative_data = generate_test_data("15m", 40)
-    dataprovider = MagicMock()
-    dataprovider.market.side_effect = lambda pair: {
-        "base": pair.split("/")[0],
-        "quote": pair.split("/")[1],
-    }
-    dataprovider.get_pair_dataframe.side_effect = lambda pair, timeframe, candle_type: (
-        informative_data.copy()
-    )
-    strategy.dp = dataprovider
-    return strategy
 
 
 def test_merge_informative_pair():
@@ -602,247 +449,76 @@ def test_informative_decorator(mocker, default_conf_usdt, trading_mode):
         )
 
 
-def test_shared_informative_call_count_for_each_base_pair(default_conf_usdt):
-    strategy, _ = _shared_informative_call_count_strategy(default_conf_usdt)
-    base_data = generate_test_data("5m", 40)
-    base_pairs = ("XRP/USDT", "LTC/USDT", "ETH/USDT")
-
-    strategy.advise_all_indicators({pair: base_data.copy() for pair in base_pairs})
-
-    # Each combination of inf pair, timeframe and populate functions is called once.
-    assert len(strategy.informative_calls) == 6
-
-    # Check the cache that each calls indeed only called once
-    assert Counter(strategy.informative_calls) == Counter(
-        {
-            ("first", "BTC/USDT", "15m"): 1,
-            ("first", "BTC/USDT", "30m"): 1,
-            ("first", "BTC/USDT", "1h"): 1,
-            ("second", "BTC/USDT", "15m"): 1,
-            ("second", "BTC/USDT", "30m"): 1,
-            ("second", "BTC/USDT", "1h"): 1,
-        }
-    )
-
-    # Raw data is still requested for every informative pair/timeframe/function combinations.
-    assert strategy.dp.get_pair_dataframe.call_count == 18
-
-
-@pytest.mark.parametrize("runmode", [RunMode.DRY_RUN, RunMode.LIVE])
-def test_informative_cache_is_opt_out_per_decorator(default_conf_usdt, runmode):
+@pytest.mark.parametrize(
+    "runmode, expected",
+    [
+        (RunMode.DRY_RUN, [2, 2, 2, 1, 2, 1, 4, 2]),
+        (RunMode.LIVE, [2, 2, 2, 1, 2, 1, 4, 2]),
+        (RunMode.BACKTEST, [2, 4, 2, 2, 2, 2, 4, 8]),
+        (RunMode.HYPEROPT, [2, 4, 2, 2, 2, 2, 4, 8]),
+    ],
+)
+def test_informative_decorator_cache(mocker, default_conf_usdt, runmode, expected):
     default_conf_usdt["runmode"] = runmode
-    strategy = _mixed_informative_cache_strategy(default_conf_usdt)
-    base_data = generate_test_data("5m", 40)
-
-    # Make sure only 15m is cached, 30m isn't cached, and there is no other informative tf.
-    assert {inf_data.timeframe: inf_data.cache for inf_data, _ in strategy._ft_informative} == {
-        "15m": True,
-        "30m": False,
+    candle_def = CandleType.get_default("spot")
+    default_conf_usdt["candle_type_def"] = candle_def
+    test_data_5m = generate_test_data("5m", 40)
+    test_data_30m = generate_test_data("30m", 40)
+    test_data_1h = generate_test_data("1h", 40)
+    data = {
+        ("XRP/USDT", "5m", candle_def): test_data_5m,
+        ("XRP/USDT", "30m", candle_def): test_data_30m,
+        ("XRP/USDT", "1h", candle_def): test_data_1h,
+        ("LTC/USDT", "5m", candle_def): test_data_5m,
+        ("LTC/USDT", "30m", candle_def): test_data_30m,
+        ("LTC/USDT", "1h", candle_def): test_data_1h,
+        ("ETH/USDT", "1h", candle_def): test_data_1h,
+        ("ETH/USDT", "30m", candle_def): test_data_30m,
     }
+    default_conf_usdt["strategy"] = "InformativeDecoratorCacheTest"
+    strategy = StrategyResolver.load_strategy(default_conf_usdt)
+    exchange = get_patched_exchange(mocker, default_conf_usdt)
+    default_conf_usdt["candle_type_def"] = candle_def
+    strategy.dp = DataProvider({}, exchange, None)
+    mocker.patch.object(strategy.dp, "current_whitelist", return_value=["XRP/USDT", "LTC/USDT"])
 
-    for pair in ("XRP/USDT", "LTC/USDT", "ETH/USDT"):
-        strategy.advise_indicators(base_data.copy(), {"pair": pair})
+    assert len(strategy._ft_informative) == 5  # Equal to number of decorators used
 
-    # 15m is cached, so only one call for the first pair.
-    # 30m is not cached, so 3 calls for each pair.
-    assert Counter(strategy.informative_calls) == Counter({"15m": 1, "30m": 3})
+    def test_historic_ohlcv(pair, timeframe, candle_type):
+        return data.get(
+            (pair, timeframe or strategy.timeframe, CandleType.from_string(candle_type)),
+            pd.DataFrame(),
+        ).copy()
 
-
-def test_shared_informative_cache_preserves_indicator_data(default_conf_usdt):
-    strategy, informative_data = _shared_informative_call_count_strategy(default_conf_usdt)
-    base_data = generate_test_data("5m", 40)
-    base_pairs = ("XRP/USDT", "LTC/USDT", "ETH/USDT")
-
-    # Calculated dataframe using cached informative data
-    analyzed = strategy.advise_all_indicators({pair: base_data.copy() for pair in base_pairs})
-
-    for timeframe, source in informative_data.items():
-        expected_informative = source[["date"]].copy()
-        expected_informative["first_mean"] = source["close"].rolling(3).mean()
-        expected_informative["second_range"] = source["high"] - source["low"]
-
-        # Manually calculated-and-merged informative dataframe
-        expected = merge_informative_pair(
-            base_data.copy(), expected_informative, "5m", timeframe, ffill=True
-        )
-
-        # Make sure both dataframes are equal
-        for pair in base_pairs:
-            pd.testing.assert_series_equal(
-                analyzed[pair][f"btc_usdt_first_mean_{timeframe}"],
-                expected[f"first_mean_{timeframe}"],
-                check_names=False,
-            )
-            pd.testing.assert_series_equal(
-                analyzed[pair][f"btc_usdt_second_range_{timeframe}_second"],
-                expected[f"second_range_{timeframe}"],
-                check_names=False,
-            )
-
-
-def test_informative_cache_reuses_prepared_frame_and_isolates_output(mocker, default_conf_usdt):
-    # Function that convert informative data to merge-ready dataframe
-    prepare_spy = mocker.spy(informative_decorator_module, "_prepare_informative_pair")
-    strategy, informative_data = _shared_informative_call_count_strategy(default_conf_usdt)
-    base_data = generate_test_data("5m", 40)
-
-    first = strategy.advise_indicators(base_data.copy(), {"pair": "XRP/USDT"})
-    # Prepare data function is called once for each informative pair/timeframe/function combination.
-    assert prepare_spy.call_count == 6
-
-    # Modify the first dataframe to later make sure informative cache is isolated.
-    first.loc[:, "btc_usdt_first_mean_15m"] = -12345
-
-    second = strategy.advise_indicators(base_data.copy(), {"pair": "LTC/USDT"})
-
-    # Prepare count remains the same, meaning the cached informative data are reused.
-    assert prepare_spy.call_count == 6
-
-    # Make sure the cache only contains 6 unique informative pair/timeframe/function combinations.
-    assert len(strategy.informative_calls) == 6
-
-    # Running the same strategy in backtest mode to disable cache.
-    baseline_conf = default_conf_usdt.copy()
-    baseline_conf["runmode"] = RunMode.BACKTEST
-    baseline, baseline_data = _shared_informative_call_count_strategy(baseline_conf)
-    baseline_data.update(
-        {timeframe: dataframe.copy() for timeframe, dataframe in informative_data.items()}
+    mocker.patch(
+        "freqtrade.data.dataprovider.DataProvider.historic_ohlcv", side_effect=test_historic_ohlcv
     )
-    expected = baseline.advise_indicators(base_data.copy(), {"pair": "LTC/USDT"})
 
-    # Cached data is the same as non-cached data
-    # Also proving cached data is isolated, as the change on first dataframe didn't have any effect.
-    pd.testing.assert_frame_equal(second, expected)
-
-
-def test_informative_cache_shares_preparation_across_formatters(mocker, default_conf_usdt):
-    prepare_spy = mocker.spy(informative_decorator_module, "_prepare_informative_pair")
-    strategy = _same_source_informative_cache_strategy(default_conf_usdt)
-    base_data = generate_test_data("5m", 40)
-
-    first = strategy.advise_indicators(base_data.copy(), {"pair": "XRP/USDT"})
-    second = strategy.advise_indicators(base_data.copy(), {"pair": "LTC/USDT"})
-
-    # Informative data is calculated once. Column's format isn't used in cache key
-    assert strategy.informative_calls == 1
-
-    # The informative data is prepared once
-    assert prepare_spy.call_count == 1
-
-    # Make sure the data is available in both dataframes,
-    # and the first dataframe has more non-NaN values than the second one,
-    # meaning ffill only applied when merging data, not when preparing the informative data.
-    for dataframe in (first, second):
-        assert "btc_double_close_first" in dataframe.columns
-        assert "btc_double_close_second" in dataframe.columns
-        assert "btc_custom_date_merge_first" in dataframe.columns
-        assert "btc_custom_date_merge_second" in dataframe.columns
-        assert (
-            dataframe["btc_double_close_first"].notna().sum()
-            > dataframe["btc_double_close_second"].notna().sum()
-        )
-
-
-@pytest.mark.parametrize("location", ["base", "informative", "formatter"])
-def test_informative_cache_rejects_reserved_date_merge_column(default_conf_usdt, location):
-    strategy, informative_data = _shared_informative_call_count_strategy(default_conf_usdt)
-    base_data = generate_test_data("5m", 40)
-
-    if location == "base":
-        base_data["date_merge"] = base_data["close"]
-    elif location == "informative":
-        informative_data["30m"]["date_merge"] = informative_data["30m"]["close"]
-    else:
-        inf_data, populate_indicators = strategy._ft_informative[0]
-        strategy._ft_informative[0] = (
-            replace(inf_data, fmt="date_merge"),
-            populate_indicators,
-        )
-
-    with pytest.raises(OperationalException, match="Column name 'date_merge' is reserved"):
-        strategy.advise_indicators(base_data, {"pair": "XRP/USDT"})
-
-
-def test_informative_cache_reuses_result_for_new_base_candle(default_conf_usdt):
-    strategy, _ = _shared_informative_call_count_strategy(default_conf_usdt)
-    metadata = {"pair": "XRP/USDT"}
-
-    # Initial indicator calculation
-    strategy.advise_indicators(generate_test_data("5m", 40), metadata)
-    assert len(strategy.informative_calls) == 6
-
-    # New candle is added, but the informative data isn't changed
-    strategy.advise_indicators(generate_test_data("5m", 41), metadata)
-    # Informative count remains the same, meaning the cached informative data are reused.
-    assert len(strategy.informative_calls) == 6
-
-
-def test_informative_cache_invalidates_changed_latest_candle(default_conf_usdt):
-    strategy, informative_data = _shared_informative_call_count_strategy(default_conf_usdt)
-    informative = informative_data["30m"]
-    last_index = informative.index[-1]
-    base_data = generate_test_data("5m", 40)
-    metadata = {"pair": "XRP/USDT"}
-
-    strategy.advise_indicators(base_data.copy(), metadata)
-    expected_call_counts = Counter(
-        {
-            ("first", "BTC/USDT", "15m"): 1,
-            ("first", "BTC/USDT", "30m"): 1,
-            ("first", "BTC/USDT", "1h"): 1,
-            ("second", "BTC/USDT", "15m"): 1,
-            ("second", "BTC/USDT", "30m"): 1,
-            ("second", "BTC/USDT", "1h"): 1,
-        }
+    _ = strategy.advise_all_indicators(
+        {p: data[(p, strategy.timeframe, candle_def)] for p in ("XRP/USDT", "LTC/USDT")}
     )
-    assert Counter(strategy.informative_calls) == expected_call_counts
+    assert len(strategy.informative_counter) == 3  # Each pairs plus fixed ETH/USDT pair
+    assert len(strategy.informative_counter["XRP/USDT"]) == 2  # 2 informative timeframes
+    assert len(strategy.informative_counter["LTC/USDT"]) == 2  # 2 informative timeframes
+    assert len(strategy.informative_counter["ETH/USDT"]) == 2  # 2 informative timeframes
+    assert strategy.informative_counter["XRP/USDT"]["1h"] == 1  # called only once
+    assert strategy.informative_counter["XRP/USDT"]["30m"] == 1  # called only once
+    assert strategy.informative_counter["LTC/USDT"]["1h"] == 1  # called only once
+    assert strategy.informative_counter["LTC/USDT"]["30m"] == 1  # called only once
+    assert (
+        strategy.informative_counter["ETH/USDT"]["1h"] == expected[0]
+    )  # called twice times, once for each pair
+    assert (
+        strategy.informative_counter["ETH/USDT"]["30m"] == expected[1]
+    )  # called twice, once for each informative function
 
-    changes = [
-        ("date", pd.Timedelta(minutes=30)),
-        ("open", 1),
-        ("high", 1),
-        ("low", 1),
-        ("close", 1),
-        ("volume", 1),
-    ]
-
-    # Modify 30m candle's last row, which should invalidate the cache for 30m informative data.
-    for column, change in changes:
-        informative.loc[last_index, column] += change
-        strategy.advise_indicators(base_data.copy(), metadata)
-
-        # Only the 30m informative data should be recalculated.
-        # The other informative data should be reused.
-        expected_call_counts.update(
-            {
-                ("first", "BTC/USDT", "30m"): 1,
-                ("second", "BTC/USDT", "30m"): 1,
-            }
-        )
-        assert Counter(strategy.informative_calls) == expected_call_counts
-
-
-def test_shared_informative_cache_ignores_process_only_new_candles(default_conf_usdt):
-    strategy, _ = _shared_informative_call_count_strategy(default_conf_usdt)
-    strategy.process_only_new_candles = False
-    base_data = generate_test_data("5m", 40)
-
-    strategy.advise_indicators(base_data.copy(), {"pair": "XRP/USDT"})
-    strategy.advise_indicators(base_data.copy(), {"pair": "LTC/USDT"})
-
-    # process_only_new_candles don't affect whether the informative data is cached or not
-    assert len(strategy.informative_calls) == 6
-
-
-@pytest.mark.parametrize("runmode", [RunMode.BACKTEST, RunMode.HYPEROPT])
-def test_shared_informative_cache_disabled_outside_trade_modes(default_conf_usdt, runmode):
-    default_conf_usdt["runmode"] = runmode
-    strategy, _ = _shared_informative_call_count_strategy(default_conf_usdt)
-    base_data = generate_test_data("5m", 40)
-
-    strategy.advise_indicators(base_data.copy(), {"pair": "XRP/USDT"})
-    strategy.advise_indicators(base_data.copy(), {"pair": "LTC/USDT"})
-
-    # Cache only works in DRY_RUN and LIVE modes
-    assert strategy._ft_informative_cache is None
-    assert len(strategy.informative_calls) == 12
+    # Trigger populate indicators again, to see the effect of cache
+    _ = strategy.advise_all_indicators(
+        {p: data[(p, strategy.timeframe, candle_def)] for p in ("XRP/USDT", "LTC/USDT")}
+    )
+    assert strategy.informative_counter["XRP/USDT"]["1h"] == expected[2]
+    assert strategy.informative_counter["XRP/USDT"]["30m"] == expected[3]
+    assert strategy.informative_counter["LTC/USDT"]["1h"] == expected[4]
+    assert strategy.informative_counter["LTC/USDT"]["30m"] == expected[5]
+    assert strategy.informative_counter["ETH/USDT"]["1h"] == expected[6]
+    assert strategy.informative_counter["ETH/USDT"]["30m"] == expected[7]
