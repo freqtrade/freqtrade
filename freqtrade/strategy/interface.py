@@ -660,7 +660,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         current_entry_profit: float,
         current_exit_profit: float,
         **kwargs,
-    ) -> float | None | tuple[float | None, str | None]:
+    ) -> float | tuple[float | None, str | None] | None:
         """
         Custom trade adjustment logic, returning the stake amount that a trade should be
         increased or decreased.

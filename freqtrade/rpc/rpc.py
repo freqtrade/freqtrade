@@ -1790,7 +1790,7 @@ class RPC:
 
     def health(self) -> dict[str, str | int | None]:
         last_p = self._freqtrade.last_process
-        res: dict[str, None | str | int] = {
+        res: dict[str, str | int | None] = {
             "last_process": None,
             "last_process_loc": None,
             "last_process_ts": None,
