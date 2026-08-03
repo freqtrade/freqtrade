@@ -29,6 +29,7 @@ class InformativeCacheKey:
     candle_type: CandleType | None
     strategy_timeframe: str
 
+
 _INFORMATIVE_DATE_MERGE = "date_merge"
 
 
@@ -165,7 +166,7 @@ def _get_populated_informative_dataframe(
     cache_key: InformativeCacheKey,
     cache: InformativeCache | None,
     timeframe: str,
-) -> tuple[DataFrame, bool]:
+) -> DataFrame:
     if _INFORMATIVE_DATE_MERGE in dataframe.columns:
         _raise_reserved_column_name()
 
@@ -173,13 +174,13 @@ def _get_populated_informative_dataframe(
         fingerprint = _informative_dataframe_fingerprint(dataframe)
         cached: _InformativeCacheEntry | None = cache.get(cache_key)
         if cached is not None and cached.fingerprint == fingerprint:
-            return cached.prepared.dataframe.copy(), True
+            return cached.prepared.dataframe.copy()
 
     dataframe = populate_indicators_fn(strategy, dataframe, metadata)
     if _INFORMATIVE_DATE_MERGE in dataframe.columns:
         _raise_reserved_column_name()
     if cache is None:
-        return dataframe, False
+        return dataframe
 
     prepared = _prepare_informative_pair(
         dataframe,
@@ -189,7 +190,7 @@ def _get_populated_informative_dataframe(
         date_merge_column=_INFORMATIVE_DATE_MERGE,
     )
     cache[cache_key] = _InformativeCacheEntry(fingerprint, prepared)
-    return prepared.dataframe.copy(), True
+    return prepared.dataframe.copy()
 
 
 def _create_and_merge_informative_pair(
@@ -235,15 +236,15 @@ def _create_and_merge_informative_pair(
             fmt = "{base}_{quote}_" + fmt  # Informatives of other pairs
 
     inf_metadata = {"pair": asset, "timeframe": timeframe}
-    cache: InformativeCache | None = (
-        getattr(strategy, "_ft_informative_cache", None) if inf_data.cache else None
-    )
     inf_dataframe = strategy.dp.get_pair_dataframe(asset, timeframe1, candle_type)
     if inf_dataframe.empty:
         raise ValueError(
             f"Informative dataframe for ({asset}, {timeframe1}, {candle_type}) is empty. "
             "Can't populate informative indicators."
         )
+    cache: InformativeCache | None = (
+        getattr(strategy, "_ft_informative_cache", None) if inf_data.cache else None
+    )
     cache_key = InformativeCacheKey(
         callback=populate_indicators_fn,
         callback_name=populate_indicators_fn.__qualname__,
@@ -253,7 +254,7 @@ def _create_and_merge_informative_pair(
         candle_type=candle_type,
         strategy_timeframe=strategy.timeframe,
     )
-    inf_dataframe, prepared = _get_populated_informative_dataframe(
+    inf_dataframe = _get_populated_informative_dataframe(
         strategy,
         populate_indicators_fn,
         inf_dataframe,
@@ -274,9 +275,10 @@ def _create_and_merge_informative_pair(
         "asset": asset,
         "timeframe": timeframe,
     }
+    cache_exist = cache is not None
     inf_dataframe.rename(
         columns=lambda column: _format_informative_column(
-            column, formatter, fmt_args, preserve_date_merge=prepared
+            column, formatter, fmt_args, preserve_date_merge=cache_exist
         ),
         inplace=True,
     )
@@ -287,7 +289,7 @@ def _create_and_merge_informative_pair(
             f"Duplicate column name {date_column} exists in "
             f"dataframe! Ensure column names are unique!"
         )
-    if prepared:
+    if cache_exist:
         dataframe = _merge_prepared_informative_pair(
             dataframe,
             _PreparedInformative(inf_dataframe, _INFORMATIVE_DATE_MERGE),
