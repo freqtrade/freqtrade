@@ -1560,8 +1560,10 @@ class Telegram(RPCHandler):
             [
                 [
                     dt_humanize_delta(dt_from_ts(trade["close_timestamp"])),
-                    f"{trade['pair']} (#{trade['trade_id']}"
-                    f"{(' ' + ('S' if trade['is_short'] else 'L')) if nonspot else ''})",
+                    (
+                        f"{trade['pair']} (#{trade['trade_id']}"
+                        f"{(' ' + ('S' if trade['is_short'] else 'L')) if nonspot else ''})"
+                    ),
                     f"{format_pct(trade['close_profit'])} ({trade['close_profit_abs']})",
                 ]
                 for trade in trades["trades"]

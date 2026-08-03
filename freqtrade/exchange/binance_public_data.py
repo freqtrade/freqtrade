@@ -35,7 +35,6 @@ class BadHttpStatus(Exception):
     """Not 200/404"""
 
 
-
 async def download_archive_ohlcv(
     candle_type: CandleType,
     pair: str,
