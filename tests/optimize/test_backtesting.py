@@ -112,7 +112,7 @@ def _trend(signals, buy_value, sell_value):
     n = len(signals["low"])
     buy = np.zeros(n)
     sell = np.zeros(n)
-    for i in range(0, len(signals["date"])):
+    for i in range(len(signals["date"])):
         if random.random() > 0.5:  # Both buy and sell signals at same timeframe
             buy[i] = buy_value
             sell[i] = sell_value
@@ -129,7 +129,7 @@ def _trend_alternate(dataframe=None, metadata=None):
     n = len(low)
     buy = np.zeros(n)
     sell = np.zeros(n)
-    for i in range(0, len(buy)):
+    for i in range(len(buy)):
         if i % 2 == 0:
             buy[i] = 1
         else:

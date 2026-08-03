@@ -158,7 +158,6 @@ class TestCCXTExchange:
                 assert currency in balances
                 assert isinstance(balance, dict)
                 assert balance == balances[currency]
-            pass
         else:
             pytest.skip(f"No sample Balances available for exchange {exchangename}")
 

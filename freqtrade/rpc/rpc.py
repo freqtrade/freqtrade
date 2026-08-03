@@ -405,7 +405,7 @@ class RPC:
         profit_units: dict[date, dict] = {}
         daily_stake = self._freqtrade.wallets.get_total_stake_amount()
 
-        for day in range(0, timescale):
+        for day in range(timescale):
             profitday = start_date - time_offset(day)
             # Only query for necessary columns for performance reasons.
             trades = Trade.session.execute(
@@ -830,7 +830,6 @@ class RPC:
                 return est_stake, est_bot_stake
             except (ExchangeError, PricingError) as e:
                 logger.warning(f"Error {e} getting rate for {coin}")
-                pass
         return est_stake, est_bot_stake
 
     def _rpc_balance(self, stake_currency: str, fiat_display_currency: str) -> dict:
@@ -914,7 +913,6 @@ class RPC:
                             est_stake = pos.collateral * (1 + pos.leverage) - rate * pos.position
                 except (ExchangeError, PricingError) as e:
                     logger.warning(f"Error {e} getting rate for futures {symbol} / {pos_base}")
-                    pass
 
             # Add the estimated stake (collateral + unlevered PnL) to totals
             total += est_stake

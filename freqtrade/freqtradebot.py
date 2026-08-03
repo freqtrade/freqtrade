@@ -166,7 +166,7 @@ class FreqtradeBot(LoggingMixin):
                 # This would be more efficient if scheduled in utc time, and performed at each
                 # funding interval, specified by funding_fee_times on the exchange classes
                 # However, this reduces the precision - and might therefore lead to problems.
-                for time_slot in range(0, 24):
+                for time_slot in range(24):
                     for minutes in [1, 31]:
                         t = str(time(time_slot, minutes, 2))
                         self._schedule.every().day.at(t).do(update)

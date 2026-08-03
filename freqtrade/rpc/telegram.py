@@ -894,7 +894,7 @@ class Telegram(RPCHandler):
         As an example with 50 trades, there will be int(50/50 + 0.99) = 1 message
         """
         messages_count = max(int(len(statlist) / max_trades_per_msg + 0.99), 1)
-        for i in range(0, messages_count):
+        for i in range(messages_count):
             trades = statlist[i * max_trades_per_msg : (i + 1) * max_trades_per_msg]
             if show_total and i == messages_count - 1:
                 # append total line

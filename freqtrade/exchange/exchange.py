@@ -493,7 +493,6 @@ class Exchange:
         .api will be available at this point.
         Must be overridden in child methods if required.
         """
-        pass
 
     def _log_exchange_response(self, endpoint: str, response, *, add_info=None) -> None:
         """Log exchange responses"""
