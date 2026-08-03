@@ -1853,7 +1853,7 @@ class Telegram(RPCHandler):
 
     async def send_blacklist_msg(self, blacklist: dict):
         errmsgs = []
-        for _, error in blacklist["errors"].items():
+        for error in blacklist["errors"].values():
             errmsgs.append(f"Error: {error['error_msg']}")
         if errmsgs:
             await self._send_msg("\n".join(errmsgs))

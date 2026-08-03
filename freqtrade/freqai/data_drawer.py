@@ -500,7 +500,7 @@ class FreqaiDataDrawer:
                 )
                 num_delete = len(sorted_dict) - num_keep
                 deleted = 0
-                for k, v in sorted_dict.items():
+                for v in sorted_dict.values():
                     if deleted >= num_delete:
                         break
                     logger.info(f"Freqai purging old model file {v}")
