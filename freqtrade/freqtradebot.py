@@ -534,6 +534,15 @@ class FreqtradeBot(LoggingMixin):
                     # We knew this order, but didn't have it updated properly
                     order_obj = trade_order[0]
                 else:
+                    existing_order = Order.order_by_id(order["id"], trade.pair)
+                    if existing_order is not None and existing_order.ft_trade_id != trade.id:
+                        # Order belongs to a different trade
+                        logger.info(
+                            f"Order {order['id']} for {trade.pair} already belongs to "
+                            f"trade {existing_order.ft_trade_id} - skipping."
+                        )
+                        continue
+
                     logger.info(f"Found previously unknown order {order['id']} for {trade.pair}.")
 
                     order_obj = Order.parse_from_ccxt_object(order, trade.pair, order["side"])
