@@ -11,7 +11,7 @@ import re
 from collections.abc import Callable, Coroutine
 from copy import deepcopy
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from functools import partial, wraps
 from html import escape
 from itertools import chain
@@ -51,6 +51,7 @@ from freqtrade.util import (
     format_pct,
     round_value,
 )
+from freqtrade.util.datetime_helpers import dt_now
 
 
 MAX_MESSAGE_LENGTH = MessageLimit.MAX_TEXT_LENGTH
@@ -1134,7 +1135,7 @@ class Telegram(RPCHandler):
         stake_cur = self._config["stake_currency"]
         fiat_disp_cur = self._config.get("fiat_display_currency", "")
 
-        start_date = datetime.fromtimestamp(0)
+        start_date = dt_from_ts(0)
         timescale = None
         try:
             if context.args:
@@ -1144,7 +1145,7 @@ class Telegram(RPCHandler):
                         direction = arg
                         context.args.pop(0)  # Remove direction from args
                 timescale = int(context.args[0]) - 1
-                today_start = datetime.combine(date.today(), datetime.min.time())
+                today_start = datetime.combine(dt_now().date(), datetime.min.time())
                 start_date = today_start - timedelta(days=timescale)
         except (TypeError, ValueError, IndexError):
             pass
@@ -2127,7 +2128,7 @@ class Telegram(RPCHandler):
             )
         else:
             reply_markup = InlineKeyboardMarkup([[]])
-        msg += f"\nUpdated: {datetime.now().ctime()}"
+        msg += f"\nUpdated: {dt_now().ctime()}"
         if not query.message:
             return
 

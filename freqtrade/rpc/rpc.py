@@ -591,7 +591,7 @@ class RPC:
         """
         Returns cumulative profit statistics, with optional direction filter (long/short)
         """
-        start_date = datetime.fromtimestamp(0) if start_date is None else start_date
+        start_date = dt_from_ts(0) if start_date is None else start_date
 
         trade_filter = (
             Trade.is_open.is_(False) & (Trade.close_date >= start_date)
@@ -1492,7 +1492,7 @@ class RPC:
             buffer = bufferHandler.buffer
         records = [
             [
-                format_date(datetime.fromtimestamp(r.created)),
+                format_date(dt_from_ts(r.created)),
                 r.created * 1000,
                 r.name,
                 r.levelname,
