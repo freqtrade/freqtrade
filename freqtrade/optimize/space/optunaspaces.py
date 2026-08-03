@@ -28,8 +28,8 @@ class ft_CategoricalDistribution(CategoricalDistribution):
 class ft_IntDistribution(IntDistribution):
     def __init__(
         self,
-        low: int | float,
-        high: int | float,
+        low: float,
+        high: float,
         name: str,
         **kwargs,
     ):
