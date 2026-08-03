@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from cachetools import LRUCache
@@ -17,7 +17,17 @@ from freqtrade.strategy.strategy_helper import (
 
 
 PopulateIndicators = Callable[[Any, DataFrame, dict], DataFrame]
-InformativeCacheKey = tuple[PopulateIndicators, str, str, str, CandleType | None, str]
+
+
+@dataclass(frozen=True, slots=True)
+class InformativeCacheKey:
+    callback: PopulateIndicators = field(repr=False)
+    callback_name: str = field(compare=False, hash=False)
+    asset: str
+    informative_timeframe: str
+    effective_timeframe: str
+    candle_type: CandleType | None
+    strategy_timeframe: str
 
 _INFORMATIVE_DATE_MERGE = "date_merge"
 
@@ -234,13 +244,14 @@ def _create_and_merge_informative_pair(
             f"Informative dataframe for ({asset}, {timeframe1}, {candle_type}) is empty. "
             "Can't populate informative indicators."
         )
-    cache_key: InformativeCacheKey = (
-        populate_indicators_fn,
-        asset,
-        timeframe,
-        timeframe1,
-        candle_type,
-        strategy.timeframe,
+    cache_key = InformativeCacheKey(
+        callback=populate_indicators_fn,
+        callback_name=populate_indicators_fn.__qualname__,
+        asset=asset,
+        informative_timeframe=timeframe,
+        effective_timeframe=timeframe1,
+        candle_type=candle_type,
+        strategy_timeframe=strategy.timeframe,
     )
     inf_dataframe, prepared = _get_populated_informative_dataframe(
         strategy,
