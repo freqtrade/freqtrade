@@ -271,9 +271,7 @@ async def test_emc_create_connection_error(default_conf, caplog, mocker):
         emc._running = False
 
     # Stop the connection loop on the first retry-sleep instead of waiting
-    mocker.patch(
-        "freqtrade.rpc.external_message_consumer.asyncio.sleep", side_effect=stop_running
-    )
+    mocker.patch("freqtrade.rpc.external_message_consumer.asyncio.sleep", side_effect=stop_running)
 
     try:
         emc._running = True

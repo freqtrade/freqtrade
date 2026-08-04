@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from logging import Handler
 
 from rich._null_file import NullFile
@@ -21,9 +21,7 @@ class FtRichHandler(Handler):
             msg = self.format(record)
             # Format log message
             log_time = Text(
-                datetime.fromtimestamp(record.created, tz=timezone.UTC).strftime(
-                    "%Y-%m-%d %H:%M:%S,%f"
-                )[:-3]
+                datetime.fromtimestamp(record.created).strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]  # noqa: DTZ006
                 if record.created
                 else "N/A",
             )
