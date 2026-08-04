@@ -293,6 +293,9 @@ max-complexity = 12
   "S105",  # Possible hardcoded password assigned to: "secret"
   "S106",  # Possible hardcoded password assigned to argument: "token_type"
   "S110",  # `try`-`except`-`pass` detected, consider logging the exception
+  "TRY002", # create your own Exception
+  "DTZ005",  # Use timezone-aware datetime objects
+  "DTZ", # Use timezone-aware datetime objects
   ]
 
 "freqtrade/templates/**.py" = [
