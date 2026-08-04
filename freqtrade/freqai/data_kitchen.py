@@ -120,7 +120,6 @@ class FreqaiDataKitchen:
             self.full_path / f"sub-train-{pair.split('/')[0]}_{trained_timestamp}"
         )
 
-
     def make_train_test_datasets(
         self, filtered_dataframe: DataFrame, labels: DataFrame
     ) -> dict[Any, Any]:
@@ -476,7 +475,6 @@ class FreqaiDataKitchen:
             self.full_df.columns
         ].fillna(value=0)
         self.full_df = DataFrame()
-
 
     def create_fulltimerange(self, backtest_tr: str, backtest_period_days: int) -> str:
         if not isinstance(backtest_period_days, int):
@@ -883,7 +881,6 @@ class FreqaiDataKitchen:
         # in case targets are classifications
         for label in self.unique_class_list:
             self.data["labels_mean"][label], self.data["labels_std"][label] = 0, 0
-
 
     def remove_features_from_df(self, dataframe: DataFrame) -> DataFrame:
         """

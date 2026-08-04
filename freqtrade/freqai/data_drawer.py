@@ -528,7 +528,6 @@ class FreqaiDataDrawer:
         with (save_path / f"{dk.model_filename}_{METADATA}.json").open("w") as fp:
             rapidjson.dump(dk.data, fp, default=self.np_encoder, number_mode=METADATA_NUMBER_MODE)
 
-
     def save_data(self, model: Any, coin: str, dk: FreqaiDataKitchen) -> None:
         """
         Saves all data associated with a model for a single sub-train time range
@@ -584,7 +583,6 @@ class FreqaiDataDrawer:
         self.meta_data_dictionary[coin][FEATURE_PIPELINE] = dk.feature_pipeline
         self.meta_data_dictionary[coin][LABEL_PIPELINE] = dk.label_pipeline
         self.save_drawer_to_disk()
-
 
     def load_metadata(self, dk: FreqaiDataKitchen) -> None:
         """

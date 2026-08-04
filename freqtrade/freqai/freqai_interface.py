@@ -739,7 +739,6 @@ class IFreqaiModel(ABC):
             f = spy.stats.norm.fit(self.dd.historic_predictions[dk.pair][label].tail(num_candles))
             dk.data["labels_mean"][label], dk.data["labels_std"][label] = f[0], f[1]
 
-
     def inference_timer(self, do: Literal["start", "stop"] = "start", pair: str = ""):
         """
         Timer designed to track the cumulative time spent in FreqAI for one pass through
@@ -934,7 +933,6 @@ class IFreqaiModel(ABC):
                         dk.full_df.at[index, f"{extra_col}"] = self.dk.data[
                             "extra_returns_per_train"
                         ][extra_col]
-
 
     def update_metadata(self, metadata: dict[str, Any]):
         """
