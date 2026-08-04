@@ -210,9 +210,7 @@ def test_ohlcv_to_dataframe_multi(timeframe):
         data1.loc[:, "date"] = data1.loc[:, "date"] + pd.to_timedelta("1W")
     else:
         # Shift by half a timeframe
-        timeframe_f = (
-            timeframe.upper() if timeframe.endswith("d") or timeframe.endswith("w") else timeframe
-        )
+        timeframe_f = timeframe.upper() if timeframe.endswith(("d", "w")) else timeframe
         data1.loc[:, "date"] = data1.loc[:, "date"] + (pd.to_timedelta(timeframe_f) / 2)
     df2 = ohlcv_to_dataframe(data1, timeframe, "UNITTEST/USDT")
 

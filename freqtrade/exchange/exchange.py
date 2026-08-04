@@ -493,7 +493,6 @@ class Exchange:
         .api will be available at this point.
         Must be overridden in child methods if required.
         """
-        pass
 
     def _log_exchange_response(self, endpoint: str, response, *, add_info=None) -> None:
         """Log exchange responses"""
@@ -700,7 +699,7 @@ class Exchange:
 
             if isinstance(markets, Exception):
                 raise markets
-            return None
+            return
         except TimeoutError as e:
             logger.warning("Could not load markets. Reason: %s", e)
             raise TemporaryError from e
@@ -717,7 +716,7 @@ class Exchange:
             and self._last_markets_refresh > 0
             and (self._last_markets_refresh + self.markets_refresh_interval > dt_ts())
         ):
-            return None
+            return
         logger.debug("Performing scheduled market reload..")
         try:
             # on initial load, we retry 3 times to ensure we get the markets
@@ -3187,11 +3186,7 @@ class Exchange:
                             last_cached_ms = all_stored_ticks_df.iloc[-1]["timestamp"]
                             from_id = all_stored_ticks_df.iloc[-1]["id"]
                             # only use cached if it's closer than first_candle_ms
-                            since_ms = (
-                                last_cached_ms
-                                if last_cached_ms > first_candle_ms
-                                else first_candle_ms
-                            )
+                            since_ms = max(first_candle_ms, last_cached_ms)
                         else:
                             # Skip cache, it's too old
                             all_stored_ticks_df = DataFrame(

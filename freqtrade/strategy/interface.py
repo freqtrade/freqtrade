@@ -277,7 +277,6 @@ class IStrategy(ABC, HyperStrategyMixin):
         Called only once after bot instantiation.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         """
-        pass
 
     def bot_loop_start(self, current_time: datetime, **kwargs) -> None:
         """
@@ -287,7 +286,6 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         """
-        pass
 
     def check_buy_timeout(
         self, pair: str, trade: Trade, order: Order, current_time: datetime, **kwargs
@@ -437,7 +435,6 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         """
-        pass
 
     def custom_stoploss(
         self,
@@ -660,7 +657,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         current_entry_profit: float,
         current_exit_profit: float,
         **kwargs,
-    ) -> float | None | tuple[float | None, str | None]:
+    ) -> float | tuple[float | None, str | None] | None:
         """
         Custom trade adjustment logic, returning the stake amount that a trade should be
         increased or decreased.

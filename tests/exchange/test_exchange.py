@@ -4938,7 +4938,6 @@ def test_ohlcv_candle_limit(default_conf, mocker, exchange_name):
         ("BTCUSDT", None, "USDT", "binance", True, False, False, "spot", {}, False),
         ("USDT/BTC", "BTC", None, "binance", True, False, False, "spot", {}, False),
         ("BTCUSDT", "BTC", None, "binance", True, False, False, "spot", {}, False),
-        ("BTC/USDT", "BTC", "USDT", "binance", True, False, False, "spot", {}, True),
         # Futures mode, spot pair
         ("BTC/USDT", "BTC", "USDT", "binance", True, False, False, "futures", {}, False),
         ("BTC/USDT", "BTC", "USDT", "binance", True, False, False, "margin", {}, False),

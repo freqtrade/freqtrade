@@ -238,7 +238,7 @@ class LookaheadAnalysis(BaseAnalysis):
                     f"minimum trade amount = {self.minimum_trade_amount}. "
                     f"Exiting this lookahead-analysis"
                 )
-                return None
+                return
             if "force_exit" in result_row["exit_reason"]:
                 logger.info(
                     f"found force-exit in pair: {result_row['pair']}, "

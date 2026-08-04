@@ -24,6 +24,7 @@ from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.strategy.interface import IStrategy
+from freqtrade.util import dt_from_ts
 
 
 logger = logging.getLogger(__name__)
@@ -500,7 +501,7 @@ class FreqaiDataDrawer:
                 )
                 num_delete = len(sorted_dict) - num_keep
                 deleted = 0
-                for k, v in sorted_dict.items():
+                for v in sorted_dict.values():
                     if deleted >= num_delete:
                         break
                     logger.info(f"Freqai purging old model file {v}")
@@ -787,7 +788,7 @@ class FreqaiDataDrawer:
             all_pairs_end_dates.append(pair_historic_data.date_pred.max())
 
         global_metadata = self.load_global_metadata_from_disk()
-        start_date = datetime.fromtimestamp(int(global_metadata["start_dry_live_date"]))
+        start_date = dt_from_ts(int(global_metadata["start_dry_live_date"]))
         end_date = max(all_pairs_end_dates)
         # add 1 day to string timerange to ensure BT module will load all dataframe data
         end_date = end_date + timedelta(days=1)

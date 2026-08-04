@@ -1944,7 +1944,7 @@ class Backtesting:
                 self.results["strategy_comparison"].extend(results["strategy_comparison"])
             else:
                 self.results = results
-            dt_appendix = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            dt_appendix = dt_now().strftime("%Y-%m-%d_%H-%M-%S")
             if self.config.get("export", "none") in ("trades", "signals"):
                 combined_res = combined_dataframes_with_rel_mean(data, min_date, max_date)
                 store_backtest_results(

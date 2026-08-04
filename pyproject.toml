@@ -231,10 +231,12 @@ exclude-newer = "1 week"
 
 [tool.uv.exclude-newer-package]
 ccxt = false
+ruff = "4 days"
 
 [tool.ruff]
 line-length = 100
-extend-exclude = [".env", ".venv"]
+# TODO: markdown files should be linted.
+extend-exclude = [".env", ".venv", "*.md"]
 
 [tool.ruff.lint]
 extend-select = [
@@ -248,11 +250,9 @@ extend-select = [
   "I",      # isort
   "A",      # flake8-builtins
   "TID",    # flake8-tidy-imports
-  # "EXE",  # flake8-executable
   # "C4",     # flake8-comprehensions
   "YTT",    # flake8-2020
   "S",      # flake8-bandit
-  # "DTZ",  # flake8-datetimez
   # "RSE",  # flake8-raise
   # "TCH",  # flake8-type-checking
   "PTH",    # flake8-use-pathlib
@@ -275,6 +275,18 @@ extend-ignore = [
   "RUF012",  # mutable-class-default
   "RUF022",  # unsorted-dunder-all
   "RUF005",  # list concatenation
+  # TODO: the below rules are in the default now and should be reconsidered.
+  "N999",  # Invalid module name
+  "PLC0206", # Extracting value from dictionary without calling `.items()`
+  # "DTZ",  # Use timezone-aware datetime objects
+  "DTZ007",  # Use timezone-aware datetime objects
+  "PLR2044",
+  "TRY401",  # Redundant exception object in logging.exception call
+  "TRY",
+  "BLE",
+  "SIM",
+  "C4",  # flake8-comprehensions
+  "PLR",
 ]
 
 [tool.ruff.lint.mccabe]
@@ -291,6 +303,9 @@ max-complexity = 12
   "S105",  # Possible hardcoded password assigned to: "secret"
   "S106",  # Possible hardcoded password assigned to argument: "token_type"
   "S110",  # `try`-`except`-`pass` detected, consider logging the exception
+  "TRY002", # create your own Exception
+  "DTZ005",  # Use timezone-aware datetime objects
+  "DTZ", # Use timezone-aware datetime objects
   ]
 
 "freqtrade/templates/**.py" = [
