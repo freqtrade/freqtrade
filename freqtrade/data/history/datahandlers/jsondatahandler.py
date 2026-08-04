@@ -140,7 +140,6 @@ class JsonDataHandler(IDataHandler):
             # Convert trades dict to list
             logger.info("Old trades format detected - converting")
             tradesdata = trades_dict_to_list(tradesdata)
-            pass
         return trades_list_to_df(tradesdata, convert=False)
 
     @classmethod

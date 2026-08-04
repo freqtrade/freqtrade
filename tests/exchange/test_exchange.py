@@ -2146,7 +2146,6 @@ def test_fetch_orders_multi(
 
     mocker.patch(f"{EXMS}.exchange_has", has_resp)
 
-    #
     resp = exchange.fetch_orders("mocked", start_time)
     assert api_mock.fetch_orders.call_count == expected[0]
     assert api_mock.fetch_open_orders.call_count == expected[1]
@@ -4938,7 +4937,6 @@ def test_ohlcv_candle_limit(default_conf, mocker, exchange_name):
         ("BTCUSDT", None, "USDT", "binance", True, False, False, "spot", {}, False),
         ("USDT/BTC", "BTC", None, "binance", True, False, False, "spot", {}, False),
         ("BTCUSDT", "BTC", None, "binance", True, False, False, "spot", {}, False),
-        ("BTC/USDT", "BTC", "USDT", "binance", True, False, False, "spot", {}, True),
         # Futures mode, spot pair
         ("BTC/USDT", "BTC", "USDT", "binance", True, False, False, "futures", {}, False),
         ("BTC/USDT", "BTC", "USDT", "binance", True, False, False, "margin", {}, False),

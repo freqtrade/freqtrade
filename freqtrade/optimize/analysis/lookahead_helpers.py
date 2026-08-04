@@ -44,9 +44,11 @@ class LookaheadAnalysisSubFunctions:
                     [
                         inst.strategy_obj["location"].parts[-1],
                         inst.strategy_obj["name"],
-                        "too few trades caught "
-                        f"({inst.current_analysis.total_signals}/{config['minimum_trade_amount']})."
-                        f"Test failed.",
+                        (
+                            "too few trades caught "
+                            f"({inst.current_analysis.total_signals}/{config['minimum_trade_amount']})."
+                            f"Test failed."
+                        ),
                     ]
                 )
             elif inst.failed_bias_check:

@@ -3,7 +3,7 @@
 from datetime import UTC
 
 import pandas as pd
-from numpy import nan
+from numpy import isnan
 from pandas import DataFrame, Timestamp
 
 from freqtrade.data.btanalysis.historic_precision import get_tick_size_over_time
@@ -45,7 +45,7 @@ def test_get_tick_size_over_time():
     assert len(result) == 3
 
     # Before
-    assert result.asof("2019-01-01 00:00:00+00:00") is nan
+    assert isnan(result.asof("2019-01-01 00:00:00+00:00"))
     # January should have 5 significant digits (based on 1.23456789 being the most precise value)
     # which should be converted to 0.00001
 
@@ -168,7 +168,7 @@ def test_get_tick_size_over_time_small_numbers():
     assert len(result) == 3
 
     # Before
-    assert result.asof("2019-01-01 00:00:00+00:00") is nan
+    assert isnan(result.asof("2019-01-01 00:00:00+00:00"))
     # January should have 5 significant digits (based on 1.23456789 being the most precise value)
     # which should be converted to 0.00001
 
@@ -258,7 +258,7 @@ def test_get_tick_size_over_time_big_numbers():
     assert len(result) == 3
 
     # Before
-    assert result.asof("2019-01-01 00:00:00+00:00") is nan
+    assert isnan(result.asof("2019-01-01 00:00:00+00:00"))
     # January should have 5 significant digits (based on 1.23456789 being the most precise value)
     # which should be converted to 0.00001
 

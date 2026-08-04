@@ -241,7 +241,7 @@ def test_check_available_stake_amount(
 
     freqtrade = FreqtradeBot(default_conf_usdt)
 
-    for i in range(0, max_open):
+    for i in range(max_open):
         if expected[i] is not None:
             limit_buy_order_usdt_open["id"] = str(i)
             result = freqtrade.wallets.get_trade_stake_amount("ETH/USDT", 1)
@@ -513,7 +513,7 @@ def test_create_trade_no_signal(default_conf_usdt, fee, mocker) -> None:
     assert not freqtrade.create_trade("ETH/USDT")
 
 
-@pytest.mark.parametrize("max_open", range(0, 5))
+@pytest.mark.parametrize("max_open", range(5))
 @pytest.mark.parametrize("tradable_balance_ratio,modifier", [(1.0, 1), (0.99, 0.8), (0.5, 0.5)])
 def test_create_trades_multiple_trades(
     default_conf_usdt,
@@ -3474,7 +3474,6 @@ def test__safe_exit_amount(default_conf_usdt, fee, caplog, mocker, amount_wallet
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     amount = 95.33
-    amount_wallet = amount_wallet
     mocker.patch("freqtrade.wallets.Wallets.get_free", MagicMock(return_value=amount_wallet))
     wallet_update = mocker.patch("freqtrade.wallets.Wallets.update")
     trade = Trade(

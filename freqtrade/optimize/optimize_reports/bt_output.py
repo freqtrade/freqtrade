@@ -208,18 +208,24 @@ def text_table_add_metrics(strat_results: dict) -> None:
                 __EMPTY_LINE,  # Empty line to improve readability
                 (
                     "Long / Short trades",
-                    f"{strat_results.get('trade_count_long', 'total_trades')} / "
-                    f"{strat_results.get('trade_count_short', 0)}",
+                    (
+                        f"{strat_results.get('trade_count_long', 'total_trades')} / "
+                        f"{strat_results.get('trade_count_short', 0)}"
+                    ),
                 ),
                 (
                     "Long / Short profit %",
-                    f"{strat_results['profit_total_long']:.2%} / "
-                    f"{strat_results['profit_total_short']:.2%}",
+                    (
+                        f"{strat_results['profit_total_long']:.2%} / "
+                        f"{strat_results['profit_total_short']:.2%}"
+                    ),
                 ),
                 (
                     f"Long / Short profit {stake}",
-                    f"{strat_results['profit_total_long_abs']:.{decimals_per_coin(stake)}f} / "
-                    f"{strat_results['profit_total_short_abs']:.{decimals_per_coin(stake)}f}",
+                    (
+                        f"{strat_results['profit_total_long_abs']:.{decimals_per_coin(stake)}f} / "
+                        f"{strat_results['profit_total_short_abs']:.{decimals_per_coin(stake)}f}"
+                    ),
                 ),
             ]
             if strat_results.get("trade_count_short", 0) > 0
@@ -241,8 +247,10 @@ def text_table_add_metrics(strat_results: dict) -> None:
             [
                 (
                     "Absolute drawdown",
-                    f"{fmt_coin(strat_results['max_drawdown_abs'], stake)} "
-                    f"({drawdown_account:.2%})",
+                    (
+                        f"{fmt_coin(strat_results['max_drawdown_abs'], stake)} "
+                        f"({drawdown_account:.2%})"
+                    ),
                 ),
                 (
                     "Drawdown duration",
@@ -294,8 +302,10 @@ def text_table_add_metrics(strat_results: dict) -> None:
         wallet_metrics: list[tuple[str, str]] = [
             (
                 "Min/Max balance (closed trades)",
-                f"{fmt_coin(strat_results['csum_min'], stake)} / "
-                f"{fmt_coin(strat_results['csum_max'], stake)}",
+                (
+                    f"{fmt_coin(strat_results['csum_min'], stake)} / "
+                    f"{fmt_coin(strat_results['csum_max'], stake)}"
+                ),
             ),
         ]
         wallet_stats = strat_results.get("wallet_stats", {})
@@ -306,8 +316,10 @@ def text_table_add_metrics(strat_results: dict) -> None:
                     (Text("Wallet based Metrics", style="bold"), ""),
                     (
                         "Min/Max balance (wallet balance)",
-                        f"{fmt_coin(wallet_stats['low_balance'], stake)} / "
-                        f"{fmt_coin(wallet_stats['high_balance'], stake)}",
+                        (
+                            f"{fmt_coin(wallet_stats['low_balance'], stake)} / "
+                            f"{fmt_coin(wallet_stats['high_balance'], stake)}"
+                        ),
                     ),
                     (
                         "Min/Max balance dates (wallet balance)",
@@ -325,8 +337,10 @@ def text_table_add_metrics(strat_results: dict) -> None:
                         ),
                         (
                             "Absolute drawdown (wallet balance)",
-                            f"{fmt_coin(wallet_stats['max_drawdown_abs'], stake)} "
-                            f"({wallet_stats['max_drawdown_account']:.2%})",
+                            (
+                                f"{fmt_coin(wallet_stats['max_drawdown_abs'], stake)} "
+                                f"({wallet_stats['max_drawdown_account']:.2%})"
+                            ),
                         ),
                         (
                             "Drawdown duration",
@@ -445,13 +459,17 @@ def text_table_add_metrics(strat_results: dict) -> None:
             __EMPTY_LINE,  # Empty line to improve readability
             (
                 "Best Pair",
-                f"{strat_results['best_pair']['key']} "
-                f"{strat_results['best_pair']['profit_total']:.2%}",
+                (
+                    f"{strat_results['best_pair']['key']} "
+                    f"{strat_results['best_pair']['profit_total']:.2%}"
+                ),
             ),
             (
                 "Worst Pair",
-                f"{strat_results['worst_pair']['key']} "
-                f"{strat_results['worst_pair']['profit_total']:.2%}",
+                (
+                    f"{strat_results['worst_pair']['key']} "
+                    f"{strat_results['worst_pair']['profit_total']:.2%}"
+                ),
             ),
             ("Best trade", f"{best_trade['pair']} {best_trade['profit_ratio']:.2%}"),
             ("Worst trade", f"{worst_trade['pair']} {worst_trade['profit_ratio']:.2%}"),
@@ -465,20 +483,26 @@ def text_table_add_metrics(strat_results: dict) -> None:
             ),
             (
                 "Days win/draw/lose",
-                f"{strat_results['winning_days']} / "
-                f"{strat_results['draw_days']} / {strat_results['losing_days']}",
+                (
+                    f"{strat_results['winning_days']} / "
+                    f"{strat_results['draw_days']} / {strat_results['losing_days']}"
+                ),
             ),
             (
                 "Min/Max/Avg. Duration Winners",
-                f"{strat_results.get('winner_holding_min', 'N/A')} / "
-                f"{strat_results.get('winner_holding_max', 'N/A')} / "
-                f"{strat_results.get('winner_holding_avg', 'N/A')}",
+                (
+                    f"{strat_results.get('winner_holding_min', 'N/A')} / "
+                    f"{strat_results.get('winner_holding_max', 'N/A')} / "
+                    f"{strat_results.get('winner_holding_avg', 'N/A')}"
+                ),
             ),
             (
                 "Min/Max/Avg. Duration Losers",
-                f"{strat_results.get('loser_holding_min', 'N/A')} / "
-                f"{strat_results.get('loser_holding_max', 'N/A')} / "
-                f"{strat_results.get('loser_holding_avg', 'N/A')}",
+                (
+                    f"{strat_results.get('loser_holding_min', 'N/A')} / "
+                    f"{strat_results.get('loser_holding_max', 'N/A')} / "
+                    f"{strat_results.get('loser_holding_avg', 'N/A')}"
+                ),
             ),
             (
                 "Max Consecutive Wins / Loss",
@@ -494,8 +518,10 @@ def text_table_add_metrics(strat_results: dict) -> None:
             ("Rejected Entry signals", strat_results.get("rejected_signals", "N/A")),
             (
                 "Entry/Exit Timeouts",
-                f"{strat_results.get('timedout_entry_orders', 'N/A')} / "
-                f"{strat_results.get('timedout_exit_orders', 'N/A')}",
+                (
+                    f"{strat_results.get('timedout_entry_orders', 'N/A')} / "
+                    f"{strat_results.get('timedout_exit_orders', 'N/A')}"
+                ),
             ),
             *entry_adjustment_metrics,
             __EMPTY_LINE,  # Empty line to improve readability
