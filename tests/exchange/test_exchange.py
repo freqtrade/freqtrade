@@ -2146,7 +2146,6 @@ def test_fetch_orders_multi(
 
     mocker.patch(f"{EXMS}.exchange_has", has_resp)
 
-    #
     resp = exchange.fetch_orders("mocked", start_time)
     assert api_mock.fetch_orders.call_count == expected[0]
     assert api_mock.fetch_open_orders.call_count == expected[1]
