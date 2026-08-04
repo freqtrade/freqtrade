@@ -38,7 +38,7 @@ orjson==3.11.9
 sdnotify==0.3.2
 
 # API Server
-fastapi==0.140.0
+fastapi==0.140.13
 pydantic==2.13.4
 uvicorn==0.51.0
 pyjwt==2.13.0
