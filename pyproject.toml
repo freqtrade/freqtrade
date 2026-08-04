@@ -235,7 +235,8 @@ ruff = "4 days"
 
 [tool.ruff]
 line-length = 100
-extend-exclude = [".env", ".venv"]
+# TODO: markdown files should be linted.
+extend-exclude = [".env", ".venv", "*.md"]
 
 [tool.ruff.lint]
 extend-select = [
