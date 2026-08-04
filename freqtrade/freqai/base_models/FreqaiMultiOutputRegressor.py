@@ -49,4 +49,3 @@ class FreqaiMultiOutputRegressor(MultiOutputRegressor):
         if hasattr(self.estimators_[0], "feature_names_in_"):
             self.feature_names_in_ = self.estimators_[0].feature_names_in_
 
-        return
