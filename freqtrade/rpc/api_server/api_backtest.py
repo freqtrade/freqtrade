@@ -1,7 +1,6 @@
 import asyncio
 import logging
 from copy import deepcopy
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -35,6 +34,7 @@ from freqtrade.rpc.api_server.api_schemas import (
 from freqtrade.rpc.api_server.deps import get_config, verify_strategy
 from freqtrade.rpc.api_server.webserver_bgwork import ApiBG
 from freqtrade.rpc.rpc import RPCException
+from freqtrade.util import dt_now
 
 
 logger = logging.getLogger(__name__)
@@ -121,7 +121,7 @@ def __run_backtest_bg(btconfig: Config, job_id: str):
                 fn = store_backtest_results(
                     btconfig,
                     cachedBt.results,
-                    datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),
+                    dt_now().strftime("%Y-%m-%d_%H-%M-%S"),
                     market_change_data=combined_res,
                     wallet_summary={
                         s: x["wallet_summary"]

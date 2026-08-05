@@ -211,7 +211,7 @@ def prepare_results(
     analysed_trades, stratname, enter_reason_list, exit_reason_list, timerange=None
 ) -> pd.DataFrame:
     res_df = pd.DataFrame()
-    for pair, trades in analysed_trades[stratname].items():
+    for trades in analysed_trades[stratname].values():
         if trades.shape[0] > 0:
             trades.dropna(subset=["close_date"], inplace=True)
             res_df = pd.concat([res_df, trades], ignore_index=True)
@@ -350,7 +350,7 @@ def process_entry_exit_reasons(config: Config):
         except ValueError as e:
             raise ConfigurationError(e) from e
 
-        for strategy_name, results in backtest_stats["strategy"].items():
+        for strategy_name in backtest_stats["strategy"].keys():
             trades = load_backtest_data(
                 config["exportdirectory"], strategy_name, config["exportfilename"]
             )

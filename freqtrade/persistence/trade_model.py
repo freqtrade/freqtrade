@@ -370,12 +370,16 @@ class Order(ModelBase):
         return Order.session.scalars(select(Order).filter(Order.ft_is_open.is_(True))).all()
 
     @staticmethod
-    def order_by_id(order_id: str) -> Optional["Order"]:
+    def order_by_id(order_id: str, pair: str | None = None) -> Optional["Order"]:
         """
         Retrieve order based on order_id
+        :param pair: Optionally limit to this pair - orders are unique on (pair, order_id).
         :return: Order or None
         """
-        return Order.session.scalars(select(Order).filter(Order.order_id == order_id)).first()
+        filters = [Order.order_id == order_id]
+        if pair is not None:
+            filters.append(Order.ft_pair == pair)
+        return Order.session.scalars(select(Order).filter(*filters)).first()
 
 
 class LocalTrade:

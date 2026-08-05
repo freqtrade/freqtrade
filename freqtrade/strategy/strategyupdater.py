@@ -164,7 +164,7 @@ class NameUpdater(ast_comments.NodeTransformer):
         # if the name is in the mapping, update it
         node.id = self.check_dict(StrategyUpdater.name_mapping, node.id)
 
-        for mod, info in StrategyUpdater.module_replacements.items():
+        for info in StrategyUpdater.module_replacements.values():
             for old_attr, new_attr in info["replacements"]:
                 if node.id == old_attr:
                     node.id = new_attr
@@ -201,7 +201,7 @@ class NameUpdater(ast_comments.NodeTransformer):
         ):
             node.attr = "nr_of_successful_entries"
         if isinstance(node.value, ast_comments.Name):
-            for mod, info in StrategyUpdater.module_replacements.items():
+            for info in StrategyUpdater.module_replacements.values():
                 if node.value.id in info["aliases"]:
                     for old_attr, new_attr in info["replacements"]:
                         if node.attr == old_attr:

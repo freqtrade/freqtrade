@@ -285,7 +285,7 @@ def __price_to_precision_significant_digits(
     precision = round(price_precision)
 
     q = precision - dec.adjusted() - 1
-    sigfig = Decimal("10") ** -q
+    sigfig = Decimal(10) ** -q
     if q < 0:
         string_to_precision = string[:precision]
         # string_to_precision is '' when we have zero precision

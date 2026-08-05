@@ -166,7 +166,7 @@ class FreqtradeBot(LoggingMixin):
                 # This would be more efficient if scheduled in utc time, and performed at each
                 # funding interval, specified by funding_fee_times on the exchange classes
                 # However, this reduces the precision - and might therefore lead to problems.
-                for time_slot in range(0, 24):
+                for time_slot in range(24):
                     for minutes in [1, 31]:
                         t = str(time(time_slot, minutes, 2))
                         self._schedule.every().day.at(t).do(update)
@@ -526,6 +526,7 @@ class FreqtradeBot(LoggingMixin):
             prev_exit_reason = trade.exit_reason
             prev_trade_state = trade.is_open
             prev_trade_amount = trade.amount
+            order_obj: Order | None = None
             for order in orders:
                 trade_order = [o for o in trade.orders if o.order_id == order["id"]]
 
@@ -533,6 +534,15 @@ class FreqtradeBot(LoggingMixin):
                     # We knew this order, but didn't have it updated properly
                     order_obj = trade_order[0]
                 else:
+                    existing_order = Order.order_by_id(order["id"], trade.pair)
+                    if existing_order is not None and existing_order.ft_trade_id != trade.id:
+                        # Order belongs to a different trade
+                        logger.info(
+                            f"Order {order['id']} for {trade.pair} already belongs to "
+                            f"trade {existing_order.ft_trade_id} - skipping."
+                        )
+                        continue
+
                     logger.info(f"Found previously unknown order {order['id']} for {trade.pair}.")
 
                     order_obj = Order.parse_from_ccxt_object(order, trade.pair, order["side"])
@@ -551,13 +561,14 @@ class FreqtradeBot(LoggingMixin):
             Trade.session.refresh(trade)
             if not trade.is_open:
                 # Trade was just closed
-                trade.close_date = trade.date_last_filled_utc
-                self.order_close_notify(
-                    trade,
-                    order_obj,
-                    order_obj.ft_order_side == "stoploss",
-                    send_msg=prev_trade_state != trade.is_open,
-                )
+                if order_obj:
+                    trade.close_date = trade.date_last_filled_utc
+                    self.order_close_notify(
+                        trade,
+                        order_obj,
+                        order_obj.ft_order_side == "stoploss",
+                        send_msg=prev_trade_state != trade.is_open,
+                    )
             else:
                 trade.exit_reason = prev_exit_reason
                 total = (
@@ -600,9 +611,11 @@ class FreqtradeBot(LoggingMixin):
             Trade.commit()
 
         except ExchangeError:
+            Trade.rollback()
             logger.warning("Error finding onexchange order.")
         except Exception:
             # catching https://github.com/freqtrade/freqtrade/issues/9025
+            Trade.rollback()
             logger.warning("Error finding onexchange order", exc_info=True)
         return False
 

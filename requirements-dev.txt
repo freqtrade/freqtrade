@@ -6,9 +6,9 @@
 -r requirements-freqai-rl.txt
 -r docs/requirements-docs.txt
 
-ruff==0.15.22
+ruff==0.16.1
 mypy==2.3.0
-pre-commit==4.6.0
+pre-commit==4.6.1
 pytest==9.1.1
 pytest-asyncio==1.4.0
 pytest-cov==7.1.0

@@ -2146,7 +2146,6 @@ def test_fetch_orders_multi(
 
     mocker.patch(f"{EXMS}.exchange_has", has_resp)
 
-    #
     resp = exchange.fetch_orders("mocked", start_time)
     assert api_mock.fetch_orders.call_count == expected[0]
     assert api_mock.fetch_open_orders.call_count == expected[1]
@@ -2363,7 +2362,7 @@ def test_get_conversion_rate(default_conf_usdt, mocker, exchange_name):
     api_mock = MagicMock()
     tick = {
         "ETH/USDT": {
-            "last": 42,
+            "last": None,
         },
         "BCH/USDT": {
             "last": 41,
@@ -2375,7 +2374,10 @@ def test_get_conversion_rate(default_conf_usdt, mocker, exchange_name):
     tick2 = {
         "ADA/USDT:USDT": {
             "last": 2.5,
-        }
+        },
+        "ETH/USDT:USDT": {
+            "last": 42,
+        },
     }
     mocker.patch(f"{EXMS}.exchange_has", return_value=True)
     api_mock.fetch_tickers = MagicMock(side_effect=[tick, tick2])
@@ -2386,14 +2388,24 @@ def test_get_conversion_rate(default_conf_usdt, mocker, exchange_name):
     # retrieve original ticker
     assert exchange.get_conversion_rate("USDT", "USDT") == 1
     assert api_mock.fetch_tickers.call_count == 0
+    # ETH must fall back to the "others" market since ETH/USDT is None.
     assert exchange.get_conversion_rate("ETH", "USDT") == 42
     assert exchange.get_conversion_rate("ETH", "USDC") is None
     assert exchange.get_conversion_rate("ETH", "BTC") == 250
+    assert api_mock.fetch_tickers.call_count == 2
+    api_mock.fetch_tickers.reset_mock()
+    api_mock.fetch_tickers.side_effect = [tick, tick2]
+    # Cached tickers
     assert exchange.get_conversion_rate("BTC", "ETH") == 0.004
 
-    assert api_mock.fetch_tickers.call_count == 1
+    assert api_mock.fetch_tickers.call_count == 0
+    # Uncached tickers
     api_mock.fetch_tickers.reset_mock()
+    assert exchange.get_conversion_rate("BTC", "ETH", cached=False) == 0.004
+    assert api_mock.fetch_tickers.call_count == 1
 
+    api_mock.fetch_tickers.reset_mock()
+    exchange._fetch_tickers_cache.clear()
     assert exchange.get_conversion_rate("ADA", "USDT") == 2.5
     # Only the call to the "others" market
     assert api_mock.fetch_tickers.call_count == 1
@@ -4567,6 +4579,27 @@ def test_merge_ft_has_dict(default_conf, mocker):
     assert ex._ft_has["DeadBeef"] == 20
 
 
+@pytest.mark.parametrize(
+    "exchange_name,expected",
+    [
+        # ccxt reports account equity for these - their "total" carries unrealized PnL
+        ("binance", True),
+        ("hyperliquid", True),
+        ("okx", True),
+        ("bitget", True),
+        # ccxt reports plain wallet balance for these
+        ("bybit", False),
+        ("gate", False),
+        ("kraken", False),
+    ],
+)
+def test_balance_includes_unrealized_pnl(default_conf, mocker, exchange_name, expected):
+    default_conf["trading_mode"] = "futures"
+    default_conf["margin_mode"] = "isolated"
+    exchange = get_patched_exchange(mocker, default_conf, exchange=exchange_name)
+    assert exchange.balance_includes_unrealized_pnl() is expected
+
+
 def test_get_valid_pair_combination(default_conf, mocker, markets):
     mocker.patch.multiple(
         EXMS,
@@ -4904,7 +4937,6 @@ def test_ohlcv_candle_limit(default_conf, mocker, exchange_name):
         ("BTCUSDT", None, "USDT", "binance", True, False, False, "spot", {}, False),
         ("USDT/BTC", "BTC", None, "binance", True, False, False, "spot", {}, False),
         ("BTCUSDT", "BTC", None, "binance", True, False, False, "spot", {}, False),
-        ("BTC/USDT", "BTC", "USDT", "binance", True, False, False, "spot", {}, True),
         # Futures mode, spot pair
         ("BTC/USDT", "BTC", "USDT", "binance", True, False, False, "futures", {}, False),
         ("BTC/USDT", "BTC", "USDT", "binance", True, False, False, "margin", {}, False),

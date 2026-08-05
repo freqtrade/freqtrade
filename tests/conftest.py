@@ -86,7 +86,6 @@ class FixtureScheduler(LoadScopeScheduling):
                 return exchange_id
             except Exception as e:
                 print(e)
-                pass
 
         return nodeid
 

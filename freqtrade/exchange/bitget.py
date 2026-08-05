@@ -46,6 +46,8 @@ class Bitget(Exchange):
             PriceType.LAST: "fill_price",
             PriceType.MARK: "mark_price",
         },
+        # ccxt maps "total" to accountEquity, which includes unrealized PnL
+        "balance_includes_unrealized_pnl": True,
     }
 
     _supported_trading_mode_margin_pairs: list[tuple[TradingMode, MarginMode]] = [
