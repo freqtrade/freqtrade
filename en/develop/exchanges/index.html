@@ -1505,17 +1505,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#bitmart" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Bitmart
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#bitget" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2570,17 +2559,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#bitmart" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Bitmart
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#bitget" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2789,12 +2767,6 @@
 <td>spot</td>
 <td></td>
 <td>market, limit</td>
-</tr>
-<tr>
-<td><a href="./#bitmart">Bitmart</a></td>
-<td>spot</td>
-<td></td>
-<td>❌ (not available)</td>
 </tr>
 <tr>
 <td><a href="./#bitget">Bitget</a></td>
@@ -3166,21 +3138,6 @@ Other configurations (multiple bots on one account, manual non-bot trades on the
 Bybit uses live markets to simulate your trades (without market impact) - making it work very similar to freqtrade's dry-run mode.  </p>
 <p>You'll need to use separate API keys for demo trading, which you can create on bybit's demo page.</p>
 <p>Demo mode is incompatible with dry-run.</p>
-<h2 id="bitmart">Bitmart<a class="headerlink" href="#bitmart" title="Permanent link">&para;</a></h2>
-<p>Bitmart requires the API key Memo (the name you give the API key) to go along with the exchange key and secret.
-It's therefore required to pass the UID as well.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;bitmart&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;uid&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_bitmart_api_key_memo&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;secret&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_exchange_secret&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;password&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_exchange_api_key_password&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="c1">// ...</span>
-<span class="p">}</span>
-</code></pre></div>
-<div class="admonition warning">
-<p class="admonition-title">Necessary Verification</p>
-<p>Bitmart requires Verification Lvl2 to successfully trade on the spot market through the API - even though trading via UI works just fine with just Lvl1 verification.</p>
-</div>
 <h2 id="bitget">Bitget<a class="headerlink" href="#bitget" title="Permanent link">&para;</a></h2>
 <p>Bitget requires a passphrase for each api key, you will therefore need to add this key into the configuration so your exchange section looks as follows:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
