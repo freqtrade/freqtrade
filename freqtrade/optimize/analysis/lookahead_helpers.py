@@ -268,15 +268,11 @@ class LookaheadAnalysisSubFunctions:
         if lookaheadAnalysis_instances:
             caption: str | None = None
             if any(
-                [
-                    any(
-                        [
-                            indicator.startswith("&")
-                            for indicator in inst.current_analysis.false_indicators
-                        ]
-                    )
-                    for inst in lookaheadAnalysis_instances
-                ]
+                any(
+                    indicator.startswith("&")
+                    for indicator in inst.current_analysis.false_indicators
+                )
+                for inst in lookaheadAnalysis_instances
             ):
                 caption = (
                     "Any indicators in 'biased_indicators' which are used within "

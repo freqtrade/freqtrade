@@ -276,24 +276,24 @@ class RPC:
 
                 trade_dict = trade.to_json()
                 trade_dict.update(
-                    dict(
-                        close_profit=trade.close_profit if not trade.is_open else None,
-                        current_rate=current_rate,
-                        profit_ratio=current_profit,
-                        profit_pct=round(current_profit * 100, 2),
-                        profit_abs=current_profit_abs,
-                        profit_fiat=current_profit_fiat,
-                        total_profit_abs=total_profit_abs,
-                        total_profit_fiat=total_profit_fiat,
-                        total_profit_ratio=total_profit_ratio,
-                        stoploss_current_dist=stoploss_current_dist,
-                        stoploss_current_dist_ratio=round(stoploss_current_dist_ratio, 8),
-                        stoploss_current_dist_pct=round(stoploss_current_dist_ratio * 100, 2),
-                        stoploss_entry_dist=stoploss_entry_dist,
-                        stoploss_entry_dist_ratio=round(stoploss_entry_dist_ratio, 8),
-                        open_orders=oo_details,
-                        nr_of_successful_entries=trade.nr_of_successful_entries,
-                    )
+                    {
+                        "close_profit": trade.close_profit if not trade.is_open else None,
+                        "current_rate": current_rate,
+                        "profit_ratio": current_profit,
+                        "profit_pct": round(current_profit * 100, 2),
+                        "profit_abs": current_profit_abs,
+                        "profit_fiat": current_profit_fiat,
+                        "total_profit_abs": total_profit_abs,
+                        "total_profit_fiat": total_profit_fiat,
+                        "total_profit_ratio": total_profit_ratio,
+                        "stoploss_current_dist": stoploss_current_dist,
+                        "stoploss_current_dist_ratio": round(stoploss_current_dist_ratio, 8),
+                        "stoploss_current_dist_pct": round(stoploss_current_dist_ratio * 100, 2),
+                        "stoploss_entry_dist": stoploss_entry_dist,
+                        "stoploss_entry_dist_ratio": round(stoploss_entry_dist_ratio, 8),
+                        "open_orders": oo_details,
+                        "nr_of_successful_entries": trade.nr_of_successful_entries,
+                    }
                 )
                 results.append(trade_dict)
             return results

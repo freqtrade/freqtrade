@@ -48,7 +48,7 @@ class RemotePairList(IPairList):
         self._bearer_token = self._pairlistconfig.get("bearer_token", "")
         self._init_done = False
         self._save_to_file = self._pairlistconfig.get("save_to_file", None)
-        self._last_pairlist: list[Any] = list()
+        self._last_pairlist: list[Any] = []
 
         if self._mode not in ["whitelist", "blacklist"]:
             raise OperationalException(

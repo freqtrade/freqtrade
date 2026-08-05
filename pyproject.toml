@@ -284,7 +284,6 @@ extend-ignore = [
   "TRY401",  # Redundant exception object in logging.exception call
   "TRY",
   "SIM",
-  "C4",  # flake8-comprehensions
 ]
 
 

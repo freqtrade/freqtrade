@@ -191,7 +191,7 @@ def add_max_drawdown(
             mode="markers",
             name=f"Max drawdown {drawdown.relative_account_drawdown:.2%}",
             text=f"Max drawdown {drawdown.relative_account_drawdown:.2%}",
-            marker=dict(symbol="square-open", size=9, line=dict(width=2), color="green"),
+            marker={"symbol": "square-open", "size": 9, "line": {"width": 2}, "color": "green"},
         )
         fig.add_trace(drawdown, row, 1)
     except ValueError:
@@ -276,7 +276,7 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
             mode="markers",
             name="Trade entry",
             text=trades["desc"],
-            marker=dict(symbol="circle-open", size=11, line=dict(width=2), color="cyan"),
+            marker={"symbol": "circle-open", "size": 11, "line": {"width": 2}, "color": "cyan"},
         )
 
         trade_exits = go.Scatter(
@@ -285,7 +285,7 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
             text=trades.loc[trades["profit_ratio"] > 0, "desc"],
             mode="markers",
             name="Exit - Profit",
-            marker=dict(symbol="square-open", size=11, line=dict(width=2), color="green"),
+            marker={"symbol": "square-open", "size": 11, "line": {"width": 2}, "color": "green"},
         )
         trade_exits_loss = go.Scatter(
             x=trades.loc[trades["profit_ratio"] <= 0, "close_date"],
@@ -293,7 +293,7 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
             text=trades.loc[trades["profit_ratio"] <= 0, "desc"],
             mode="markers",
             name="Exit - Loss",
-            marker=dict(symbol="square-open", size=11, line=dict(width=2), color="red"),
+            marker={"symbol": "square-open", "size": 11, "line": {"width": 2}, "color": "red"},
         )
         fig.add_trace(trade_entries, 1, 1)
         fig.add_trace(trade_exits, 1, 1)
@@ -417,12 +417,12 @@ def create_scatter(data, column_name, color, direction) -> go.Scatter | None:
                 y=df_short.close,
                 mode="markers",
                 name=column_name,
-                marker=dict(
-                    symbol=f"triangle-{direction}-dot",
-                    size=9,
-                    line=dict(width=1),
-                    color=color,
-                ),
+                marker={
+                    "symbol": f"triangle-{direction}-dot",
+                    "size": 9,
+                    "line": {"width": 1},
+                    "color": color,
+                },
             )
             return shorts
         else:
