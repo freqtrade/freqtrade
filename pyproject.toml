@@ -286,7 +286,6 @@ extend-ignore = [
   "BLE",
   "SIM",
   "C4",  # flake8-comprehensions
-  "PLR",
 ]
 
 [tool.ruff.lint.mccabe]

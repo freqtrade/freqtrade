@@ -71,8 +71,7 @@ def get_required_data_timerange(config: Config) -> TimeRange:
     max_tf_seconds = 0
     for tf in timeframes:
         secs = timeframe_to_seconds(tf)
-        if secs > max_tf_seconds:
-            max_tf_seconds = secs
+        max_tf_seconds = max(max_tf_seconds, secs)
 
     startup_candles = config.get("startup_candle_count", 0)
     indicator_periods = config["freqai"]["feature_parameters"]["indicator_periods_candles"]
