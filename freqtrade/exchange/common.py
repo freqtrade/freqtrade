@@ -55,7 +55,6 @@ SUPPORTED_EXCHANGES = [
     "binanceus",
     "binanceusdm",
     "bingx",
-    "bitmart",
     "bitget",
     "bybit",
     "bybiteu",
