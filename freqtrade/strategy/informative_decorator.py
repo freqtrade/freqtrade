@@ -1,13 +1,15 @@
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from time import monotonic
 from typing import Any
 
-from cachetools import LRUCache
+from cachetools import TLRUCache
 from pandas import DataFrame
 
 from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS
 from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
+from freqtrade.exchange import timeframe_to_seconds
 from freqtrade.strategy.strategy_helper import (
     _merge_prepared_informative_pair,
     _prepare_informative_pair,
@@ -31,6 +33,7 @@ class InformativeCacheKey:
 
 
 _INFORMATIVE_DATE_MERGE = "date_merge"
+_INFORMATIVE_CACHE_TTL_CANDLES = 2
 
 
 @dataclass(slots=True)
@@ -39,7 +42,20 @@ class _InformativeCacheEntry:
     prepared: _PreparedInformative
 
 
-InformativeCache = LRUCache[InformativeCacheKey, _InformativeCacheEntry]
+class InformativeCache(TLRUCache[InformativeCacheKey, _InformativeCacheEntry]):
+    """LRU cache whose entries expire two informative candles after their last update."""
+
+    def __init__(self, maxsize: int, timer: Callable[[], float] = monotonic) -> None:
+        super().__init__(maxsize=maxsize, ttu=self._time_to_use, timer=timer)
+
+    @staticmethod
+    def _time_to_use(key: InformativeCacheKey, _entry: _InformativeCacheEntry, now: float) -> float:
+        # Using effective timeframe instead of informative timeframe because some informative candle
+        # types (like funding_rate) have a different effective timeframe. On most cases, effective
+        # timeframe is equal to informative timeframe.
+        return now + (
+            _INFORMATIVE_CACHE_TTL_CANDLES * timeframe_to_seconds(key.effective_timeframe)
+        )
 
 
 @dataclass
@@ -91,7 +107,8 @@ def informative(
     :param ffill: ffill dataframe after merging informative pair.
     :param candle_type: '', mark, index, premiumIndex, or funding_rate
     :param cache: Cache populated indicators in dry/live mode while the latest informative candle
-                  remains unchanged. Disable for methods that use external state, have side effects,
+                  remains unchanged. Entries expire after two effective informative timeframes
+                  without an update. Disable for methods that use external state, have side effects,
                   or otherwise need to run for every base pair. Defaults to True.
     """
     _asset = asset

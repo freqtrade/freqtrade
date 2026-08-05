@@ -8,7 +8,6 @@ from abc import ABC, abstractmethod
 from datetime import UTC, datetime, timedelta
 from math import isinf, isnan
 
-from cachetools import LRUCache
 from pandas import DataFrame
 from pydantic import ValidationError
 
@@ -182,7 +181,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         if config.get("runmode") in (RunMode.DRY_RUN, RunMode.LIVE) and any(
             inf_data.cache for inf_data, _ in self._ft_informative
         ):
-            self._ft_informative_cache = LRUCache(maxsize=500)
+            self._ft_informative_cache = InformativeCache(maxsize=500)
 
     def load_freqAI_model(self) -> None:
         if self.config.get("freqai", {}).get("enabled", False):
@@ -1276,6 +1275,9 @@ class IStrategy(ABC, HyperStrategyMixin):
         Analyze all pairs using analyze_pair().
         :param pairs: List of pairs to analyze
         """
+        if self._ft_informative_cache is not None:
+            self._ft_informative_cache.expire()
+
         for pair in pairs:
             self.analyze_pair(pair)
 

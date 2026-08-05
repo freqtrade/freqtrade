@@ -6,6 +6,7 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import CandleType, RunMode
 from freqtrade.resolvers.strategy_resolver import StrategyResolver
 from freqtrade.strategy import merge_informative_pair, stoploss_from_absolute, stoploss_from_open
+from freqtrade.strategy.informative_decorator import InformativeCache, InformativeCacheKey
 from tests.conftest import generate_test_data, get_patched_exchange
 
 
@@ -443,6 +444,70 @@ def test_informative_decorator(mocker, default_conf_usdt, trading_mode):
         strategy.advise_all_indicators(
             {p: data[(p, strategy.timeframe, candle_def)] for p in ("XRP/USDT", "LTC/USDT")}
         )
+
+
+def test_informative_cache_expiration_uses_effective_timeframe(default_conf_usdt):
+    current_time = [0.0]
+    cache = InformativeCache(maxsize=500, timer=lambda: current_time[0])
+
+    def populate_indicators(strategy, dataframe: pd.DataFrame, metadata: dict) -> pd.DataFrame:
+        return dataframe
+
+    # The informative_timeframe is different than effective_timeframe to make sure the cache
+    # expiration uses effective_timeframe.
+    key_15m = InformativeCacheKey(
+        callback=populate_indicators,
+        callback_name=populate_indicators.__qualname__,
+        asset="BTC/USDT",
+        informative_timeframe="1h",
+        effective_timeframe="15m",
+        candle_type=CandleType.SPOT,
+        strategy_timeframe="5m",
+    )
+    key_1h = InformativeCacheKey(
+        callback=populate_indicators,
+        callback_name=populate_indicators.__qualname__,
+        asset="ETH/USDT",
+        informative_timeframe="15m",
+        effective_timeframe="1h",
+        candle_type=CandleType.SPOT,
+        strategy_timeframe="5m",
+    )
+    entry = object()
+    # Store entries in the cache for 15m and 1h informative timeframes
+    cache[key_15m] = entry
+    cache[key_1h] = entry
+
+    # Updating an entry resets its expiration from the latest store time.
+    current_time[0] = 900
+    cache[key_15m] = entry
+
+    # 15 minutes after last update to the 15m informative, the cache shouldn't expired
+    current_time[0] = 1800
+    assert cache.expire() == []
+
+    # 30 minutes after last update to 15m informative. It will be expired
+    # It's 45 minutes since the last update to 1h informative. It remains cached.
+    current_time[0] = 2700
+    assert {key for key, _ in cache.expire()} == {key_15m}
+    assert key_1h in cache
+
+    default_conf_usdt["runmode"] = RunMode.DRY_RUN
+    default_conf_usdt["strategy"] = "InformativeDecoratorCacheTest"
+    strategy = StrategyResolver.load_strategy(default_conf_usdt)
+    assert isinstance(strategy._ft_informative_cache, InformativeCache)
+    assert strategy._ft_informative_cache.maxsize == 500
+    strategy._ft_informative_cache = cache
+
+    # 1h cache remains just before 2 hours since its last update.
+    current_time[0] = 7199
+    assert key_1h in cache
+
+    # The analysis cycle expires it at 2 hours, even when there are no active pairs.
+    current_time[0] = 7200
+    strategy.analyze([])
+    assert cache.expire() == []
+    assert cache == {}
 
 
 @pytest.mark.parametrize(
