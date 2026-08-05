@@ -1,4 +1,5 @@
 import logging
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -40,7 +41,7 @@ try:
     from plotly.subplots import make_subplots
 except ImportError:
     logger.exception("Module plotly not found \n Please install using `pip3 install plotly`")
-    exit(1)
+    sys.exit(1)
 
 
 def init_plotscript(config, markets: list, startup_candles: int = 0):
