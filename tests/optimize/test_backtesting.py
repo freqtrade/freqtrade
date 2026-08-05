@@ -1626,7 +1626,7 @@ def test_backtest_multi_pair(default_conf, fee, mocker, tres, pair, testdatadir)
 
     all_orients = [x for _, x in calls_per_candle.items()]
 
-    distinct_calls = [list(x) for x in set(tuple(x) for x in all_orients)]
+    distinct_calls = [list(x) for x in {tuple(x) for x in all_orients}]
 
     # All calls must be made for the full pairlist
     assert all(len(x) == 5 for x in distinct_calls)

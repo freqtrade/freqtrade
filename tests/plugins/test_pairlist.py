@@ -1471,7 +1471,7 @@ def test__whitelist_for_active_markets(
     pairlist_handler = freqtrade.pairlists._pairlist_handlers[0]
     new_whitelist = pairlist_handler._whitelist_for_active_markets(whitelist)
 
-    assert set(new_whitelist) == set(["ETH/BTC", "TKN/BTC"])
+    assert set(new_whitelist) == {"ETH/BTC", "TKN/BTC"}
     assert log_message in caplog.text
 
 

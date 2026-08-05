@@ -733,7 +733,7 @@ def test_validate_stakecurrency_error(default_conf, mocker):
 def test_get_quote_currencies(default_conf, mocker):
     ex = get_patched_exchange(mocker, default_conf)
 
-    assert set(ex.get_quote_currencies()) == set(["USD", "ETH", "BTC", "USDT", "BUSD"])
+    assert set(ex.get_quote_currencies()) == {"USD", "ETH", "BTC", "USDT", "BUSD"}
 
 
 @pytest.mark.parametrize(
