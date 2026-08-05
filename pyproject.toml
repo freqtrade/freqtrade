@@ -278,7 +278,6 @@ extend-ignore = [
   "BLE001",  # Do not catch blind exception: `Exception`
   # TODO: the below rules are in the default now and should be reconsidered.
   "N999",  # Invalid module name
-  "PLC0206", # Extracting value from dictionary without calling `.items()`
   # "DTZ",  # Use timezone-aware datetime objects
   "DTZ007",  # Use timezone-aware datetime objects
   "TRY401",  # Redundant exception object in logging.exception call

@@ -111,8 +111,7 @@ def plot_feature_importance(
     else:
         models[dk.label_list[0]] = model
 
-    for label in models:
-        mdl = models[label]
+    for label, mdl in models.items():
         if "catboost.core" in str(mdl.__class__):
             # CatBoost is no longer actively supported since 2025.12
             # However users can still use it in their custom models

@@ -126,8 +126,7 @@ def generate_trade_signal_candles(
     preprocessed_df: dict[str, DataFrame], bt_results: BacktestContentType, date_col: str
 ) -> dict[str, DataFrame]:
     signal_candles_only = {}
-    for pair in preprocessed_df.keys():
-        pairdf = preprocessed_df[pair]
+    for pair, pairdf in preprocessed_df.items():
         resdf = bt_results["results"]
         pairresults = resdf.loc[(resdf["pair"] == pair)]
 

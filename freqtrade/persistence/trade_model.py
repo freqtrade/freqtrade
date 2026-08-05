@@ -643,8 +643,8 @@ class LocalTrade:
         return open_orders_ids_wo_sl
 
     def __init__(self, **kwargs):
-        for key in kwargs:
-            setattr(self, key, kwargs[key])
+        for key, value in kwargs.items():
+            setattr(self, key, value)
         self.recalc_open_trade_value()
         self.orders = []
         if self.trading_mode == TradingMode.MARGIN and self.interest_rate is None:
