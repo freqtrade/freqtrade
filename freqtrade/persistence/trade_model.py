@@ -1278,7 +1278,7 @@ class LocalTrade:
         # current funding fees - resetting on every exit to be aligned with profit calculation,
         # as funding fees are part of the profit
         current_funding_fee = 0.0
-        for i, o in enumerate(self.orders):
+        for _i, o in enumerate(self.orders):
             if o.ft_is_open or not o.filled:
                 continue
             current_funding_fee += o.funding_fee or 0.0
