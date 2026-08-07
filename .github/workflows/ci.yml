@@ -271,7 +271,7 @@ jobs:
         enable-cache: true # zizmor: ignore[cache-poisoning] - this job is not used for release builds
         python-version: "${{ matrix.python-version }}"
         cache-dependency-glob: "requirements**.txt"
-        cache-suffix: "3.14"
+        cache-suffix: "${{ matrix.python-version }}"
 
     - name: Installation - *nix
       run: |
