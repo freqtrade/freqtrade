@@ -93,7 +93,9 @@ def extract_command_partials():
 
     # freqtrade-client still uses subprocess as requested
     print("Running for freqtrade-client")
-    result_client = subprocess.run(["freqtrade-client", "--show"], capture_output=True, text=True)
+    result_client = subprocess.run(
+        ["freqtrade-client", "--show"], capture_output=True, text=True, check=True
+    )
 
     _write_partial_file("docs/commands/freqtrade-client.md", result_client.stdout)
 

@@ -276,24 +276,24 @@ class RPC:
 
                 trade_dict = trade.to_json()
                 trade_dict.update(
-                    dict(
-                        close_profit=trade.close_profit if not trade.is_open else None,
-                        current_rate=current_rate,
-                        profit_ratio=current_profit,
-                        profit_pct=round(current_profit * 100, 2),
-                        profit_abs=current_profit_abs,
-                        profit_fiat=current_profit_fiat,
-                        total_profit_abs=total_profit_abs,
-                        total_profit_fiat=total_profit_fiat,
-                        total_profit_ratio=total_profit_ratio,
-                        stoploss_current_dist=stoploss_current_dist,
-                        stoploss_current_dist_ratio=round(stoploss_current_dist_ratio, 8),
-                        stoploss_current_dist_pct=round(stoploss_current_dist_ratio * 100, 2),
-                        stoploss_entry_dist=stoploss_entry_dist,
-                        stoploss_entry_dist_ratio=round(stoploss_entry_dist_ratio, 8),
-                        open_orders=oo_details,
-                        nr_of_successful_entries=trade.nr_of_successful_entries,
-                    )
+                    {
+                        "close_profit": trade.close_profit if not trade.is_open else None,
+                        "current_rate": current_rate,
+                        "profit_ratio": current_profit,
+                        "profit_pct": round(current_profit * 100, 2),
+                        "profit_abs": current_profit_abs,
+                        "profit_fiat": current_profit_fiat,
+                        "total_profit_abs": total_profit_abs,
+                        "total_profit_fiat": total_profit_fiat,
+                        "total_profit_ratio": total_profit_ratio,
+                        "stoploss_current_dist": stoploss_current_dist,
+                        "stoploss_current_dist_ratio": round(stoploss_current_dist_ratio, 8),
+                        "stoploss_current_dist_pct": round(stoploss_current_dist_ratio * 100, 2),
+                        "stoploss_entry_dist": stoploss_entry_dist,
+                        "stoploss_entry_dist_ratio": round(stoploss_entry_dist_ratio, 8),
+                        "open_orders": oo_details,
+                        "nr_of_successful_entries": trade.nr_of_successful_entries,
+                    }
                 )
                 results.append(trade_dict)
             return results
@@ -405,7 +405,7 @@ class RPC:
         profit_units: dict[date, dict] = {}
         daily_stake = self._freqtrade.wallets.get_total_stake_amount()
 
-        for day in range(0, timescale):
+        for day in range(timescale):
             profitday = start_date - time_offset(day)
             # Only query for necessary columns for performance reasons.
             trades = Trade.session.execute(
@@ -591,7 +591,7 @@ class RPC:
         """
         Returns cumulative profit statistics, with optional direction filter (long/short)
         """
-        start_date = datetime.fromtimestamp(0) if start_date is None else start_date
+        start_date = dt_from_ts(0) if start_date is None else start_date
 
         trade_filter = (
             Trade.is_open.is_(False) & (Trade.close_date >= start_date)
@@ -830,7 +830,6 @@ class RPC:
                 return est_stake, est_bot_stake
             except (ExchangeError, PricingError) as e:
                 logger.warning(f"Error {e} getting rate for {coin}")
-                pass
         return est_stake, est_bot_stake
 
     def _rpc_balance(self, stake_currency: str, fiat_display_currency: str) -> dict:
@@ -914,7 +913,6 @@ class RPC:
                             est_stake = pos.collateral * (1 + pos.leverage) - rate * pos.position
                 except (ExchangeError, PricingError) as e:
                     logger.warning(f"Error {e} getting rate for futures {symbol} / {pos_base}")
-                    pass
 
             # Add the estimated stake (collateral + unlevered PnL) to totals
             total += est_stake
@@ -1494,7 +1492,7 @@ class RPC:
             buffer = bufferHandler.buffer
         records = [
             [
-                format_date(datetime.fromtimestamp(r.created)),
+                format_date(dt_from_ts(r.created)),
                 r.created * 1000,
                 r.name,
                 r.levelname,
@@ -1790,7 +1788,7 @@ class RPC:
 
     def health(self) -> dict[str, str | int | None]:
         last_p = self._freqtrade.last_process
-        res: dict[str, None | str | int] = {
+        res: dict[str, str | int | None] = {
             "last_process": None,
             "last_process_loc": None,
             "last_process_ts": None,

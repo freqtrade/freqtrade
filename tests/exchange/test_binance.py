@@ -742,7 +742,7 @@ def patch_binance_vision_ohlcv(mocker, start, archive_end, api_end, timeframe):
     def make_storage(start: datetime, end: datetime, timeframe: str):
         date = pd.date_range(start, end, freq=timeframe.replace("m", "min"))
         df = pd.DataFrame(
-            data=dict(date=date, open=1.0, high=1.0, low=1.0, close=1.0),
+            data={"date": date, "open": 1.0, "high": 1.0, "low": 1.0, "close": 1.0},
         )
         return df
 

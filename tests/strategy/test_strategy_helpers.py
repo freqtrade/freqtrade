@@ -431,7 +431,7 @@ def test_informative_decorator(mocker, default_conf_usdt, trading_mode):
         "rsi_less",  # Non-informative columns
         "rsi_5m",  # Manual informative dataframe
     ]
-    for _, dataframe in analyzed.items():
+    for dataframe in analyzed.values():
         for col in expected_columns:
             assert col in dataframe.columns
 

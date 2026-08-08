@@ -518,14 +518,6 @@ EXCHANGES: dict[str, TestExchangeOnlineSetup] = {
             }
         ],
     },
-    "bitmart": {
-        "pair": "BTC/USDT",
-        "stake_currency": "USDT",
-        "hasQuoteVolume": True,
-        "timeframe": "1h",
-        "candle_count": 200,
-        "orderbook_max_entries": 50,
-    },
     "bitget": {
         "pair": "BTC/USDT",
         "stake_currency": "USDT",

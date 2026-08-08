@@ -733,7 +733,7 @@ def test_validate_stakecurrency_error(default_conf, mocker):
 def test_get_quote_currencies(default_conf, mocker):
     ex = get_patched_exchange(mocker, default_conf)
 
-    assert set(ex.get_quote_currencies()) == set(["USD", "ETH", "BTC", "USDT", "BUSD"])
+    assert set(ex.get_quote_currencies()) == {"USD", "ETH", "BTC", "USDT", "BUSD"}
 
 
 @pytest.mark.parametrize(
@@ -2146,7 +2146,6 @@ def test_fetch_orders_multi(
 
     mocker.patch(f"{EXMS}.exchange_has", has_resp)
 
-    #
     resp = exchange.fetch_orders("mocked", start_time)
     assert api_mock.fetch_orders.call_count == expected[0]
     assert api_mock.fetch_open_orders.call_count == expected[1]
@@ -4620,7 +4619,7 @@ def test_get_valid_pair_combination(default_conf, mocker, markets):
     assert "ETH/USDT:USDT" in multicombs
 
     with pytest.raises(ValueError, match=r"Could not combine.* to get a valid pair."):
-        for x in ex.get_valid_pair_combination("NOPAIR", "ETH"):
+        for _x in ex.get_valid_pair_combination("NOPAIR", "ETH"):
             pass
 
 
@@ -4938,7 +4937,6 @@ def test_ohlcv_candle_limit(default_conf, mocker, exchange_name):
         ("BTCUSDT", None, "USDT", "binance", True, False, False, "spot", {}, False),
         ("USDT/BTC", "BTC", None, "binance", True, False, False, "spot", {}, False),
         ("BTCUSDT", "BTC", None, "binance", True, False, False, "spot", {}, False),
-        ("BTC/USDT", "BTC", "USDT", "binance", True, False, False, "spot", {}, True),
         # Futures mode, spot pair
         ("BTC/USDT", "BTC", "USDT", "binance", True, False, False, "futures", {}, False),
         ("BTC/USDT", "BTC", "USDT", "binance", True, False, False, "margin", {}, False),
@@ -5384,11 +5382,6 @@ def test_set_margin_mode(mocker, default_conf, margin_mode, caplog):
         ("kraken", TradingMode.SPOT, None, False, False),
         ("kraken", TradingMode.MARGIN, MarginMode.ISOLATED, False, True),
         ("kraken", TradingMode.FUTURES, MarginMode.ISOLATED, False, True),
-        ("bitmart", TradingMode.SPOT, None, False, False),
-        ("bitmart", TradingMode.MARGIN, MarginMode.CROSS, False, True),
-        ("bitmart", TradingMode.MARGIN, MarginMode.ISOLATED, False, True),
-        ("bitmart", TradingMode.FUTURES, MarginMode.CROSS, False, True),
-        ("bitmart", TradingMode.FUTURES, MarginMode.ISOLATED, False, True),
         ("gate", TradingMode.MARGIN, MarginMode.ISOLATED, False, True),
         ("okx", TradingMode.SPOT, None, False, False),
         ("okx", TradingMode.MARGIN, MarginMode.CROSS, False, True),

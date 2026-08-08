@@ -31,7 +31,7 @@ repos:
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
     # Ruff version.
-    rev: 'v0.15.22'
+    rev: 'v0.16.1'
     hooks:
       - id: ruff
       - id: ruff-format
@@ -70,6 +70,6 @@ repos:
 
   # Ensure github actions remain safe
   - repo: https://github.com/woodruffw/zizmor-pre-commit
-    rev: v1.28.0
+    rev: v1.29.0
     hooks:
     - id: zizmor

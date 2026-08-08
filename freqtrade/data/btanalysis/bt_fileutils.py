@@ -229,7 +229,7 @@ def _get_backtest_files(dirname: Path) -> list[Path]:
     # Get both json and zip files separately and combine the results
     json_files = dirname.glob("backtest-result-*-[0-9][0-9]*.json")
     zip_files = dirname.glob("backtest-result-*-[0-9][0-9]*.zip")
-    return list(reversed(sorted(list(json_files) + list(zip_files))))
+    return sorted(list(json_files) + list(zip_files), reverse=True)
 
 
 def _extract_backtest_result(filename: Path) -> list[BacktestHistoryEntryType]:

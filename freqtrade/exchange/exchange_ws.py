@@ -197,7 +197,6 @@ class ExchangeWS:
 
         except ccxt.NotSupported as e:
             logger.debug("un_watch_ohlcv_for_symbols not supported: %s", e)
-            pass
         except ccxt.NetworkError as e:
             # Network errors are common on shutdown so we can ignore them.
             # It's a network error - which most likely means that the connection is already closed.

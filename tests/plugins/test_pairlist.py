@@ -1471,7 +1471,7 @@ def test__whitelist_for_active_markets(
     pairlist_handler = freqtrade.pairlists._pairlist_handlers[0]
     new_whitelist = pairlist_handler._whitelist_for_active_markets(whitelist)
 
-    assert set(new_whitelist) == set(["ETH/BTC", "TKN/BTC"])
+    assert set(new_whitelist) == {"ETH/BTC", "TKN/BTC"}
     assert log_message in caplog.text
 
 
@@ -1786,20 +1786,26 @@ def test_spreadfilter_invalid_data(mocker, default_conf, markets, tickers, caplo
                 "min_price": 0.00000010,
                 "max_price": 1.0,
             },
-            "[{'PriceFilter': 'PriceFilter - Filtering pairs priced below "
-            "0.1% or below 0.00000010 or above 1.00000000.'}]",
+            (
+                "[{'PriceFilter': 'PriceFilter - Filtering pairs priced below "
+                "0.1% or below 0.00000010 or above 1.00000000.'}]"
+            ),
             None,
         ),
         (
             {"method": "PriceFilter", "low_price_ratio": 0.001, "min_price": 0.00000010},
-            "[{'PriceFilter': 'PriceFilter - Filtering pairs priced below 0.1% "
-            "or below 0.00000010.'}]",
+            (
+                "[{'PriceFilter': 'PriceFilter - Filtering pairs priced below 0.1% "
+                "or below 0.00000010.'}]"
+            ),
             None,
         ),
         (
             {"method": "PriceFilter", "low_price_ratio": 0.001, "max_price": 1.00010000},
-            "[{'PriceFilter': 'PriceFilter - Filtering pairs priced below 0.1% "
-            "or above 1.00010000.'}]",
+            (
+                "[{'PriceFilter': 'PriceFilter - Filtering pairs priced below 0.1% "
+                "or above 1.00010000.'}]"
+            ),
             None,
         ),
         (
@@ -1844,14 +1850,18 @@ def test_spreadfilter_invalid_data(mocker, default_conf, markets, tickers, caplo
         ),  # ConfigurationError expected
         (
             {"method": "DelistFilter", "max_days_from_now": 1},
-            "[{'DelistFilter': 'DelistFilter - Filtering pairs that will be delisted in the "
-            "next 1 days.'}]",
+            (
+                "[{'DelistFilter': 'DelistFilter - Filtering pairs that will be delisted in the "
+                "next 1 days.'}]"
+            ),
             None,
         ),  # ConfigurationError expected
         (
             {"method": "RangeStabilityFilter", "lookback_days": 10, "min_rate_of_change": 0.01},
-            "[{'RangeStabilityFilter': 'RangeStabilityFilter - Filtering pairs with rate "
-            "of change below 0.01 over the last days.'}]",
+            (
+                "[{'RangeStabilityFilter': 'RangeStabilityFilter - Filtering pairs with rate "
+                "of change below 0.01 over the last days.'}]"
+            ),
             None,
         ),
         (
@@ -1861,8 +1871,10 @@ def test_spreadfilter_invalid_data(mocker, default_conf, markets, tickers, caplo
                 "min_rate_of_change": 0.01,
                 "max_rate_of_change": 0.99,
             },
-            "[{'RangeStabilityFilter': 'RangeStabilityFilter - Filtering pairs with rate "
-            "of change below 0.01 and above 0.99 over the last days.'}]",
+            (
+                "[{'RangeStabilityFilter': 'RangeStabilityFilter - Filtering pairs with rate "
+                "of change below 0.01 and above 0.99 over the last days.'}]"
+            ),
             None,
         ),
         (

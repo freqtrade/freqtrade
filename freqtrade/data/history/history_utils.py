@@ -308,7 +308,7 @@ def _download_pair_history(
                 since_ms=(
                     since_ms
                     if since_ms
-                    else int((datetime.now() - timedelta(days=new_pairs_days)).timestamp()) * 1000
+                    else int((dt_now() - timedelta(days=new_pairs_days)).timestamp()) * 1000
                 ),
                 is_new_pair=data.empty,
                 candle_type=candle_type,
@@ -721,7 +721,8 @@ def download_data(
     )
     timerange = TimeRange()
     if "days" in config and config["days"] is not None:
-        time_since = (datetime.now() - timedelta(days=config["days"])).strftime("%Y%m%d")
+        # TODO: use native datetime instead of strftime to avoid timezone issues
+        time_since = (datetime.now() - timedelta(days=config["days"])).strftime("%Y%m%d")  # noqa: DTZ005
         timerange = TimeRange.parse_timerange(f"{time_since}-")
 
     if "timerange" in config:
