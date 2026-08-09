@@ -129,7 +129,7 @@ class LookaheadAnalysis(BaseAnalysis):
         varholder.timeframe = backtesting.timeframe
 
         temp_indicators = backtesting.strategy.advise_all_indicators(varholder.data)
-        filled_indicators = dict()
+        filled_indicators = {}
         for pair, dataframe in temp_indicators.items():
             filled_indicators[pair] = backtesting.strategy.ft_advise_signals(
                 dataframe, {"pair": pair}

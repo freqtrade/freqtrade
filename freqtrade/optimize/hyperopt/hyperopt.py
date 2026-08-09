@@ -143,7 +143,7 @@ class Hyperopt:
 
     def get_optuna_asked_points(self, n_points: int, dimensions: dict) -> list[Any]:
         asked: list[list[Any]] = []
-        for i in range(n_points):
+        for _i in range(n_points):
             asked.append(self.opt.ask(dimensions))
         return asked
 

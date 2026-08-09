@@ -357,8 +357,7 @@ class FreqaiDataKitchen:
             timerange_backtest.startts = timerange_train.stopts
             timerange_backtest.stopts = timerange_backtest.startts + int(bt_period)
 
-            if timerange_backtest.stopts > config_timerange.stopts:
-                timerange_backtest.stopts = config_timerange.stopts
+            timerange_backtest.stopts = min(timerange_backtest.stopts, config_timerange.stopts)
 
             tr_backtesting_list.append(timerange_backtest.timerange_str)
             tr_backtesting_list_timerange.append(timerange_backtest.copy())
@@ -542,8 +541,7 @@ class FreqaiDataKitchen:
         max_tf_seconds = 0
         for tf in timeframes:
             secs = timeframe_to_seconds(tf)
-            if secs > max_tf_seconds:
-                max_tf_seconds = secs
+            max_tf_seconds = max(max_tf_seconds, secs)
 
         # We notice that users like to use exotic indicators where
         # they do not know the required timeperiod. Here we include a factor

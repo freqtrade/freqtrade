@@ -171,7 +171,6 @@ Exchanges available for Freqtrade:
 Exchange name       Supported    Markets                 Reason
 ------------------  -----------  ----------------------  ------------------------------------------------------------------------
 binance             Official     spot, isolated futures
-bitmart             Official     spot
 bybit                            spot, isolated futures
 gate                Official     spot, isolated futures
 htx                 Official     spot
@@ -195,7 +194,6 @@ Exchange name       Valid    Supported    Markets                 Reason
 ------------------  -------  -----------  ----------------------  ---------------------------------------------------------------------------------
 binance             True     Official     spot, isolated futures
 bitflyer            False                 spot                    missing: fetchOrder. missing opt: fetchTickers.
-bitmart             True     Official     spot
 bybit               True                  spot, isolated futures
 gate                True     Official     spot, isolated futures
 htx                 True     Official     spot

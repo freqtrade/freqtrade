@@ -566,7 +566,7 @@ class Exchange:
         Return a list of supported quote currencies
         """
         markets = self.markets
-        return sorted(set([x["quote"] for _, x in markets.items()]))
+        return sorted({x["quote"] for _, x in markets.items()})
 
     def get_pair_quote_currency(self, pair: str) -> str:
         """Return a pair's quote currency (base/quote:settlement)"""
