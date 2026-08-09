@@ -1,11 +1,14 @@
+from collections import Counter
+
 import numpy as np
 import pandas as pd
 import pytest
 
 from freqtrade.data.dataprovider import DataProvider
-from freqtrade.enums import CandleType
+from freqtrade.enums import CandleType, RunMode
 from freqtrade.resolvers.strategy_resolver import StrategyResolver
 from freqtrade.strategy import merge_informative_pair, stoploss_from_absolute, stoploss_from_open
+from freqtrade.strategy.informative_decorator import InformativeCache, InformativeCacheKey
 from tests.conftest import generate_test_data, get_patched_exchange
 
 
@@ -443,3 +446,161 @@ def test_informative_decorator(mocker, default_conf_usdt, trading_mode):
         strategy.advise_all_indicators(
             {p: data[(p, strategy.timeframe, candle_def)] for p in ("XRP/USDT", "LTC/USDT")}
         )
+
+
+def _cache_key_factory(asset: str, informative_timeframe: str, effective_timeframe: str):
+    def populate_indicators(strategy, dataframe: pd.DataFrame, metadata: dict) -> pd.DataFrame:
+        return dataframe
+
+    return InformativeCacheKey(
+        callback=populate_indicators,
+        callback_name=populate_indicators.__qualname__,
+        asset=asset,
+        informative_timeframe=informative_timeframe,
+        effective_timeframe=effective_timeframe,
+        candle_type=CandleType.SPOT,
+    )
+
+
+def test_informative_cache_expiration_uses_effective_timeframe():
+    current_time = 0.0
+    cache = InformativeCache(maxsize=500, timer=lambda: current_time)
+
+    # informative_timeframe and effective_timeframe are crossed between the two keys, so using
+    # the wrong one for expiration swaps the two TTLs - and fails the assertions below.
+    key_15m = _cache_key_factory("BTC/USDT", informative_timeframe="1h", effective_timeframe="15m")
+    key_1h = _cache_key_factory("ETH/USDT", informative_timeframe="15m", effective_timeframe="1h")
+
+    entry = object()
+    # Store entries in the cache for 15m and 1h effective timeframes
+    cache[key_15m] = entry
+    cache[key_1h] = entry
+
+    # Updating an entry resets its expiration from the latest store time.
+    current_time = 900
+    cache[key_15m] = entry
+
+    # 15 minutes after last update to the 15m informative, the cache shouldn't expire
+    current_time = 1800
+    assert cache.expire() == []
+
+    # 30 minutes (2 candles) after last update to 15m informative. It will be expired.
+    # It's 45 minutes since the last update to 1h informative. It remains cached.
+    current_time = 2700
+    assert {key for key, _ in cache.expire()} == {key_15m}
+    assert key_1h in cache
+
+    # 1h cache remains just before 2 hours (2 candles) since its last update.
+    current_time = 7199
+    assert cache.expire() == []
+    assert key_1h in cache
+
+    current_time = 7200
+    assert {key for key, _ in cache.expire()} == {key_1h}
+    assert cache == {}
+
+
+def test_analyze_expires_informative_cache(mocker, default_conf_usdt):
+    default_conf_usdt["runmode"] = RunMode.DRY_RUN
+    default_conf_usdt["strategy"] = "InformativeDecoratorCacheTest"
+    strategy = StrategyResolver.load_strategy(default_conf_usdt)
+    assert isinstance(strategy._ft_informative_cache, InformativeCache)
+    assert strategy._ft_informative_cache.maxsize == 500
+
+    current_time = 0.0
+    cache = InformativeCache(maxsize=500, timer=lambda: current_time)
+    strategy._ft_informative_cache = cache
+    key_15m = _cache_key_factory("BTC/USDT", informative_timeframe="15m", effective_timeframe="15m")
+    cache[key_15m] = object()
+    # Expired entries are hidden from the cache's public API, but only expire() drops them from
+    # memory - so the purge itself has to be observed through the call.
+    expire = mocker.spy(cache, "expire")
+
+    # Still cached just before the entry expires.
+    current_time = 1799
+    strategy.analyze([])
+    assert expire.spy_return == []
+    assert key_15m in cache
+
+    # The analysis cycle expires it, even when there are no active pairs.
+    current_time = 1800
+    strategy.analyze([])
+    assert [key for key, _ in expire.spy_return] == [key_15m]
+    assert cache == {}
+
+
+@pytest.mark.parametrize(
+    "runmode, expected",
+    [
+        (RunMode.DRY_RUN, [2, 2, 2, 1, 2, 1, 4, 2]),
+        (RunMode.LIVE, [2, 2, 2, 1, 2, 1, 4, 2]),
+        (RunMode.BACKTEST, [2, 4, 2, 2, 2, 2, 4, 8]),
+        (RunMode.HYPEROPT, [2, 4, 2, 2, 2, 2, 4, 8]),
+    ],
+)
+def test_informative_decorator_cache(mocker, default_conf_usdt, runmode, expected):
+    default_conf_usdt["runmode"] = runmode
+    candle_def = CandleType.get_default("spot")
+    default_conf_usdt["candle_type_def"] = candle_def
+    test_data_5m = generate_test_data("5m", 40)
+    test_data_30m = generate_test_data("30m", 40)
+    test_data_1h = generate_test_data("1h", 40)
+    data = {
+        ("XRP/USDT", "5m", candle_def): test_data_5m,
+        ("XRP/USDT", "30m", candle_def): test_data_30m,
+        ("XRP/USDT", "1h", candle_def): test_data_1h,
+        ("LTC/USDT", "5m", candle_def): test_data_5m,
+        ("LTC/USDT", "30m", candle_def): test_data_30m,
+        ("LTC/USDT", "1h", candle_def): test_data_1h,
+        ("ETH/USDT", "1h", candle_def): test_data_1h,
+        ("ETH/USDT", "30m", candle_def): test_data_30m,
+    }
+    default_conf_usdt["strategy"] = "InformativeDecoratorCacheTest"
+    strategy = StrategyResolver.load_strategy(default_conf_usdt)
+    exchange = get_patched_exchange(mocker, default_conf_usdt)
+    default_conf_usdt["candle_type_def"] = candle_def
+    strategy.dp = DataProvider({}, exchange, None)
+    mocker.patch.object(strategy.dp, "current_whitelist", return_value=["XRP/USDT", "LTC/USDT"])
+
+    assert len(strategy._ft_informative) == 5  # Equal to number of decorators used
+
+    def test_historic_ohlcv(pair, timeframe, candle_type):
+        return data.get(
+            (pair, timeframe or strategy.timeframe, CandleType.from_string(candle_type)),
+            pd.DataFrame(),
+        ).copy()
+
+    mocker.patch(
+        "freqtrade.data.dataprovider.DataProvider.historic_ohlcv", side_effect=test_historic_ohlcv
+    )
+
+    _ = strategy.advise_all_indicators(
+        {p: data[(p, strategy.timeframe, candle_def)] for p in ("XRP/USDT", "LTC/USDT")}
+    )
+    # Number of distinct timeframes seen per pair
+    timeframes_per_pair = Counter(pair for pair, _ in strategy.informative_counter)
+    assert len(timeframes_per_pair) == 3  # Each pairs plus fixed ETH/USDT pair
+    assert timeframes_per_pair["XRP/USDT"] == 2  # 2 informative timeframes
+    assert timeframes_per_pair["LTC/USDT"] == 2  # 2 informative timeframes
+    assert timeframes_per_pair["ETH/USDT"] == 2  # 2 informative timeframes
+    assert strategy.informative_counter["XRP/USDT", "1h"] == 1  # called only once
+    assert strategy.informative_counter["XRP/USDT", "30m"] == 1  # called only once
+    assert strategy.informative_counter["LTC/USDT", "1h"] == 1  # called only once
+    assert strategy.informative_counter["LTC/USDT", "30m"] == 1  # called only once
+    assert (
+        strategy.informative_counter["ETH/USDT", "1h"] == expected[0]
+    )  # called twice times, once for each pair
+    assert (
+        strategy.informative_counter["ETH/USDT", "30m"] == expected[1]
+    )  # called twice, once for each informative function
+
+    # Trigger populate indicators again, to see the effect of cache
+    _ = strategy.advise_all_indicators(
+        {p: data[(p, strategy.timeframe, candle_def)] for p in ("XRP/USDT", "LTC/USDT")}
+    )
+    assert strategy.informative_counter["XRP/USDT", "1h"] == expected[2]
+    assert strategy.informative_counter["XRP/USDT", "30m"] == expected[3]
+    assert strategy.informative_counter["LTC/USDT", "1h"] == expected[4]
+    assert strategy.informative_counter["LTC/USDT", "30m"] == expected[5]
+    assert strategy.informative_counter["ETH/USDT", "1h"] == expected[6]
+    assert strategy.informative_counter["ETH/USDT", "30m"] == expected[7]

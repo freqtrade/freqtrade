@@ -1,15 +1,60 @@
 from collections.abc import Callable
-from dataclasses import dataclass
-from typing import Any
+from dataclasses import dataclass, field
+from time import monotonic
+from typing import Any, NoReturn
 
+from cachetools import TLRUCache
 from pandas import DataFrame
 
+from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS
 from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
-from freqtrade.strategy.strategy_helper import merge_informative_pair
+from freqtrade.exchange import timeframe_to_seconds
+from freqtrade.strategy.strategy_helper import (
+    _merge_prepared_informative_pair,
+    _prepare_informative_pair,
+    _PreparedInformative,
+    merge_informative_pair,
+)
 
 
 PopulateIndicators = Callable[[Any, DataFrame, dict], DataFrame]
+
+
+@dataclass(frozen=True, slots=True)
+class InformativeCacheKey:
+    callback: PopulateIndicators = field(repr=False)
+    callback_name: str = field(compare=False, hash=False)
+    asset: str
+    informative_timeframe: str
+    effective_timeframe: str
+    candle_type: CandleType | None
+
+
+_INFORMATIVE_DATE_MERGE = "date_merge"
+_INFORMATIVE_CACHE_TTL_CANDLES = 2
+
+
+@dataclass(slots=True)
+class _InformativeCacheEntry:
+    fingerprint: tuple[Any, ...]
+    prepared: _PreparedInformative
+
+
+class InformativeCache(TLRUCache[InformativeCacheKey, _InformativeCacheEntry]):
+    """LRU cache whose entries expire two informative candles after their last update."""
+
+    def __init__(self, maxsize: int, timer: Callable[[], float] = monotonic) -> None:
+        super().__init__(maxsize=maxsize, ttu=self._time_to_use, timer=timer)
+
+    @staticmethod
+    def _time_to_use(key: InformativeCacheKey, _entry: _InformativeCacheEntry, now: float) -> float:
+        # Using effective timeframe instead of informative timeframe because some informative candle
+        # types (like funding_rate) have a different effective timeframe. On most cases, effective
+        # timeframe is equal to informative timeframe.
+        return now + (
+            _INFORMATIVE_CACHE_TTL_CANDLES * timeframe_to_seconds(key.effective_timeframe)
+        )
 
 
 @dataclass
@@ -19,6 +64,7 @@ class InformativeData:
     fmt: str | Callable[[Any], str] | None
     ffill: bool
     candle_type: CandleType | None
+    cache: bool = True
 
 
 def informative(
@@ -28,6 +74,7 @@ def informative(
     *,
     candle_type: CandleType | str | None = None,
     ffill: bool = True,
+    cache: bool = True,
 ) -> Callable[[PopulateIndicators], PopulateIndicators]:
     """
     A decorator for populate_indicators_Nn(self, dataframe, metadata), allowing these functions to
@@ -58,16 +105,23 @@ def informative(
     * {timeframe} - timeframe of informative dataframe.
     :param ffill: ffill dataframe after merging informative pair.
     :param candle_type: '', mark, index, premiumIndex, or funding_rate
+    :param cache: Cache populated indicators in dry/live mode while the latest informative candle
+                  remains unchanged. Entries expire after two effective informative timeframes
+                  without an update. Disable for methods that use external state, have side effects,
+                  or otherwise need to run for every base pair. Defaults to True.
     """
     _asset = asset
     _timeframe = timeframe
     _fmt = fmt
     _ffill = ffill
     _candle_type = CandleType.from_string(candle_type) if candle_type else None
+    _cache = cache
 
     def decorator(fn: PopulateIndicators):
         informative_pairs = getattr(fn, "_ft_informative", [])
-        informative_pairs.append(InformativeData(_asset, _timeframe, _fmt, _ffill, _candle_type))
+        informative_pairs.append(
+            InformativeData(_asset, _timeframe, _fmt, _ffill, _candle_type, _cache)
+        )
         setattr(fn, "_ft_informative", informative_pairs)  # noqa: B010
         return fn
 
@@ -95,6 +149,73 @@ def _format_pair_name(config, pair: str, market: dict[str, Any] | None = None) -
     ).upper()
 
 
+def _informative_dataframe_fingerprint(dataframe: DataFrame) -> tuple[Any, ...]:
+    last_candle = dataframe.iloc[-1]
+    return (len(dataframe), *(last_candle[column] for column in DEFAULT_DATAFRAME_COLUMNS))
+
+
+def _raise_reserved_column_name() -> NoReturn:
+    raise OperationalException(
+        f"Column name '{_INFORMATIVE_DATE_MERGE}' is reserved for informative merging."
+    )
+
+
+def _format_informative_column(
+    column: Any,
+    formatter: Callable[..., str],
+    fmt_args: dict[str, str],
+    *,
+    preserve_date_merge: bool = False,
+) -> str:
+    if preserve_date_merge and column == _INFORMATIVE_DATE_MERGE:
+        return column
+    formatted_column = formatter(column=column, **fmt_args)
+    if formatted_column == _INFORMATIVE_DATE_MERGE:
+        _raise_reserved_column_name()
+    return formatted_column
+
+
+def _get_populated_informative_dataframe(
+    strategy,
+    populate_indicators_fn: PopulateIndicators,
+    dataframe: DataFrame,
+    metadata: dict,
+    cache_key: InformativeCacheKey,
+    cache: InformativeCache | None,
+    timeframe: str,
+) -> DataFrame:
+    """
+    Populate the informative dataframe, reusing the cached result while it stays valid.
+    The returned dataframe can be owned by the cache - callers must not modify it in place.
+    This is safe because the dataframe is rewritten by the caller as part of the column rename
+    and makes an additional .copy() call unnecessary
+    """
+    if _INFORMATIVE_DATE_MERGE in dataframe.columns:
+        _raise_reserved_column_name()
+
+    if cache is not None:
+        fingerprint = _informative_dataframe_fingerprint(dataframe)
+        cached: _InformativeCacheEntry | None = cache.get(cache_key)
+        if cached is not None and cached.fingerprint == fingerprint:
+            return cached.prepared.dataframe
+
+    dataframe = populate_indicators_fn(strategy, dataframe, metadata)
+    if _INFORMATIVE_DATE_MERGE in dataframe.columns:
+        _raise_reserved_column_name()
+    if cache is None:
+        return dataframe
+
+    prepared = _prepare_informative_pair(
+        dataframe,
+        strategy.timeframe,
+        timeframe,
+        append_timeframe=False,
+        date_merge_column=_INFORMATIVE_DATE_MERGE,
+    )
+    cache[cache_key] = _InformativeCacheEntry(fingerprint, prepared)
+    return prepared.dataframe
+
+
 def _create_and_merge_informative_pair(
     strategy,
     dataframe: DataFrame,
@@ -102,6 +223,9 @@ def _create_and_merge_informative_pair(
     inf_data: InformativeData,
     populate_indicators_fn: PopulateIndicators,
 ):
+    if _INFORMATIVE_DATE_MERGE in dataframe.columns:
+        _raise_reserved_column_name()
+
     asset = inf_data.asset or ""
     timeframe = inf_data.timeframe
     timeframe1 = inf_data.timeframe
@@ -141,34 +265,65 @@ def _create_and_merge_informative_pair(
             f"Informative dataframe for ({asset}, {timeframe1}, {candle_type}) is empty. "
             "Can't populate informative indicators."
         )
-    inf_dataframe = populate_indicators_fn(strategy, inf_dataframe, inf_metadata)
+    cache: InformativeCache | None = (
+        getattr(strategy, "_ft_informative_cache", None) if inf_data.cache else None
+    )
+    cache_key = InformativeCacheKey(
+        callback=populate_indicators_fn,
+        callback_name=populate_indicators_fn.__qualname__,
+        asset=asset,
+        informative_timeframe=timeframe,
+        effective_timeframe=timeframe1,
+        candle_type=candle_type,
+    )
+    inf_dataframe = _get_populated_informative_dataframe(
+        strategy,
+        populate_indicators_fn,
+        inf_dataframe,
+        inf_metadata,
+        cache_key,
+        cache,
+        timeframe1,
+    )
 
-    formatter: Any = None
+    formatter: Callable[..., str]
     if callable(fmt):
         formatter = fmt  # A custom user-specified formatter function.
     else:
         formatter = fmt.format  # A default string formatter.
 
-    fmt_args = {
+    fmt_args: dict[str, str] = {
         **__get_pair_formats(market),
         "asset": asset,
         "timeframe": timeframe,
     }
-    inf_dataframe.rename(columns=lambda column: formatter(column=column, **fmt_args), inplace=True)
+    cache_enabled = cache is not None
+    inf_dataframe = inf_dataframe.rename(
+        columns=lambda column: _format_informative_column(
+            column, formatter, fmt_args, preserve_date_merge=cache_enabled
+        )
+    )
 
-    date_column = formatter(column="date", **fmt_args)
+    date_column = _format_informative_column("date", formatter, fmt_args)
     if date_column in dataframe.columns:
         raise OperationalException(
             f"Duplicate column name {date_column} exists in "
             f"dataframe! Ensure column names are unique!"
         )
-    dataframe = merge_informative_pair(
-        dataframe,
-        inf_dataframe,
-        strategy.timeframe,
-        timeframe1,
-        ffill=inf_data.ffill,
-        append_timeframe=False,
-        date_column=date_column,
-    )
+    if cache_enabled:
+        dataframe = _merge_prepared_informative_pair(
+            dataframe,
+            _PreparedInformative(inf_dataframe, _INFORMATIVE_DATE_MERGE),
+            ffill=inf_data.ffill,
+        )
+    else:
+        dataframe = merge_informative_pair(
+            dataframe,
+            inf_dataframe,
+            strategy.timeframe,
+            timeframe1,
+            ffill=inf_data.ffill,
+            append_timeframe=False,
+            date_column=date_column,
+        )
     return dataframe
