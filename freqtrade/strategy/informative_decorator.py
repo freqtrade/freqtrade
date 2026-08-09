@@ -38,7 +38,7 @@ _INFORMATIVE_CACHE_TTL_CANDLES = 2
 
 @dataclass(slots=True)
 class _InformativeCacheEntry:
-    fingerprint: tuple[Any, ...]
+    fingerprint: tuple[int, ...]
     prepared: _PreparedInformative
 
 
@@ -150,7 +150,7 @@ def _format_pair_name(config, pair: str, market: dict[str, Any] | None = None) -
     ).upper()
 
 
-def _informative_dataframe_fingerprint(dataframe: DataFrame) -> tuple[Any, ...]:
+def _informative_dataframe_fingerprint(dataframe: DataFrame) -> tuple[int, ...]:
     last_candle = dataframe.iloc[-1]
     return (len(dataframe), *(last_candle[column] for column in DEFAULT_DATAFRAME_COLUMNS))
 
@@ -166,7 +166,7 @@ def _format_informative_column(
     formatter: Callable[..., str],
     fmt_args: dict[str, str],
     preserve_date_merge: bool = False,
-) -> Any:
+) -> str:
     if preserve_date_merge and column == _INFORMATIVE_DATE_MERGE:
         return column
     formatted_column = formatter(column=column, **fmt_args)
@@ -281,13 +281,13 @@ def _create_and_merge_informative_pair(
         timeframe1,
     )
 
-    formatter: Any = None
+    formatter: Callable[..., str]
     if callable(fmt):
         formatter = fmt  # A custom user-specified formatter function.
     else:
         formatter = fmt.format  # A default string formatter.
 
-    fmt_args = {
+    fmt_args: dict[str, str] = {
         **__get_pair_formats(market),
         "asset": asset,
         "timeframe": timeframe,
