@@ -448,67 +448,85 @@ def test_informative_decorator(mocker, default_conf_usdt, trading_mode):
         )
 
 
-def test_informative_cache_expiration_uses_effective_timeframe(default_conf_usdt):
-    current_time = [0.0]
-    cache = InformativeCache(maxsize=500, timer=lambda: current_time[0])
-
+def _cache_key_factory(asset: str, informative_timeframe: str, effective_timeframe: str):
     def populate_indicators(strategy, dataframe: pd.DataFrame, metadata: dict) -> pd.DataFrame:
         return dataframe
 
-    # The informative_timeframe is different than effective_timeframe to make sure the cache
-    # expiration uses effective_timeframe.
-    key_15m = InformativeCacheKey(
+    return InformativeCacheKey(
         callback=populate_indicators,
         callback_name=populate_indicators.__qualname__,
-        asset="BTC/USDT",
-        informative_timeframe="1h",
-        effective_timeframe="15m",
+        asset=asset,
+        informative_timeframe=informative_timeframe,
+        effective_timeframe=effective_timeframe,
         candle_type=CandleType.SPOT,
         strategy_timeframe="5m",
     )
-    key_1h = InformativeCacheKey(
-        callback=populate_indicators,
-        callback_name=populate_indicators.__qualname__,
-        asset="ETH/USDT",
-        informative_timeframe="15m",
-        effective_timeframe="1h",
-        candle_type=CandleType.SPOT,
-        strategy_timeframe="5m",
-    )
+
+
+def test_informative_cache_expiration_uses_effective_timeframe():
+    current_time = 0.0
+    cache = InformativeCache(maxsize=500, timer=lambda: current_time)
+
+    # informative_timeframe and effective_timeframe are crossed between the two keys, so using
+    # the wrong one for expiration swaps the two TTLs - and fails the assertions below.
+    key_15m = _cache_key_factory("BTC/USDT", informative_timeframe="1h", effective_timeframe="15m")
+    key_1h = _cache_key_factory("ETH/USDT", informative_timeframe="15m", effective_timeframe="1h")
+
     entry = object()
-    # Store entries in the cache for 15m and 1h informative timeframes
+    # Store entries in the cache for 15m and 1h effective timeframes
     cache[key_15m] = entry
     cache[key_1h] = entry
 
     # Updating an entry resets its expiration from the latest store time.
-    current_time[0] = 900
+    current_time = 900
     cache[key_15m] = entry
 
-    # 15 minutes after last update to the 15m informative, the cache shouldn't expired
-    current_time[0] = 1800
+    # 15 minutes after last update to the 15m informative, the cache shouldn't expire
+    current_time = 1800
     assert cache.expire() == []
 
-    # 30 minutes after last update to 15m informative. It will be expired
+    # 30 minutes (2 candles) after last update to 15m informative. It will be expired.
     # It's 45 minutes since the last update to 1h informative. It remains cached.
-    current_time[0] = 2700
+    current_time = 2700
     assert {key for key, _ in cache.expire()} == {key_15m}
     assert key_1h in cache
 
+    # 1h cache remains just before 2 hours (2 candles) since its last update.
+    current_time = 7199
+    assert cache.expire() == []
+    assert key_1h in cache
+
+    current_time = 7200
+    assert {key for key, _ in cache.expire()} == {key_1h}
+    assert cache == {}
+
+
+def test_analyze_expires_informative_cache(mocker, default_conf_usdt):
     default_conf_usdt["runmode"] = RunMode.DRY_RUN
     default_conf_usdt["strategy"] = "InformativeDecoratorCacheTest"
     strategy = StrategyResolver.load_strategy(default_conf_usdt)
     assert isinstance(strategy._ft_informative_cache, InformativeCache)
     assert strategy._ft_informative_cache.maxsize == 500
+
+    current_time = 0.0
+    cache = InformativeCache(maxsize=500, timer=lambda: current_time)
     strategy._ft_informative_cache = cache
+    key_15m = _cache_key_factory("BTC/USDT", informative_timeframe="15m", effective_timeframe="15m")
+    cache[key_15m] = object()
+    # Expired entries are hidden from the cache's public API, but only expire() drops them from
+    # memory - so the purge itself has to be observed through the call.
+    expire = mocker.spy(cache, "expire")
 
-    # 1h cache remains just before 2 hours since its last update.
-    current_time[0] = 7199
-    assert key_1h in cache
-
-    # The analysis cycle expires it at 2 hours, even when there are no active pairs.
-    current_time[0] = 7200
+    # Still cached just before the entry expires.
+    current_time = 1799
     strategy.analyze([])
-    assert cache.expire() == []
+    assert expire.spy_return == []
+    assert key_15m in cache
+
+    # The analysis cycle expires it, even when there are no active pairs.
+    current_time = 1800
+    strategy.analyze([])
+    assert [key for key, _ in expire.spy_return] == [key_15m]
     assert cache == {}
 
 
