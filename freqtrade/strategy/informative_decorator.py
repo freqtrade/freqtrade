@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from time import monotonic
-from typing import Any
+from typing import Any, NoReturn
 
 from cachetools import TLRUCache
 from pandas import DataFrame
@@ -29,7 +29,6 @@ class InformativeCacheKey:
     informative_timeframe: str
     effective_timeframe: str
     candle_type: CandleType | None
-    strategy_timeframe: str
 
 
 _INFORMATIVE_DATE_MERGE = "date_merge"
@@ -38,7 +37,7 @@ _INFORMATIVE_CACHE_TTL_CANDLES = 2
 
 @dataclass(slots=True)
 class _InformativeCacheEntry:
-    fingerprint: tuple[int, ...]
+    fingerprint: tuple[Any, ...]
     prepared: _PreparedInformative
 
 
@@ -150,12 +149,12 @@ def _format_pair_name(config, pair: str, market: dict[str, Any] | None = None) -
     ).upper()
 
 
-def _informative_dataframe_fingerprint(dataframe: DataFrame) -> tuple[int, ...]:
+def _informative_dataframe_fingerprint(dataframe: DataFrame) -> tuple[Any, ...]:
     last_candle = dataframe.iloc[-1]
     return (len(dataframe), *(last_candle[column] for column in DEFAULT_DATAFRAME_COLUMNS))
 
 
-def _raise_reserved_column_name() -> None:
+def _raise_reserved_column_name() -> NoReturn:
     raise OperationalException(
         f"Column name '{_INFORMATIVE_DATE_MERGE}' is reserved for informative merging."
     )
@@ -165,6 +164,7 @@ def _format_informative_column(
     column: Any,
     formatter: Callable[..., str],
     fmt_args: dict[str, str],
+    *,
     preserve_date_merge: bool = False,
 ) -> str:
     if preserve_date_merge and column == _INFORMATIVE_DATE_MERGE:
@@ -269,7 +269,6 @@ def _create_and_merge_informative_pair(
         informative_timeframe=timeframe,
         effective_timeframe=timeframe1,
         candle_type=candle_type,
-        strategy_timeframe=strategy.timeframe,
     )
     inf_dataframe = _get_populated_informative_dataframe(
         strategy,
@@ -292,10 +291,10 @@ def _create_and_merge_informative_pair(
         "asset": asset,
         "timeframe": timeframe,
     }
-    cache_exist = cache is not None
+    cache_enabled = cache is not None
     inf_dataframe.rename(
         columns=lambda column: _format_informative_column(
-            column, formatter, fmt_args, preserve_date_merge=cache_exist
+            column, formatter, fmt_args, preserve_date_merge=cache_enabled
         ),
         inplace=True,
     )
@@ -306,7 +305,7 @@ def _create_and_merge_informative_pair(
             f"Duplicate column name {date_column} exists in "
             f"dataframe! Ensure column names are unique!"
         )
-    if cache_exist:
+    if cache_enabled:
         dataframe = _merge_prepared_informative_pair(
             dataframe,
             _PreparedInformative(inf_dataframe, _INFORMATIVE_DATE_MERGE),

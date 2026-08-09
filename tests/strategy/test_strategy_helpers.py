@@ -459,7 +459,6 @@ def _cache_key_factory(asset: str, informative_timeframe: str, effective_timefra
         informative_timeframe=informative_timeframe,
         effective_timeframe=effective_timeframe,
         candle_type=CandleType.SPOT,
-        strategy_timeframe="5m",
     )
 
 
