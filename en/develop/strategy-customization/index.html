@@ -3632,6 +3632,7 @@ and do not have access to data from other informative pairs. However, all inform
     <span class="o">*</span><span class="p">,</span>
     <span class="n">candle_type</span><span class="p">:</span> <span class="n">CandleType</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">ffill</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">PopulateIndicators</span><span class="p">],</span> <span class="n">PopulateIndicators</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A decorator for populate_indicators_Nn(self, dataframe, metadata), allowing these functions to</span>
@@ -3662,9 +3663,20 @@ and do not have access to data from other informative pairs. However, all inform
 <span class="sd">    * {timeframe} - timeframe of informative dataframe.</span>
 <span class="sd">    :param ffill: ffill dataframe after merging informative pair.</span>
 <span class="sd">    :param candle_type: &#39;&#39;, mark, index, premiumIndex, or funding_rate</span>
+<span class="sd">    :param cache: Cache populated informative indicators in dry/live mode while the latest informative</span>
+<span class="sd">                  candle remains unchanged. Disable if you want the informative function to always be</span>
+<span class="sd">                  called. Defaults to True.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 </code></pre></div>
 </details>
+<p><strong>Caching</strong> is enabled by default, and will greatly improve performance when using informative pairs. When caching is enabled, the informative function will only be called when a new informative candle is available (live/dry only, all other modes ignore this flag). Otherwise, the cached, precalculated dataframe will be used.<br />
+Use <code>cache=False</code> on methods that use non-OHLCV data, have side
+effects, or otherwise need to run for every base pair and/or every new main timeframe candles.
+When decorators are stacked, each decorator is configured independently. Cached entries expire
+after two effective informative timeframes without an update, so unused informative pairs do not
+remain cached indefinitely. For example, 15m informative timeframe will expire 30 minutes after the last 15m informative candle was refreshed.</p>
+<p>The <code>date_merge</code> column name is <em>reserved</em> while informative decorators are being merged. It must not
+be returned by informative callbacks or column formatters, or exist in the base dataframe before informative merging. Freqtrade will raise an exception if this is violated to avoid unexpected merge behavior.</p>
 <details class="example">
 <summary>Fast and easy way to define informative pairs</summary>
 <p>Most of the time we do not need power and flexibility offered by <code>merge_informative_pair()</code>, therefore we can use a decorator to quickly define informative pairs.</p>
