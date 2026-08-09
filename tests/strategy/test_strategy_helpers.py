@@ -1,3 +1,5 @@
+from collections import Counter
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -558,28 +560,30 @@ def test_informative_decorator_cache(mocker, default_conf_usdt, runmode, expecte
     _ = strategy.advise_all_indicators(
         {p: data[(p, strategy.timeframe, candle_def)] for p in ("XRP/USDT", "LTC/USDT")}
     )
-    assert len(strategy.informative_counter) == 3  # Each pairs plus fixed ETH/USDT pair
-    assert len(strategy.informative_counter["XRP/USDT"]) == 2  # 2 informative timeframes
-    assert len(strategy.informative_counter["LTC/USDT"]) == 2  # 2 informative timeframes
-    assert len(strategy.informative_counter["ETH/USDT"]) == 2  # 2 informative timeframes
-    assert strategy.informative_counter["XRP/USDT"]["1h"] == 1  # called only once
-    assert strategy.informative_counter["XRP/USDT"]["30m"] == 1  # called only once
-    assert strategy.informative_counter["LTC/USDT"]["1h"] == 1  # called only once
-    assert strategy.informative_counter["LTC/USDT"]["30m"] == 1  # called only once
+    # Number of distinct timeframes seen per pair
+    timeframes_per_pair = Counter(pair for pair, _ in strategy.informative_counter)
+    assert len(timeframes_per_pair) == 3  # Each pairs plus fixed ETH/USDT pair
+    assert timeframes_per_pair["XRP/USDT"] == 2  # 2 informative timeframes
+    assert timeframes_per_pair["LTC/USDT"] == 2  # 2 informative timeframes
+    assert timeframes_per_pair["ETH/USDT"] == 2  # 2 informative timeframes
+    assert strategy.informative_counter["XRP/USDT", "1h"] == 1  # called only once
+    assert strategy.informative_counter["XRP/USDT", "30m"] == 1  # called only once
+    assert strategy.informative_counter["LTC/USDT", "1h"] == 1  # called only once
+    assert strategy.informative_counter["LTC/USDT", "30m"] == 1  # called only once
     assert (
-        strategy.informative_counter["ETH/USDT"]["1h"] == expected[0]
+        strategy.informative_counter["ETH/USDT", "1h"] == expected[0]
     )  # called twice times, once for each pair
     assert (
-        strategy.informative_counter["ETH/USDT"]["30m"] == expected[1]
+        strategy.informative_counter["ETH/USDT", "30m"] == expected[1]
     )  # called twice, once for each informative function
 
     # Trigger populate indicators again, to see the effect of cache
     _ = strategy.advise_all_indicators(
         {p: data[(p, strategy.timeframe, candle_def)] for p in ("XRP/USDT", "LTC/USDT")}
     )
-    assert strategy.informative_counter["XRP/USDT"]["1h"] == expected[2]
-    assert strategy.informative_counter["XRP/USDT"]["30m"] == expected[3]
-    assert strategy.informative_counter["LTC/USDT"]["1h"] == expected[4]
-    assert strategy.informative_counter["LTC/USDT"]["30m"] == expected[5]
-    assert strategy.informative_counter["ETH/USDT"]["1h"] == expected[6]
-    assert strategy.informative_counter["ETH/USDT"]["30m"] == expected[7]
+    assert strategy.informative_counter["XRP/USDT", "1h"] == expected[2]
+    assert strategy.informative_counter["XRP/USDT", "30m"] == expected[3]
+    assert strategy.informative_counter["LTC/USDT", "1h"] == expected[4]
+    assert strategy.informative_counter["LTC/USDT", "30m"] == expected[5]
+    assert strategy.informative_counter["ETH/USDT", "1h"] == expected[6]
+    assert strategy.informative_counter["ETH/USDT", "30m"] == expected[7]

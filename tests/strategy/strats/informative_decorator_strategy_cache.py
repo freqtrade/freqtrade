@@ -1,5 +1,7 @@
 # pragma pylint: disable=missing-docstring, invalid-name, pointless-string-statement
 
+from collections import Counter
+
 from pandas import DataFrame
 
 from freqtrade.strategy import IStrategy, informative
@@ -18,7 +20,8 @@ class InformativeDecoratorCacheTest(IStrategy):
     stoploss = -0.10
     timeframe = "5m"
     startup_candle_count: int = 20
-    informative_counter: dict[str, dict[str, int]] = {}
+    # Counts populate_indicators calls per (pair, timeframe).
+    informative_counter: Counter[tuple[str, str]] = Counter()
 
     # Decorator stacking test.
     @informative("30m")
@@ -26,25 +29,13 @@ class InformativeDecoratorCacheTest(IStrategy):
     @informative("30m", "ETH/USDT")
     @informative("1h", "ETH/USDT", cache=False)
     def populate_indicators_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        pair = metadata["pair"]
-        timeframe = metadata["timeframe"]
-        if pair not in self.informative_counter:
-            self.informative_counter[pair] = {}
-        if timeframe not in self.informative_counter[pair]:
-            self.informative_counter[pair][timeframe] = 0
-        self.informative_counter[pair][timeframe] += 1
+        self.informative_counter[metadata["pair"], metadata["timeframe"]] += 1
 
         return dataframe
 
     @informative("30m", "ETH/USDT", "{column}_{base}_{timeframe}")
     def populate_indicators_30m_eth(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        pair = metadata["pair"]
-        timeframe = metadata["timeframe"]
-        if pair not in self.informative_counter:
-            self.informative_counter[pair] = {}
-        if timeframe not in self.informative_counter[pair]:
-            self.informative_counter[pair][timeframe] = 0
-        self.informative_counter[pair][timeframe] += 1
+        self.informative_counter[metadata["pair"], metadata["timeframe"]] += 1
 
         return dataframe
 
