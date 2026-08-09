@@ -627,16 +627,15 @@ When hyperopting, use of the hyperoptable parameter `.value` attribute is not su
         """
     ```
 
-Caching is enabled by default. Use `cache=False` on methods that use non-OHLCV data, have side
+**Caching** is enabled by default, and will greatly improve performance when using informative pairs. When caching is enabled, the informative function will only be called when a new informative candle is available (live/dry only, all other modes ignore this flag). Otherwise, the cached, precalculated dataframe will be used.  
+Use `cache=False` on methods that use non-OHLCV data, have side
 effects, or otherwise need to run for every base pair and/or every new main timeframe candles.
 When decorators are stacked, each decorator is configured independently. Cached entries expire
 after two effective informative timeframes without an update, so unused informative pairs do not
-remain cached indefinitely. For example, 15m informative timeframe will expire after 30 minutes
-if there is no update to that cache.
+remain cached indefinitely. For example, 15m informative timeframe will expire 30 minutes after the last 15m informative candle was refreshed.
 
-The `date_merge` column name is reserved while informative decorators are being merged. It must not
-be returned by informative callbacks or column formatters, or exist in the base dataframe before
-informative merging.
+The `date_merge` column name is _reserved_ while informative decorators are being merged. It must not
+be returned by informative callbacks or column formatters, or exist in the base dataframe before informative merging. Freqtrade will raise an exception if this is violated to avoid unexpected merge behavior.
 
 ??? Example "Fast and easy way to define informative pairs"
 
