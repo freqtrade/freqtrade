@@ -184,6 +184,12 @@ def _get_populated_informative_dataframe(
     cache: InformativeCache | None,
     timeframe: str,
 ) -> DataFrame:
+    """
+    Populate the informative dataframe, reusing the cached result while it stays valid.
+    The returned dataframe can be owned by the cache - callers must not modify it in place.
+    This is safe because the dataframe is rewritten by the caller as part of the column rename
+    and makes an additional .copy() call unnecessary
+    """
     if _INFORMATIVE_DATE_MERGE in dataframe.columns:
         _raise_reserved_column_name()
 
@@ -191,7 +197,7 @@ def _get_populated_informative_dataframe(
         fingerprint = _informative_dataframe_fingerprint(dataframe)
         cached: _InformativeCacheEntry | None = cache.get(cache_key)
         if cached is not None and cached.fingerprint == fingerprint:
-            return cached.prepared.dataframe.copy()
+            return cached.prepared.dataframe
 
     dataframe = populate_indicators_fn(strategy, dataframe, metadata)
     if _INFORMATIVE_DATE_MERGE in dataframe.columns:
@@ -207,7 +213,7 @@ def _get_populated_informative_dataframe(
         date_merge_column=_INFORMATIVE_DATE_MERGE,
     )
     cache[cache_key] = _InformativeCacheEntry(fingerprint, prepared)
-    return prepared.dataframe.copy()
+    return prepared.dataframe
 
 
 def _create_and_merge_informative_pair(
@@ -292,11 +298,10 @@ def _create_and_merge_informative_pair(
         "timeframe": timeframe,
     }
     cache_enabled = cache is not None
-    inf_dataframe.rename(
+    inf_dataframe = inf_dataframe.rename(
         columns=lambda column: _format_informative_column(
             column, formatter, fmt_args, preserve_date_merge=cache_enabled
-        ),
-        inplace=True,
+        )
     )
 
     date_column = _format_informative_column("date", formatter, fmt_args)
