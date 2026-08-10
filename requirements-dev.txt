@@ -17,7 +17,7 @@ pytest-random-order==1.2.0
 pytest-timeout==2.4.0
 pytest-xdist==3.8.0
 # For datetime mocking
-time-machine==3.2.0
+time-machine==3.3.0
 
 # Convert jupyter notebooks to markdown documents
 nbconvert==7.17.1
