@@ -19,7 +19,7 @@ humanize==4.16.0
 cachetools==7.1.7
 requests==2.34.2
 urllib3==2.7.0
-certifi==2026.6.17
+certifi==2026.7.22
 jsonschema==4.26.0
 tabulate==0.10.0
 pycoingecko==3.2.0
