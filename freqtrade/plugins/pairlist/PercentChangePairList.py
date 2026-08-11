@@ -316,11 +316,8 @@ class PercentChangePairList(IPairList):
         valid_tickers: list[SymbolWithPercentage] = []
         for p in filtered_tickers:
             # Filter out assets
-            if (
-                self._validate_pair(
-                    p["symbol"], tickers[p["symbol"]] if p["symbol"] in tickers else None
-                )
-                and p["symbol"] != "UNI/USDT"
+            if self._validate_pair(
+                p["symbol"], tickers[p["symbol"]] if p["symbol"] in tickers else None
             ):
                 p["percentage"] = tickers[p["symbol"]]["percentage"]
                 valid_tickers.append(p)
