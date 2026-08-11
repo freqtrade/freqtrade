@@ -55,7 +55,7 @@ class PyTorchModelTrainer(PyTorchTrainerInterface):
         self.n_epochs: int | None = kwargs.get("n_epochs", 10)
         self.n_steps: int | None = kwargs.get("n_steps", None)
         if self.n_steps is None and not self.n_epochs:
-            raise Exception("Either `n_steps` or `n_epochs` should be set.")
+            raise ValueError("Either `n_steps` or `n_epochs` should be set.")
 
         self.batch_size: int = kwargs.get("batch_size", 64)
         self.data_convertor = data_convertor

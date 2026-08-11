@@ -86,7 +86,6 @@ class FixtureScheduler(LoadScopeScheduling):
                 return exchange_id
             except Exception as e:
                 print(e)
-                pass
 
         return nodeid
 
@@ -208,7 +207,7 @@ def generate_test_data_raw(timeframe: str, size: int, start: str = "2020-07-05",
     """Generates data in the ohlcv format used by ccxt"""
     df = generate_test_data(timeframe, size, start, random_seed)
     df["date"] = df.loc[:, "date"].dt.as_unit("ms").astype("int64")
-    return list(list(x) for x in zip(*(df[x].values.tolist() for x in df.columns), strict=False))
+    return [list(x) for x in zip(*(df[x].values.tolist() for x in df.columns), strict=False)]
 
 
 # Source: https://stackoverflow.com/questions/29881236/how-to-mock-asyncio-coroutines

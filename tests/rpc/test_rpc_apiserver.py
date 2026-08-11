@@ -2674,6 +2674,7 @@ def test_api_strategies(botclient, tmp_path):
         "strategies": [
             "HyperoptableStrategy",
             "HyperoptableStrategyV2",
+            "InformativeDecoratorCacheTest",
             "InformativeDecoratorTest",
             "StrategyTestV2",
             "StrategyTestV3",

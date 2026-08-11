@@ -186,7 +186,6 @@ class IFreqaiModel(ABC):
         when SIGINT is sent.
         """
         self.dd.save_historic_predictions_to_disk()
-        return
 
     def shutdown(self):
         """
@@ -740,8 +739,6 @@ class IFreqaiModel(ABC):
             f = spy.stats.norm.fit(self.dd.historic_predictions[dk.pair][label].tail(num_candles))
             dk.data["labels_mean"][label], dk.data["labels_std"][label] = f[0], f[1]
 
-        return
-
     def inference_timer(self, do: Literal["start", "stop"] = "start", pair: str = ""):
         """
         Timer designed to track the cumulative time spent in FreqAI for one pass through
@@ -763,7 +760,6 @@ class IFreqaiModel(ABC):
                 )
                 self.pair_it = 0
                 self.inference_time = 0
-        return
 
     def train_timer(self, do: Literal["start", "stop"] = "start", pair: str = ""):
         """
@@ -784,7 +780,6 @@ class IFreqaiModel(ABC):
                 logger.info(f"Total time spent training pairlist {self.train_time:.2f} seconds")
                 self.pair_it_train = 0
                 self.train_time = 0
-        return
 
     def get_init_model(self, pair: str) -> Any:
         if pair not in self.dd.model_dictionary or not self.continual_learning:
@@ -939,8 +934,6 @@ class IFreqaiModel(ABC):
                             "extra_returns_per_train"
                         ][extra_col]
 
-        return
-
     def update_metadata(self, metadata: dict[str, Any]):
         """
         Update global metadata and save the updated json file
@@ -1049,7 +1042,6 @@ class IFreqaiModel(ABC):
 
         dd["train_labels"], _, _ = dk.label_pipeline.fit_transform(dd["train_labels"])
         dd["test_labels"], _, _ = dk.label_pipeline.transform(dd["test_labels"])
-        return
 
     def data_cleaning_predict(self, dk: FreqaiDataKitchen, pair: str):
         """
@@ -1070,4 +1062,3 @@ class IFreqaiModel(ABC):
         else:
             dk.DI_values = np.zeros(outliers.shape[0])
         dk.do_predict = outliers
-        return

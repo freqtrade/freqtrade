@@ -120,8 +120,6 @@ class FreqaiDataKitchen:
             self.full_path / f"sub-train-{pair.split('/')[0]}_{trained_timestamp}"
         )
 
-        return
-
     def make_train_test_datasets(
         self, filtered_dataframe: DataFrame, labels: DataFrame
     ) -> dict[Any, Any]:
@@ -359,8 +357,7 @@ class FreqaiDataKitchen:
             timerange_backtest.startts = timerange_train.stopts
             timerange_backtest.stopts = timerange_backtest.startts + int(bt_period)
 
-            if timerange_backtest.stopts > config_timerange.stopts:
-                timerange_backtest.stopts = config_timerange.stopts
+            timerange_backtest.stopts = min(timerange_backtest.stopts, config_timerange.stopts)
 
             tr_backtesting_list.append(timerange_backtest.timerange_str)
             tr_backtesting_list_timerange.append(timerange_backtest.copy())
@@ -478,8 +475,6 @@ class FreqaiDataKitchen:
         ].fillna(value=0)
         self.full_df = DataFrame()
 
-        return
-
     def create_fulltimerange(self, backtest_tr: str, backtest_period_days: int) -> str:
         if not isinstance(backtest_period_days, int):
             raise OperationalException("backtest_period_days must be an integer")
@@ -546,8 +541,7 @@ class FreqaiDataKitchen:
         max_tf_seconds = 0
         for tf in timeframes:
             secs = timeframe_to_seconds(tf)
-            if secs > max_tf_seconds:
-                max_tf_seconds = secs
+            max_tf_seconds = max(max_tf_seconds, secs)
 
         # We notice that users like to use exotic indicators where
         # they do not know the required timeperiod. Here we include a factor
@@ -885,8 +879,6 @@ class FreqaiDataKitchen:
         # in case targets are classifications
         for label in self.unique_class_list:
             self.data["labels_mean"][label], self.data["labels_std"][label] = 0, 0
-
-        return
 
     def remove_features_from_df(self, dataframe: DataFrame) -> DataFrame:
         """

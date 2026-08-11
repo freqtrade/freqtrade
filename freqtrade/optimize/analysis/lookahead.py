@@ -129,7 +129,7 @@ class LookaheadAnalysis(BaseAnalysis):
         varholder.timeframe = backtesting.timeframe
 
         temp_indicators = backtesting.strategy.advise_all_indicators(varholder.data)
-        filled_indicators = dict()
+        filled_indicators = {}
         for pair, dataframe in temp_indicators.items():
             filled_indicators[pair] = backtesting.strategy.ft_advise_signals(
                 dataframe, {"pair": pair}
@@ -238,7 +238,7 @@ class LookaheadAnalysis(BaseAnalysis):
                     f"minimum trade amount = {self.minimum_trade_amount}. "
                     f"Exiting this lookahead-analysis"
                 )
-                return None
+                return
             if "force_exit" in result_row["exit_reason"]:
                 logger.info(
                     f"found force-exit in pair: {result_row['pair']}, "

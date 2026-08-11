@@ -171,7 +171,7 @@ class Worker:
             # Offset is added to ensure a new candle has been issued.
             next_tft = next_tf.timestamp() - time.time()
             next_tf_with_offset = next_tft + timeframe_offset
-            if next_tft < sleep_duration and sleep_duration < next_tf_with_offset:
+            if next_tft < sleep_duration < next_tf_with_offset:
                 # Avoid hitting a new loop between the new candle and the candle with offset
                 sleep_duration = next_tf_with_offset
             sleep_duration = min(sleep_duration, next_tf_with_offset)

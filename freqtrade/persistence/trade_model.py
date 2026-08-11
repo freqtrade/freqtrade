@@ -370,12 +370,16 @@ class Order(ModelBase):
         return Order.session.scalars(select(Order).filter(Order.ft_is_open.is_(True))).all()
 
     @staticmethod
-    def order_by_id(order_id: str) -> Optional["Order"]:
+    def order_by_id(order_id: str, pair: str | None = None) -> Optional["Order"]:
         """
         Retrieve order based on order_id
+        :param pair: Optionally limit to this pair - orders are unique on (pair, order_id).
         :return: Order or None
         """
-        return Order.session.scalars(select(Order).filter(Order.order_id == order_id)).first()
+        filters = [Order.order_id == order_id]
+        if pair is not None:
+            filters.append(Order.ft_pair == pair)
+        return Order.session.scalars(select(Order).filter(*filters)).first()
 
 
 class LocalTrade:
@@ -639,8 +643,8 @@ class LocalTrade:
         return open_orders_ids_wo_sl
 
     def __init__(self, **kwargs):
-        for key in kwargs:
-            setattr(self, key, kwargs[key])
+        for key, value in kwargs.items():
+            setattr(self, key, value)
         self.recalc_open_trade_value()
         self.orders = []
         if self.trading_mode == TradingMode.MARGIN and self.interest_rate is None:
@@ -1274,7 +1278,7 @@ class LocalTrade:
         # current funding fees - resetting on every exit to be aligned with profit calculation,
         # as funding fees are part of the profit
         current_funding_fee = 0.0
-        for i, o in enumerate(self.orders):
+        for _i, o in enumerate(self.orders):
             if o.ft_is_open or not o.filled:
                 continue
             current_funding_fee += o.funding_fee or 0.0

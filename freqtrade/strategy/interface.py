@@ -34,6 +34,7 @@ from freqtrade.misc import remove_entry_exit_signals
 from freqtrade.persistence import Order, PairLocks, Trade
 from freqtrade.strategy.hyper import HyperStrategyMixin
 from freqtrade.strategy.informative_decorator import (
+    InformativeCache,
     InformativeData,
     PopulateIndicators,
     _create_and_merge_informative_pair,
@@ -153,6 +154,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         self.config = config
         # Dict to determine if analysis is necessary
         self.__last_candle_seen_per_pair: dict[str, datetime] = {}
+        self._ft_informative_cache: InformativeCache | None = None
         super().__init__(config)
 
         # Gather informative pairs from @informative-decorated methods.
@@ -175,6 +177,11 @@ class IStrategy(ABC, HyperStrategyMixin):
                 if not informative_data.candle_type:
                     informative_data.candle_type = config["candle_type_def"]
                 self._ft_informative.append((informative_data, cls_method))
+
+        if config.get("runmode") in (RunMode.DRY_RUN, RunMode.LIVE) and any(
+            inf_data.cache for inf_data, _ in self._ft_informative
+        ):
+            self._ft_informative_cache = InformativeCache(maxsize=500)
 
     def load_freqAI_model(self) -> None:
         if self.config.get("freqai", {}).get("enabled", False):
@@ -277,7 +284,6 @@ class IStrategy(ABC, HyperStrategyMixin):
         Called only once after bot instantiation.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         """
-        pass
 
     def bot_loop_start(self, current_time: datetime, **kwargs) -> None:
         """
@@ -287,7 +293,6 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         """
-        pass
 
     def check_buy_timeout(
         self, pair: str, trade: Trade, order: Order, current_time: datetime, **kwargs
@@ -437,7 +442,6 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         """
-        pass
 
     def custom_stoploss(
         self,
@@ -660,7 +664,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         current_entry_profit: float,
         current_exit_profit: float,
         **kwargs,
-    ) -> float | None | tuple[float | None, str | None]:
+    ) -> float | tuple[float | None, str | None] | None:
         """
         Custom trade adjustment logic, returning the stake amount that a trade should be
         increased or decreased.
@@ -1268,6 +1272,9 @@ class IStrategy(ABC, HyperStrategyMixin):
         Analyze all pairs using analyze_pair().
         :param pairs: List of pairs to analyze
         """
+        if self._ft_informative_cache is not None:
+            self._ft_informative_cache.expire()
+
         for pair in pairs:
             self.analyze_pair(pair)
 

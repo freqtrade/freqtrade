@@ -173,7 +173,7 @@ class BaseEnvironment(gym.Env):
     def tensorboard_log(
         self,
         metric: str,
-        value: int | float | None = None,
+        value: float | None = None,
         inc: bool | None = None,
         category: str = "custom",
     ):
