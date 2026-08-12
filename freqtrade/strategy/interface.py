@@ -392,6 +392,33 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         return True
 
+    def entry_candidate_priority(
+        self,
+        pair: str,
+        current_time: datetime | None,
+        side: str,
+        entry_tag: str | None,
+        **kwargs,
+    ) -> float:
+        """
+        Return the priority of an entry candidate when several candidates compete for slots.
+
+        Candidates with a higher value are considered first. Equal values keep the
+        order supplied by the pairlist, which is the default behavior.
+
+        This callback must only use data available at ``current_time``. It is called
+        once for every actionable entry signal before an entry order is created.
+        It may therefore be used to rank candidates by values calculated in
+        ``populate_indicators`` (for example, volume or ATR).
+
+        :param pair: Pair of the entry candidate.
+        :param current_time: Timestamp of the signal candle.
+        :param side: 'long' or 'short'.
+        :param entry_tag: Optional entry tag from the signal candle.
+        :return: Higher candidates are considered first. The default is 0.
+        """
+        return 0.0
+
     def confirm_trade_exit(
         self,
         pair: str,

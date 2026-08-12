@@ -30,7 +30,7 @@ from freqtrade.exceptions import (
     PricingError,
     TemporaryError,
 )
-from freqtrade.freqtradebot import FreqtradeBot
+from freqtrade.freqtradebot import EntryCandidate, FreqtradeBot
 from freqtrade.persistence import Order, PairLocks, Trade
 from freqtrade.plugins.protections.iprotection import ProtectionReturn
 from freqtrade.util.datetime_helpers import dt_now, dt_utc
@@ -1154,15 +1154,38 @@ def test_enter_positions(
     caplog.set_level(logging.DEBUG)
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
 
+    mocker.patch(
+        "freqtrade.freqtradebot.FreqtradeBot.get_entry_candidate",
+        MagicMock(return_value=EntryCandidate("ETH/USDT", SignalDirection.LONG, None, None)),
+    )
     mock_ct = mocker.patch(
-        "freqtrade.freqtradebot.FreqtradeBot.create_trade",
+        "freqtrade.freqtradebot.FreqtradeBot.execute_entry_candidate",
         MagicMock(return_value=return_value, side_effect=side_effect),
     )
     n = freqtrade.enter_positions(1)
     assert n == 0
     assert log_has(log_message, caplog)
-    # create_trade should be called once for every pair in the whitelist.
+    # All candidates are considered when no entry is created.
     assert mock_ct.call_count == len(default_conf_usdt["exchange"]["pair_whitelist"])
+
+
+def test_enter_positions_uses_entry_candidate_priority(mocker, default_conf_usdt) -> None:
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    first, second = default_conf_usdt["exchange"]["pair_whitelist"][:2]
+    candidates = {
+        first: EntryCandidate(first, SignalDirection.LONG, None, None),
+        second: EntryCandidate(second, SignalDirection.LONG, None, None),
+    }
+    mocker.patch.object(
+        freqtrade, "get_entry_candidate", side_effect=lambda pair: candidates.get(pair)
+    )
+    freqtrade.strategy.entry_candidate_priority = MagicMock(
+        side_effect=lambda pair, **kwargs: 1.0 if pair == second else 0.0
+    )
+    execute = mocker.patch.object(freqtrade, "execute_entry_candidate", return_value=True)
+
+    assert freqtrade.enter_positions(1) == 1
+    assert execute.call_args.args[0].pair == second
 
 
 @pytest.mark.usefixtures("init_persistence")

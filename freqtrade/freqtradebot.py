@@ -6,10 +6,10 @@ import logging
 import traceback
 from copy import deepcopy
 from datetime import UTC, datetime, time, timedelta
-from math import isclose
+from math import isclose, isfinite
 from threading import Lock
 from time import sleep
-from typing import Any
+from typing import Any, NamedTuple
 
 from schedule import Scheduler
 
@@ -68,6 +68,13 @@ from freqtrade.wallets import Wallets
 
 
 logger = logging.getLogger(__name__)
+
+
+class EntryCandidate(NamedTuple):
+    pair: str
+    signal: SignalDirection
+    enter_tag: str | None
+    current_time: datetime | None
 
 
 class FreqtradeBot(LoggingMixin):
@@ -664,17 +671,22 @@ class FreqtradeBot(LoggingMixin):
                 self.log_once("Global pairlock active. Not creating new trades.", logger.info)
             return trades_created
 
-        # Create entity and execute trade for each pair from whitelist
-        for pair in whitelist:
+        candidates = [
+            candidate for pair in whitelist if (candidate := self.get_entry_candidate(pair))
+        ]
+        candidates.sort(key=self._entry_candidate_priority, reverse=True)
+
+        # Create entity and execute trade for each ranked candidate.
+        for candidate in candidates:
             if free_trade_slots <= 0:
                 break
             try:
                 with self._exit_lock:
-                    if self.create_trade(pair):
+                    if self.execute_entry_candidate(candidate):
                         free_trade_slots -= 1
                         trades_created += 1
             except DependencyException as exception:
-                logger.warning("Unable to create trade for %s: %s", pair, exception)
+                logger.warning("Unable to create trade for %s: %s", candidate.pair, exception)
 
         if not trades_created:
             logger.debug("Found no enter signals for whitelisted currencies. Trying again...")
@@ -698,6 +710,11 @@ class FreqtradeBot(LoggingMixin):
             logger.debug(f"Can't open a new trade for {pair}: max number of trades is reached.")
             return False
 
+        candidate = self.get_entry_candidate(pair)
+        return self.execute_entry_candidate(candidate) if candidate else False
+
+    def get_entry_candidate(self, pair: str) -> EntryCandidate | None:
+        """Return an actionable entry signal without creating an order."""
         analyzed_df, _ = self.dataprovider.get_analyzed_dataframe(pair, self.strategy.timeframe)
         nowtime = analyzed_df.iloc[-1]["date"] if len(analyzed_df) > 0 else None
 
@@ -718,29 +735,52 @@ class FreqtradeBot(LoggingMixin):
                     )
                 else:
                     self.log_once(f"Pair {pair} is currently locked.", logger.info)
-                return False
+                return None
 
-            stake_amount = self.wallets.get_trade_stake_amount(pair, self.config["max_open_trades"])
+            return EntryCandidate(pair, signal, enter_tag, nowtime)
+        return None
 
-            bid_check_dom = self.config.get("entry_pricing", {}).get("check_depth_of_market", {})
-            if (bid_check_dom.get("enabled", False)) and (
-                bid_check_dom.get("bids_to_ask_delta", 0) > 0
-            ):
-                if self._check_depth_of_market(pair, bid_check_dom, side=signal):
-                    return self.execute_entry(
-                        pair,
-                        stake_amount,
-                        enter_tag=enter_tag,
-                        is_short=(signal == SignalDirection.SHORT),
-                    )
-                else:
-                    return False
+    def _entry_candidate_priority(self, candidate: EntryCandidate) -> float:
+        priority = strategy_safe_wrapper(
+            self.strategy.entry_candidate_priority, default_retval=0.0
+        )(
+            pair=candidate.pair,
+            current_time=candidate.current_time,
+            side=candidate.signal,
+            entry_tag=candidate.enter_tag,
+        )
+        if isinstance(priority, (int, float)) and isfinite(priority):
+            return priority
+        logger.warning(
+            "Ignoring non-finite entry candidate priority for %s: %r", candidate.pair, priority
+        )
+        return 0.0
 
-            return self.execute_entry(
-                pair, stake_amount, enter_tag=enter_tag, is_short=(signal == SignalDirection.SHORT)
-            )
-        else:
+    def execute_entry_candidate(self, candidate: EntryCandidate) -> bool:
+        """Create an order for a candidate already selected by the scheduler."""
+        pair, signal, enter_tag, _ = candidate
+        if not self.get_free_open_trades():
+            logger.debug(f"Can't open a new trade for {pair}: max number of trades is reached.")
             return False
+
+        stake_amount = self.wallets.get_trade_stake_amount(pair, self.config["max_open_trades"])
+
+        bid_check_dom = self.config.get("entry_pricing", {}).get("check_depth_of_market", {})
+        if (bid_check_dom.get("enabled", False)) and (
+            bid_check_dom.get("bids_to_ask_delta", 0) > 0
+        ):
+            if self._check_depth_of_market(pair, bid_check_dom, side=signal):
+                return self.execute_entry(
+                    pair,
+                    stake_amount,
+                    enter_tag=enter_tag,
+                    is_short=(signal == SignalDirection.SHORT),
+                )
+            return False
+
+        return self.execute_entry(
+            pair, stake_amount, enter_tag=enter_tag, is_short=(signal == SignalDirection.SHORT)
+        )
 
     #
     # Modify positions / DCA logic and methods

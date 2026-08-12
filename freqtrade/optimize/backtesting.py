@@ -11,6 +11,7 @@ from collections import defaultdict
 from contextlib import nullcontext
 from copy import deepcopy
 from datetime import datetime, timedelta
+from math import isfinite
 from typing import TYPE_CHECKING
 
 from numpy import isnan, nan
@@ -1322,6 +1323,58 @@ class Backtesting:
             return "short"
         return None
 
+    def _rank_entry_pairs(
+        self,
+        pairs: list[str],
+        candidates: dict[str, tuple[LongShort, str | None]],
+        current_time: datetime,
+    ) -> list[str]:
+        """Put same-candle entry candidates in strategy priority order.
+
+        ``sorted`` is stable, so the default priority preserves pairlist order.
+        """
+
+        def priority(item: tuple[str, tuple[LongShort, str | None]]) -> float:
+            pair, (side, enter_tag) = item
+            value = strategy_safe_wrapper(
+                self.strategy.entry_candidate_priority, default_retval=0.0
+            )(
+                pair=pair,
+                current_time=current_time,
+                side=side,
+                entry_tag=enter_tag,
+            )
+            if isinstance(value, (int, float)) and isfinite(value):
+                return value
+            logger.warning("Ignoring non-finite entry candidate priority for %s: %r", pair, value)
+            return 0.0
+
+        ranked = [pair for pair, _ in sorted(candidates.items(), key=priority, reverse=True)]
+        ranked_set = set(ranked)
+        return ranked + [pair for pair in pairs if pair not in ranked_set]
+
+    def _prepare_main_candles(
+        self,
+        current_time: datetime,
+        pairs: list[str],
+        data: dict[str, list[tuple]],
+        indexes: dict,
+    ) -> tuple[dict[str, tuple], list[str]]:
+        """Advance all pairs to the current candle, then rank entry candidates."""
+        main_rows: dict[str, tuple] = {}
+        candidates: dict[str, tuple[LongShort, str | None]] = {}
+        for pair in pairs:
+            row_index = self._sync_pair_index(data, pair, indexes[pair], current_time)
+            row = self.validate_row(data, pair, row_index, current_time)
+            if not row:
+                continue
+            indexes[pair] = row_index + 1
+            main_rows[pair] = row
+            self.dataprovider._set_dataframe_max_index(pair, self.required_startup + row_index + 1)
+            if trade_dir := self.check_for_trade_entry(row):
+                candidates[pair] = (trade_dir, row[ENTER_TAG_IDX])
+        return main_rows, self._rank_entry_pairs(pairs, candidates, current_time)
+
     def run_protections(self, pair: str, current_time: datetime, side: LongShort):
         if self.enable_protections:
             self.protections.stop_per_pair(pair, current_time, side, self.starting_balance)
@@ -1675,8 +1728,12 @@ class Backtesting:
             pairs_with_open_trades = [t.pair for t in LocalTrade.bt_trades_open]
             self._capture_wallet(current_time, self.strategy.config["stake_currency"], 1)
 
+            # Make all current main candles visible before ranking candidates. This
+            # gives a strategy the same completed-candle view for every pair.
+            main_rows, loop_pairs = self._prepare_main_candles(current_time, pairs, data, indexes)
+
             for current_time_det, is_first, has_detail, idx, pair in self._time_pair_generator_det(
-                current_time, pairs
+                current_time, loop_pairs
             ):
                 # Loop for each detail candle (if necessary) and pair
                 # Yields only the main date if no detail timeframe is set.
@@ -1685,17 +1742,10 @@ class Backtesting:
                 trade_dir: LongShort | None = None
                 if is_first:
                     # Main candle
-                    row_index = self._sync_pair_index(data, pair, indexes[pair], current_time)
-                    row = self.validate_row(data, pair, row_index, current_time)
-                    if not row:
+                    row = main_rows.get(pair)
+                    if row is None:
                         continue
-
-                    row_index += 1
-                    indexes[pair] = row_index
                     is_last_row = current_time == end_date
-                    self.dataprovider._set_dataframe_max_index(
-                        pair, self.required_startup + row_index
-                    )
                     trade_dir = self.check_for_trade_entry(row)
                     pair_tradedir_cache[pair] = trade_dir
                     self._capture_wallet(current_time, pair.split("/")[0], row[OPEN_IDX])

@@ -54,6 +54,28 @@ def trim_dictlist(dict_list, num):
     return new
 
 
+def test_rank_entry_pairs_uses_strategy_priority_and_keeps_ties_stable() -> None:
+    backtesting = Backtesting.__new__(Backtesting)
+    backtesting.strategy = MagicMock()
+    backtesting.strategy.entry_candidate_priority.side_effect = lambda pair, **kwargs: {
+        "B/USDT": 2.0,
+        "C/USDT": 1.0,
+    }.get(pair, 0.0)
+    pairs = ["A/USDT", "B/USDT", "C/USDT", "D/USDT"]
+    candidates = {"A/USDT": ("long", None), "B/USDT": ("long", None), "C/USDT": ("short", "x")}
+
+    assert backtesting._rank_entry_pairs(pairs, candidates, datetime.now(UTC)) == [
+        "B/USDT",
+        "C/USDT",
+        "A/USDT",
+        "D/USDT",
+    ]
+
+    backtesting.strategy.entry_candidate_priority.return_value = 0.0
+    backtesting.strategy.entry_candidate_priority.side_effect = None
+    assert backtesting._rank_entry_pairs(pairs, candidates, datetime.now(UTC)) == pairs
+
+
 def load_data_test(what, testdatadir):
     timerange = TimeRange.parse_timerange("1510694220-1510700340")
     data = history.load_pair_history(

@@ -15,6 +15,7 @@ Currently available callbacks:
 * [`custom_roi()`](#custom-roi)
 * [`custom_entry_price()` and `custom_exit_price()`](#custom-order-price-rules)
 * [`check_entry_timeout()` and `check_exit_timeout()`](#custom-order-timeout-rules)
+* [`entry_candidate_priority()`](#entry-candidate-priority)
 * [`confirm_trade_entry()`](#trade-entry-buy-order-confirmation)
 * [`confirm_trade_exit()`](#trade-exit-sell-order-confirmation)
 * [`adjust_trade_position()`](#adjust-trade-position)
@@ -788,6 +789,32 @@ class AwesomeStrategy(IStrategy):
 
 Confirm trade entry / exits.
 This are the last methods that will be called before an order is placed.
+
+### Entry candidate priority
+
+`entry_candidate_priority()` ranks entry signals that compete for the available
+trade slots in one bot loop. Higher values are considered first. Equal values
+keep the pairlist order, which is the default behavior.
+
+The callback is called after exit processing and before any new entry order is
+created. It is called in live/dry-run operation and during backtesting. Return
+a finite number and use only information available at `current_time`.
+
+``` python
+class AwesomeStrategy(IStrategy):
+
+    # ... populate_* methods calculate atr_pct and quote_volume
+
+    def entry_candidate_priority(self, pair: str, current_time: datetime,
+                                 side: str, entry_tag: str | None, **kwargs) -> float:
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+        last_candle = dataframe.iloc[-1]
+        # Examples: return last_candle["quote_volume"] or -last_candle["atr_pct"]
+        return float(last_candle["quote_volume"])
+```
+
+Do not make network requests or recalculate indicators here. A ranking callback
+chooses among existing signals; it does not create an entry signal.
 
 ### Trade entry (buy order) confirmation
 
