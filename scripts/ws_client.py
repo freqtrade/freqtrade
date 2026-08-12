@@ -5,6 +5,7 @@ a Freqtrade bot's message websocket
 
 Should not import anything from freqtrade,
 so it can be used as a standalone script.
+test
 """
 
 import argparse
