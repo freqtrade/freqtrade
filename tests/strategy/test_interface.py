@@ -1150,7 +1150,10 @@ def test_pandas_warning_direct(ohlcv_history, function, raises, recwarn):
         # Fixed in 2.2.x
         getattr(_STRATEGY, function)(df, {"pair": "ETH/BTC"})
     else:
-        assert len(recwarn) == 0, f"warnings: {', '.join(str(w) for w in recwarn.list)}"
+        # Ignore ResourceWarnings - the GC may clean up resources from
+        # unrelated tests while this test is running.
+        warnings = [w for w in recwarn.list if not issubclass(w.category, ResourceWarning)]
+        assert len(warnings) == 0, f"warnings: {', '.join(str(w) for w in warnings)}"
 
         getattr(_STRATEGY, function)(df, {"pair": "ETH/BTC"})
 
@@ -1159,4 +1162,7 @@ def test_pandas_warning_through_analyze_pair(ohlcv_history, mocker, recwarn):
     recwarn.clear()
     mocker.patch.object(_STRATEGY.dp, "ohlcv", return_value=ohlcv_history)
     _STRATEGY.analyze_pair("ETH/BTC")
-    assert len(recwarn) == 0, f"warnings: {', '.join(str(w) for w in recwarn.list)}"
+    # Ignore ResourceWarnings - the GC may clean up resources from
+    # unrelated tests while this test is running.
+    warnings = [w for w in recwarn.list if not issubclass(w.category, ResourceWarning)]
+    assert len(warnings) == 0, f"warnings: {', '.join(str(w) for w in warnings)}"
