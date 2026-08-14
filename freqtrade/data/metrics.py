@@ -300,7 +300,11 @@ def calculate_cagr(days_passed: int, starting_balance: float, final_balance: flo
     if (final_balance < 0) or (starting_balance <= 0) or (days_passed <= 0):
         # With leveraged trades, final_balance can become negative.
         return 0
-    return (final_balance / starting_balance) ** (1 / (days_passed / 365)) - 1
+    try:
+        return (final_balance / starting_balance) ** (1 / (days_passed / 365)) - 1
+    except OverflowError:
+        # Extrapolating a large gain over a very short timeframe can exceed float range.
+        return 0
 
 
 def calculate_expectancy(trades: pd.DataFrame) -> tuple[float, float]:

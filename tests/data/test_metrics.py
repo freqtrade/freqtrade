@@ -504,6 +504,8 @@ def test_calculate_p_value_zero_mean():
         (0.01000000, 0.01762792, 120, 4.6087),  # sub year BTC values
         (1000, 1010, 0, 0.0),  # zero days
         (-100, 100, 365, 0.0),  # negative starting balance
+        (1.49, 11.2, 1, 0.0),  # Overflow - huge gain over a single day
+        (1.0, 6.99, 1, 1.7146249823477656e308),  # just below the overflow threshold
     ],
 )
 def test_calculate_cagr(start, end, days, expected):
