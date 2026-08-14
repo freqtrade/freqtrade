@@ -1,4 +1,5 @@
-FROM python:3.14.2-slim-bookworm AS base
+# Pinned to 3.11 - the pre-built armhf wheels in build_helpers/ are cp311-only
+FROM python:3.11.13-slim-bookworm AS base
 
 # Setup env
 ENV LANG=C.UTF-8
