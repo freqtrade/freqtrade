@@ -256,7 +256,6 @@ class VolumePairList(IPairList):
             needed_pairs: ListPairsWithTimeframes = [
                 (p, self._lookback_timeframe, self._def_candletype)
                 for p in [s["symbol"] for s in filtered_tickers]
-                if p not in self._pair_cache
             ]
 
             candles = self._exchange.refresh_ohlcv_with_cache(needed_pairs, since_ms)
