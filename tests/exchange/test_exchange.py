@@ -5226,7 +5226,7 @@ def test_calculate_fee_rate(mocker, default_conf, order, expected, unknown_fee_r
 
 
 @pytest.mark.parametrize(
-    "retrycount,max_retries,expected",
+    "remaining_retries,max_retries,expected",
     [
         (0, 3, 10),
         (1, 3, 5),
@@ -5247,8 +5247,8 @@ def test_calculate_fee_rate(mocker, default_conf, order, expected, unknown_fee_r
         (5, 5, 1),
     ],
 )
-def test_calculate_backoff(retrycount, max_retries, expected):
-    assert calculate_backoff(retrycount, max_retries) == expected
+def test_calculate_backoff(remaining_retries, max_retries, expected):
+    assert calculate_backoff(remaining_retries, max_retries) == expected
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
