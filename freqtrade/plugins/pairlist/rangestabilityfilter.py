@@ -23,7 +23,9 @@ class RangeStabilityFilter(IPairList):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._days = self._pairlistconfig.get("lookback_days", 10)
+        _lookback_days = self._pairlistconfig.get("lookback_days", 0)
+        self._lookback_timeframe = self._pairlistconfig.get("lookback_timeframe", "1d")
+        _lookback_period: int | None = self._pairlistconfig.get("lookback_period", None)
         self._min_rate_of_change = self._pairlistconfig.get("min_rate_of_change", 0.01)
         self._max_rate_of_change = self._pairlistconfig.get("max_rate_of_change")
         self._refresh_period = self._pairlistconfig.get("refresh_period", 86400)
@@ -32,17 +34,42 @@ class RangeStabilityFilter(IPairList):
 
         self._pair_cache: FtTTLCache = FtTTLCache(maxsize=1000, ttl=self._refresh_period)
 
-        candle_limit = self._exchange.ohlcv_candle_limit("1d", self._def_candletype)
-        if self._days < 1:
-            raise OperationalException("RangeStabilityFilter requires lookback_days to be >= 1")
-        if self._days > candle_limit:
+        if (_lookback_days > 0) and ((_lookback_period or 0) > 0):
             raise OperationalException(
-                "RangeStabilityFilter requires lookback_days to not "
+                "Ambiguous configuration: lookback_days and lookback_period both set in pairlist "
+                "config. Please set lookback_days only or lookback_period and lookback_timeframe "
+                "and restart the bot."
+            )
+        if "lookback_days" in self._pairlistconfig and _lookback_days < 1:
+            raise OperationalException(f"{self.name} requires lookback_days to be >= 1")
+
+        # overwrite lookback timeframe and period when lookback_days is set
+        if _lookback_days > 0:
+            self._lookback_timeframe = "1d"
+            _lookback_period = _lookback_days
+        if _lookback_period is None:
+            logger.warning(
+                f"DEPRECATED: Using {self.name} without lookback_days or lookback_period is "
+                "deprecated and will result in an error in a future version. "
+                "Please set either lookback_days or lookback_period and lookback_timeframe. "
+                "Falling back to lookback_days: 10."
+            )
+            _lookback_period = 10
+        self._lookback_period: int = _lookback_period
+
+        candle_limit = self._exchange.ohlcv_candle_limit(
+            self._lookback_timeframe, self._def_candletype
+        )
+        if self._lookback_period < 1:
+            raise OperationalException(f"{self.name} requires lookback_period to be >= 1")
+        if self._lookback_period > candle_limit:
+            raise OperationalException(
+                f"{self.name} requires lookback_period to not "
                 f"exceed exchange max request size ({candle_limit})"
             )
         if self._sort_direction not in [None, "asc", "desc"]:
             raise OperationalException(
-                "RangeStabilityFilter requires sort_direction to be "
+                f"{self.name} requires sort_direction to be "
                 "either None (undefined), 'asc' or 'desc'"
             )
 
@@ -56,7 +83,8 @@ class RangeStabilityFilter(IPairList):
         return (
             f"{self.name} - Filtering pairs with rate of change below "
             f"{self._min_rate_of_change}{max_rate_desc} over the "
-            f"last {plural(self._days, 'day')}."
+            f"last {self._lookback_period} {plural(self._lookback_period, 'candle')} of "
+            f"{self._lookback_timeframe}."
         )
 
     @staticmethod
@@ -68,9 +96,21 @@ class RangeStabilityFilter(IPairList):
         return {
             "lookback_days": {
                 "type": "number",
-                "default": 10,
+                "default": 0,
                 "description": "Lookback Days",
-                "help": "Number of days to look back at.",
+                "help": "Number of days to look back at. Implies a lookback_timeframe of 1d.",
+            },
+            "lookback_timeframe": {
+                "type": "string",
+                "default": "1d",
+                "description": "Lookback Timeframe",
+                "help": "Timeframe to use for lookback.",
+            },
+            "lookback_period": {
+                "type": "number",
+                "default": 10,
+                "description": "Lookback Period",
+                "help": "Number of periods to look back at.",
             },
             "min_rate_of_change": {
                 "type": "number",
@@ -102,18 +142,22 @@ class RangeStabilityFilter(IPairList):
         :return: new allowlist
         """
         needed_pairs: ListPairsWithTimeframes = [
-            (p, "1d", self._def_candletype) for p in pairlist if p not in self._pair_cache
+            (p, self._lookback_timeframe, self._def_candletype)
+            for p in pairlist
+            if p not in self._pair_cache
         ]
 
-        candles = self._exchange.refresh_ohlcv_with_cache(needed_pairs, lookback_period=self._days)
+        candles = self._exchange.refresh_ohlcv_with_cache(
+            needed_pairs, lookback_period=self._lookback_period
+        )
 
         resulting_pairlist: list[str] = []
         pct_changes: dict[str, float] = {}
 
         for p in pairlist:
-            daily_candles = candles.get((p, "1d", self._def_candletype), None)
+            pair_candles = candles.get((p, self._lookback_timeframe, self._def_candletype), None)
 
-            pct_change = self._calculate_rate_of_change(p, daily_candles)
+            pct_change = self._calculate_rate_of_change(p, pair_candles)
 
             if pct_change is not None:
                 if self._validate_pair_loc(p, pct_change):
@@ -130,13 +174,13 @@ class RangeStabilityFilter(IPairList):
             )
         return resulting_pairlist
 
-    def _calculate_rate_of_change(self, pair: str, daily_candles: DataFrame) -> float | None:
+    def _calculate_rate_of_change(self, pair: str, pair_candles: DataFrame) -> float | None:
         # Check symbol in cache
         if (pct_change := self._pair_cache.get(pair, None)) is not None:
             return pct_change
-        if daily_candles is not None and not daily_candles.empty:
-            highest_high = daily_candles["high"].max()
-            lowest_low = daily_candles["low"].min()
+        if pair_candles is not None and not pair_candles.empty:
+            highest_high = pair_candles["high"].max()
+            lowest_low = pair_candles["low"].min()
             pct_change = ((highest_high - lowest_low) / lowest_low) if lowest_low > 0 else 0
             self._pair_cache[pair] = pct_change
             return pct_change
@@ -155,7 +199,8 @@ class RangeStabilityFilter(IPairList):
         if pct_change < self._min_rate_of_change:
             self.log_once(
                 f"Removed {pair} from whitelist, because rate of change "
-                f"over {self._days} {plural(self._days, 'day')} is {pct_change:.3f}, "
+                f"over {self._lookback_period} {plural(self._lookback_period, 'candle')} of "
+                f"{self._lookback_timeframe} is {pct_change:.3f}, "
                 f"which is below the threshold of {self._min_rate_of_change}.",
                 logger.info,
             )
@@ -164,7 +209,8 @@ class RangeStabilityFilter(IPairList):
             if pct_change > self._max_rate_of_change:
                 self.log_once(
                     f"Removed {pair} from whitelist, because rate of change "
-                    f"over {self._days} {plural(self._days, 'day')} is {pct_change:.3f}, "
+                    f"over {self._lookback_period} {plural(self._lookback_period, 'candle')} of "
+                    f"{self._lookback_timeframe} is {pct_change:.3f}, "
                     f"which is above the threshold of {self._max_rate_of_change}.",
                     logger.info,
                 )
