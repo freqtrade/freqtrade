@@ -277,7 +277,9 @@ class PercentChangePairList(IPairList):
             (p, self._lookback_timeframe, self._def_candletype)
             for p in [s["symbol"] for s in filtered_tickers]
         ]
-        candles = self._exchange.refresh_ohlcv_with_cache(needed_pairs, self._lookback_period + 1)
+        candles = self._exchange.refresh_ohlcv_with_cache(
+            needed_pairs, lookback_period=self._lookback_period
+        )
         return candles
 
     def fetch_percent_change_from_lookback_period(

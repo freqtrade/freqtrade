@@ -259,7 +259,7 @@ class VolumePairList(IPairList):
             ]
 
             candles = self._exchange.refresh_ohlcv_with_cache(
-                needed_pairs, self._lookback_period + 1
+                needed_pairs, lookback_period=self._lookback_period
             )
 
             for i, p in enumerate(filtered_tickers):

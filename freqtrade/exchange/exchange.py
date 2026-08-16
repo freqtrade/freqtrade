@@ -2923,15 +2923,16 @@ class Exchange:
         return results_df
 
     def refresh_ohlcv_with_cache(
-        self, pairs: list[PairWithTimeframe], lookback_period: int
+        self, pairs: list[PairWithTimeframe], *, lookback_period: int
     ) -> dict[PairWithTimeframe, DataFrame]:
         """
         Refresh ohlcv data for all pairs in needed_pairs if necessary.
         Caches data per (timeframe, lookback_period), expiring with each new candle.
         Should only be used for pairlists which need "on time" expiration, and no longer cache.
         :param pairs: List of pairs, timeframes to refresh
-        :param lookback_period: Amount of candles to fetch, counted back from the start
-            of the current (incomplete) candle.
+        :param lookback_period: Amount of candles to fetch.
+            Downloads lookback_period + 1 candles, as measuring a change over N candles
+            requires N + 1 candles of data.
         """
 
         timeframes = {p[1] for p in pairs}
@@ -2954,9 +2955,9 @@ class Exchange:
             tf_pairs = [p for p in pairs_to_download if p[1] == timeframe]
             if not tf_pairs:
                 continue
-            since_ms = dt_ts(timeframe_to_prev_date(timeframe)) - lookback_period * (
-                timeframe_to_msecs(timeframe)
-            )
+            since_ms = dt_ts(timeframe_to_prev_date(timeframe)) - (
+                lookback_period + 1
+            ) * timeframe_to_msecs(timeframe)
             candles_new = self.refresh_latest_ohlcv(tf_pairs, since_ms=since_ms, cache=False)
             for c, val in candles_new.items():
                 candles[c] = val

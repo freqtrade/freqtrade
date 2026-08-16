@@ -108,7 +108,7 @@ class VolatilityFilter(IPairList):
             (p, "1d", self._def_candletype) for p in pairlist if p not in self._pair_cache
         ]
 
-        candles = self._exchange.refresh_ohlcv_with_cache(needed_pairs, self._days + 1)
+        candles = self._exchange.refresh_ohlcv_with_cache(needed_pairs, lookback_period=self._days)
 
         resulting_pairlist: list[str] = []
         volatilitys: dict[str, float] = {}
