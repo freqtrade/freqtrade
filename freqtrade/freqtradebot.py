@@ -209,7 +209,7 @@ class FreqtradeBot(LoggingMixin):
         try:
             # Wrap db activities in shutdown to avoid problems if database is gone,
             # and raises further exceptions.
-            if self.config["cancel_open_orders_on_exit"]:
+            if self.config.get("cancel_open_orders_on_exit"):
                 self.cancel_all_open_orders()
 
             self.check_for_open_trades()
@@ -314,7 +314,7 @@ class FreqtradeBot(LoggingMixin):
         """
         Close all orders that were left open
         """
-        if self.config["cancel_open_orders_on_exit"]:
+        if self.config.get("cancel_open_orders_on_exit"):
             self.cancel_all_open_orders()
 
     def check_for_open_trades(self):
