@@ -29,7 +29,9 @@ class VolatilityFilter(IPairList):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._days = self._pairlistconfig.get("lookback_days", 10)
+        _lookback_days = self._pairlistconfig.get("lookback_days", 0)
+        self._lookback_timeframe = self._pairlistconfig.get("lookback_timeframe", "1d")
+        _lookback_period: int | None = self._pairlistconfig.get("lookback_period", None)
         self._min_volatility = self._pairlistconfig.get("min_volatility", 0)
         self._max_volatility = self._pairlistconfig.get("max_volatility", sys.maxsize)
         self._refresh_period = self._pairlistconfig.get("refresh_period", 1440)
@@ -38,17 +40,40 @@ class VolatilityFilter(IPairList):
 
         self._pair_cache: FtTTLCache = FtTTLCache(maxsize=1000, ttl=self._refresh_period)
 
-        candle_limit = self._exchange.ohlcv_candle_limit("1d", self._def_candletype)
-        if self._days < 1:
-            raise OperationalException("VolatilityFilter requires lookback_days to be >= 1")
-        if self._days > candle_limit:
+        if (_lookback_days > 0) and _lookback_period and (_lookback_period > 0):
             raise OperationalException(
-                "VolatilityFilter requires lookback_days to not "
+                "Ambiguous configuration: lookback_days and lookback_period both set in pairlist "
+                "config. Please set lookback_days only or lookback_period and lookback_timeframe "
+                "and restart the bot."
+            )
+
+        # overwrite lookback timeframe and period when lookback_days is set
+        if "lookback_days" in self._pairlistconfig:
+            self._lookback_timeframe = "1d"
+            _lookback_period = _lookback_days
+        if _lookback_period is None:
+            logger.warning(
+                f"DEPRECATED: Using {self.name} without lookback_days or lookback_period is "
+                "deprecated and will result in an error in a future version. "
+                "Please set either lookback_days or lookback_period and lookback_timeframe. "
+                "Falling back to lookback_days: 10."
+            )
+            _lookback_period = 10
+        self._lookback_period: int = _lookback_period
+
+        candle_limit = self._exchange.ohlcv_candle_limit(
+            self._lookback_timeframe, self._def_candletype
+        )
+        if self._lookback_period < 1:
+            raise OperationalException(f"{self.name} requires lookback_period to be >= 1")
+        if self._lookback_period > candle_limit:
+            raise OperationalException(
+                f"{self.name} requires lookback_period to not "
                 f"exceed exchange max request size ({candle_limit})"
             )
         if self._sort_direction not in [None, "asc", "desc"]:
             raise OperationalException(
-                "VolatilityFilter requires sort_direction to be "
+                f"{self.name} requires sort_direction to be "
                 "either None (undefined), 'asc' or 'desc'"
             )
 
@@ -58,8 +83,9 @@ class VolatilityFilter(IPairList):
         """
         return (
             f"{self.name} - Filtering pairs with volatility range "
-            f"{self._min_volatility}-{self._max_volatility} "
-            f" the last {self._days} {plural(self._days, 'day')}."
+            f"{self._min_volatility}-{self._max_volatility} over the "
+            f"last {self._lookback_period} {plural(self._lookback_period, 'candle')} of "
+            f"{self._lookback_timeframe}."
         )
 
     @staticmethod
@@ -71,9 +97,21 @@ class VolatilityFilter(IPairList):
         return {
             "lookback_days": {
                 "type": "number",
-                "default": 10,
+                "default": None,
                 "description": "Lookback Days",
-                "help": "Number of days to look back at.",
+                "help": "Number of days to look back at. Implies a lookback_timeframe of 1d.",
+            },
+            "lookback_timeframe": {
+                "type": "string",
+                "default": "1d",
+                "description": "Lookback Timeframe",
+                "help": "Timeframe to use for lookback.",
+            },
+            "lookback_period": {
+                "type": "number",
+                "default": 10,
+                "description": "Lookback Period",
+                "help": "Number of periods to look back at.",
             },
             "min_volatility": {
                 "type": "number",
@@ -105,17 +143,21 @@ class VolatilityFilter(IPairList):
         :return: new allowlist
         """
         needed_pairs: ListPairsWithTimeframes = [
-            (p, "1d", self._def_candletype) for p in pairlist if p not in self._pair_cache
+            (p, self._lookback_timeframe, self._def_candletype)
+            for p in pairlist
+            if p not in self._pair_cache
         ]
 
-        candles = self._exchange.refresh_ohlcv_with_cache(needed_pairs, lookback_period=self._days)
+        candles = self._exchange.refresh_ohlcv_with_cache(
+            needed_pairs, lookback_period=self._lookback_period
+        )
 
         resulting_pairlist: list[str] = []
         volatilitys: dict[str, float] = {}
         for p in pairlist:
-            daily_candles = candles.get((p, "1d", self._def_candletype), None)
+            pair_candles = candles.get((p, self._lookback_timeframe, self._def_candletype), None)
 
-            volatility_avg = self._calculate_volatility(p, daily_candles)
+            volatility_avg = self._calculate_volatility(p, pair_candles)
 
             if volatility_avg is not None:
                 if self._validate_pair_loc(p, volatility_avg):
@@ -134,16 +176,18 @@ class VolatilityFilter(IPairList):
             )
         return resulting_pairlist
 
-    def _calculate_volatility(self, pair: str, daily_candles: DataFrame) -> float | None:
+    def _calculate_volatility(self, pair: str, pair_candles: DataFrame) -> float | None:
         # Check symbol in cache
         if (volatility_avg := self._pair_cache.get(pair, None)) is not None:
             return volatility_avg
 
-        if daily_candles is not None and not daily_candles.empty:
-            returns = np.log(daily_candles["close"].shift(1) / daily_candles["close"])
+        if pair_candles is not None and not pair_candles.empty:
+            returns = np.log(pair_candles["close"].shift(1) / pair_candles["close"])
             returns.fillna(0, inplace=True)
 
-            volatility_series = returns.rolling(window=self._days).std() * np.sqrt(self._days)
+            volatility_series = returns.rolling(window=self._lookback_period).std() * np.sqrt(
+                self._lookback_period
+            )
             volatility_avg = volatility_series.mean()
             self._pair_cache[pair] = volatility_avg
 
@@ -164,7 +208,8 @@ class VolatilityFilter(IPairList):
         else:
             self.log_once(
                 f"Removed {pair} from whitelist, because volatility "
-                f"over {self._days} {plural(self._days, 'day')} "
+                f"over {self._lookback_period} {plural(self._lookback_period, 'candle')} of "
+                f"{self._lookback_timeframe} "
                 f"is: {volatility_avg:.3f} "
                 f"which is not in the configured range of "
                 f"{self._min_volatility}-{self._max_volatility}.",
