@@ -7,17 +7,16 @@ defined period or as coming from ticker
 """
 
 import logging
-from datetime import timedelta
 from typing import TypedDict
 
 from pandas import DataFrame
 
 from freqtrade.constants import ListPairsWithTimeframes, PairWithTimeframe
 from freqtrade.exceptions import OperationalException
-from freqtrade.exchange import timeframe_to_minutes, timeframe_to_prev_date
+from freqtrade.exchange import date_minus_candles, timeframe_to_minutes
 from freqtrade.exchange.exchange_types import Ticker, Tickers
 from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter, SupportsBacktesting
-from freqtrade.util import FtTTLCache, dt_now, format_ms_time
+from freqtrade.util import FtTTLCache, dt_ts, format_ms_time
 
 
 logger = logging.getLogger(__name__)
@@ -247,26 +246,8 @@ class PercentChangePairList(IPairList):
     def fetch_candles_for_lookback_period(
         self, filtered_tickers: list[SymbolWithPercentage]
     ) -> dict[PairWithTimeframe, DataFrame]:
-        since_ms = (
-            int(
-                timeframe_to_prev_date(
-                    self._lookback_timeframe,
-                    dt_now()
-                    + timedelta(
-                        minutes=-(self._lookback_period * self._tf_in_min) - self._tf_in_min
-                    ),
-                ).timestamp()
-            )
-            * 1000
-        )
-        to_ms = (
-            int(
-                timeframe_to_prev_date(
-                    self._lookback_timeframe, dt_now() - timedelta(minutes=self._tf_in_min)
-                ).timestamp()
-            )
-            * 1000
-        )
+        since_ms = dt_ts(date_minus_candles(self._lookback_timeframe, self._lookback_period + 1))
+        to_ms = dt_ts(date_minus_candles(self._lookback_timeframe, 1))
         self.log_once(
             f"Using change range of {self._lookback_period} candles, timeframe: "
             f"{self._lookback_timeframe}, starting from {format_ms_time(since_ms)} "

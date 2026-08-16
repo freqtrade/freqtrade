@@ -2955,9 +2955,7 @@ class Exchange:
             tf_pairs = [p for p in pairs_to_download if p[1] == timeframe]
             if not tf_pairs:
                 continue
-            since_ms = dt_ts(timeframe_to_prev_date(timeframe)) - (
-                lookback_period + 1
-            ) * timeframe_to_msecs(timeframe)
+            since_ms = dt_ts(date_minus_candles(timeframe, lookback_period + 1))
             candles_new = self.refresh_latest_ohlcv(tf_pairs, since_ms=since_ms, cache=False)
             for c, val in candles_new.items():
                 candles[c] = val
