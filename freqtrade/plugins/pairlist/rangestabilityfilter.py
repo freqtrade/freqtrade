@@ -3,7 +3,6 @@ Rate of change pairlist filter
 """
 
 import logging
-from datetime import timedelta
 
 from pandas import DataFrame
 
@@ -12,7 +11,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.exchange_types import Tickers
 from freqtrade.misc import plural
 from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter, SupportsBacktesting
-from freqtrade.util import FtTTLCache, dt_floor_day, dt_now, dt_ts
+from freqtrade.util import FtTTLCache
 
 
 logger = logging.getLogger(__name__)
@@ -106,8 +105,7 @@ class RangeStabilityFilter(IPairList):
             (p, "1d", self._def_candletype) for p in pairlist if p not in self._pair_cache
         ]
 
-        since_ms = dt_ts(dt_floor_day(dt_now()) - timedelta(days=self._days + 1))
-        candles = self._exchange.refresh_ohlcv_with_cache(needed_pairs, since_ms=since_ms)
+        candles = self._exchange.refresh_ohlcv_with_cache(needed_pairs, self._days + 1)
 
         resulting_pairlist: list[str] = []
         pct_changes: dict[str, float] = {}

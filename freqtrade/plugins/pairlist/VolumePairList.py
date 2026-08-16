@@ -258,7 +258,9 @@ class VolumePairList(IPairList):
                 for p in [s["symbol"] for s in filtered_tickers]
             ]
 
-            candles = self._exchange.refresh_ohlcv_with_cache(needed_pairs, since_ms)
+            candles = self._exchange.refresh_ohlcv_with_cache(
+                needed_pairs, self._lookback_period + 1
+            )
 
             for i, p in enumerate(filtered_tickers):
                 contract_size = self._exchange.markets[p["symbol"]].get("contractSize", 1.0) or 1.0
