@@ -49,8 +49,8 @@ class RangeStabilityFilter(IPairList):
         return (
             f"{self.name} - Filtering pairs with rate of change below "
             f"{self._min_rate_of_change}{max_rate_desc} over the "
-            f"last {self._lookback_period} {plural(self._lookback_period, 'candle')} of "
-            f"{self._lookback_timeframe}."
+            f"last {self._lookback_period} x {self._lookback_timeframe} "
+            f"{plural(self._lookback_period, 'candle')}."
         )
 
     @staticmethod
@@ -148,8 +148,8 @@ class RangeStabilityFilter(IPairList):
         if pct_change < self._min_rate_of_change:
             self.log_once(
                 f"Removed {pair} from whitelist, because rate of change "
-                f"over {self._lookback_period} {plural(self._lookback_period, 'candle')} of "
-                f"{self._lookback_timeframe} is {pct_change:.3f}, "
+                f"over {self._lookback_period} x {self._lookback_timeframe} "
+                f"{plural(self._lookback_period, 'candle')} is {pct_change:.3f}, "
                 f"which is below the threshold of {self._min_rate_of_change}.",
                 logger.info,
             )
@@ -158,8 +158,8 @@ class RangeStabilityFilter(IPairList):
             if pct_change > self._max_rate_of_change:
                 self.log_once(
                     f"Removed {pair} from whitelist, because rate of change "
-                    f"over {self._lookback_period} {plural(self._lookback_period, 'candle')} of "
-                    f"{self._lookback_timeframe} is {pct_change:.3f}, "
+                    f"over {self._lookback_period} x {self._lookback_timeframe} "
+                    f"{plural(self._lookback_period, 'candle')} is {pct_change:.3f}, "
                     f"which is above the threshold of {self._max_rate_of_change}.",
                     logger.info,
                 )

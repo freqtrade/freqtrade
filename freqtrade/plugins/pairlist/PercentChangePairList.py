@@ -13,10 +13,11 @@ from pandas import DataFrame
 
 from freqtrade.constants import ListPairsWithTimeframes, PairWithTimeframe
 from freqtrade.exceptions import OperationalException
-from freqtrade.exchange import date_minus_candles, timeframe_to_minutes
+from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.exchange.exchange_types import Ticker, Tickers
+from freqtrade.misc import plural
 from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter, SupportsBacktesting
-from freqtrade.util import FtTTLCache, dt_ts, format_ms_time
+from freqtrade.util import FtTTLCache
 
 
 logger = logging.getLogger(__name__)
@@ -206,12 +207,9 @@ class PercentChangePairList(IPairList):
     def fetch_candles_for_lookback_period(
         self, filtered_tickers: list[SymbolWithPercentage]
     ) -> dict[PairWithTimeframe, DataFrame]:
-        since_ms = dt_ts(date_minus_candles(self._lookback_timeframe, self._lookback_period + 1))
-        to_ms = dt_ts(date_minus_candles(self._lookback_timeframe, 1))
         self.log_once(
-            f"Using change range of {self._lookback_period} candles, timeframe: "
-            f"{self._lookback_timeframe}, starting from {format_ms_time(since_ms)} "
-            f"till {format_ms_time(to_ms)}",
+            f"Using change range of {self._lookback_period} x {self._lookback_timeframe} "
+            f"{plural(self._lookback_period, 'candle')}.",
             logger.info,
         )
         needed_pairs: ListPairsWithTimeframes = [

@@ -52,8 +52,8 @@ class VolatilityFilter(IPairList):
         return (
             f"{self.name} - Filtering pairs with volatility range "
             f"{self._min_volatility}-{self._max_volatility} over the "
-            f"last {self._lookback_period} {plural(self._lookback_period, 'candle')} of "
-            f"{self._lookback_timeframe}."
+            f"last {self._lookback_period} x {self._lookback_timeframe} "
+            f"{plural(self._lookback_period, 'candle')}."
         )
 
     @staticmethod
@@ -159,8 +159,8 @@ class VolatilityFilter(IPairList):
         else:
             self.log_once(
                 f"Removed {pair} from whitelist, because volatility "
-                f"over {self._lookback_period} {plural(self._lookback_period, 'candle')} of "
-                f"{self._lookback_timeframe} "
+                f"over {self._lookback_period} x {self._lookback_timeframe} "
+                f"{plural(self._lookback_period, 'candle')} "
                 f"is: {volatility_avg:.3f} "
                 f"which is not in the configured range of "
                 f"{self._min_volatility}-{self._max_volatility}.",

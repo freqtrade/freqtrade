@@ -2077,7 +2077,7 @@ def test_spreadfilter_invalid_data(mocker, default_conf, markets, tickers, caplo
             {"method": "RangeStabilityFilter", "lookback_days": 10, "min_rate_of_change": 0.01},
             (
                 "[{'RangeStabilityFilter': 'RangeStabilityFilter - Filtering pairs with rate "
-                "of change below 0.01 over the last 10 candles of 1d.'}]"
+                "of change below 0.01 over the last 10 x 1d candles.'}]"
             ),
             None,
         ),
@@ -2090,7 +2090,7 @@ def test_spreadfilter_invalid_data(mocker, default_conf, markets, tickers, caplo
             },
             (
                 "[{'RangeStabilityFilter': 'RangeStabilityFilter - Filtering pairs with rate "
-                "of change below 0.01 and above 0.99 over the last 10 candles of 1d.'}]"
+                "of change below 0.01 and above 0.99 over the last 10 x 1d candles.'}]"
             ),
             None,
         ),
@@ -2103,7 +2103,7 @@ def test_spreadfilter_invalid_data(mocker, default_conf, markets, tickers, caplo
             },
             (
                 "[{'RangeStabilityFilter': 'RangeStabilityFilter - Filtering pairs with rate "
-                "of change below 0.01 over the last 72 candles of 1h.'}]"
+                "of change below 0.01 over the last 72 x 1h candles.'}]"
             ),
             None,
         ),
