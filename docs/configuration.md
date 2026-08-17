@@ -699,7 +699,7 @@ creating trades on the exchange.
 ```json
 "exchange": {
     "name": "binance",
-    "key": "key",
+    "api_key": "api_key",
     "secret": "secret",
     ...
 }
@@ -749,7 +749,7 @@ API Keys are usually only required for live trading (trading for real money, bot
 {
     "exchange": {
         "name": "binance",
-        "key": "af8ddd35195e9dc500b9a6f799f6f5c93d89193b",
+        "api_key": "af8ddd35195e9dc500b9a6f799f6f5c93d89193b",
         "secret": "08a9dc6db3d7b53e1acebd9275677f4b0a04f1a5",
         //"password": "", // Optional, not needed by all exchanges)
         // ...
