@@ -1591,19 +1591,19 @@ def test_setup_freqai_backtesting(mocker, default_conf) -> None:
 
 
 def test_sanitize_config(default_conf_usdt):
-    assert default_conf_usdt["exchange"]["key"] != "REDACTED"
+    assert default_conf_usdt["exchange"]["api_key"] != "REDACTED"
     res = sanitize_config(default_conf_usdt)
     # Didn't modify original dict
-    assert default_conf_usdt["exchange"]["key"] != "REDACTED"
+    assert default_conf_usdt["exchange"]["api_key"] != "REDACTED"
     assert "accountId" not in default_conf_usdt["exchange"]
 
-    assert res["exchange"]["key"] == "REDACTED"
+    assert res["exchange"]["api_key"] == "REDACTED"
     assert res["exchange"]["secret"] == "REDACTED"
     # Didn't add a non-existing key
     assert "accountId" not in res["exchange"]
 
     res = sanitize_config(default_conf_usdt, show_sensitive=True)
-    assert res["exchange"]["key"] == default_conf_usdt["exchange"]["key"]
+    assert res["exchange"]["api_key"] == default_conf_usdt["exchange"]["api_key"]
     assert res["exchange"]["secret"] == default_conf_usdt["exchange"]["secret"]
 
 
@@ -1611,11 +1611,11 @@ def test_remove_exchange_credentials(default_conf) -> None:
     conf = deepcopy(default_conf)
     remove_exchange_credentials(conf["exchange"], False)
 
-    assert conf["exchange"]["key"] is not None
+    assert conf["exchange"]["api_key"] is not None
     assert conf["exchange"]["secret"] is not None
 
     remove_exchange_credentials(conf["exchange"], True)
-    assert conf["exchange"]["key"] is None
+    assert conf["exchange"]["api_key"] is None
     assert conf["exchange"]["secret"] is None
     assert conf["exchange"].get("password") is None
     assert conf["exchange"].get("uid") is None
