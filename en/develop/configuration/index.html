@@ -3376,7 +3376,7 @@ In the below case, <code>max_open_trades</code> would be 3 after the merging - a
 <td><strong>Required.</strong> Name of the exchange class to use. <br> <strong>Datatype:</strong> String</td>
 </tr>
 <tr>
-<td><code>exchange.key</code></td>
+<td><code>exchange.api_key</code></td>
 <td>API key to use for the exchange. Only required when you are in production mode.<br><strong>Keep it in secret, do not disclose publicly.</strong> <br> <strong>Datatype:</strong> String</td>
 </tr>
 <tr>
@@ -4178,7 +4178,7 @@ creating trades on the exchange.</p>
 </ol>
 <div class="highlight"><pre><span></span><code><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;binance&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;key&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;api_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;api_key&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;secret&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;secret&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="err">...</span>
 <span class="p">}</span>
@@ -4215,7 +4215,7 @@ API Keys are usually only required for live trading (trading for real money, bot
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;binance&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;af8ddd35195e9dc500b9a6f799f6f5c93d89193b&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;api_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;af8ddd35195e9dc500b9a6f799f6f5c93d89193b&quot;</span><span class="p">,</span>
 <span class="w">        </span><span class="nt">&quot;secret&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;08a9dc6db3d7b53e1acebd9275677f4b0a04f1a5&quot;</span><span class="p">,</span>
 <span class="w">        </span><span class="c1">//&quot;password&quot;: &quot;&quot;, // Optional, not needed by all exchanges)</span>
 <span class="w">        </span><span class="c1">// ...</span>

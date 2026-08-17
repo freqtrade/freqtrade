@@ -2872,7 +2872,7 @@ A current list of these can be found in the "Home" section of this documentation
 <p>A exchange configuration for "binance" would look as follows:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;binance&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_exchange_key&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;api_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_exchange_api_key&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;secret&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_exchange_secret&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;ccxt_config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
 <span class="w">    </span><span class="nt">&quot;ccxt_async_config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
@@ -2883,7 +2883,7 @@ A current list of these can be found in the "Home" section of this documentation
 In case of problems related to rate-limits (usually DDOS Exceptions in your logs), it's easy to change rateLimit settings to other values.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;kraken&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_exchange_key&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;api_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_exchange_api_key&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;secret&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_exchange_secret&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;ccxt_config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;enableRateLimit&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">},</span>
 <span class="w">    </span><span class="nt">&quot;ccxt_async_config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -2926,7 +2926,7 @@ Binance accounts may use <code>BNB</code> for fees, and if a trade happens to be
 </code></pre></div>
 <p>They can however also be configured via configuration file. Since json doesn't support multi-line strings, you'll have to replace all newlines with <code>\n</code> to have a valid json file.</p>
 <div class="highlight"><pre><span></span><code><span class="c1">// ...</span>
-<span class="w"> </span><span class="nt">&quot;key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&lt;someapikey&gt;&quot;</span><span class="p">,</span>
+<span class="w"> </span><span class="nt">&quot;api_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&lt;someapikey&gt;&quot;</span><span class="p">,</span>
 <span class="w"> </span><span class="nt">&quot;secret&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;-----BEGIN PRIVATE KEY-----\nMIIEvQIBABACAFQA&lt;...&gt;s8KX8=\n-----END PRIVATE KEY-----&quot;</span>
 <span class="c1">// ...</span>
 </code></pre></div>
@@ -3023,7 +3023,7 @@ So, in order to mitigate Kraken API "Rate limit exceeded" exception, this config
 <p>Kraken Futures uses the exchange id <code>krakenfutures</code> and supports isolated futures mode.</p>
 <div class="highlight"><pre><span></span><code>&quot;exchange&quot;: {
     &quot;name&quot;: &quot;krakenfutures&quot;,
-    &quot;key&quot;: &quot;your_exchange_key&quot;,
+    &quot;api_key&quot;: &quot;your_exchange_api_key&quot;,
     &quot;secret&quot;: &quot;your_exchange_secret&quot;
 },
 &quot;trading_mode&quot;: &quot;futures&quot;,
@@ -3048,7 +3048,7 @@ Freqtrade derives the <code>USD</code> balance from Kraken margin fields, so kee
 <p>Kucoin requires a passphrase for each api key, you will therefore need to add this key into the configuration so your exchange section looks as follows:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;kucoin&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_exchange_key&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;api_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_exchange_api_key&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;secret&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_exchange_secret&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;password&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_exchange_api_key_password&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="c1">// ...</span>
@@ -3076,7 +3076,7 @@ Kucoin accounts may use <code>KCS</code> for fees, and if a trade happens to be 
 <p>OKX requires a passphrase for each api key, you will therefore need to add this key into the configuration so your exchange section looks as follows:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;okx&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_exchange_key&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;api_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_exchange_api_key&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;secret&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_exchange_secret&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;password&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_exchange_api_key_password&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="c1">// ...</span>
@@ -3142,7 +3142,7 @@ Bybit uses live markets to simulate your trades (without market impact) - making
 <p>Bitget requires a passphrase for each api key, you will therefore need to add this key into the configuration so your exchange section looks as follows:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;bitget&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_exchange_key&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;api_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_exchange_api_key&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;secret&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_exchange_secret&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;password&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_exchange_api_key_password&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="c1">// ...</span>
@@ -3267,7 +3267,7 @@ Different HIP-3 DEXes may also use different quote currencies - so make sure to 
 <p>If your account is required to use an operatorId, you can set it in the configuration file as follows:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;bitvavo&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;api_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="p">,</span>
 <span class="w">        </span><span class="nt">&quot;secret&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="p">,</span>
 <span class="w">        </span><span class="nt">&quot;ccxt_config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="nt">&quot;options&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
