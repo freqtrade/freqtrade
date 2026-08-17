@@ -175,7 +175,12 @@ class IPairList(LoggingMixin, ABC):
 
         # lookback_days implies daily candles
         if lookback_days > 0:
-            self._lookback_timeframe = "1d"
+            if self._lookback_timeframe != "1d":
+                raise OperationalException(
+                    "Ambiguous configuration: lookback_days implies a lookback_timeframe of 1d, "
+                    f"but lookback_timeframe is set to {self._lookback_timeframe}. Please set "
+                    "lookback_period instead of lookback_days and restart the bot."
+                )
             lookback_period = lookback_days
 
         if lookback_period is None and required:

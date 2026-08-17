@@ -181,7 +181,7 @@ More sophisticated approach can be used, by using `lookback_timeframe` for candl
 * `max_value`: Sets a maximum percentage change threshold. Pairs with a percentage change above this value will be filtered out.
 * `sort_direction`: Specifies the order in which pairs are sorted based on their percentage change. Accepts two values: `asc` for ascending order and `desc` for descending order.
 * `refresh_period`: Defines the interval (in seconds) at which the pairlist will be refreshed. The default is 1800 seconds (30 minutes).
-* `lookback_days`: Number of days to look back. When `lookback_days` is selected, the `lookback_timeframe` is defaulted to 1 day.
+* `lookback_days`: Number of days to look back. `lookback_days` implies a `lookback_timeframe` of 1 day - combining it with a different `lookback_timeframe` will result in an error.
 * `lookback_timeframe`: Timeframe to use for the lookback period.
 * `lookback_period`: Number of periods to look back at.
 
@@ -637,7 +637,7 @@ If `DOGE/BTC` maximum bid is 0.00000026 and minimum ask is 0.00000027, the ratio
 
 Removes pairs where the difference between lowest low and highest high over `lookback_period` candles of `lookback_timeframe` (defaults to `1d`) is below `min_rate_of_change` or above `max_rate_of_change`. Since this is a filter that requires additional data, the results are cached for `refresh_period`.
 
-For convenience, `lookback_days` can be used instead, which implies daily candles (equivalent to setting `lookback_period` with a `lookback_timeframe` of `1d`). One of `lookback_days` or `lookback_period` must be set - setting both is ambiguous and will result in an error. Setting neither is deprecated and currently falls back to a lookback of 10 days - this fallback will be removed in a future version.
+For convenience, `lookback_days` can be used instead, which implies daily candles (equivalent to setting `lookback_period` with a `lookback_timeframe` of `1d`). One of `lookback_days` or `lookback_period` must be set - setting both is ambiguous and will result in an error, as does combining `lookback_days` with a `lookback_timeframe` other than `1d`. Setting neither is deprecated and currently falls back to a lookback of 10 days - this fallback will be removed in a future version.
 
 In the below example:
 If the trading range over the last 10 days is <1% or >99%, remove the pair from the whitelist.
@@ -682,7 +682,7 @@ Volatility is the degree of historical variation of a pairs over time, it is mea
 
 This filter removes pairs if the average volatility over `lookback_period` candles of `lookback_timeframe` (defaults to `1d`) is below `min_volatility` or above `max_volatility`. Since this is a filter that requires additional data, the results are cached for `refresh_period`.
 
-For convenience, `lookback_days` can be used instead, which implies daily candles (equivalent to setting `lookback_period` with a `lookback_timeframe` of `1d`). One of `lookback_days` or `lookback_period` must be set - setting both is ambiguous and will result in an error. Setting neither is deprecated and currently falls back to a lookback of 10 days - this fallback will be removed in a future version.
+For convenience, `lookback_days` can be used instead, which implies daily candles (equivalent to setting `lookback_period` with a `lookback_timeframe` of `1d`). One of `lookback_days` or `lookback_period` must be set - setting both is ambiguous and will result in an error, as does combining `lookback_days` with a `lookback_timeframe` other than `1d`. Setting neither is deprecated and currently falls back to a lookback of 10 days - this fallback will be removed in a future version.
 
 This filter can be used to narrow down your pairs to a certain volatility or avoid very volatile pairs.
 

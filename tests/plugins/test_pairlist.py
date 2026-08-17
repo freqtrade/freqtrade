@@ -1800,6 +1800,18 @@ def test_rangestabilityfilter_checks(mocker, default_conf, markets, tickers, cap
 
     default_conf["pairlists"] = [
         {"method": "VolumePairList", "number_assets": 10},
+        {"method": "RangeStabilityFilter", "lookback_days": 10, "lookback_timeframe": "1h"},
+    ]
+
+    with pytest.raises(
+        OperationalException,
+        match=r"Ambiguous configuration: lookback_days implies a lookback_timeframe of 1d, "
+        r"but lookback_timeframe is set to 1h\..*",
+    ):
+        get_patched_freqtradebot(mocker, default_conf)
+
+    default_conf["pairlists"] = [
+        {"method": "VolumePairList", "number_assets": 10},
         {"method": "RangeStabilityFilter", "sort_direction": "something"},
     ]
 
