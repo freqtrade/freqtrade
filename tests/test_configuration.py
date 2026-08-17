@@ -1118,7 +1118,6 @@ def test_load_config_stoploss_exchange_limit_ratio(all_conf) -> None:
 @pytest.mark.parametrize(
     "base,key,expected",
     [
-        ("exchange", "api_key", None),
         ("exchange", "secret", None),
         ("exchange", "password", None),
     ],
