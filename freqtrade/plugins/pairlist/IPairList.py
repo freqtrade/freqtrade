@@ -238,6 +238,15 @@ class IPairList(LoggingMixin, ABC):
                 f"{self.name} requires lookback_period to be >= {min_period}"
             )
 
+        if self._lookback_period == 0 and "lookback_timeframe" in self._pairlistconfig:
+            # Required handlers raise above - for optional ones, the timeframe has no effect.
+            logger.warning(
+                f"{self.name} is configured with lookback_timeframe "
+                f"{self._lookback_timeframe}, but without lookback_period - "
+                "the lookback range is disabled and the timeframe has no effect. "
+                "Please set lookback_period to enable it."
+            )
+
         candle_limit = self._exchange.ohlcv_candle_limit(
             self._lookback_timeframe, self._config["candle_type_def"]
         )

@@ -1580,7 +1580,7 @@ def test_lookback_parameters_defaults(mocker, whitelist_conf, pairlist_conf):
         {"lookback_timeframe": "1d"},
     ],
 )
-def test_volumepairlist_no_range(mocker, whitelist_conf, lookback_conf):
+def test_volumepairlist_no_range(mocker, whitelist_conf, lookback_conf, caplog):
     # An explicit lookback of 0 must not enable the lookback range
     whitelist_conf["pairlists"][0].update(lookback_conf)
 
@@ -1589,6 +1589,10 @@ def test_volumepairlist_no_range(mocker, whitelist_conf, lookback_conf):
     pairlist_handler = freqtrade.pairlists._pairlist_handlers[0]
     assert pairlist_handler._use_range is False
     assert pairlist_handler.needstickers is True
+
+    # A lookback_timeframe without lookback_period has no effect - warn about it
+    warning = r"VolumePairList is configured with lookback_timeframe .* the lookback range"
+    assert log_has_re(warning, caplog) == ("lookback_timeframe" in lookback_conf)
 
     whitelist_conf["pairlists"][0].update({"lookback_days": -1})
     with pytest.raises(
