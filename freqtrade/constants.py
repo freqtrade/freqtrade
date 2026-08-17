@@ -196,7 +196,7 @@ MINIMAL_CONFIG = {
     "dry_run": True,
     "exchange": {
         "name": "",
-        "key": None,
+        "api_key": None,
         "secret": None,
         "pair_whitelist": [],
         "ccxt_async_config": {},
