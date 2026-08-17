@@ -24,7 +24,7 @@ repos:
           - types-filelock==3.2.7
           - types-requests==2.33.0.20260712
           - types-tabulate==0.10.0.20260508
-          - types-python-dateutil==2.9.0.20260716
+          - types-python-dateutil==2.9.0.20260807
           - scipy-stubs==1.17.1.5
           - SQLAlchemy==2.0.51
         # stages: [push]
