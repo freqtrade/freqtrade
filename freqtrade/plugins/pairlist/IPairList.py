@@ -189,14 +189,17 @@ class IPairList(LoggingMixin, ABC):
         lookback_period: int | None = self._pairlistconfig.get("lookback_period", None)
         self._lookback_timeframe: str = self._pairlistconfig.get("lookback_timeframe", "1d")
 
-        if lookback_days > 0 and (lookback_period or 0) > 0:
+        has_period = (lookback_period or 0) > 0
+
+        if lookback_days > 0 and has_period:
             raise OperationalException(
                 "Ambiguous configuration: lookback_days and lookback_period both set in pairlist "
                 "config. Please set lookback_days only or lookback_period and lookback_timeframe "
                 "and restart the bot."
             )
-        # 0 means "no lookback" - only acceptable if the lookback is optional
-        min_days = 1 if required else 0
+        # 0 means "no lookback" - only acceptable if the lookback is optional,
+        # or if lookback_period provides the range instead.
+        min_days = 1 if required and not has_period else 0
         if "lookback_days" in self._pairlistconfig and lookback_days < min_days:
             raise OperationalException(f"{self.name} requires lookback_days to be >= {min_days}")
 

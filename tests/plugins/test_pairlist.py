@@ -1214,6 +1214,17 @@ def test_VolatilityFilter_error(mocker, whitelist_conf, caplog) -> None:
     ):
         PairListManager(exchange_mock, whitelist_conf, MagicMock())
 
+    # An explicit "lookback_days: 0" must not invalidate a configured lookback_period
+    volatility_filter = {
+        "method": "VolatilityFilter",
+        "lookback_days": 0,
+        "lookback_timeframe": "1h",
+        "lookback_period": 5,
+    }
+    whitelist_conf["pairlists"] = [{"method": "StaticPairList"}, volatility_filter]
+    handler = PairListManager(exchange_mock, whitelist_conf, MagicMock())._pairlist_handlers[1]
+    assert (handler._lookback_timeframe, handler._lookback_period) == ("1h", 5)
+
     volatility_filter = {
         "method": "VolatilityFilter",
         "lookback_days": 10,
