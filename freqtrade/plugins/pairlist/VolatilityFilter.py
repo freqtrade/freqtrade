@@ -29,9 +29,6 @@ class VolatilityFilter(IPairList):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        _lookback_days = self._pairlistconfig.get("lookback_days", 0)
-        self._lookback_timeframe = self._pairlistconfig.get("lookback_timeframe", "1d")
-        _lookback_period: int | None = self._pairlistconfig.get("lookback_period", None)
         self._min_volatility = self._pairlistconfig.get("min_volatility", 0)
         self._max_volatility = self._pairlistconfig.get("max_volatility", sys.maxsize)
         self._refresh_period = self._pairlistconfig.get("refresh_period", 1440)
@@ -40,41 +37,8 @@ class VolatilityFilter(IPairList):
 
         self._pair_cache: FtTTLCache = FtTTLCache(maxsize=1000, ttl=self._refresh_period)
 
-        if (_lookback_days > 0) and _lookback_period and (_lookback_period > 0):
-            raise OperationalException(
-                "Ambiguous configuration: lookback_days and lookback_period both set in pairlist "
-                "config. Please set lookback_days only or lookback_period and lookback_timeframe "
-                "and restart the bot."
-            )
+        self._init_lookback_config(required=True, deprecated_fallback=10)
 
-        # overwrite lookback timeframe and period when lookback_days is set
-        if "lookback_days" in self._pairlistconfig:
-            self._lookback_timeframe = "1d"
-            _lookback_period = _lookback_days
-        if _lookback_period is None:
-            if "lookback_timeframe" in self._pairlistconfig:
-                raise OperationalException(
-                    f"{self.name} requires lookback_period to be set when using lookback_timeframe."
-                )
-            logger.warning(
-                f"DEPRECATED: Using {self.name} without lookback_days or lookback_period is "
-                "deprecated and will result in an error in a future version. "
-                "Please set either lookback_days or lookback_period and lookback_timeframe. "
-                "Falling back to lookback_days: 10."
-            )
-            _lookback_period = 10
-        self._lookback_period: int = _lookback_period
-
-        candle_limit = self._exchange.ohlcv_candle_limit(
-            self._lookback_timeframe, self._def_candletype
-        )
-        if self._lookback_period < 1:
-            raise OperationalException(f"{self.name} requires lookback_period to be >= 1")
-        if self._lookback_period > candle_limit:
-            raise OperationalException(
-                f"{self.name} requires lookback_period to not "
-                f"exceed exchange max request size ({candle_limit})"
-            )
         if self._sort_direction not in [None, "asc", "desc"]:
             raise OperationalException(
                 f"{self.name} requires sort_direction to be "

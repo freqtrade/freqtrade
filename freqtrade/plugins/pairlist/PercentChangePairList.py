@@ -46,23 +46,10 @@ class PercentChangePairList(IPairList):
         self._max_value = self._pairlistconfig.get("max_value", None)
         self._refresh_period = self._pairlistconfig.get("refresh_period", 1800)
         self._pair_cache: FtTTLCache = FtTTLCache(maxsize=1, ttl=self._refresh_period)
-        self._lookback_days = self._pairlistconfig.get("lookback_days", 0)
-        self._lookback_timeframe = self._pairlistconfig.get("lookback_timeframe", "1d")
-        self._lookback_period = self._pairlistconfig.get("lookback_period", 0)
         self._sort_direction: str | None = self._pairlistconfig.get("sort_direction", "desc")
         self._def_candletype = self._config["candle_type_def"]
 
-        if (self._lookback_days > 0) and (self._lookback_period > 0):
-            raise OperationalException(
-                "Ambiguous configuration: lookback_days and lookback_period both set in pairlist "
-                "config. Please set lookback_days only or lookback_period and lookback_timeframe "
-                "and restart the bot."
-            )
-
-        # overwrite lookback timeframe and days when lookback_days is set
-        if self._lookback_days > 0:
-            self._lookback_timeframe = "1d"
-            self._lookback_period = self._lookback_days
+        self._init_lookback_config()
 
         # get timeframe in minutes and seconds
         self._tf_in_min = timeframe_to_minutes(self._lookback_timeframe)
@@ -86,16 +73,6 @@ class PercentChangePairList(IPairList):
                 f"Exchange {self._exchange.name} does not support dynamic whitelist in this "
                 "configuration. Please edit your config and either remove PercentChangePairList, "
                 "or switch to using candles and restart the bot."
-            )
-
-        candle_limit = self._exchange.ohlcv_candle_limit(
-            self._lookback_timeframe, self._def_candletype
-        )
-
-        if self._lookback_period > candle_limit:
-            raise OperationalException(
-                "ChangeFilter requires lookback_period to not "
-                f"exceed exchange max request size ({candle_limit})"
             )
 
     @property
@@ -148,7 +125,7 @@ class PercentChangePairList(IPairList):
             **IPairList.refresh_period_parameter(),
             "lookback_days": {
                 "type": "number",
-                "default": 0,
+                "default": None,
                 "description": "Lookback Days",
                 "help": "Number of days to look back at.",
             },

@@ -144,6 +144,74 @@ class IPairList(LoggingMixin, ABC):
             }
         }
 
+    def _init_lookback_config(
+        self, *, required: bool = False, deprecated_fallback: int = 0
+    ) -> None:
+        """
+        Resolve the lookback configuration (`lookback_days`, `lookback_timeframe` and
+        `lookback_period`) into `self._lookback_timeframe` and `self._lookback_period`,
+        and validate it against the exchange's max request size.
+        `lookback_days` is a convenience alias for `lookback_period` on daily candles.
+        :param required: Whether this handler needs a lookback range. Handlers with an optional
+                         lookback end up with a period of 0, disabling the lookback range.
+        :param deprecated_fallback: Number of days to fall back to when `required` is set, but
+                                    neither `lookback_days` nor `lookback_period` is configured.
+                                    Deprecated - will be removed in a future version.
+        """
+        lookback_days: int = self._pairlistconfig.get("lookback_days", 0) or 0
+        lookback_period: int | None = self._pairlistconfig.get("lookback_period", None)
+        self._lookback_timeframe: str = self._pairlistconfig.get("lookback_timeframe", "1d")
+
+        if lookback_days > 0 and (lookback_period or 0) > 0:
+            raise OperationalException(
+                "Ambiguous configuration: lookback_days and lookback_period both set in pairlist "
+                "config. Please set lookback_days only or lookback_period and lookback_timeframe "
+                "and restart the bot."
+            )
+        # 0 means "no lookback" - only acceptable if the lookback is optional
+        min_days = 1 if required else 0
+        if "lookback_days" in self._pairlistconfig and lookback_days < min_days:
+            raise OperationalException(f"{self.name} requires lookback_days to be >= {min_days}")
+
+        # lookback_days implies daily candles
+        if lookback_days > 0:
+            self._lookback_timeframe = "1d"
+            lookback_period = lookback_days
+
+        if lookback_period is None and required:
+            if "lookback_timeframe" in self._pairlistconfig:
+                raise OperationalException(
+                    f"{self.name} requires lookback_period to be set when using lookback_timeframe."
+                )
+            if not deprecated_fallback:
+                raise OperationalException(
+                    f"{self.name} requires either lookback_days or lookback_period to be set."
+                )
+            logger.warning(
+                f"DEPRECATED: Using {self.name} without lookback_days or lookback_period is "
+                "deprecated and will result in an error in a future version. "
+                "Please set either lookback_days or lookback_period and lookback_timeframe. "
+                f"Falling back to lookback_days: {deprecated_fallback}."
+            )
+            lookback_period = deprecated_fallback
+
+        self._lookback_period: int = lookback_period or 0
+
+        min_period = 1 if required else 0
+        if self._lookback_period < min_period:
+            raise OperationalException(
+                f"{self.name} requires lookback_period to be >= {min_period}"
+            )
+
+        candle_limit = self._exchange.ohlcv_candle_limit(
+            self._lookback_timeframe, self._config["candle_type_def"]
+        )
+        if self._lookback_period > candle_limit:
+            raise OperationalException(
+                f"{self.name} requires lookback_period to not "
+                f"exceed exchange max request size ({candle_limit})"
+            )
+
     @abstractmethod
     def short_desc(self) -> str:
         """

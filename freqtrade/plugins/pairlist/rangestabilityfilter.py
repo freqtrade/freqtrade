@@ -23,9 +23,6 @@ class RangeStabilityFilter(IPairList):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        _lookback_days = self._pairlistconfig.get("lookback_days", 0)
-        self._lookback_timeframe = self._pairlistconfig.get("lookback_timeframe", "1d")
-        _lookback_period: int | None = self._pairlistconfig.get("lookback_period", None)
         self._min_rate_of_change = self._pairlistconfig.get("min_rate_of_change", 0.01)
         self._max_rate_of_change = self._pairlistconfig.get("max_rate_of_change")
         self._refresh_period = self._pairlistconfig.get("refresh_period", 86400)
@@ -34,43 +31,8 @@ class RangeStabilityFilter(IPairList):
 
         self._pair_cache: FtTTLCache = FtTTLCache(maxsize=1000, ttl=self._refresh_period)
 
-        if (_lookback_days > 0) and ((_lookback_period or 0) > 0):
-            raise OperationalException(
-                "Ambiguous configuration: lookback_days and lookback_period both set in pairlist "
-                "config. Please set lookback_days only or lookback_period and lookback_timeframe "
-                "and restart the bot."
-            )
-        if "lookback_days" in self._pairlistconfig and _lookback_days < 1:
-            raise OperationalException(f"{self.name} requires lookback_days to be >= 1")
+        self._init_lookback_config(required=True, deprecated_fallback=10)
 
-        # overwrite lookback timeframe and period when lookback_days is set
-        if _lookback_days > 0:
-            self._lookback_timeframe = "1d"
-            _lookback_period = _lookback_days
-        if _lookback_period is None:
-            if "lookback_timeframe" in self._pairlistconfig:
-                raise OperationalException(
-                    f"{self.name} requires lookback_period to be set when using lookback_timeframe."
-                )
-            logger.warning(
-                f"DEPRECATED: Using {self.name} without lookback_days or lookback_period is "
-                "deprecated and will result in an error in a future version. "
-                "Please set either lookback_days or lookback_period and lookback_timeframe. "
-                "Falling back to lookback_days: 10."
-            )
-            _lookback_period = 10
-        self._lookback_period: int = _lookback_period
-
-        candle_limit = self._exchange.ohlcv_candle_limit(
-            self._lookback_timeframe, self._def_candletype
-        )
-        if self._lookback_period < 1:
-            raise OperationalException(f"{self.name} requires lookback_period to be >= 1")
-        if self._lookback_period > candle_limit:
-            raise OperationalException(
-                f"{self.name} requires lookback_period to not "
-                f"exceed exchange max request size ({candle_limit})"
-            )
         if self._sort_direction not in [None, "asc", "desc"]:
             raise OperationalException(
                 f"{self.name} requires sort_direction to be "
@@ -100,7 +62,7 @@ class RangeStabilityFilter(IPairList):
         return {
             "lookback_days": {
                 "type": "number",
-                "default": 0,
+                "default": None,
                 "description": "Lookback Days",
                 "help": "Number of days to look back at. Implies a lookback_timeframe of 1d.",
             },

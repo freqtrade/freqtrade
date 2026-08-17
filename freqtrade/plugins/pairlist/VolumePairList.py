@@ -41,22 +41,9 @@ class VolumePairList(IPairList):
         self._max_value: float | None = self._pairlistconfig.get("max_value", None)
         self._refresh_period = self._pairlistconfig.get("refresh_period", 1800)
         self._pair_cache: FtTTLCache = FtTTLCache(maxsize=1, ttl=self._refresh_period)
-        self._lookback_days: int = self._pairlistconfig.get("lookback_days", 0)
-        self._lookback_timeframe: str = self._pairlistconfig.get("lookback_timeframe", "1d")
-        self._lookback_period: int = self._pairlistconfig.get("lookback_period", 0)
         self._def_candletype = self._config["candle_type_def"]
 
-        if (self._lookback_days > 0) and (self._lookback_period > 0):
-            raise OperationalException(
-                "Ambiguous configuration: lookback_days and lookback_period both set in pairlist "
-                "config. Please set lookback_days only or lookback_period and lookback_timeframe "
-                "and restart the bot."
-            )
-
-        # overwrite lookback timeframe and days when lookback_days is set
-        if self._lookback_days > 0:
-            self._lookback_timeframe = "1d"
-            self._lookback_period = self._lookback_days
+        self._init_lookback_config()
 
         # get timeframe in minutes and seconds
         self._tf_in_min = timeframe_to_minutes(self._lookback_timeframe)
@@ -86,17 +73,6 @@ class VolumePairList(IPairList):
 
         if not self._validate_keys(self._sort_key):
             raise OperationalException(f"key {self._sort_key} not in {SORT_VALUES}")
-
-        candle_limit = self._exchange.ohlcv_candle_limit(
-            self._lookback_timeframe, self._def_candletype
-        )
-        if self._lookback_period < 0:
-            raise OperationalException("VolumeFilter requires lookback_period to be >= 0")
-        if self._lookback_period > candle_limit:
-            raise OperationalException(
-                "VolumeFilter requires lookback_period to not "
-                f"exceed exchange max request size ({candle_limit})"
-            )
 
     @property
     def needstickers(self) -> bool:
@@ -151,7 +127,7 @@ class VolumePairList(IPairList):
             **IPairList.refresh_period_parameter(),
             "lookback_days": {
                 "type": "number",
-                "default": 0,
+                "default": None,
                 "description": "Lookback Days",
                 "help": "Number of days to look back at.",
             },
