@@ -1118,9 +1118,9 @@ def test_load_config_stoploss_exchange_limit_ratio(all_conf) -> None:
 @pytest.mark.parametrize(
     "keys",
     [
-        ("exchange", "key", ""),
-        ("exchange", "secret", ""),
-        ("exchange", "password", ""),
+        ("exchange", "key", None),
+        ("exchange", "secret", None),
+        ("exchange", "password", None),
     ],
 )
 def test_load_config_default_subkeys(all_conf, keys) -> None:
@@ -1613,11 +1613,11 @@ def test_remove_exchange_credentials(default_conf) -> None:
     conf = deepcopy(default_conf)
     remove_exchange_credentials(conf["exchange"], False)
 
-    assert conf["exchange"]["key"] != ""
-    assert conf["exchange"]["secret"] != ""
+    assert conf["exchange"]["key"] is not None
+    assert conf["exchange"]["secret"] is not None
 
     remove_exchange_credentials(conf["exchange"], True)
-    assert conf["exchange"]["key"] == ""
-    assert conf["exchange"]["secret"] == ""
-    assert conf["exchange"].get("password", "") == ""
-    assert conf["exchange"].get("uid", "") == ""
+    assert conf["exchange"]["key"] is None
+    assert conf["exchange"]["secret"] is None
+    assert conf["exchange"].get("password") is None
+    assert conf["exchange"].get("uid") is None

@@ -773,8 +773,8 @@ EXCHANGES_SPOT = [exch for exch, params in EXCHANGES.items() if not params.get("
 def exchange_conf():
     config = get_default_conf_usdt((Path(__file__).parent / "testdata").resolve())
     config["exchange"]["pair_whitelist"] = []
-    config["exchange"]["key"] = ""
-    config["exchange"]["secret"] = ""
+    config["exchange"]["apiKey"] = None
+    config["exchange"]["secret"] = None
     config["dry_run"] = False
     config["entry_pricing"]["use_order_book"] = True
     config["exit_pricing"]["use_order_book"] = True

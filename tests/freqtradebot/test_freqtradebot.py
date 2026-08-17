@@ -188,16 +188,16 @@ def test_load_strategy_no_keys(default_conf_usdt, mocker, runmode, caplog) -> No
     strategy_config = freqtrade.strategy.config
     assert id(strategy_config["exchange"]) == id(conf["exchange"])
     # Keys have been removed and are not passed to the exchange
-    assert strategy_config["exchange"]["key"] == ""
-    assert strategy_config["exchange"]["secret"] == ""
+    assert strategy_config["exchange"]["key"] is None
+    assert strategy_config["exchange"]["secret"] is None
 
     assert erm.call_count == 1
     ex_conf = erm.call_args_list[0][1]["exchange_config"]
     assert id(ex_conf) != id(conf["exchange"])
     # Keys are still present
-    assert ex_conf["key"] != ""
+    assert ex_conf["key"] is not None
     assert ex_conf["key"] == default_conf_usdt["exchange"]["key"]
-    assert ex_conf["secret"] != ""
+    assert ex_conf["secret"] is not None
     assert ex_conf["secret"] == default_conf_usdt["exchange"]["secret"]
 
 
