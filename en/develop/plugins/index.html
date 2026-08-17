@@ -2771,7 +2771,7 @@ Please note that These pairlists will only refresh once per day.</p>
 <li><code>max_value</code>: Sets a maximum percentage change threshold. Pairs with a percentage change above this value will be filtered out.</li>
 <li><code>sort_direction</code>: Specifies the order in which pairs are sorted based on their percentage change. Accepts two values: <code>asc</code> for ascending order and <code>desc</code> for descending order.</li>
 <li><code>refresh_period</code>: Defines the interval (in seconds) at which the pairlist will be refreshed. The default is 1800 seconds (30 minutes).</li>
-<li><code>lookback_days</code>: Number of days to look back. When <code>lookback_days</code> is selected, the <code>lookback_timeframe</code> is defaulted to 1 day.</li>
+<li><code>lookback_days</code>: Number of days to look back. <code>lookback_days</code> implies a <code>lookback_timeframe</code> of 1 day - combining it with a different <code>lookback_timeframe</code> will result in an error.</li>
 <li><code>lookback_timeframe</code>: Timeframe to use for the lookback period.</li>
 <li><code>lookback_period</code>: Number of periods to look back at.</li>
 </ul>
@@ -3130,16 +3130,30 @@ To shuffle on every iteration, set <code>"shuffle_frequency"</code> to <code>"it
 <p>Example:</p>
 <p>If <code>DOGE/BTC</code> maximum bid is 0.00000026 and minimum ask is 0.00000027, the ratio is calculated as: <code>1 - bid/ask ~= 0.037</code> which is <code>&gt; 0.005</code> and this pair will be filtered out.</p>
 <h4 id="rangestabilityfilter">RangeStabilityFilter<a class="headerlink" href="#rangestabilityfilter" title="Permanent link">&para;</a></h4>
-<p>Removes pairs where the difference between lowest low and highest high over <code>lookback_days</code> days is below <code>min_rate_of_change</code> or above <code>max_rate_of_change</code>. Since this is a filter that requires additional data, the results are cached for <code>refresh_period</code>.</p>
+<p>Removes pairs where the difference between lowest low and highest high over <code>lookback_period</code> candles of <code>lookback_timeframe</code> (defaults to <code>1d</code>) is below <code>min_rate_of_change</code> or above <code>max_rate_of_change</code>. Since this is a filter that requires additional data, the results are cached for <code>refresh_period</code>.</p>
+<p>For convenience, <code>lookback_days</code> can be used instead, which implies daily candles (equivalent to setting <code>lookback_period</code> with a <code>lookback_timeframe</code> of <code>1d</code>). One of <code>lookback_days</code> or <code>lookback_period</code> must be set - setting both is ambiguous and will result in an error, as does combining <code>lookback_days</code> with a <code>lookback_timeframe</code> other than <code>1d</code>. Setting neither is deprecated and currently falls back to a lookback of 10 days - this fallback will be removed in a future version.</p>
 <p>In the below example:
 If the trading range over the last 10 days is &lt;1% or &gt;99%, remove the pair from the whitelist.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;RangeStabilityFilter&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;lookback_days&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;lookback_timeframe&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1d&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;lookback_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
 <span class="w">        </span><span class="nt">&quot;min_rate_of_change&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.01</span><span class="p">,</span>
 <span class="w">        </span><span class="nt">&quot;max_rate_of_change&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.99</span><span class="p">,</span>
 <span class="w">        </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">86400</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">]</span>
+</code></pre></div>
+<p>The same filter based on a trading range of 72 1h candles (3 days) would look as follows:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;RangeStabilityFilter&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;lookback_timeframe&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1h&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;lookback_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">72</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;min_rate_of_change&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.01</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;max_rate_of_change&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.99</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3600</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">]</span>
 </code></pre></div>
@@ -3150,18 +3164,32 @@ If the trading range over the last 10 days is &lt;1% or &gt;99%, remove the pair
 Additionally, it can also be used to automatically remove pairs with extreme high/low variance over a given amount of time.</p>
 </div>
 <h4 id="volatilityfilter">VolatilityFilter<a class="headerlink" href="#volatilityfilter" title="Permanent link">&para;</a></h4>
-<p>Volatility is the degree of historical variation of a pairs over time, it is measured by the standard deviation of logarithmic daily returns. Returns are assumed to be normally distributed, although actual distribution might be different. In a normal distribution, 68% of observations fall within one standard deviation and 95% of observations fall within two standard deviations. Assuming a volatility of 0.05 means that the expected returns for 20 out of 30 days is expected to be less than 5% (one standard deviation). Volatility is a positive ratio of the expected deviation of return and can be greater than 1.00. Please refer to the wikipedia definition of <a href="https://en.wikipedia.org/wiki/Volatility_(finance)"><code>volatility</code></a>.</p>
-<p>This filter removes pairs if the average volatility over a <code>lookback_days</code> days is below <code>min_volatility</code> or above <code>max_volatility</code>. Since this is a filter that requires additional data, the results are cached for <code>refresh_period</code>.</p>
+<p>Volatility is the degree of historical variation of a pairs over time, it is measured by the standard deviation of logarithmic candle-to-candle returns. Returns are assumed to be normally distributed, although actual distribution might be different. In a normal distribution, 68% of observations fall within one standard deviation and 95% of observations fall within two standard deviations. Assuming a volatility of 0.05 means that the expected returns for 20 out of 30 days is expected to be less than 5% (one standard deviation). Volatility is a positive ratio of the expected deviation of return and can be greater than 1.00. Please refer to the wikipedia definition of <a href="https://en.wikipedia.org/wiki/Volatility_(finance)"><code>volatility</code></a>.</p>
+<p>This filter removes pairs if the average volatility over <code>lookback_period</code> candles of <code>lookback_timeframe</code> (defaults to <code>1d</code>) is below <code>min_volatility</code> or above <code>max_volatility</code>. Since this is a filter that requires additional data, the results are cached for <code>refresh_period</code>.</p>
+<p>For convenience, <code>lookback_days</code> can be used instead, which implies daily candles (equivalent to setting <code>lookback_period</code> with a <code>lookback_timeframe</code> of <code>1d</code>). One of <code>lookback_days</code> or <code>lookback_period</code> must be set - setting both is ambiguous and will result in an error, as does combining <code>lookback_days</code> with a <code>lookback_timeframe</code> other than <code>1d</code>. Setting neither is deprecated and currently falls back to a lookback of 10 days - this fallback will be removed in a future version.</p>
 <p>This filter can be used to narrow down your pairs to a certain volatility or avoid very volatile pairs.</p>
 <p>In the below example:
 If the volatility over the last 10 days is not in the range of 0.05-0.50, remove the pair from the whitelist. The filter is applied every 24h.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;VolatilityFilter&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;lookback_days&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;lookback_timeframe&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1d&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;lookback_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
 <span class="w">        </span><span class="nt">&quot;min_volatility&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.05</span><span class="p">,</span>
 <span class="w">        </span><span class="nt">&quot;max_volatility&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.50</span><span class="p">,</span>
 <span class="w">        </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">86400</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">]</span>
+</code></pre></div>
+<p>The same filter based on the volatility of 72 1h candles (3 days) would look as follows:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;VolatilityFilter&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;lookback_timeframe&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1h&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;lookback_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">72</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;min_volatility&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.05</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;max_volatility&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.50</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3600</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">]</span>
 </code></pre></div>
