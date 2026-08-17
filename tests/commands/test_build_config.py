@@ -51,7 +51,7 @@ def test_start_new_config(mocker, caplog, exchange):
         "trading_mode": "spot",
         "margin_mode": "",
         "exchange_name": exchange,
-        "exchange_key": "sampleKey",
+        "exchange_api_key": "sampleKey",
         "exchange_secret": "Samplesecret",
         "telegram": False,
         "telegram_token": "asdf1244",

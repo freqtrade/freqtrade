@@ -113,7 +113,7 @@
         "name": "binance",
         "api_key": "your_exchange_api_key",
         "secret": "your_exchange_secret",
-        "password": "your_exchange_password_if_necessary",
+        "password": "",
         "log_responses": false,
         // "unknown_fee_rate": 1,
         "ccxt_config": {},

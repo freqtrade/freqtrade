@@ -941,15 +941,13 @@ CONF_SCHEMA = {
                         f"API key for the exchange. {__VIA_ENV} FREQTRADE__EXCHANGE__API_KEY"
                     ),
                     "type": ["string", "null"],
-                    "default": None,
                 },
                 "key": {
                     "description": (
                         f"API key for the exchange. {__VIA_ENV} FREQTRADE__EXCHANGE__KEY"
-                        "Deprecated, use api_key instead."
+                        " Deprecated, use api_key instead."
                     ),
                     "type": ["string", "null"],
-                    "default": None,
                 },
                 "secret": {
                     "description": (
