@@ -8,10 +8,11 @@ import inspect
 import logging
 import signal
 from collections.abc import Coroutine, Generator
+from contextlib import suppress
 from copy import deepcopy
 from datetime import UTC, datetime, timedelta
 from math import floor, isnan
-from threading import Lock
+from threading import Lock, Thread
 from typing import Any, Literal, TypeGuard, TypeVar
 from uuid import uuid4
 
@@ -203,6 +204,7 @@ class Exchange:
         # Due to funding fee fetching.
         self._loop_lock = Lock()
         self.loop = self._init_async_loop()
+        self._pending_close_tasks: set[asyncio.Task] = set()
         self._config: Config = config
 
         # Leverage properties
@@ -310,38 +312,92 @@ class Exchange:
         """
         Destructor - clean up async stuff
         """
-        self.close()
+        # Interpreter shutdown / already-closed loops must not raise from __del__.
+        with suppress(Exception):
+            self.close()
+
+    def _ccxt_client_needs_close(self, ccxt_obj: Any) -> bool:
+        if not ccxt_obj or not inspect.iscoroutinefunction(getattr(ccxt_obj, "close", None)):
+            return False
+        return bool(
+            getattr(ccxt_obj, "session", None) or getattr(ccxt_obj, "socks_proxy_sessions", None)
+        )
+
+    def _run_coroutine_sync(self, coro: Coroutine[Any, Any, Any], timeout: float = 10.0) -> None:
+        """
+        Run ``coro`` on this exchange's dedicated loop.
+
+        ``asyncio.run_until_complete`` cannot start that loop while another
+        loop is already running on this thread (API / telegram / asyncio.run).
+        The previous close() path treated that as "do not close", which leaked
+        the ccxt aiohttp session (#13458).
+        """
+        loop = getattr(self, "loop", None)
+        if loop is None or loop.is_closed():
+            try:
+                asyncio.run(coro)
+            except Exception:
+                coro.close()
+                raise
+            return
+
+        if loop.is_running():
+            try:
+                running = asyncio.get_running_loop()
+            except RuntimeError:
+                running = None
+            if running is loop:
+                # Same thread, our loop is running: waiting would deadlock.
+                task = asyncio.create_task(coro)
+                self._pending_close_tasks.add(task)
+                task.add_done_callback(self._pending_close_tasks.discard)
+                return
+            asyncio.run_coroutine_threadsafe(coro, loop).result(timeout=timeout)
+            return
+
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            with self._loop_lock:
+                loop.run_until_complete(coro)
+            return
+
+        # Another loop is running on this thread; drive ours from a helper thread.
+        error: list[BaseException] = []
+
+        def _runner() -> None:
+            try:
+                with self._loop_lock:
+                    loop.run_until_complete(coro)
+            except BaseException as exc:
+                error.append(exc)
+
+        thread = Thread(target=_runner, name="ft-ccxt-close", daemon=True)
+        thread.start()
+        thread.join(timeout=timeout)
+        if thread.is_alive():
+            raise TimeoutError("Timed out while closing ccxt session.")
+        if error:
+            raise error[0]
+
+    def _close_async_ccxt(self, ccxt_obj: Any, label: str) -> None:
+        if not self._ccxt_client_needs_close(ccxt_obj):
+            return
+        logger.debug("Closing %s ccxt session.", label)
+        try:
+            self._run_coroutine_sync(ccxt_obj.close())
+        except Exception:
+            logger.exception("Exception while closing %s ccxt session", label)
 
     def close(self):
         if self._exchange_ws:
             self._exchange_ws.cleanup()
+            self._exchange_ws = None
 
-        try:
-            generic_loop = asyncio.get_running_loop()
-        except RuntimeError:
-            generic_loop = None
-        loop_running = (getattr(self, "loop", None) and self.loop.is_running()) or (
-            generic_loop is not None and generic_loop.is_running()
-        )
+        self._close_async_ccxt(getattr(self, "_api_async", None), "async")
+        self._close_async_ccxt(getattr(self, "_ws_async", None), "ws")
 
-        if (
-            getattr(self, "_api_async", None)
-            and inspect.iscoroutinefunction(self._api_async.close)
-            and self._api_async.session
-            and not loop_running
-        ):
-            logger.debug("Closing async ccxt session.")
-            self.loop.run_until_complete(self._api_async.close())
-        if (
-            self._ws_async
-            and inspect.iscoroutinefunction(self._ws_async.close)
-            and self._ws_async.session
-            and not loop_running
-        ):
-            logger.debug("Closing ws ccxt session.")
-            self.loop.run_until_complete(self._ws_async.close())
-
-        if self.loop and not self.loop.is_closed():
+        if getattr(self, "loop", None) and not self.loop.is_closed() and not self.loop.is_running():
             self.loop.close()
 
     def _init_async_loop(self) -> asyncio.AbstractEventLoop:

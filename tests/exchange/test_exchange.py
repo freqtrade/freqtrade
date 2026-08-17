@@ -1,4 +1,6 @@
+import asyncio
 import copy
+import gc
 import logging
 import re
 from copy import deepcopy
@@ -229,6 +231,68 @@ def test_destroy(default_conf, mocker, caplog):
     exchange.close()
     # Prevent the __del__ triggered close (at GC time) from touching the now-closed loop.
     exchange._api_async.session = None
+
+    assert closed
+    assert log_has("Closing async ccxt session.", caplog)
+
+
+def _exchange_with_real_async_ccxt(default_conf):
+    """Build Exchange with a real ccxt.pro client (no network)."""
+    conf = copy.deepcopy(default_conf)
+    conf["exchange"]["name"] = "binance"
+    conf["exchange"]["enable_ws"] = False
+    with (
+        patch(f"{EXMS}.validate_config"),
+        patch(f"{EXMS}.reload_markets"),
+        patch(f"{EXMS}.validate_stakecurrency"),
+    ):
+        return Exchange(conf)
+
+
+def test_close_async_ccxt_session_when_another_loop_running(default_conf, caplog):
+    """
+    #13458: close() used to skip await exchange.close() when *any* loop was
+    running in the current thread, leaking the Binance/ccxt aiohttp session.
+    """
+    caplog.set_level(logging.DEBUG)
+    exchange = _exchange_with_real_async_ccxt(default_conf)
+
+    async def _open():
+        exchange._api_async.open()
+        assert exchange._api_async.session is not None
+
+    exchange.loop.run_until_complete(_open())
+
+    async def _close_from_other_loop():
+        exchange.close()
+
+    asyncio.run(_close_from_other_loop())
+
+    assert exchange._api_async.session is None
+    assert log_has("Closing async ccxt session.", caplog)
+
+    # Drop refs so ccxt __del__ runs; the leaked-session warning must not appear.
+    holders = [exchange, exchange._api_async]
+    holders.clear()
+    gc.collect()
+    assert not any("requires to release all resources" in rec.message for rec in caplog.records)
+
+
+def test_close_async_ccxt_socks_proxy_sessions(default_conf, mocker, caplog):
+    caplog.set_level(logging.DEBUG)
+    exchange = get_patched_exchange(mocker, default_conf)
+    closed = False
+
+    async def _close():
+        nonlocal closed
+        closed = True
+
+    exchange._api_async.close = _close
+    exchange._api_async.session = None
+    exchange._api_async.socks_proxy_sessions = {"socks5://localhost": MagicMock()}
+
+    exchange.close()
+    exchange._api_async.socks_proxy_sessions = None
 
     assert closed
     assert log_has("Closing async ccxt session.", caplog)
