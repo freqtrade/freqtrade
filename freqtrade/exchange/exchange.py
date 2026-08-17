@@ -399,8 +399,8 @@ class Exchange:
             ),
             "secret": exchange_config.get("secret"),
             "password": exchange_config.get("password"),
-            "uid": exchange_config.get("uid", ""),
-            "accountId": exchange_config.get("account_id", exchange_config.get("accountId", "")),
+            "uid": exchange_config.get("uid"),
+            "accountId": exchange_config.get("account_id", exchange_config.get("accountId")),
             # DEX attributes:
             "walletAddress": exchange_config.get(
                 "wallet_address", exchange_config.get("walletAddress")

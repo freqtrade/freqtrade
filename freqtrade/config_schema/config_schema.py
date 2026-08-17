@@ -940,37 +940,37 @@ CONF_SCHEMA = {
                     "description": (
                         f"API key for the exchange. {__VIA_ENV} FREQTRADE__EXCHANGE__KEY"
                     ),
-                    "type": "string",
-                    "default": "",
+                    "type": ["string", "null"],
+                    "default": None,
                 },
                 "secret": {
                     "description": (
                         f"API secret for the exchange. {__VIA_ENV} FREQTRADE__EXCHANGE__SECRET"
                     ),
-                    "type": "string",
-                    "default": "",
+                    "type": ["string", "null"],
+                    "default": None,
                 },
                 "password": {
                     "description": (
                         "Password for the exchange, if required. "
                         f"{__VIA_ENV} FREQTRADE__EXCHANGE__PASSWORD"
                     ),
-                    "type": "string",
-                    "default": "",
+                    "type": ["string", "null"],
+                    "default": None,
                 },
                 "uid": {
                     "description": (
                         "User ID for the exchange, if required. "
                         f"{__VIA_ENV} FREQTRADE__EXCHANGE__UID"
                     ),
-                    "type": "string",
+                    "type": ["string", "null"],
                 },
                 "account_id": {
                     "description": (
                         "Account ID for the exchange, if required. "
                         f"{__VIA_ENV} FREQTRADE__EXCHANGE__ACCOUNT_ID"
                     ),
-                    "type": "string",
+                    "type": ["string", "null"],
                 },
                 "wallet_address": {
                     "description": (
@@ -978,14 +978,14 @@ CONF_SCHEMA = {
                         "Usually used by DEX exchanges. "
                         f"{__VIA_ENV} FREQTRADE__EXCHANGE__WALLET_ADDRESS"
                     ),
-                    "type": "string",
+                    "type": ["string", "null"],
                 },
                 "private_key": {
                     "description": (
                         "Private key for the exchange, if required. Usually used by DEX exchanges. "
                         f"{__VIA_ENV} FREQTRADE__EXCHANGE__PRIVATE_KEY"
                     ),
-                    "type": "string",
+                    "type": ["string", "null"],
                 },
                 "pair_whitelist": {
                     "description": "List of whitelisted trading pairs.",
