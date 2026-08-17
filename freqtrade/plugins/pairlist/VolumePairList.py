@@ -125,24 +125,7 @@ class VolumePairList(IPairList):
                 "help": "Maximum value to use for filtering the pairlist.",
             },
             **IPairList.refresh_period_parameter(),
-            "lookback_days": {
-                "type": "number",
-                "default": None,
-                "description": "Lookback Days",
-                "help": "Number of days to look back at.",
-            },
-            "lookback_timeframe": {
-                "type": "string",
-                "default": "",
-                "description": "Lookback Timeframe",
-                "help": "Timeframe to use for lookback.",
-            },
-            "lookback_period": {
-                "type": "number",
-                "default": 0,
-                "description": "Lookback Period",
-                "help": "Number of periods to look back at.",
-            },
+            **IPairList.lookback_parameters(),
         }
 
     def gen_pairlist(self, tickers: Tickers) -> list[str]:

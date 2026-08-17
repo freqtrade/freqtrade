@@ -144,6 +144,33 @@ class IPairList(LoggingMixin, ABC):
             }
         }
 
+    @staticmethod
+    def lookback_parameters(default_period: int = 0) -> dict[str, PairlistParameter]:
+        """
+        Lookback parameters, for Pairlist Handlers supporting a lookback range.
+        :param default_period: Default lookback_period - 0 when the lookback range is optional.
+        """
+        return {
+            "lookback_days": {
+                "type": "number",
+                "default": None,
+                "description": "Lookback Days",
+                "help": "Number of days to look back at. Implies a lookback_timeframe of 1d.",
+            },
+            "lookback_timeframe": {
+                "type": "string",
+                "default": "1d",
+                "description": "Lookback Timeframe",
+                "help": "Timeframe to use for lookback.",
+            },
+            "lookback_period": {
+                "type": "number",
+                "default": default_period,
+                "description": "Lookback Period",
+                "help": "Number of periods to look back at.",
+            },
+        }
+
     def _init_lookback_config(
         self, *, required: bool = False, deprecated_fallback: int = 0
     ) -> None:

@@ -123,24 +123,7 @@ class PercentChangePairList(IPairList):
                 "help": "Sort Pairlist ascending or descending by rate of change.",
             },
             **IPairList.refresh_period_parameter(),
-            "lookback_days": {
-                "type": "number",
-                "default": None,
-                "description": "Lookback Days",
-                "help": "Number of days to look back at.",
-            },
-            "lookback_timeframe": {
-                "type": "string",
-                "default": "1d",
-                "description": "Lookback Timeframe",
-                "help": "Timeframe to use for lookback.",
-            },
-            "lookback_period": {
-                "type": "number",
-                "default": 0,
-                "description": "Lookback Period",
-                "help": "Number of periods to look back at.",
-            },
+            **IPairList.lookback_parameters(),
         }
 
     def gen_pairlist(self, tickers: Tickers) -> list[str]:

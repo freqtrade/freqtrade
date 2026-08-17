@@ -60,24 +60,6 @@ class RangeStabilityFilter(IPairList):
     @staticmethod
     def available_parameters() -> dict[str, PairlistParameter]:
         return {
-            "lookback_days": {
-                "type": "number",
-                "default": None,
-                "description": "Lookback Days",
-                "help": "Number of days to look back at. Implies a lookback_timeframe of 1d.",
-            },
-            "lookback_timeframe": {
-                "type": "string",
-                "default": "1d",
-                "description": "Lookback Timeframe",
-                "help": "Timeframe to use for lookback.",
-            },
-            "lookback_period": {
-                "type": "number",
-                "default": 10,
-                "description": "Lookback Period",
-                "help": "Number of periods to look back at.",
-            },
             "min_rate_of_change": {
                 "type": "number",
                 "default": 0.01,
@@ -98,6 +80,7 @@ class RangeStabilityFilter(IPairList):
                 "help": "Sort Pairlist ascending or descending by rate of change.",
             },
             **IPairList.refresh_period_parameter(),
+            **IPairList.lookback_parameters(default_period=10),
         }
 
     def filter_pairlist(self, pairlist: list[str], tickers: Tickers) -> list[str]:
