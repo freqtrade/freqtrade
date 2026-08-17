@@ -25,7 +25,7 @@ A exchange configuration for "binance" would look as follows:
 ```json
 "exchange": {
     "name": "binance",
-    "key": "your_exchange_key",
+    "api_key": "your_exchange_api_key",
     "secret": "your_exchange_secret",
     "ccxt_config": {},
     "ccxt_async_config": {},
@@ -40,7 +40,7 @@ In case of problems related to rate-limits (usually DDOS Exceptions in your logs
 ```json
 "exchange": {
     "name": "kraken",
-    "key": "your_exchange_key",
+    "api_key": "your_exchange_api_key",
     "secret": "your_exchange_secret",
     "ccxt_config": {"enableRateLimit": true},
     "ccxt_async_config": {
@@ -95,7 +95,7 @@ They can however also be configured via configuration file. Since json doesn't s
 
 ``` json
 // ...
- "key": "<someapikey>",
+ "api_key": "<someapikey>",
  "secret": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBABACAFQA<...>s8KX8=\n-----END PRIVATE KEY-----"
 // ...
 ```
@@ -224,7 +224,7 @@ Kraken Futures uses the exchange id `krakenfutures` and supports isolated future
 ```jsonc
 "exchange": {
     "name": "krakenfutures",
-    "key": "your_exchange_key",
+    "api_key": "your_exchange_api_key",
     "secret": "your_exchange_secret"
 },
 "trading_mode": "futures",
@@ -250,7 +250,7 @@ Kucoin requires a passphrase for each api key, you will therefore need to add th
 ```json
 "exchange": {
     "name": "kucoin",
-    "key": "your_exchange_key",
+    "api_key": "your_exchange_api_key",
     "secret": "your_exchange_secret",
     "password": "your_exchange_api_key_password",
     // ...
@@ -283,7 +283,7 @@ OKX requires a passphrase for each api key, you will therefore need to add this 
 ```json
 "exchange": {
     "name": "okx",
-    "key": "your_exchange_key",
+    "api_key": "your_exchange_api_key",
     "secret": "your_exchange_secret",
     "password": "your_exchange_api_key_password",
     // ...
@@ -364,7 +364,7 @@ Bitget requires a passphrase for each api key, you will therefore need to add th
 ```json
 "exchange": {
     "name": "bitget",
-    "key": "your_exchange_key",
+    "api_key": "your_exchange_api_key",
     "secret": "your_exchange_secret",
     "password": "your_exchange_api_key_password",
     // ...
@@ -511,7 +511,7 @@ If your account is required to use an operatorId, you can set it in the configur
 ``` json
 "exchange": {
         "name": "bitvavo",
-        "key": "",
+        "api_key": "",
         "secret": "",
         "ccxt_config": {
             "options": {

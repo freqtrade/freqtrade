@@ -1273,13 +1273,19 @@
           "description": "Name of the exchange.",
           "type": "string"
         },
-        "key": {
-          "description": "API key for the exchange. Recommended to be set via environment variable FREQTRADE__EXCHANGE__KEY",
+        "api_key": {
+          "description": "API key for the exchange. Recommended to be set via environment variable FREQTRADE__EXCHANGE__API_KEY",
           "type": [
             "string",
             "null"
-          ],
-          "default": null
+          ]
+        },
+        "key": {
+          "description": "API key for the exchange. Recommended to be set via environment variable FREQTRADE__EXCHANGE__KEY Deprecated, use api_key instead.",
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "secret": {
           "description": "API secret for the exchange. Recommended to be set via environment variable FREQTRADE__EXCHANGE__SECRET",

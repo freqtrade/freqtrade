@@ -111,7 +111,7 @@
     ],
     "exchange": {
         "name": "binance",
-        "key": "your_exchange_key",
+        "api_key": "your_exchange_api_key",
         "secret": "your_exchange_secret",
         "password": "",
         "log_responses": false,

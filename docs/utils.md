@@ -70,7 +70,7 @@ Your combined configuration is:
   "stake_currency": "USDT",
   "exchange": {
     "name": "binance",
-    "key": "REDACTED",
+    "api_key": "REDACTED",
     "secret": "REDACTED",
     "ccxt_config": {},
     "ccxt_async_config": {},

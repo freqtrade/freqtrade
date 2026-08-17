@@ -137,8 +137,8 @@ def ask_user_config() -> dict[str, Any]:
         },
         {
             "type": "password",
-            "name": "exchange_key",
-            "message": "Insert Exchange Key",
+            "name": "exchange_api_key",
+            "message": "Insert Exchange API Key",
             "when": lambda x: not x["dry_run"],
         },
         {
@@ -149,7 +149,7 @@ def ask_user_config() -> dict[str, Any]:
         },
         {
             "type": "password",
-            "name": "exchange_key_password",
+            "name": "exchange_api_key_password",
             "message": "Insert Exchange API Key password",
             "when": lambda x: not x["dry_run"] and x["exchange_name"] in ("kucoin", "okx"),
         },
