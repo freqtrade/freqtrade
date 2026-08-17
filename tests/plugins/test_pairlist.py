@@ -1536,6 +1536,26 @@ def test__whitelist_for_active_markets_empty(mocker, whitelist_conf, pairlist, t
         pairlist_handler._whitelist_for_active_markets(["ETH/BTC"])
 
 
+@pytest.mark.parametrize(
+    "lookback_conf",
+    [
+        {},
+        {"lookback_days": 0},
+        {"lookback_period": 0},
+        {"lookback_days": 0, "lookback_period": 0},
+        {"lookback_timeframe": "1d"},
+    ],
+)
+def test_volumepairlist_no_range(mocker, whitelist_conf, lookback_conf):
+    # An explicit lookback of 0 must not enable the lookback range
+    whitelist_conf["pairlists"][0].update(lookback_conf)
+
+    mocker.patch(f"{EXMS}.exchange_has", MagicMock(return_value=True))
+    freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
+    pairlist_handler = freqtrade.pairlists._pairlist_handlers[0]
+    assert pairlist_handler._use_range is False
+    assert pairlist_handler.needstickers is True
+
 def test_volumepairlist_invalid_sortvalue(mocker, whitelist_conf):
     whitelist_conf["pairlists"][0].update({"sort_key": "asdf"})
 
