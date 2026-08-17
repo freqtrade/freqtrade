@@ -52,6 +52,10 @@ class VolatilityFilter(IPairList):
             self._lookback_timeframe = "1d"
             _lookback_period = _lookback_days
         if _lookback_period is None:
+            if "lookback_timeframe" in self._pairlistconfig:
+                raise OperationalException(
+                    f"{self.name} requires lookback_period to be set when using lookback_timeframe."
+                )
             logger.warning(
                 f"DEPRECATED: Using {self.name} without lookback_days or lookback_period is "
                 "deprecated and will result in an error in a future version. "

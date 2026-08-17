@@ -1164,6 +1164,16 @@ def test_VolatilityFilter_error(mocker, whitelist_conf, caplog) -> None:
         r"DEPRECATED: Using VolatilityFilter without lookback_days or lookback_period.*", caplog
     )
 
+    # The fallback does not apply once a lookback_timeframe is given
+    volatility_filter = {"method": "VolatilityFilter", "lookback_timeframe": "1h"}
+    whitelist_conf["pairlists"] = [{"method": "StaticPairList"}, volatility_filter]
+
+    with pytest.raises(
+        OperationalException,
+        match=r"VolatilityFilter requires lookback_period to be set when using lookback_timeframe",
+    ):
+        PairListManager(exchange_mock, whitelist_conf, MagicMock())
+
     volatility_filter = {"method": "VolatilityFilter", "lookback_days": -1}
     whitelist_conf["pairlists"] = [{"method": "StaticPairList"}, volatility_filter]
 
@@ -1702,6 +1712,19 @@ def test_rangestabilityfilter_checks(mocker, default_conf, markets, tickers, cap
         r"DEPRECATED: Using RangeStabilityFilter without lookback_days or lookback_period.*",
         caplog,
     )
+
+    # The fallback does not apply once a lookback_timeframe is given
+    default_conf["pairlists"] = [
+        {"method": "VolumePairList", "number_assets": 10},
+        {"method": "RangeStabilityFilter", "lookback_timeframe": "1h"},
+    ]
+
+    with pytest.raises(
+        OperationalException,
+        match=r"RangeStabilityFilter requires lookback_period to be set when using "
+        r"lookback_timeframe",
+    ):
+        get_patched_freqtradebot(mocker, default_conf)
 
     default_conf["pairlists"] = [
         {"method": "VolumePairList", "number_assets": 10},
