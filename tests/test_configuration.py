@@ -169,7 +169,7 @@ def test_load_config_max_open_trades_zero(default_conf, mocker, caplog) -> None:
 def test_load_config_combine_dicts(default_conf, mocker, caplog) -> None:
     conf1 = deepcopy(default_conf)
     conf2 = deepcopy(default_conf)
-    del conf1["exchange"]["key"]
+    del conf1["exchange"]["api_key"]
     del conf1["exchange"]["secret"]
     del conf2["exchange"]["name"]
     conf2["exchange"]["pair_whitelist"] += ["NANO/BTC"]
@@ -192,7 +192,7 @@ def test_load_config_combine_dicts(default_conf, mocker, caplog) -> None:
 
     exchange_conf = default_conf["exchange"]
     assert validated_conf["exchange"]["name"] == exchange_conf["name"]
-    assert validated_conf["exchange"]["key"] == exchange_conf["key"]
+    assert validated_conf["exchange"]["api_key"] == exchange_conf["api_key"]
     assert validated_conf["exchange"]["secret"] == exchange_conf["secret"]
     assert validated_conf["exchange"]["pair_whitelist"] != conf1["exchange"]["pair_whitelist"]
     assert validated_conf["exchange"]["pair_whitelist"] == conf2["exchange"]["pair_whitelist"]
@@ -203,7 +203,7 @@ def test_load_config_combine_dicts(default_conf, mocker, caplog) -> None:
 def test_from_config(default_conf, mocker, caplog) -> None:
     conf1 = deepcopy(default_conf)
     conf2 = deepcopy(default_conf)
-    del conf1["exchange"]["key"]
+    del conf1["exchange"]["api_key"]
     del conf1["exchange"]["secret"]
     del conf2["exchange"]["name"]
     conf2["exchange"]["pair_whitelist"] += ["NANO/BTC"]
@@ -218,7 +218,7 @@ def test_from_config(default_conf, mocker, caplog) -> None:
 
     exchange_conf = default_conf["exchange"]
     assert validated_conf["exchange"]["name"] == exchange_conf["name"]
-    assert validated_conf["exchange"]["key"] == exchange_conf["key"]
+    assert validated_conf["exchange"]["api_key"] == exchange_conf["api_key"]
     assert validated_conf["exchange"]["secret"] == exchange_conf["secret"]
     assert validated_conf["exchange"]["pair_whitelist"] != conf1["exchange"]["pair_whitelist"]
     assert validated_conf["exchange"]["pair_whitelist"] == conf2["exchange"]["pair_whitelist"]
@@ -1116,31 +1116,29 @@ def test_load_config_stoploss_exchange_limit_ratio(all_conf) -> None:
 
 
 @pytest.mark.parametrize(
-    "keys",
+    "base,key,expected",
     [
-        ("exchange", "key", None),
+        ("exchange", "api_key", None),
         ("exchange", "secret", None),
         ("exchange", "password", None),
     ],
 )
-def test_load_config_default_subkeys(all_conf, keys) -> None:
+def test_load_config_default_subkeys(all_conf, base, key, expected) -> None:
     """
     Test for parameters with default values in sub-paths
     so they can be omitted in the config and the default value
     should is added to the config.
     """
-    # Get first level key
-    key = keys[0]
     # get second level key
-    subkey = keys[1]
+    subkey = key
 
-    del all_conf[key][subkey]
+    del all_conf[base][subkey]
 
-    assert subkey not in all_conf[key]
+    assert subkey not in all_conf[base]
 
     validate_config_schema(all_conf)
-    assert subkey in all_conf[key]
-    assert all_conf[key][subkey] == keys[2]
+    assert subkey in all_conf[base]
+    assert all_conf[base][subkey] == expected
 
 
 def test_pairlist_resolving():
