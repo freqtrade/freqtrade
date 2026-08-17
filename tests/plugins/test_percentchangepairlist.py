@@ -106,7 +106,7 @@ def test_volume_change_pair_list_init_wrong_lookback_period(mocker, rpl_config):
 
     with pytest.raises(
         OperationalException,
-        match=r"ChangeFilter requires lookback_period to not exceed"
+        match=r"PercentChangePairList requires lookback_period to not exceed"
         r" exchange max request size \(\d+\)",
     ):
         get_patched_freqtradebot(mocker, rpl_config)

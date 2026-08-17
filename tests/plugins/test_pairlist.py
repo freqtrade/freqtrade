@@ -1079,13 +1079,13 @@ def test_VolumePairList_range(
             freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
     elif volumefilter_result == "lookback_period_negative":
         with pytest.raises(
-            OperationalException, match=r"VolumeFilter requires lookback_period to be >= 0"
+            OperationalException, match=r"VolumePairList requires lookback_period to be >= 0"
         ):
             freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
     elif volumefilter_result == "lookback_exceeds_exchange_request_size":
         with pytest.raises(
             OperationalException,
-            match=r"VolumeFilter requires lookback_period to not exceed "
+            match=r"VolumePairList requires lookback_period to not exceed "
             r"exchange max request size \([0-9]+\)",
         ):
             freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
@@ -1179,7 +1179,7 @@ def test_VolatilityFilter_error(mocker, whitelist_conf, caplog) -> None:
 
     with pytest.raises(
         OperationalException,
-        match=r"VolatilityFilter requires lookback_period to be >= 1",
+        match=r"VolatilityFilter requires lookback_days to be >= 1",
     ):
         PairListManager(exchange_mock, whitelist_conf, MagicMock())
 
@@ -1555,6 +1555,13 @@ def test_volumepairlist_no_range(mocker, whitelist_conf, lookback_conf):
     pairlist_handler = freqtrade.pairlists._pairlist_handlers[0]
     assert pairlist_handler._use_range is False
     assert pairlist_handler.needstickers is True
+
+    whitelist_conf["pairlists"][0].update({"lookback_days": -1})
+    with pytest.raises(
+        OperationalException, match=r"VolumePairList requires lookback_days to be >= 0"
+    ):
+        get_patched_freqtradebot(mocker, whitelist_conf)
+
 
 def test_volumepairlist_invalid_sortvalue(mocker, whitelist_conf):
     whitelist_conf["pairlists"][0].update({"sort_key": "asdf"})
