@@ -66,7 +66,7 @@ def json_load(datafile: TextIO) -> Any:
     return rapidjson.load(datafile, number_mode=rapidjson.NM_NATIVE)
 
 
-def file_load_json(file: Path):
+def file_load_json(file: Path) -> Any | None:
     if file.suffix != ".gz":
         gzipfile = file.with_suffix(file.suffix + ".gz")
     else:
@@ -158,13 +158,11 @@ def safe_value_fallback(obj: DictMap, key1: str, key2: str | None = None, defaul
     """
     Search a value in obj, return this if it's not None.
     Then search key2 in obj - return that if it's not none - then use default_value.
-    Else falls back to None.
     """
     if key1 in obj and obj[key1] is not None:
         return obj[key1]
-    else:
-        if key2 and key2 in obj and obj[key2] is not None:
-            return obj[key2]
+    elif key2 and key2 in obj and obj[key2] is not None:
+        return obj[key2]
     return default_value
 
 
@@ -192,7 +190,7 @@ def chunks(lst: list[Any], n: int) -> Iterator[list[Any]]:
     Split lst into chunks of the size n.
     :param lst: list to split into chunks
     :param n: number of max elements per chunk
-    :return: None
+    :return: iterator yielding chunks of the list as lists
     """
     for chunk in range(0, len(lst), n):
         yield (lst[chunk : chunk + n])
