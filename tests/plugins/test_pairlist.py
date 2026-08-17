@@ -1537,6 +1537,29 @@ def test__whitelist_for_active_markets_empty(mocker, whitelist_conf, pairlist, t
 
 
 @pytest.mark.parametrize(
+    "pairlist_conf",
+    [
+        {"method": "VolumePairList", "number_assets": 10},
+        {"method": "PercentChangePairList", "number_assets": 10},
+        {"method": "VolatilityFilter"},
+        {"method": "RangeStabilityFilter"},
+    ],
+)
+def test_lookback_parameters_defaults(mocker, whitelist_conf, pairlist_conf):
+    # The lookback defaults must match what the handler resolves to without config
+    whitelist_conf["pairlists"] = [{"method": "StaticPairList"}, pairlist_conf]
+
+    mocker.patch(f"{EXMS}.exchange_has", MagicMock(return_value=True))
+    exchange = get_patched_exchange(mocker, whitelist_conf)
+    handler = PairListManager(exchange, whitelist_conf, MagicMock())._pairlist_handlers[1]
+    params = handler.available_parameters()
+
+    assert handler._lookback_timeframe == params["lookback_timeframe"]["default"]
+    assert handler._lookback_period == params["lookback_period"]["default"]
+    assert params["lookback_days"]["default"] is None
+
+
+@pytest.mark.parametrize(
     "lookback_conf",
     [
         {},
