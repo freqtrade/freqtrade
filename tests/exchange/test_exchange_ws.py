@@ -449,3 +449,51 @@ def test_exchangews_continuous_stopped_task_exception(mocker, caplog):
     assert log_has_re("Unhandled exception in watch task callback for ETH/USDT, 1m", caplog)
 
     exchange_ws.cleanup()
+
+
+def test_exchangews_continuous_stopped_no_unwatch_while_stopping(mocker):
+    config = MagicMock()
+    ccxt_object = MagicMock()
+    ccxt_object.ohlcvs = {}
+    mocker.patch("freqtrade.exchange.exchange_ws.ExchangeWS._start_forever", MagicMock())
+
+    exchange_ws = ExchangeWS(config, ccxt_object)
+    exchange_ws._loop = MagicMock()
+    exchange_ws._loop.is_closed.return_value = False
+    exchange_ws._stopping = True
+
+    def side_effect(coro, loop):
+        coro.close()
+        return MagicMock()
+
+    run_threadsafe = mocker.patch(
+        "freqtrade.exchange.exchange_ws.asyncio.run_coroutine_threadsafe",
+        side_effect=side_effect,
+    )
+    paircomb = ("ETH/USDT", "1m", CandleType.SPOT)
+    exchange_ws._klines_scheduled.add(paircomb)
+    task = MagicMock()
+    task.cancelled.return_value = True
+
+    exchange_ws._continuous_stopped(task, "ETH/USDT", "1m", CandleType.SPOT)
+
+    # No unwatch scheduled - it would re-open the session we're closing.
+    assert run_threadsafe.call_count == 0
+    assert paircomb not in exchange_ws._klines_scheduled
+
+
+async def test_exchangews_unwatch_while_stopping(mocker, caplog):
+    caplog.set_level(logging.DEBUG)
+    config = MagicMock()
+    ccxt_object = MagicMock()
+    ccxt_object.has = {"unWatchOHLCVForSymbols": True}
+    ccxt_object.un_watch_ohlcv_for_symbols = AsyncMock()
+    mocker.patch("freqtrade.exchange.exchange_ws.ExchangeWS._start_forever", MagicMock())
+
+    exchange_ws = ExchangeWS(config, ccxt_object)
+    exchange_ws._stopping = True
+
+    await exchange_ws._unwatch_ohlcv("ETH/BTC", "1m", CandleType.SPOT)
+
+    assert ccxt_object.un_watch_ohlcv_for_symbols.call_count == 0
+    assert log_has_re("Shutting down - skipping unwatch for ETH/BTC, 1m", caplog)
