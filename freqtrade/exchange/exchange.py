@@ -312,6 +312,24 @@ class Exchange:
         """
         self.close()
 
+    def _close_async_ccxt(self, ccxt_object: ccxt_pro.Exchange | None, name: str) -> None:
+        """
+        Release the aiohttp sessions of an async ccxt object.
+        Errors are logged, but don't propagate as it's only called in shutdown phase.
+        :param name: Name of the object - used for logging only.
+        """
+        if (
+            ccxt_object is not None
+            and inspect.iscoroutinefunction(ccxt_object.close)
+            # ccxt warns about either of these being left behind in its destructor.
+            and (ccxt_object.session or getattr(ccxt_object, "socks_proxy_sessions", None))
+        ):
+            logger.debug(f"Closing {name} ccxt session.")
+            try:
+                self.loop.run_until_complete(ccxt_object.close())
+            except Exception as e:
+                logger.warning(f"Error closing {name} ccxt session: {e.__class__.__name__} {e}")
+
     def close(self):
         if self._exchange_ws:
             self._exchange_ws.cleanup()
@@ -320,29 +338,17 @@ class Exchange:
             generic_loop = asyncio.get_running_loop()
         except RuntimeError:
             generic_loop = None
-        loop_running = (getattr(self, "loop", None) and self.loop.is_running()) or (
+        loop = getattr(self, "loop", None)
+        loop_running = (loop and loop.is_running()) or (
             generic_loop is not None and generic_loop.is_running()
         )
 
-        if (
-            getattr(self, "_api_async", None)
-            and inspect.iscoroutinefunction(self._api_async.close)
-            and self._api_async.session
-            and not loop_running
-        ):
-            logger.debug("Closing async ccxt session.")
-            self.loop.run_until_complete(self._api_async.close())
-        if (
-            self._ws_async
-            and inspect.iscoroutinefunction(self._ws_async.close)
-            and self._ws_async.session
-            and not loop_running
-        ):
-            logger.debug("Closing ws ccxt session.")
-            self.loop.run_until_complete(self._ws_async.close())
+        if loop and not loop.is_closed() and not loop_running:
+            self._close_async_ccxt(getattr(self, "_api_async", None), "async")
+            self._close_async_ccxt(self._ws_async, "ws")
 
-        if self.loop and not self.loop.is_closed():
-            self.loop.close()
+        if loop and not loop.is_closed():
+            loop.close()
 
     def _init_async_loop(self) -> asyncio.AbstractEventLoop:
         loop = asyncio.new_event_loop()
