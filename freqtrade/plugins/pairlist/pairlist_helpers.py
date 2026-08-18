@@ -3,6 +3,9 @@ import re
 from freqtrade.constants import Config
 
 
+_VALID_PAIR_RE = re.compile(r"[\w:/-]+")
+
+
 def expand_pairlist(
     wildcardpl: list[str], available_pairs: list[str], keep_invalid: bool = False
 ) -> list[str]:
@@ -31,7 +34,7 @@ def expand_pairlist(
         result = [
             element
             for element in result
-            if re.fullmatch(r"^[\w:/-]+$", element) and "_" not in element
+            if _VALID_PAIR_RE.fullmatch(element) and "_" not in element
         ]
 
     else:
