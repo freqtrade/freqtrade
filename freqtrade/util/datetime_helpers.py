@@ -78,15 +78,22 @@ def dt_from_ts(timestamp: float) -> datetime:
     return datetime.fromtimestamp(timestamp, tz=UTC)
 
 
+_SHORTEN_DATE_SUBS = [
+    (re.compile("seconds?"), "sec"),
+    (re.compile("minutes?"), "min"),
+    (re.compile("hours?"), "h"),
+    (re.compile("days?"), "d"),
+    (re.compile("^an?"), "1"),
+]
+
+
 def shorten_date(_date: str) -> str:
     """
     Trim the date so it fits on small screens
     """
-    new_date = re.sub("seconds?", "sec", _date)
-    new_date = re.sub("minutes?", "min", new_date)
-    new_date = re.sub("hours?", "h", new_date)
-    new_date = re.sub("days?", "d", new_date)
-    new_date = re.sub("^an?", "1", new_date)
+    new_date = _date
+    for pattern, repl in _SHORTEN_DATE_SUBS:
+        new_date = pattern.sub(repl, new_date)
     return new_date
 
 
