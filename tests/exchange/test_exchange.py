@@ -234,6 +234,41 @@ def test_destroy(default_conf, mocker, caplog):
     assert log_has("Closing async ccxt session.", caplog)
 
 
+def test_destroy_socks_session(default_conf, mocker):
+    exchange = get_patched_exchange(mocker, default_conf)
+
+    closed = False
+
+    async def _close():
+        nonlocal closed
+        closed = True
+
+    # ccxt also warns about leftover socks proxy sessions - so these must be closed, too.
+    exchange._api_async.close = _close
+    exchange._api_async.session = None
+    exchange._api_async.socks_proxy_sessions = {"socks5://127.0.0.1:9050": MagicMock()}
+
+    exchange.close()
+
+    assert closed
+
+
+def test_destroy_close_error(default_conf, mocker, caplog):
+    exchange = get_patched_exchange(mocker, default_conf)
+
+    async def _close():
+        raise ValueError("Test error")
+
+    exchange._api_async.close = _close
+    exchange._api_async.session = MagicMock()
+
+    # A failing session close must not prevent the loop from being closed.
+    exchange.close()
+
+    assert log_has("Error closing async ccxt session: ValueError Test error", caplog)
+    assert exchange.loop.is_closed()
+
+
 def test_init_exception(default_conf, mocker):
     default_conf["exchange"]["name"] = "wrong_exchange_name"
 
