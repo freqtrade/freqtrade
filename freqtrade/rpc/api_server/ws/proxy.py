@@ -1,7 +1,9 @@
 from typing import Any
 
 from fastapi import WebSocket as FastAPIWebSocket
+from fastapi import WebSocketDisconnect
 from websockets.asyncio.client import ClientConnection as WebSocket
+from websockets.exceptions import ConnectionClosed
 
 from freqtrade.rpc.api_server.ws.ws_types import WebSocketType
 
@@ -62,7 +64,7 @@ class WebSocketProxy:
         if hasattr(self._websocket, "close"):
             try:
                 return await self._websocket.close(code)
-            except RuntimeError:
+            except (RuntimeError, WebSocketDisconnect, ConnectionClosed):
                 pass
 
     async def accept(self):
