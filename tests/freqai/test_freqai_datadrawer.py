@@ -137,10 +137,10 @@ def test_get_timerange_from_backtesting_live_df_pred_not_found(mocker, freqai_co
         freqai.dd.get_timerange_from_live_historic_predictions()
 
 
-def test_load_historic_predictions_repairs_duplicates(mocker, freqai_conf, caplog):
+def test_load_historic_predictions_repairs(mocker, freqai_conf, caplog):
     """
-    Prediction files written by versions that could duplicate a candle must be repaired on
-    load - otherwise every merge back into the strategy dataframe keeps failing.
+    Prediction files written by older versions can carry duplicated candles, numeric
+    columns as object dtype, or dates as object dtype.
     """
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
@@ -156,7 +156,14 @@ def test_load_historic_predictions_repairs_duplicates(mocker, freqai_conf, caplo
     dupe_dates = dates.insert(3, dates[2])
 
     freqai.dd.historic_predictions[pair] = pd.DataFrame(
-        {"date_pred": dupe_dates, "&-s_close": [1.0, 2.0, 3.0, 3.5, 4.0, 5.0]}
+        {
+            "date_pred": dupe_dates,
+            # numpy scalars written into an object column stay numpy scalars
+            "&-s_close": pd.Series([1.0, 2, np.float64(3.0), 3.5, np.int64(4), 5.0], dtype=object),
+            "do_predict": pd.Series([np.int64(1)] * 6, dtype=object),
+            # class labels are legitimately non-numeric and must survive untouched
+            "&s-up_or_down": pd.Series(["up", "down", "up", "down", "up", "down"], dtype=object),
+        }
     )
     # an old file may also carry object dtype dates
     freqai.dd.historic_predictions["ETH/USD"] = pd.DataFrame(
@@ -174,6 +181,18 @@ def test_load_historic_predictions_repairs_duplicates(mocker, freqai_conf, caplo
     assert hist_pred_df["&-s_close"].iloc[2] == 3.5
     assert list(hist_pred_df.index) == list(range(5))
     assert log_has_re(f"Found 1 duplicated candle.*{pair}.*", caplog)
+
+    # numeric columns are converted back, class labels are left alone
+    assert hist_pred_df["&-s_close"].dtype == "float64"
+    assert hist_pred_df["do_predict"].dtype == "int64"
+    assert hist_pred_df["&s-up_or_down"].dtype == "object"
+    assert list(hist_pred_df["&s-up_or_down"]) == ["up", "down", "down", "up", "down"]
+    assert log_has_re(f"Converting 2 object dtype column.*{pair}.*", caplog)
+
+    # no numpy scalars survive - they'd break the API serialization
+    assert not any(
+        isinstance(value, np.generic) for row in hist_pred_df.values.tolist() for value in row
+    )
 
     # untouched pairs keep working, and get their dtype fixed
     assert freqai.dd.historic_predictions["ETH/USD"]["date_pred"].dtype == "datetime64[ms, UTC]"
