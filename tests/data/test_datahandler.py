@@ -139,6 +139,20 @@ def test_datahandler_normalize_columns_bad_width(testdatadir, width):
             dh._normalize_columns(df, "XRP/USDT:USDT", candle_type)
 
 
+@pytest.mark.parametrize("datahandler", ["feather", "parquet"])
+def test_datahandler_ohlcv_load_unknown_layout(tmp_path, datahandler, caplog):
+    """A file in an unknown layout is skipped - it must not abort loading of all other data."""
+    dh = get_datahandler(tmp_path, datahandler)
+    (tmp_path / "futures").mkdir()
+    filename = dh._pair_data_filename(tmp_path, "XRP/USDT:USDT", "1h", CandleType.MARK)
+    dh._store_dataframe(DataFrame([[1, 2.0, 3.0]], columns=["a", "b", "c"]), filename)
+
+    res = dh.ohlcv_load("XRP/USDT:USDT", "1h", CandleType.MARK)
+    assert res.empty
+    assert list(res.columns) == DEFAULT_DATAFRAME_COLUMNS
+    assert log_has_re(r"Error loading data from .*Unexpected column count 3", caplog)
+
+
 def test_datahandler_funding_rate_legacy_load_and_migrate(testdatadir, tmp_path, caplog):
     """Legacy 6-column funding files load transparently and are rewritten 2-wide."""
     from pyarrow import dataset

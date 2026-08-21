@@ -87,18 +87,20 @@ class ArrowDataHandler(IDataHandler):
                 return self._empty_ohlcv_df(candle_type)
         try:
             pairdata = self._load_ohlcv_dataframe(filename, timeframe, timerange)
+            if pairdata.empty:
+                return self._empty_ohlcv_df(candle_type)
+
+            pairdata = self._normalize_columns(pairdata, pair, candle_type)
+            pairdata = pairdata.astype(dtype=get_candle_dtypes(candle_type))
+            pairdata["date"] = pairdata["date"].dt.as_unit("ms")
+            return pairdata
         except Exception as e:
+            # Also covers files in an unreadable layout - one broken file must not abort
+            # loading of all other data.
             logger.exception(
                 f"Error loading data from {filename}. Exception: {e}. Returning empty dataframe."
             )
             return self._empty_ohlcv_df(candle_type)
-        if pairdata.empty:
-            return self._empty_ohlcv_df(candle_type)
-
-        pairdata = self._normalize_columns(pairdata, pair, candle_type)
-        pairdata = pairdata.astype(dtype=get_candle_dtypes(candle_type))
-        pairdata["date"] = pairdata["date"].dt.as_unit("ms")
-        return pairdata
 
     def _build_arrow_ohlcv_filter(self, timerange: TimeRange | None, timeframe: str):
         """
