@@ -27,8 +27,8 @@ def add_candle_aliases(dataframe: DataFrame, candle_type: CandleType | str | Non
     Add the "open" compatibility alias to funding rate dataframes.
 
     Funding rates used to be stored as candles with the rate in "open" - keeping that
-    column available means existing strategies keep working. It is not stored to disk.
-    No other candle type needs this, as they all carry the full OHLCV set.
+    column available for compatibility reasons.
+    Other candle-types will not need this, as they'll be introduced with correct columns.
     :param dataframe: Dataframe to add the alias to - modified in place
     :param candle_type: Any of the enum CandleType (must match trading mode!)
     :return: The same dataframe, for convenient chaining
