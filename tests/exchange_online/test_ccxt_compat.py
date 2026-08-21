@@ -10,7 +10,11 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from freqtrade.enums import CandleType
-from freqtrade.exchange import timeframe_to_minutes, timeframe_to_prev_date
+from freqtrade.exchange import (
+    timeframe_to_minutes,
+    timeframe_to_prev_date,
+    timeframe_to_resample_freq,
+)
 from freqtrade.exchange.exchange import Exchange, timeframe_to_msecs
 from freqtrade.util import dt_floor_day, dt_now, dt_ts
 from tests.exchange_online.conftest import EXCHANGE_FIXTURE_TYPE
@@ -366,6 +370,37 @@ class TestCCXTExchange:
             timeframe=timeframe,
             candle_type=candle_type,
         )
+
+    def test_ccxt_fetch_open_interest_history(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
+        exchange, exchange_name, exchange_params = exchange_futures
+
+        if not exchange.check_candle_type_support(CandleType.OPEN_INTEREST):
+            pytest.skip(f"{exchange_name} does not support open interest history")
+
+        pair = exchange_params.get("futures_pair", exchange_params["pair"])
+        timeframe = exchange_params["timeframe"]
+        pair_tf = (pair, timeframe, CandleType.OPEN_INTEREST)
+        # Open interest history is short-lived - Binance only serves the last 30 days.
+        since = dt_ts(dt_now() - timedelta(days=2))
+
+        res = exchange.refresh_latest_ohlcv([pair_tf], since_ms=since, drop_incomplete=False)
+        oi = res[pair_tf]
+
+        assert list(oi.columns) == ["date", "open_interest_amount", "open_interest_value"]
+        assert len(oi) > 0
+        # Exchanges report open interest in base currency, quote currency, or both -
+        # but at least one of the two has to carry data.
+        assert not (
+            oi["open_interest_amount"].isna().all() and oi["open_interest_value"].isna().all()
+        ), f"{exchange_name} returned no open interest values at all"
+
+        # The most recent candle must be recent - the series is not allowed to be stale
+        assert oi.iloc[-1]["date"] >= timeframe_to_prev_date(
+            timeframe, dt_now() - timedelta(hours=6)
+        )
+        # Dates are aligned to the timeframe and strictly increasing
+        assert oi["date"].is_monotonic_increasing
+        assert (oi["date"] == oi["date"].dt.floor(timeframe_to_resample_freq(timeframe))).all()
 
     def test_ccxt_fetch_funding_rate_history(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
         exchange, _, exchange_params = exchange_futures
