@@ -371,18 +371,47 @@ class FreqaiDataDrawer:
 
         len_df = len(strat_df)
         hist_preds = self.historic_predictions[pair]
-        index = hist_preds.index[-1:]
         columns = hist_preds.columns
+        last_date = hist_preds["date_pred"].iloc[-1] if not hist_preds.empty else pd.NaT
 
-        # A candle can be handed to FreqAI twice in some  - freqtrade only marks it as seen once the
-        # full strategy callback chain succeeded, so an exception raised after FreqAI ran
-        # re-analyzes the same candle. Overwrite that row instead of appending a duplicate
-        # date, as every value of the last row is (re-)assigned below anyway.
-        if hist_preds.empty or hist_preds["date_pred"].iloc[-1] != strat_df["date"].iloc[-1]:
-            zeros_df = pd.DataFrame(np.zeros((1, len(columns))), index=index, columns=columns)
+        # Determine which candles are missing from the historic predictions. Usually that is
+        # exactly the current one, but the bot can skip candles (a pairlist pass taking longer
+        # than one candle, a pair returning to the whitelist, ...) and it can hand the same
+        # candle over twice.
+        if pd.isna(last_date):
+            new_dates = strat_df["date"].iloc[-1:]
+        elif last_date == strat_df["date"].iloc[-1]:
+            # Already recorded - the assignments below overwrite that row rather than
+            # appending a second one carrying the same date.
+            new_dates = strat_df["date"].iloc[:0]
+        else:
+            new_dates = strat_df.loc[strat_df["date"] > last_date, "date"]
+            if new_dates.empty:
+                # The strategy dataframe ends before the last stored prediction. Appending
+                # would duplicate a date, overwriting would move one backwards - so keep
+                # the predictions we already have for these candles.
+                logger.warning(
+                    f"Last candle for {pair} ({strat_df['date'].iloc[-1]}) predates the "
+                    f"last stored prediction ({last_date}) - keeping the stored predictions."
+                )
+                self.model_return_values[pair] = hist_preds.tail(len_df).reset_index(drop=True)
+                return
+
+        if not new_dates.empty:
+            # Skipped candles get a zeroed placeholder row each, keeping the historic
+            # predictions aligned with the strategy dataframe.
+            # The last row is filled with the prediction below.
+            if len(new_dates) > 1:
+                # Those zeros are indistinguishable from real predictions of 0 further down the line
+                logger.warning(
+                    f"FreqAI did not predict on {len(new_dates) - 1} candle(s) of {pair} "
+                    f"({new_dates.iloc[0]} - {new_dates.iloc[-2]}), filling them with zeros. "
+                    "The bot was either stopped, or a full iteration took longer than one candle."
+                )
+            zeros_df = pd.DataFrame(np.zeros((len(new_dates), len(columns))), columns=columns)
             # A numeric 0 placeholder would degrade the date column to object dtype
             # but we want to keep the date column as datetime type.
-            zeros_df["date_pred"] = pd.Series(pd.NaT, index=index, dtype="datetime64[ms, UTC]")
+            zeros_df["date_pred"] = new_dates.reset_index(drop=True)
             self.historic_predictions[pair] = pd.concat(
                 [hist_preds, zeros_df], ignore_index=True, axis=0
             )
