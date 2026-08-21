@@ -532,10 +532,10 @@ def test_analyze_expires_informative_cache(mocker, default_conf_usdt):
 @pytest.mark.parametrize(
     "runmode, expected",
     [
-        (RunMode.DRY_RUN, [2, 2, 2, 1, 2, 1, 4, 2]),
-        (RunMode.LIVE, [2, 2, 2, 1, 2, 1, 4, 2]),
-        (RunMode.BACKTEST, [2, 4, 2, 2, 2, 2, 4, 8]),
-        (RunMode.HYPEROPT, [2, 4, 2, 2, 2, 2, 4, 8]),
+        (RunMode.DRY_RUN, [2, 2, 2, 1, 2, 1, 4, 2, 1, 1]),
+        (RunMode.LIVE, [2, 2, 2, 1, 2, 1, 4, 2, 1, 1]),
+        (RunMode.BACKTEST, [2, 4, 2, 2, 2, 2, 4, 8, 2, 4]),
+        (RunMode.HYPEROPT, [2, 4, 2, 2, 2, 2, 4, 8, 2, 4]),
     ],
 )
 def test_informative_decorator_cache(mocker, default_conf_usdt, runmode, expected):
@@ -545,6 +545,14 @@ def test_informative_decorator_cache(mocker, default_conf_usdt, runmode, expecte
     test_data_5m = generate_test_data("5m", 40)
     test_data_30m = generate_test_data("30m", 40)
     test_data_1h = generate_test_data("1h", 40)
+    # Funding rates have no high/low/close/volume - just the rate and its "open" alias
+    test_data_1h_funding = pd.DataFrame(
+        {
+            "date": test_data_1h["date"],
+            "funding_rate": test_data_1h["open"],
+            "open": test_data_1h["open"],
+        }
+    )
     data = {
         ("XRP/USDT", "5m", candle_def): test_data_5m,
         ("XRP/USDT", "30m", candle_def): test_data_30m,
@@ -554,6 +562,7 @@ def test_informative_decorator_cache(mocker, default_conf_usdt, runmode, expecte
         ("LTC/USDT", "1h", candle_def): test_data_1h,
         ("ETH/USDT", "1h", candle_def): test_data_1h,
         ("ETH/USDT", "30m", candle_def): test_data_30m,
+        ("ETH/USDT:USDT", "1h", CandleType.FUNDING_RATE): test_data_1h_funding,
     }
     default_conf_usdt["strategy"] = "InformativeDecoratorCacheTest"
     strategy = StrategyResolver.load_strategy(default_conf_usdt)
@@ -562,7 +571,7 @@ def test_informative_decorator_cache(mocker, default_conf_usdt, runmode, expecte
     strategy.dp = DataProvider({}, exchange, None)
     mocker.patch.object(strategy.dp, "current_whitelist", return_value=["XRP/USDT", "LTC/USDT"])
 
-    assert len(strategy._ft_informative) == 5  # Equal to number of decorators used
+    assert len(strategy._ft_informative) == 6  # Equal to number of decorators used
 
     def test_historic_ohlcv(pair, timeframe, candle_type):
         return data.get(
@@ -579,7 +588,8 @@ def test_informative_decorator_cache(mocker, default_conf_usdt, runmode, expecte
     )
     # Number of distinct timeframes seen per pair
     timeframes_per_pair = Counter(pair for pair, _ in strategy.informative_counter)
-    assert len(timeframes_per_pair) == 3  # Each pairs plus fixed ETH/USDT pair
+    # Each whitelist pair, plus the fixed ETH/USDT and BTC/USDT (funding rate) pairs
+    assert len(timeframes_per_pair) == 4
     assert timeframes_per_pair["XRP/USDT"] == 2  # 2 informative timeframes
     assert timeframes_per_pair["LTC/USDT"] == 2  # 2 informative timeframes
     assert timeframes_per_pair["ETH/USDT"] == 2  # 2 informative timeframes
@@ -593,6 +603,8 @@ def test_informative_decorator_cache(mocker, default_conf_usdt, runmode, expecte
     assert (
         strategy.informative_counter["ETH/USDT", "30m"] == expected[1]
     )  # called twice, once for each informative function
+    # Funding rate informative - cached like any other, despite its different columns
+    assert strategy.informative_counter["ETH/USDT:USDT", "1h"] == expected[8]
 
     # Trigger populate indicators again, to see the effect of cache
     _ = strategy.advise_all_indicators(
@@ -604,3 +616,4 @@ def test_informative_decorator_cache(mocker, default_conf_usdt, runmode, expecte
     assert strategy.informative_counter["LTC/USDT", "30m"] == expected[5]
     assert strategy.informative_counter["ETH/USDT", "1h"] == expected[6]
     assert strategy.informative_counter["ETH/USDT", "30m"] == expected[7]
+    assert strategy.informative_counter["ETH/USDT:USDT", "1h"] == expected[9]

@@ -39,6 +39,14 @@ class InformativeDecoratorCacheTest(IStrategy):
 
         return dataframe
 
+    @informative(
+        "1h", "ETH/USDT:USDT", "{column}_{base}_{timeframe}_FR", candle_type="funding_rate"
+    )
+    def populate_indicators_funding_rate(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        self.informative_counter[metadata["pair"], metadata["timeframe"]] += 1
+
+        return dataframe
+
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
         return dataframe
