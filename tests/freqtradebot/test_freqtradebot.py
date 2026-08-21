@@ -5316,32 +5316,34 @@ def test_update_funding_fees(
     date_eight = dt_utc(2021, 9, 1, 8)
     date_sixteen = dt_utc(2021, 9, 1, 16)
     columns = ["date", "open", "high", "low", "close", "volume"]
+    # Funding rates are stored as date + funding_rate (see freqtrade/candle_columns.py)
+    funding_columns = ["date", "funding_rate"]
     # 16:00 entry is actually never used
     # But should be kept in the test to ensure we're filtering correctly.
     funding_rates = {
         "LTC/USDT": DataFrame(
             [
-                [date_midnight, 0.00032583, 0, 0, 0, 0],
-                [date_eight, 0.00024472, 0, 0, 0, 0],
-                [date_sixteen, 0.00024472, 0, 0, 0, 0],
+                [date_midnight, 0.00032583],
+                [date_eight, 0.00024472],
+                [date_sixteen, 0.00024472],
             ],
-            columns=columns,
+            columns=funding_columns,
         ),
         "ETH/USDT": DataFrame(
             [
-                [date_midnight, 0.0001, 0, 0, 0, 0],
-                [date_eight, 0.0001, 0, 0, 0, 0],
-                [date_sixteen, 0.0001, 0, 0, 0, 0],
+                [date_midnight, 0.0001],
+                [date_eight, 0.0001],
+                [date_sixteen, 0.0001],
             ],
-            columns=columns,
+            columns=funding_columns,
         ),
         "XRP/USDT": DataFrame(
             [
-                [date_midnight, 0.00049426, 0, 0, 0, 0],
-                [date_eight, 0.00032715, 0, 0, 0, 0],
-                [date_sixteen, 0.00032715, 0, 0, 0, 0],
+                [date_midnight, 0.00049426],
+                [date_eight, 0.00032715],
+                [date_sixteen, 0.00032715],
             ],
-            columns=columns,
+            columns=funding_columns,
         ),
     }
 
@@ -5419,7 +5421,7 @@ def test_update_funding_fees(
                 sum(
                     trade.amount
                     * mark_prices[trade.pair].iloc[1:2]["open"]
-                    * funding_rates[trade.pair].iloc[1:2]["open"]
+                    * funding_rates[trade.pair].iloc[1:2]["funding_rate"]
                     * multiple
                 )
             )
@@ -5433,7 +5435,7 @@ def test_update_funding_fees(
             sum(
                 trade.amount
                 * mark_prices[trade.pair].iloc[1:2]["open"]
-                * funding_rates[trade.pair].iloc[1:2]["open"]
+                * funding_rates[trade.pair].iloc[1:2]["funding_rate"]
                 * multiple
             )
         )
