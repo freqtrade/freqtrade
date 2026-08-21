@@ -318,7 +318,7 @@ class FreqaiDataDrawer:
         new_pred["date_pred"] = dataframe["date"].reset_index(drop=True)
         # set everything to nan except date_pred
         columns_to_nan = new_pred.columns.difference(["date_pred", "date"])
-        new_pred[columns_to_nan] = None
+        new_pred[columns_to_nan] = np.nan
 
         hist_preds = self.historic_predictions[pair].copy()
 
