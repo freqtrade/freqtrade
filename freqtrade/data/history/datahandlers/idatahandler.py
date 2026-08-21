@@ -132,6 +132,56 @@ class IDataHandler(ABC):
         """
         return DataFrame(columns=get_candle_columns(candle_type))
 
+    @classmethod
+    def _normalize_columns(cls, df: DataFrame, pair: str, candle_type: CandleType) -> DataFrame:
+        """
+        Bring a dataframe read from storage into the layout for this candle type.
+
+        Handles files written in an older layout (e.g. funding rates stored as OHLCV
+        candles with the rate in "open") transparently - they are converted on read and
+        rewritten in the current layout the next time they are stored.
+        :param df: Dataframe as read from disk
+        :param pair: Pair the data is for - used for logging
+        :param candle_type: Any of the enum CandleType
+        :return: DataFrame with the canonical columns for this candle type
+        :raises ValueError: if the layout cannot be interpreted
+        """
+        columns = get_candle_columns(candle_type)
+        # Current layout - project and reorder. Checked first so a file that carries both
+        # the current columns and stale legacy ones is read as the current layout.
+        if set(columns).issubset(df.columns):
+            return df.loc[:, columns]
+        if candle_type == CandleType.FUNDING_RATE and set(OHLCV_COLUMNS).issubset(df.columns):
+            # Legacy layout, correctly named - the rate lives in "open"
+            logger.debug(f"Migrating legacy funding rate columns for {pair} on read.")
+            return df.rename(columns=FUNDING_RATE_LEGACY_RENAME).loc[:, columns]
+        return cls._normalize_columns_positional(df, pair, candle_type)
+
+    @classmethod
+    def _normalize_columns_positional(
+        cls, df: DataFrame, pair: str, candle_type: CandleType
+    ) -> DataFrame:
+        """
+        Width-based variant of _normalize_columns, for stores that don't persist column names.
+        :param df: Dataframe as read from disk
+        :param pair: Pair the data is for - used for logging
+        :param candle_type: Any of the enum CandleType
+        :return: DataFrame with the canonical columns for this candle type
+        :raises ValueError: if the width matches neither the current nor the legacy layout
+        """
+        columns = get_candle_columns(candle_type)
+        if df.shape[1] == len(columns):
+            df.columns = columns
+            return df
+        if candle_type == CandleType.FUNDING_RATE and df.shape[1] == len(OHLCV_COLUMNS):
+            logger.debug(f"Migrating legacy funding rate columns for {pair} on read.")
+            df.columns = OHLCV_COLUMNS
+            return df.rename(columns=FUNDING_RATE_LEGACY_RENAME).loc[:, columns]
+        raise ValueError(
+            f"Unexpected column count {df.shape[1]} for {pair}, {candle_type} - "
+            f"expected {len(columns)}."
+        )
+
     def ohlcv_purge(self, pair: str, timeframe: str, candle_type: CandleType) -> bool:
         """
         Remove data for this pair
