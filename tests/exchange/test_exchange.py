@@ -3145,6 +3145,48 @@ def test_refresh_latest_ohlcv_funding_rate(mocker, default_conf_usdt, caplog) ->
     assert log_has_re(r"Wrong funding rate timeframe 8h for pair IOTA/USDT:USDT", caplog)
     assert not log_has_re(r"Wrong funding rate timeframe 8h for pair XRP/USDT:USDT", caplog)
     assert exchange._api_async.fetch_ohlcv.call_count == 0
+    # Funding rates carry a single value - plus "open" as backwards-compatible alias
+    for df in res.values():
+        assert list(df.columns) == ["date", "funding_rate", "open"]
+        assert (df["open"] == df["funding_rate"]).all()
+
+
+def test_refresh_latest_ohlcv_funding_rate_schema(mocker, default_conf_usdt, testdatadir) -> None:
+    """Live funding rate dataframes must be schema-identical to disk-loaded ones,
+    including after a cache merge - otherwise strategies break mid-session."""
+    from freqtrade.data.history import get_datahandler
+
+    ohlcv = generate_test_data_raw("1h", 24, "2025-01-02 12:00:00+00:00")
+    funding_data = [{"timestamp": x[0], "fundingRate": x[1]} for x in ohlcv]
+
+    exchange = get_patched_exchange(mocker, default_conf_usdt)
+    exchange._api_async.fetch_funding_rate_history = get_mock_coro(funding_data)
+
+    pair_tf = ("XRP/USDT:USDT", "1h", CandleType.FUNDING_RATE)
+    first = exchange.refresh_latest_ohlcv([pair_tf], cache=True)[pair_tf]
+    # Second refresh goes through the concat/clean cache-merge path
+    second = exchange.refresh_latest_ohlcv([pair_tf], cache=True)[pair_tf]
+
+    on_disk = get_datahandler(testdatadir, "feather").ohlcv_load(
+        "XRP/USDT:USDT", "1h", CandleType.FUNDING_RATE, fill_missing=False
+    )
+    assert list(first.columns) == list(on_disk.columns) == ["date", "funding_rate", "open"]
+    assert list(second.columns) == list(on_disk.columns)
+    assert (second["open"] == second["funding_rate"]).all()
+
+
+async def test__fetch_funding_rate_history(default_conf, mocker):
+    """Funding rates are fetched into the columns they are stored in"""
+    api_mock = MagicMock()
+    api_mock.fetch_funding_rate_history = get_mock_coro(
+        [
+            {"timestamp": 1630454400000, "fundingRate": -0.000008},
+            {"timestamp": 1630458000000, "fundingRate": -0.000004},
+        ]
+    )
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    res = await exchange._fetch_funding_rate_history("XRP/USDT:USDT", "1h", limit=2)
+    assert res == [[1630454400000, -0.000008], [1630458000000, -0.000004]]
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
