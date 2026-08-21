@@ -83,7 +83,7 @@ class ArrowDataHandler(IDataHandler):
                 self._datadir, pair, timeframe, candle_type=candle_type, no_timeframe_modify=True
             )
             if not filename.exists():
-                return DataFrame(columns=self._columns)
+                return self._empty_ohlcv_df(candle_type)
         try:
             pairdata = self._load_ohlcv_dataframe(filename, timeframe, timerange)
             pairdata.columns = self._columns
@@ -102,7 +102,7 @@ class ArrowDataHandler(IDataHandler):
             logger.exception(
                 f"Error loading data from {filename}. Exception: {e}. Returning empty dataframe."
             )
-            return DataFrame(columns=self._columns)
+            return self._empty_ohlcv_df(candle_type)
 
     def _build_arrow_ohlcv_filter(self, timerange: TimeRange | None, timeframe: str):
         """

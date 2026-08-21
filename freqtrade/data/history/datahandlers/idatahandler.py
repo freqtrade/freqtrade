@@ -123,6 +123,15 @@ class IDataHandler(ABC):
         :return: DataFrame with ohlcv data, or empty DataFrame
         """
 
+    @classmethod
+    def _empty_ohlcv_df(cls, candle_type: CandleType) -> DataFrame:
+        """
+        Empty dataframe carrying the canonical columns for this candle type.
+        :param candle_type: Any of the enum CandleType (must match trading mode!)
+        :return: Empty DataFrame
+        """
+        return DataFrame(columns=get_candle_columns(candle_type))
+
     def ohlcv_purge(self, pair: str, timeframe: str, candle_type: CandleType) -> bool:
         """
         Remove data for this pair

@@ -64,22 +64,13 @@ class JsonDataHandler(IDataHandler):
                 self._datadir, pair, timeframe, candle_type=candle_type, no_timeframe_modify=True
             )
             if not filename.exists():
-                return DataFrame(columns=self._columns)
+                return self._empty_ohlcv_df(candle_type)
         try:
             pairdata = read_json(filename, orient="values")
             pairdata.columns = self._columns
         except ValueError:
             logger.error(f"Could not load data for {pair}.")
-            return DataFrame(columns=self._columns)
-        pairdata = pairdata.astype(
-            dtype={
-                "open": "float",
-                "high": "float",
-                "low": "float",
-                "close": "float",
-                "volume": "float",
-            }
-        )
+            return self._empty_ohlcv_df(candle_type)
         pairdata["date"] = to_datetime(pairdata["date"], unit="ms", utc=True).dt.as_unit("ms")
         return pairdata
 
