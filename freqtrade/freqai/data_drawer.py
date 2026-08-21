@@ -16,6 +16,7 @@ import rapidjson
 from joblib.externals import cloudpickle
 from numpy.typing import NDArray
 from pandas import DataFrame
+from pandas.api.types import is_numeric_dtype
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import Config
@@ -194,28 +195,59 @@ class FreqaiDataDrawer:
                 logger.warning("FreqAI successfully loaded the backup historical predictions file.")
 
             for pair, pair_df in self.historic_predictions.items():
-                if "date_pred" not in pair_df.columns:
-                    continue
-                if pair_df["date_pred"].dtype.kind != "M":
-                    # Predictions written by older versions can carry an object dtype
-                    # date column - convert once at load so downstream merges work.
-                    pair_df["date_pred"] = pd.to_datetime(
-                        pair_df["date_pred"], utc=True
-                    ).dt.as_unit("ms")
-                # Predictions written by versions that could duplicate a candle would fail
-                # every merge back into the strategy dataframe - repair them on load.
-                duplicates = pair_df["date_pred"].duplicated(keep="last")
-                if duplicates.any():
-                    logger.warning(
-                        f"Found {duplicates.sum()} duplicated candle(s) in the historic "
-                        f"predictions of {pair} - keeping the most recent prediction each."
-                    )
-                    self.historic_predictions[pair] = pair_df[~duplicates].reset_index(drop=True)
+                self.historic_predictions[pair] = self._repair_historic_predictions(pair, pair_df)
 
         else:
             logger.info("Could not find existing historic_predictions, starting from scratch")
 
         return exists
+
+    @staticmethod
+    def _ensure_date_pred_dtype(df: DataFrame) -> None:
+        """
+        Convert an object dtype date_pred column to datetime. Pandas refuses to merge on
+        object dtype dates, so predictions written by older versions must be converted.
+        :param df: DataFrame = frame carrying a date_pred column, converted in place
+        """
+        if df["date_pred"].dtype.kind != "M":
+            df["date_pred"] = pd.to_datetime(df["date_pred"], utc=True).dt.as_unit("ms")
+
+    def _repair_historic_predictions(self, pair: str, pair_df: DataFrame) -> DataFrame:
+        """
+        Repair a historic prediction frame restored from disk. Files written by older
+        versions can carry numeric columns as object dtype, dates as object dtype, or
+        duplicated candles - each of which breaks either the merge back into the strategy
+        dataframe or the API serialization further down the line.
+        :param pair: str = pair the predictions belong to, used for logging
+        :param pair_df: DataFrame = historic predictions as restored from disk
+        :return: DataFrame = the repaired predictions
+        """
+        object_cols = [col for col in pair_df.columns if pair_df[col].dtype == "object"]
+        if object_cols:
+            inferred = pair_df[object_cols].infer_objects()
+            numeric_cols = [col for col in object_cols if is_numeric_dtype(inferred[col])]
+            if numeric_cols:
+                logger.info(
+                    f"Converting {len(numeric_cols)} object dtype column(s) in the historic "
+                    f"predictions of {pair} back to numeric dtypes."
+                )
+                pair_df[numeric_cols] = inferred[numeric_cols]
+
+        if "date_pred" not in pair_df.columns:
+            return pair_df
+
+        self._ensure_date_pred_dtype(pair_df)
+        # Predictions written by versions that could duplicate a candle would fail every
+        # merge back into the strategy dataframe.
+        duplicates = pair_df["date_pred"].duplicated(keep="last")
+        if duplicates.any():
+            logger.warning(
+                f"Found {duplicates.sum()} duplicated candle(s) in the historic "
+                f"predictions of {pair} - keeping the most recent prediction each."
+            )
+            pair_df = pair_df[~duplicates].reset_index(drop=True)
+
+        return pair_df
 
     def save_historic_predictions_to_disk(self):
         """
@@ -468,10 +500,9 @@ class FreqaiDataDrawer:
         """
         df = self.model_return_values[pair]
         to_keep = [col for col in dataframe.columns if not col.startswith("&")]
-        if df["date_pred"].dtype.kind != "M":
-            # Fallback - object dtype dates are normally converted when restoring from
-            # disk, but pandas refuses to merge on them, so guard here as well.
-            df["date_pred"] = pd.to_datetime(df["date_pred"], utc=True).dt.as_unit("ms")
+        # Fallback - dates are normally converted when restoring from disk, but guard
+        # here as well since the merge below depends on it.
+        self._ensure_date_pred_dtype(df)
         # Merge on the candle date (not on the index) to ensure alignment in case of bad
         # strategy handling like dropping candles or reindexing.
         dataframe_new = pd.merge(
