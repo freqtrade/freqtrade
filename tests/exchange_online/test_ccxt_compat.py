@@ -404,16 +404,23 @@ class TestCCXTExchange:
         assert row2["date"] == hour2 or row2["date"] == h8_hour2
         assert row3["date"] == hour3 or row3["date"] == h8_hour3
 
+        # Funding rates are stored as "funding_rate" - "open" remains as a legacy alias
+        assert list(rate.columns) == ["date", "funding_rate", "open"]
+        assert (rate["open"] == rate["funding_rate"]).all()
+
         # Test For last 4 hours
         # Avoids random test-failure when funding-fees are 0 for a few hours.
         assert (
-            row0["open"] != 0.0 or row1["open"] != 0.0 or row2["open"] != 0.0 or row3["open"] != 0.0
+            row0["funding_rate"] != 0.0
+            or row1["funding_rate"] != 0.0
+            or row2["funding_rate"] != 0.0
+            or row3["funding_rate"] != 0.0
         )
         # We expect funding rates to be different from 0.0 - or moving around.
         assert (
-            rate["open"].max() != 0.0
-            or rate["open"].min() != 0.0
-            or (rate["open"].min() != rate["open"].max())
+            rate["funding_rate"].max() != 0.0
+            or rate["funding_rate"].min() != 0.0
+            or (rate["funding_rate"].min() != rate["funding_rate"].max())
         )
 
     def test_ccxt_fetch_mark_price_history(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
