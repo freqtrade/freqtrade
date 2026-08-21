@@ -315,17 +315,18 @@ class FreqaiDataDrawer:
         new_pred["date_pred"] = pd.to_datetime(new_pred["date_pred"])
         hist_preds["date_pred"] = pd.to_datetime(hist_preds["date_pred"])
 
-        # find the closest common date between new_pred and historic predictions
+        # Find the closest common date between new_pred and historic predictions
         # and cut off the new_pred dataframe at that date
-        common_dates = pd.merge(new_pred, hist_preds, on="date_pred", how="inner")
-        if len(common_dates.index) > 0:
-            new_pred = new_pred.iloc[len(common_dates) :]
-        else:
-            logger.warning(
-                "No common dates found between new predictions and historic "
-                "predictions. You likely left your FreqAI instance offline "
-                f"for more than {len(dataframe.index)} candles."
-            )
+        last_hist_date = hist_preds["date_pred"].max()
+        if not new_pred.empty:
+            if pd.isna(last_hist_date) or last_hist_date < new_pred["date_pred"].iloc[0]:
+                logger.warning(
+                    "No common dates found between new predictions and historic "
+                    "predictions. You likely left your FreqAI instance offline "
+                    f"for more than {len(dataframe.index)} candles."
+                )
+            else:
+                new_pred = new_pred[new_pred["date_pred"] > last_hist_date]
 
         # Pandas warns that its keeping dtypes of non NaN columns...
         # yea we know and we already want that behavior. Ignoring.
