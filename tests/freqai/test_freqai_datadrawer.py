@@ -137,6 +137,51 @@ def test_get_timerange_from_backtesting_live_df_pred_not_found(mocker, freqai_co
         freqai.dd.get_timerange_from_live_historic_predictions()
 
 
+def test_load_historic_predictions_repairs_duplicates(mocker, freqai_conf, caplog):
+    """
+    Prediction files written by versions that could duplicate a candle must be repaired on
+    load - otherwise every merge back into the strategy dataframe keeps failing.
+    """
+    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
+    exchange = get_patched_exchange(mocker, freqai_conf)
+    strategy.dp = DataProvider(freqai_conf, exchange)
+    freqai = strategy.freqai
+    freqai.dk = FreqaiDataKitchen(freqai_conf)
+
+    pair = "BTC/USD"
+    dates = pd.date_range(start="2025-09-01", periods=5, freq="D", tz="UTC").astype(
+        "datetime64[ms, UTC]"
+    )
+    # 2025-09-03 was predicted twice, the second prediction is the valid one
+    dupe_dates = dates.insert(3, dates[2])
+
+    freqai.dd.historic_predictions[pair] = pd.DataFrame(
+        {"date_pred": dupe_dates, "&-s_close": [1.0, 2.0, 3.0, 3.5, 4.0, 5.0]}
+    )
+    # an old file may also carry object dtype dates
+    freqai.dd.historic_predictions["ETH/USD"] = pd.DataFrame(
+        {"date_pred": dates.astype(object), "&-s_close": range(5)}
+    )
+    freqai.dd.save_historic_predictions_to_disk()
+    freqai.dd.historic_predictions = {}
+
+    assert freqai.dd.load_historic_predictions_from_disk()
+
+    hist_pred_df = freqai.dd.historic_predictions[pair]
+    assert not hist_pred_df["date_pred"].duplicated().any()
+    assert list(hist_pred_df["date_pred"]) == list(dates)
+    # the most recent prediction of the duplicated candle survived
+    assert hist_pred_df["&-s_close"].iloc[2] == 3.5
+    assert list(hist_pred_df.index) == list(range(5))
+    assert log_has_re(f"Found 1 duplicated candle.*{pair}.*", caplog)
+
+    # untouched pairs keep working, and get their dtype fixed
+    assert freqai.dd.historic_predictions["ETH/USD"]["date_pred"].dtype == "datetime64[ms, UTC]"
+    assert len(freqai.dd.historic_predictions["ETH/USD"]) == 5
+
+    shutil.rmtree(Path(freqai.dk.full_path))
+
+
 def test_set_initial_return_values(mocker, freqai_conf):
     """
     Simple test of the set initial return values that ensures
