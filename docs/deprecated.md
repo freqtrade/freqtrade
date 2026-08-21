@@ -151,18 +151,16 @@ We do however recommend switching to other supported model libraries like LightG
 With version 2026.8, funding rate data is stored with the columns it actually has - `date` and `funding_rate`.
 Previously it was stored as a regular candle, with the rate in `open` and `high`, `low`, `close` and `volume` all set to 0.
 
-Existing data does not need to be migrated. Files in the old layout are detected and converted while reading, and are rewritten in the new layout the next time they are stored (e.g. on the next `freqtrade download-data` run).
+Existing data does not need to be actively migrated. Files in the old layout are detected and converted while reading, and are rewritten in the new layout the next time they are stored (e.g. on the next `freqtrade download-data` run).
 
 ### Funding rate - Strategy changes
 
-Strategies using funding rate data via `dp.get_pair_dataframe(..., candle_type="funding_rate")` or `@informative("1h", candle_type="funding_rate")` should use the `funding_rate` column:
+Strategies using funding rate data via `dp.get_pair_dataframe(..., candle_type="funding_rate")` or `@informative("1h", candle_type="funding_rate")` should use the `funding_rate` column instead of `open`.
 
-``` python
-funding_rates = self.dp.get_pair_dataframe(
-    pair=metadata['pair'], timeframe='1h', candle_type="funding_rate"
-)
-dataframe['historic_funding_rate'] = funding_rates['funding_rate']
-```
-
-`open` remains available as a deprecated alias of `funding_rate`, so existing strategies continue to work - but the `open` alias will be removed in a future version.
+`open` remains available as a deprecated alias of `funding_rate` - but it will be removed in a future version.
 The `high`, `low`, `close` and `volume` columns only ever contained 0 for funding rates and are no longer present.
+
+!!! Warning "Funding rate dataframes not padded"
+    Funding rate dataframes contain one row per funding event (usually every 1h, 4h, or 8h) - in backtesting as well as in dry/live.  
+    Strategies must therefore merge funding rates onto the dataframe by date - a direct column assignment aligns the values by position and will produce wrong (or mostly `NaN`) results.  
+    Refer to the corresponding section in the [strategy customization guide](strategy-customization.md#historic-funding-rate-data) for details and examples.
