@@ -436,6 +436,71 @@ def test_append_model_predictions_keeps_date_dtype(mocker, freqai_conf):
     assert result["date"].dtype == "datetime64[ms, UTC]"
 
 
+def test_append_model_predictions_same_candle_twice(mocker, freqai_conf):
+    """
+    freqtrade only marks a candle as seen once the whole strategy callback chain succeeded,
+    so an exception raised after FreqAI ran makes it re-analyze the same candle.
+    """
+    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
+    exchange = get_patched_exchange(mocker, freqai_conf)
+    strategy.dp = DataProvider(freqai_conf, exchange)
+    freqai = strategy.freqai
+    freqai.dk = FreqaiDataKitchen(freqai_conf)
+    dk = freqai.dk
+    dk.data["labels_mean"] = {"&-s_close": 0.5}
+    dk.data["labels_std"] = {"&-s_close": 0.1}
+    dk.data["extra_returns_per_train"] = {}
+    dk.DI_values = [0.4]
+
+    pair = "BTC/USD"
+    dates = pd.date_range(start="2023-09-01", periods=5, freq="D", tz="UTC").astype(
+        "datetime64[ms, UTC]"
+    )
+
+    freqai.dd.historic_predictions[pair] = pd.DataFrame(
+        {
+            "&-s_close": [1.0] * 4,
+            "&-s_close_mean": [0.5] * 4,
+            "&-s_close_std": [0.1] * 4,
+            "do_predict": [1] * 4,
+            "DI_values": [0.2] * 4,
+            "high_price": [2.0] * 4,
+            "low_price": [1.0] * 4,
+            "close_price": [1.5] * 4,
+            "date_pred": dates[:-1],
+        }
+    )
+
+    dataframe = pd.DataFrame(
+        {
+            "date": dates,
+            "high": range(1, 6),
+            "low": range(1, 6),
+            "close": range(1, 6),
+            "&-s_close": [None] * 5,
+        }
+    )
+    predictions = pd.DataFrame({"&-s_close": [2.0] * 5})
+
+    # same candle handed over three times, as happens while the strategy keeps raising
+    for _ in range(3):
+        freqai.dd.append_model_predictions(pair, predictions, np.array([1] * 5), dk, dataframe)
+
+    hist_pred_df = freqai.dd.historic_predictions[pair]
+
+    assert not hist_pred_df["date_pred"].duplicated().any()
+    assert hist_pred_df.shape[0] == 5
+    assert hist_pred_df["date_pred"].iloc[-1] == dates[-1]
+    # the row is overwritten, not left as the zero placeholder
+    assert hist_pred_df["&-s_close"].iloc[-1] == 2.0
+    assert hist_pred_df["close_price"].iloc[-1] == 5
+
+    # and the predictions still merge back onto the strategy dataframe
+    result = freqai.dd.attach_return_values_to_return_dataframe(pair, dataframe)
+    assert len(result) == len(dataframe)
+    assert list(result["date"]) == list(result["date_pred"])
+
+
 def test_attach_return_values_object_date_dtype(mocker, freqai_conf):
     """
     Predictions restored from disk (written by older versions) can carry an object dtype
