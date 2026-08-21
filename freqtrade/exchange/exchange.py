@@ -3651,6 +3651,8 @@ class Exchange:
         if filename.is_file():
             try:
                 tiers = file_load_json(filename)
+                if tiers is None:
+                    return None
                 updated = tiers.get("updated")
                 if updated:
                     updated_dt = parser.parse(updated)

@@ -33,6 +33,7 @@ class Binance(Exchange):
     """
 
     _ft_has: FtHas = {
+        "always_require_api_keys": True,  # Keep API keys in dry-run for market data downloads
         "stoploss_on_exchange": True,
         "stop_price_param": "stopPrice",
         "stop_price_prop": "stopPrice",
