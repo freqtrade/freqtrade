@@ -742,8 +742,8 @@ class IFreqaiModel(ABC):
     def inference_timer(self, do: Literal["start", "stop"] = "start", pair: str = ""):
         """
         Timer designed to track the cumulative time spent in FreqAI for one pass through
-        the whitelist. This will check if the time spent is more than 1/4 the time
-        of a single candle, and if so, it will warn the user of degraded performance
+        the whitelist. Warnings about degraded Performance will be tracked by
+        freqtradebot independent of freqAI.
         """
         if do == "start":
             self.pair_it += 1
