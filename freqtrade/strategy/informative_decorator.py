@@ -6,7 +6,7 @@ from typing import Any, NoReturn
 from cachetools import TLRUCache
 from pandas import DataFrame
 
-from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS
+from freqtrade.candle_columns import get_candle_columns
 from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
@@ -149,9 +149,14 @@ def _format_pair_name(config, pair: str, market: dict[str, Any] | None = None) -
     ).upper()
 
 
-def _informative_dataframe_fingerprint(dataframe: DataFrame) -> tuple[Any, ...]:
+def _informative_dataframe_fingerprint(
+    dataframe: DataFrame, candle_type: CandleType | None
+) -> tuple[Any, ...]:
     last_candle = dataframe.iloc[-1]
-    return (len(dataframe), *(last_candle[column] for column in DEFAULT_DATAFRAME_COLUMNS))
+    return (
+        len(dataframe),
+        *(last_candle[column] for column in get_candle_columns(candle_type)),
+    )
 
 
 def _raise_reserved_column_name() -> NoReturn:
@@ -194,7 +199,7 @@ def _get_populated_informative_dataframe(
         _raise_reserved_column_name()
 
     if cache is not None:
-        fingerprint = _informative_dataframe_fingerprint(dataframe)
+        fingerprint = _informative_dataframe_fingerprint(dataframe, cache_key.candle_type)
         cached: _InformativeCacheEntry | None = cache.get(cache_key)
         if cached is not None and cached.fingerprint == fingerprint:
             return cached.prepared.dataframe
