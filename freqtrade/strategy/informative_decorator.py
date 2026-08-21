@@ -104,7 +104,10 @@ def informative(
     * {column} - name of dataframe column.
     * {timeframe} - timeframe of informative dataframe.
     :param ffill: ffill dataframe after merging informative pair.
-    :param candle_type: '', mark, index, premiumIndex, or funding_rate
+    :param candle_type: '', spot, futures, mark, index, premiumIndex, or funding_rate.
+        Attention: Availability for non-spot/futures candle-types across exchanges may vary.
+           funding_rate candles only contain the "funding_rate" column (open for historic reasons)
+           All other columns will be missing from this dataframe.
     :param cache: Cache populated indicators in dry/live mode while the latest informative candle
                   remains unchanged. Entries expire after two effective informative timeframes
                   without an update. Disable for methods that use external state, have side effects,

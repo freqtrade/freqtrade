@@ -61,6 +61,7 @@ freqtrade download-data --exchange binance --pairs ".*/USDT"
 * Use `--timeframes` to specify what timeframe download the historical candle (OHLCV) data for. Default is `--timeframes 1m 5m` which will download 1-minute and 5-minute data.
 * To use exchange, timeframe and list of pairs as defined in your configuration file, use the `-c/--config` option. With this, the script uses the whitelist defined in the config as the list of currency pairs to download data for and does not require the pairs.json file. You can combine `-c/--config` with most other options.
 * When downloading futures data (`--trading-mode futures` or a configuration specifying futures mode), freqtrade will automatically download the necessary candle types (e.g. `mark` and `funding_rate` candles) unless specified otherwise via `--candle-types`.
+* Funding rate data is stored with a `date` and a `funding_rate` column - unlike the other candle types, which use the regular OHLCV columns. Data downloaded with an older version is read transparently and rewritten in the current layout the next time it's stored, so no manual migration is needed.
 
 ??? Note "Permission denied errors"
     If your configuration directory `user_data` was made by docker, you may get the following error:

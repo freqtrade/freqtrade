@@ -145,3 +145,24 @@ We do however recommend switching to other supported model libraries like LightG
 * [CatboostRegressor](https://github.com/freqtrade/freqtrade/blob/c6f3b0081927e161a16b116cc47fb663f7831d30/freqtrade/freqai/prediction_models/CatboostRegressor.py)
 * [CatboostClassifier](https://github.com/freqtrade/freqtrade/blob/c6f3b0081927e161a16b116cc47fb663f7831d30/freqtrade/freqai/prediction_models/CatboostClassifier.py)
 * [CatboostClassifierMultiTarget](https://github.com/freqtrade/freqtrade/blob/c6f3b0081927e161a16b116cc47fb663f7831d30/freqtrade/freqai/prediction_models/CatboostClassifierMultiTarget.py)
+
+## Funding rate data storage format
+
+With version 2026.8, funding rate data is stored with the columns it actually has - `date` and `funding_rate`.
+Previously it was stored as a regular candle, with the rate in `open` and `high`, `low`, `close` and `volume` all set to 0.
+
+Existing data does not need to be migrated. Files in the old layout are detected and converted while reading, and are rewritten in the new layout the next time they are stored (e.g. on the next `freqtrade download-data` run).
+
+### Funding rate - Strategy changes
+
+Strategies using funding rate data via `dp.get_pair_dataframe(..., candle_type="funding_rate")` or `@informative("1h", candle_type="funding_rate")` should use the `funding_rate` column:
+
+``` python
+funding_rates = self.dp.get_pair_dataframe(
+    pair=metadata['pair'], timeframe='1h', candle_type="funding_rate"
+)
+dataframe['historic_funding_rate'] = funding_rates['funding_rate']
+```
+
+`open` remains available as a deprecated alias of `funding_rate`, so existing strategies continue to work - but the `open` alias will be removed in a future version.
+The `high`, `low`, `close` and `volume` columns only ever contained 0 for funding rates and are no longer present.
