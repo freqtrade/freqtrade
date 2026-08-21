@@ -370,16 +370,22 @@ class FreqaiDataDrawer:
         """
 
         len_df = len(strat_df)
-        index = self.historic_predictions[pair].index[-1:]
-        columns = self.historic_predictions[pair].columns
+        hist_preds = self.historic_predictions[pair]
+        index = hist_preds.index[-1:]
+        columns = hist_preds.columns
 
-        zeros_df = pd.DataFrame(np.zeros((1, len(columns))), index=index, columns=columns)
-        # A numeric 0 placeholder would degrade the date column to object dtype
-        # but we want to keep the date column as datetime type.
-        zeros_df["date_pred"] = pd.Series(pd.NaT, index=index, dtype="datetime64[ms, UTC]")
-        self.historic_predictions[pair] = pd.concat(
-            [self.historic_predictions[pair], zeros_df], ignore_index=True, axis=0
-        )
+        # A candle can be handed to FreqAI twice in some  - freqtrade only marks it as seen once the
+        # full strategy callback chain succeeded, so an exception raised after FreqAI ran
+        # re-analyzes the same candle. Overwrite that row instead of appending a duplicate
+        # date, as every value of the last row is (re-)assigned below anyway.
+        if hist_preds.empty or hist_preds["date_pred"].iloc[-1] != strat_df["date"].iloc[-1]:
+            zeros_df = pd.DataFrame(np.zeros((1, len(columns))), index=index, columns=columns)
+            # A numeric 0 placeholder would degrade the date column to object dtype
+            # but we want to keep the date column as datetime type.
+            zeros_df["date_pred"] = pd.Series(pd.NaT, index=index, dtype="datetime64[ms, UTC]")
+            self.historic_predictions[pair] = pd.concat(
+                [hist_preds, zeros_df], ignore_index=True, axis=0
+            )
         df = self.historic_predictions[pair]
 
         # model outputs and associated statistics
