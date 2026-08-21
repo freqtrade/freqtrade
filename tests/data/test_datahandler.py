@@ -192,7 +192,9 @@ def test_datahandler_funding_rate_legacy_load_formats(testdatadir, datahandler):
 
 
 @pytest.mark.parametrize("datahandler", ["feather", "parquet"])
-@pytest.mark.parametrize("candle_type", [CandleType.SPOT, CandleType.FUNDING_RATE])
+@pytest.mark.parametrize(
+    "candle_type", [CandleType.SPOT, CandleType.FUNDING_RATE, CandleType.OPEN_INTEREST]
+)
 @pytest.mark.parametrize("typed", [True, False])
 def test_datahandler_ohlcv_load_empty_file(tmp_path, datahandler, candle_type, typed):
     """An empty stored file must load as an empty dataframe, not raise.
@@ -219,6 +221,39 @@ def test_datahandler_ohlcv_load_empty_file(tmp_path, datahandler, candle_type, t
     loaded = dh.ohlcv_load("XRP/USDT:USDT", "1h", candle_type, warn_no_data=False)
     assert loaded.empty
     assert list(loaded.columns) == get_candle_columns(candle_type)
+
+
+@pytest.mark.parametrize("datahandler", AVAILABLE_DATAHANDLERS)
+def test_datahandler_open_interest_roundtrip(tmp_path, datahandler):
+    """Open interest survives a store/load cycle with one side missing.
+
+    Bybit reports only the base amount on linear markets, so an all-NaN
+    open_interest_value column must round-trip as NaN - not as 0, and not as an error.
+    """
+    (tmp_path / "futures").mkdir()
+    dh = get_datahandler(tmp_path, datahandler)
+    raw = [
+        [1630454400000, 108721.214, None],
+        [1630458000000, 109261.55, None],
+        [1630461600000, 107807.866, None],
+    ]
+    df = ohlcv_to_dataframe(
+        raw,
+        "1h",
+        "XRP/USDT:USDT",
+        fill_missing=False,
+        drop_incomplete=False,
+        candle_type=CandleType.OPEN_INTEREST,
+    )
+    dh.ohlcv_store("XRP/USDT:USDT", "1h", df, CandleType.OPEN_INTEREST)
+
+    loaded = dh.ohlcv_load("XRP/USDT:USDT", "1h", CandleType.OPEN_INTEREST, fill_missing=False)
+    assert list(loaded.columns) == ["date", "open_interest_amount", "open_interest_value"]
+    assert len(loaded) == 3
+    assert loaded["open_interest_amount"].tolist() == [108721.214, 109261.55, 107807.866]
+    assert loaded["open_interest_value"].isna().all()
+    assert loaded["open_interest_value"].dtype == "float64"
+    assert_frame_equal(loaded, df)
 
 
 def test_datahandler_ohlcv_get_available_data(testdatadir):

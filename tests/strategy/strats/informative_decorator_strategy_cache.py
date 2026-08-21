@@ -47,6 +47,14 @@ class InformativeDecoratorCacheTest(IStrategy):
 
         return dataframe
 
+    @informative(
+        "1h", "ADA/USDT:USDT", "{column}_{base}_{timeframe}_OI", candle_type="open_interest"
+    )
+    def populate_indicators_open_interest(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+        self.informative_counter[metadata["pair"], metadata["timeframe"]] += 1
+
+        return dataframe
+
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
         return dataframe

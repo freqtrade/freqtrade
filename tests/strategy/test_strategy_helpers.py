@@ -8,7 +8,11 @@ from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import CandleType, RunMode
 from freqtrade.resolvers.strategy_resolver import StrategyResolver
 from freqtrade.strategy import merge_informative_pair, stoploss_from_absolute, stoploss_from_open
-from freqtrade.strategy.informative_decorator import InformativeCache, InformativeCacheKey
+from freqtrade.strategy.informative_decorator import (
+    InformativeCache,
+    InformativeCacheKey,
+    _informative_dataframe_fingerprint,
+)
 from tests.conftest import generate_test_data, get_patched_exchange
 
 
@@ -529,13 +533,40 @@ def test_analyze_expires_informative_cache(mocker, default_conf_usdt):
     assert cache == {}
 
 
+def test_informative_dataframe_fingerprint_nan():
+    """A permanently empty column must not turn every cache lookup into a miss."""
+    dates = pd.date_range("2026-01-01", periods=3, freq="1h", tz="UTC")
+    df = pd.DataFrame(
+        {
+            "date": dates,
+            "open_interest_amount": [1.0, 2.0, 3.0],
+            "open_interest_value": np.nan,
+        }
+    )
+    ct = CandleType.OPEN_INTEREST
+    assert _informative_dataframe_fingerprint(df, ct) == _informative_dataframe_fingerprint(df, ct)
+
+    # Real changes are still detected - in either column, and in either direction
+    changed_amount = df.assign(open_interest_amount=[1.0, 2.0, 4.0])
+    assert _informative_dataframe_fingerprint(df, ct) != _informative_dataframe_fingerprint(
+        changed_amount, ct
+    )
+    filled_value = df.assign(open_interest_value=[np.nan, np.nan, 5.0])
+    assert _informative_dataframe_fingerprint(df, ct) != _informative_dataframe_fingerprint(
+        filled_value, ct
+    )
+    assert _informative_dataframe_fingerprint(filled_value, ct) != (
+        _informative_dataframe_fingerprint(df, ct)
+    )
+
+
 @pytest.mark.parametrize(
     "runmode, expected",
     [
-        (RunMode.DRY_RUN, [2, 2, 2, 1, 2, 1, 4, 2, 1, 1]),
-        (RunMode.LIVE, [2, 2, 2, 1, 2, 1, 4, 2, 1, 1]),
-        (RunMode.BACKTEST, [2, 4, 2, 2, 2, 2, 4, 8, 2, 4]),
-        (RunMode.HYPEROPT, [2, 4, 2, 2, 2, 2, 4, 8, 2, 4]),
+        (RunMode.DRY_RUN, [2, 2, 2, 1, 2, 1, 4, 2, 1, 1, 1, 1]),
+        (RunMode.LIVE, [2, 2, 2, 1, 2, 1, 4, 2, 1, 1, 1, 1]),
+        (RunMode.BACKTEST, [2, 4, 2, 2, 2, 2, 4, 8, 2, 4, 2, 4]),
+        (RunMode.HYPEROPT, [2, 4, 2, 2, 2, 2, 4, 8, 2, 4, 2, 4]),
     ],
 )
 def test_informative_decorator_cache(mocker, default_conf_usdt, runmode, expected):
@@ -553,6 +584,15 @@ def test_informative_decorator_cache(mocker, default_conf_usdt, runmode, expecte
             "open": test_data_1h["open"],
         }
     )
+    # Open interest has two value columns - and Bybit-style exchanges leave one of them
+    # permanently NaN, which must not defeat the cache.
+    test_data_1h_open_interest = pd.DataFrame(
+        {
+            "date": test_data_1h["date"],
+            "open_interest_amount": test_data_1h["open"],
+            "open_interest_value": np.nan,
+        }
+    )
     data = {
         ("XRP/USDT", "5m", candle_def): test_data_5m,
         ("XRP/USDT", "30m", candle_def): test_data_30m,
@@ -563,6 +603,7 @@ def test_informative_decorator_cache(mocker, default_conf_usdt, runmode, expecte
         ("ETH/USDT", "1h", candle_def): test_data_1h,
         ("ETH/USDT", "30m", candle_def): test_data_30m,
         ("ETH/USDT:USDT", "1h", CandleType.FUNDING_RATE): test_data_1h_funding,
+        ("ADA/USDT:USDT", "1h", CandleType.OPEN_INTEREST): test_data_1h_open_interest,
     }
     default_conf_usdt["strategy"] = "InformativeDecoratorCacheTest"
     strategy = StrategyResolver.load_strategy(default_conf_usdt)
@@ -571,7 +612,7 @@ def test_informative_decorator_cache(mocker, default_conf_usdt, runmode, expecte
     strategy.dp = DataProvider({}, exchange, None)
     mocker.patch.object(strategy.dp, "current_whitelist", return_value=["XRP/USDT", "LTC/USDT"])
 
-    assert len(strategy._ft_informative) == 6  # Equal to number of decorators used
+    assert len(strategy._ft_informative) == 7  # Equal to number of decorators used
 
     def test_historic_ohlcv(pair, timeframe, candle_type):
         return data.get(
@@ -588,8 +629,9 @@ def test_informative_decorator_cache(mocker, default_conf_usdt, runmode, expecte
     )
     # Number of distinct timeframes seen per pair
     timeframes_per_pair = Counter(pair for pair, _ in strategy.informative_counter)
-    # Each whitelist pair, plus the fixed ETH/USDT and BTC/USDT (funding rate) pairs
-    assert len(timeframes_per_pair) == 4
+    # Each whitelist pair, plus the fixed ETH/USDT, ETH/USDT:USDT (funding rate)
+    # and ADA/USDT:USDT (open interest) pairs
+    assert len(timeframes_per_pair) == 5
     assert timeframes_per_pair["XRP/USDT"] == 2  # 2 informative timeframes
     assert timeframes_per_pair["LTC/USDT"] == 2  # 2 informative timeframes
     assert timeframes_per_pair["ETH/USDT"] == 2  # 2 informative timeframes
@@ -605,6 +647,8 @@ def test_informative_decorator_cache(mocker, default_conf_usdt, runmode, expecte
     )  # called twice, once for each informative function
     # Funding rate informative - cached like any other, despite its different columns
     assert strategy.informative_counter["ETH/USDT:USDT", "1h"] == expected[8]
+    # Open interest informative - one of its two columns is permanently NaN
+    assert strategy.informative_counter["ADA/USDT:USDT", "1h"] == expected[10]
 
     # Trigger populate indicators again, to see the effect of cache
     _ = strategy.advise_all_indicators(
@@ -617,3 +661,5 @@ def test_informative_decorator_cache(mocker, default_conf_usdt, runmode, expecte
     assert strategy.informative_counter["ETH/USDT", "1h"] == expected[6]
     assert strategy.informative_counter["ETH/USDT", "30m"] == expected[7]
     assert strategy.informative_counter["ETH/USDT:USDT", "1h"] == expected[9]
+    # A permanently NaN column must not turn every cache lookup into a miss
+    assert strategy.informative_counter["ADA/USDT:USDT", "1h"] == expected[11]
