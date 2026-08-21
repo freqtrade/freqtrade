@@ -13,9 +13,15 @@ from pathlib import Path
 from pandas import DataFrame, to_datetime
 
 from freqtrade import misc
+from freqtrade.candle_columns import (
+    FUNDING_RATE_LEGACY_RENAME,
+    OHLCV_COLUMNS,
+    get_candle_columns,
+)
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import DEFAULT_TRADES_COLUMNS, ListPairsWithTimeframes
 from freqtrade.data.converter import (
+    add_candle_aliases,
     clean_ohlcv_dataframe,
     trades_convert_types,
     trades_df_remove_duplicates,
@@ -372,6 +378,9 @@ class IDataHandler(ABC):
         if not pairdf.empty and candle_type == CandleType.FUNDING_RATE:
             # Funding rate data is sometimes off by a couple of ms - floor to seconds
             pairdf["date"] = pairdf["date"].dt.floor("s")
+            # Aliases only for funding rates
+            pairdf = add_candle_aliases(pairdf, candle_type)
+
         if self._check_empty_df(pairdf, pair, timeframe, candle_type, warn_no_data):
             return pairdf
         else:
@@ -390,6 +399,7 @@ class IDataHandler(ABC):
                 pair=pair,
                 fill_missing=fill_missing,
                 drop_incomplete=(drop_incomplete and enddate == pairdf.iloc[-1]["date"]),
+                candle_type=candle_type,
             )
             self._check_empty_df(pairdf, pair, timeframe, candle_type, warn_no_data)
             return pairdf
