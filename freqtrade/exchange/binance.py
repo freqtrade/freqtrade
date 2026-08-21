@@ -7,7 +7,7 @@ from pathlib import Path
 import ccxt
 from pandas import DataFrame
 
-from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS
+from freqtrade.candle_columns import get_candle_columns
 from freqtrade.enums import TRADE_MODES, CandleType, MarginMode, PriceType, RunMode, TradingMode
 from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
@@ -186,7 +186,7 @@ class Binance(Exchange):
                         f"No available candle-data for {pair} before "
                         f"{dt_from_ts(until_ms).isoformat()}"
                     )
-                    return DataFrame(columns=DEFAULT_DATAFRAME_COLUMNS)
+                    return DataFrame(columns=get_candle_columns(candle_type))
 
         if (
             not self._can_use_data_download_fast
