@@ -193,13 +193,24 @@ class FreqaiDataDrawer:
                     self.historic_predictions = cloudpickle.load(fp)
                 logger.warning("FreqAI successfully loaded the backup historical predictions file.")
 
-            for pair_df in self.historic_predictions.values():
-                if "date_pred" in pair_df.columns and pair_df["date_pred"].dtype.kind != "M":
+            for pair, pair_df in self.historic_predictions.items():
+                if "date_pred" not in pair_df.columns:
+                    continue
+                if pair_df["date_pred"].dtype.kind != "M":
                     # Predictions written by older versions can carry an object dtype
                     # date column - convert once at load so downstream merges work.
                     pair_df["date_pred"] = pd.to_datetime(
                         pair_df["date_pred"], utc=True
                     ).dt.as_unit("ms")
+                # Predictions written by versions that could duplicate a candle would fail
+                # every merge back into the strategy dataframe - repair them on load.
+                duplicates = pair_df["date_pred"].duplicated(keep="last")
+                if duplicates.any():
+                    logger.warning(
+                        f"Found {duplicates.sum()} duplicated candle(s) in the historic "
+                        f"predictions of {pair} - keeping the most recent prediction each."
+                    )
+                    self.historic_predictions[pair] = pair_df[~duplicates].reset_index(drop=True)
 
         else:
             logger.info("Could not find existing historic_predictions, starting from scratch")
