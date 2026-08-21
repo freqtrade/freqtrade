@@ -286,6 +286,49 @@ def test_set_initial_return_values_shifted_index(mocker, freqai_conf, caplog):
     assert list(result["date"]) == list(result["date_pred"])
 
 
+def test_set_initial_return_values_gap(mocker, freqai_conf, caplog):
+    """
+    Historic predictions can have gaps (pair left the whitelist, candle skipped, model not
+    ready yet). Cutting the overlap by row count would then re-append already known dates
+    and duplicate them - the overlap must be cut by date instead.
+    """
+
+    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
+    exchange = get_patched_exchange(mocker, freqai_conf)
+    strategy.dp = DataProvider(freqai_conf, exchange)
+    freqai = strategy.freqai
+    freqai.live = False
+    freqai.dk = FreqaiDataKitchen(freqai_conf)
+
+    pair = "BTC/USD"
+    all_dates = pd.date_range(start="2023-09-01", periods=10, freq="5min", tz="UTC").astype(
+        "datetime64[ms, UTC]"
+    )
+    # historic predictions covering the first 7 candles, with 3 of them missing in the middle
+    hist_dates = all_dates[:7].delete([2, 3, 4])
+
+    freqai.dd.historic_predictions[pair] = pd.DataFrame(
+        {"date_pred": hist_dates, "value": range(1, len(hist_dates) + 1)}
+    )
+
+    new_pred_df = pd.DataFrame({"value": range(11, 21)})
+    dataframe = pd.DataFrame({"date": all_dates, "value": range(11, 21)})
+
+    freqai.dd.set_initial_return_values(pair, new_pred_df, dataframe)
+
+    hist_pred_df = freqai.dd.historic_predictions[pair]
+
+    # only the 3 candles after the last known date got appended - the gap is not re-filled
+    assert not hist_pred_df["date_pred"].duplicated().any()
+    assert hist_pred_df.shape[0] == len(hist_dates) + 3
+    assert hist_pred_df["date_pred"].iloc[-1] == all_dates[-1]
+    assert not log_has_re("No common dates found between new predictions and historic.*", caplog)
+
+    # and the (gapped) predictions still merge back onto the strategy dataframe
+    result = freqai.dd.attach_return_values_to_return_dataframe(pair, dataframe)
+    assert len(result) == len(dataframe)
+
+
 def test_append_model_predictions_keeps_date_dtype(mocker, freqai_conf):
     """
     Appending a new candle must not degrade date_pred to object dtype - merging the
