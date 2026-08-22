@@ -2367,7 +2367,9 @@ If you are updating existing data after inserting new pairs that you have no dat
 <span class="go">                        Disable parallel startup download. Only use this if</span>
 <span class="go">                        you experience issues.</span>
 <span class="go">  --timerange TIMERANGE</span>
-<span class="go">                        Specify what timerange of data to use.</span>
+<span class="go">                        Limit action to a specific timerange. Format:</span>
+<span class="go">                        (`yyyymmdd` or `yyyymmddThhmm` - e.g.</span>
+<span class="go">                        `20240101-20240201T1200`).</span>
 <span class="go">  --dl-trades           Download trades instead of OHLCV data.</span>
 <span class="go">  --convert             Convert downloaded trades to OHLCV data. Only</span>
 <span class="go">                        applicable in combination with `--dl-trades`. Will be</span>

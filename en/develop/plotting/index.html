@@ -2079,7 +2079,9 @@ This is mostly for the performance problems even medium sized plots can cause, b
 <span class="go">                        Assumes either `user_data/backtest_results/` or</span>
 <span class="go">                        `--export-directory` as base directory.</span>
 <span class="go">  --timerange TIMERANGE</span>
-<span class="go">                        Specify what timerange of data to use.</span>
+<span class="go">                        Limit action to a specific timerange. Format:</span>
+<span class="go">                        (`yyyymmdd` or `yyyymmddThhmm` - e.g.</span>
+<span class="go">                        `20240101-20240201T1200`).</span>
 <span class="go">  -i, --timeframe TIMEFRAME</span>
 <span class="go">                        Specify timeframe (`1m`, `5m`, `30m`, `1h`, `1d`).</span>
 <span class="go">  --no-trades           Skip using trades from backtesting file and DB.</span>
@@ -2302,7 +2304,9 @@ This graph will also highlight the start (and end) of the Max drawdown period.</
 <span class="go">                        Limit command to these pairs. Pairs are space-</span>
 <span class="go">                        separated.</span>
 <span class="go">  --timerange TIMERANGE</span>
-<span class="go">                        Specify what timerange of data to use.</span>
+<span class="go">                        Limit action to a specific timerange. Format:</span>
+<span class="go">                        (`yyyymmdd` or `yyyymmddThhmm` - e.g.</span>
+<span class="go">                        `20240101-20240201T1200`).</span>
 <span class="go">  --export {none,trades,signals}</span>
 <span class="go">                        Export backtest results (default: trades).</span>
 <span class="go">  --backtest-filename, --export-filename PATH</span>

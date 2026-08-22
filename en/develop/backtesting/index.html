@@ -2420,7 +2420,9 @@ To learn how to get data for the pairs and exchange you're interested in, head o
 <span class="go">  -i, --timeframe TIMEFRAME</span>
 <span class="go">                        Specify timeframe (`1m`, `5m`, `30m`, `1h`, `1d`).</span>
 <span class="go">  --timerange TIMERANGE</span>
-<span class="go">                        Specify what timerange of data to use.</span>
+<span class="go">                        Limit action to a specific timerange. Format:</span>
+<span class="go">                        (`yyyymmdd` or `yyyymmddThhmm` - e.g.</span>
+<span class="go">                        `20240101-20240201T1200`).</span>
 <span class="go">  --data-format-ohlcv {json,jsongz,feather,parquet}</span>
 <span class="go">                        Storage format for downloaded candle (OHLCV) data.</span>
 <span class="go">                        (default: `feather`).</span>
@@ -2593,11 +2595,51 @@ This fee must be a ratio, and will be applied twice (once for trade entry, and o
 <p>You can also specify particular date ranges.</p>
 <p>The full timerange specification:</p>
 <ul>
-<li>Use data until 2018/01/31: <code>--timerange=-20180131</code></li>
-<li>Use data since 2018/01/31: <code>--timerange=20180131-</code></li>
-<li>Use data since 2018/01/31 till 2018/03/01 : <code>--timerange=20180131-20180301</code></li>
-<li>Use data between POSIX / epoch timestamps 1527595200 1527618600: <code>--timerange=1527595200-1527618600</code></li>
+<li>Use data until 2026/01/31: <code>--timerange=-20260131</code></li>
+<li>Use data since 2026/01/31: <code>--timerange=20260131-</code></li>
+<li>Use data since 2026/01/31 till 2026/03/01 : <code>--timerange=20260131-20260301</code></li>
+<li>Use data since 2026/01/31 15:30 till 2026/03/01 18:00: <code>--timerange=20260131T1530-20260301T1800</code></li>
+<li>Use data between POSIX / epoch timestamps 1782086400 1782144960: <code>--timerange=1782086400-1782144960</code></li>
 </ul>
+<p>Each side of the timerange is parsed on its own, and can use any of the following formats (all times are in UTC):</p>
+<table>
+<thead>
+<tr>
+<th>Format</th>
+<th>Example</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>yyyymmdd</code></td>
+<td><code>20260131</code></td>
+<td>Date - equivalent to midnight (00:00) of that day</td>
+</tr>
+<tr>
+<td><code>yyyymmddThhmm</code></td>
+<td><code>20260131T1530</code></td>
+<td>Date and time (hours and minutes, 24h clock)</td>
+</tr>
+<tr>
+<td><code>yyyymmddThhmmss</code></td>
+<td><code>20260131T053045</code></td>
+<td>Date and time, including seconds</td>
+</tr>
+<tr>
+<td>epoch (seconds)</td>
+<td><code>1782086400</code></td>
+<td>POSIX timestamp in seconds (10 digits)</td>
+</tr>
+<tr>
+<td>epoch (milliseconds)</td>
+<td><code>1782086400000</code></td>
+<td>POSIX timestamp in milliseconds (13 digits)</td>
+</tr>
+</tbody>
+</table>
+<p>Formats can be mixed within one timerange - <code>--timerange=20260131-20260301T1200</code> is valid.
+Leaving one side empty (<code>20260131-</code> or <code>-20260301</code>) leaves that end of the range unbounded.</p>
 <h2 id="understand-the-backtesting-result">Understand the backtesting result<a class="headerlink" href="#understand-the-backtesting-result" title="Permanent link">&para;</a></h2>
 <p>The most important in the backtesting is to understand the result.</p>
 <p>A backtesting result will look like that:</p>

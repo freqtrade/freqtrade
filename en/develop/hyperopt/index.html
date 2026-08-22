@@ -2909,7 +2909,9 @@ pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </s
 <span class="go">  -i, --timeframe TIMEFRAME</span>
 <span class="go">                        Specify timeframe (`1m`, `5m`, `30m`, `1h`, `1d`).</span>
 <span class="go">  --timerange TIMERANGE</span>
-<span class="go">                        Specify what timerange of data to use.</span>
+<span class="go">                        Limit action to a specific timerange. Format:</span>
+<span class="go">                        (`yyyymmdd` or `yyyymmddThhmm` - e.g.</span>
+<span class="go">                        `20240101-20240201T1200`).</span>
 <span class="go">  --data-format-ohlcv {json,jsongz,feather,parquet}</span>
 <span class="go">                        Storage format for downloaded candle (OHLCV) data.</span>
 <span class="go">                        (default: `feather`).</span>
