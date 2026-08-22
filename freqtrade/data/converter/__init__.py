@@ -1,4 +1,5 @@
 from freqtrade.data.converter.converter import (
+    add_candle_aliases,
     clean_ohlcv_dataframe,
     convert_ohlcv_format,
     ohlcv_fill_up_missing_data,
@@ -21,6 +22,7 @@ from freqtrade.data.converter.trade_converter import (
 
 
 __all__ = [
+    "add_candle_aliases",
     "clean_ohlcv_dataframe",
     "convert_ohlcv_format",
     "ohlcv_fill_up_missing_data",

@@ -459,6 +459,11 @@ def test_convert_trades_format(default_conf, testdatadir, tmp_path):
         (["XRP_ETH-5m", "XRP_ETH-1m"], CandleType.SPOT),
         (["UNITTEST_USDT_USDT-1h-mark", "XRP_USDT_USDT-1h-mark"], CandleType.MARK),
         (["XRP_USDT_USDT-1h-futures"], CandleType.FUTURES),
+        # Legacy 6-column and current 2-column funding rate files convert alike
+        (
+            ["XRP_USDT_USDT-1h-funding_rate", "UNITTEST_USDT_USDT-1h-funding_rate"],
+            CandleType.FUNDING_RATE,
+        ),
     ],
 )
 def test_convert_ohlcv_format(default_conf, testdatadir, tmp_path, file_base, candletype):

@@ -5,6 +5,7 @@ from pathlib import Path
 
 from pandas import DataFrame, concat
 
+from freqtrade.candle_columns import get_candle_columns
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import (
     DATETIME_PRINT_FORMAT,
@@ -15,6 +16,7 @@ from freqtrade.constants import (
     PairWithTimeframe,
 )
 from freqtrade.data.converter import (
+    add_candle_aliases,
     clean_ohlcv_dataframe,
     convert_trades_to_ohlcv,
     trades_df_remove_duplicates,
@@ -132,7 +134,9 @@ def load_data(
             if candle_type is CandleType.FUNDING_RATE and user_futures_funding_rate is not None:
                 logger.warning(f"{pair} using user specified [{user_futures_funding_rate}]")
             elif candle_type not in (CandleType.SPOT, CandleType.FUTURES):
-                result[pair] = DataFrame(columns=["date", "open", "close", "high", "low", "volume"])
+                result[pair] = add_candle_aliases(
+                    DataFrame(columns=get_candle_columns(candle_type)), candle_type
+                )
 
     if fail_without_data and not result:
         raise OperationalException("No data found. Terminating.")
@@ -336,6 +340,7 @@ def _download_pair_history(
                 pair,
                 fill_missing=False,
                 drop_incomplete=False,
+                candle_type=candle_type,
             )
 
         logger.debug(

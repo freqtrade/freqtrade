@@ -1844,10 +1844,12 @@ def test_start_list_data(testdatadir, capsys):
     start_list_data(pargs)
     captured = capsys.readouterr()
 
-    assert "Found 5 pair / timeframe combinations." in captured.out
+    assert "Found 6 pair / timeframe combinations." in captured.out
     assert re.search(r".*Pair.*Timeframe.*Type.*\n", captured.out)
     assert re.search(r"\n.* XRP/USDT:USDT .* 5m, 1h .* futures |\n", captured.out)
     assert re.search(r"\n.* XRP/USDT:USDT .* 1h.* mark |\n", captured.out)
+    assert re.search(r"\n.* XRP/USDT:USDT .* 1h.* funding_rate |\n", captured.out)
+    assert re.search(r"\n.* UNITTEST/USDT:USDT .* 1h.* funding_rate |\n", captured.out)
 
     args = [
         "list-data",

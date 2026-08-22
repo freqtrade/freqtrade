@@ -13,9 +13,15 @@ from pathlib import Path
 from pandas import DataFrame, to_datetime
 
 from freqtrade import misc
+from freqtrade.candle_columns import (
+    FUNDING_RATE_LEGACY_RENAME,
+    OHLCV_COLUMNS,
+    get_candle_columns,
+)
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import DEFAULT_TRADES_COLUMNS, ListPairsWithTimeframes
 from freqtrade.data.converter import (
+    add_candle_aliases,
     clean_ohlcv_dataframe,
     trades_convert_types,
     trades_df_remove_duplicates,
@@ -116,6 +122,65 @@ class IDataHandler(ABC):
         :param candle_type: Any of the enum CandleType (must match trading mode!)
         :return: DataFrame with ohlcv data, or empty DataFrame
         """
+
+    @classmethod
+    def _empty_ohlcv_df(cls, candle_type: CandleType) -> DataFrame:
+        """
+        Empty dataframe carrying the canonical columns for this candle type.
+        :param candle_type: Any of the enum CandleType (must match trading mode!)
+        :return: Empty DataFrame
+        """
+        return DataFrame(columns=get_candle_columns(candle_type))
+
+    @classmethod
+    def _normalize_columns(cls, df: DataFrame, pair: str, candle_type: CandleType) -> DataFrame:
+        """
+        Bring a dataframe read from storage into the layout for this candle type.
+
+        Handles files written in an older layout (e.g. funding rates stored as OHLCV
+        candles with the rate in "open") transparently - they are converted on read and
+        rewritten in the current layout the next time they are stored.
+        :param df: Dataframe as read from disk
+        :param pair: Pair the data is for - used for logging
+        :param candle_type: Any of the enum CandleType
+        :return: DataFrame with the canonical columns for this candle type
+        :raises ValueError: if the layout cannot be interpreted
+        """
+        columns = get_candle_columns(candle_type)
+        # Current layout - project and reorder. Checked first so a file that carries both
+        # the current columns and stale legacy ones is read as the current layout.
+        if set(columns).issubset(df.columns):
+            return df.loc[:, columns]
+        if candle_type == CandleType.FUNDING_RATE and set(OHLCV_COLUMNS).issubset(df.columns):
+            # Legacy layout, correctly named - the rate lives in "open"
+            logger.debug(f"Migrating legacy funding rate columns for {pair} on read.")
+            return df.rename(columns=FUNDING_RATE_LEGACY_RENAME).loc[:, columns]
+        return cls._normalize_columns_positional(df, pair, candle_type)
+
+    @classmethod
+    def _normalize_columns_positional(
+        cls, df: DataFrame, pair: str, candle_type: CandleType
+    ) -> DataFrame:
+        """
+        Width-based variant of _normalize_columns, for stores that don't persist column names.
+        :param df: Dataframe as read from disk
+        :param pair: Pair the data is for - used for logging
+        :param candle_type: Any of the enum CandleType
+        :return: DataFrame with the canonical columns for this candle type
+        :raises ValueError: if the width matches neither the current nor the legacy layout
+        """
+        columns = get_candle_columns(candle_type)
+        if df.shape[1] == len(columns):
+            df.columns = columns
+            return df
+        if candle_type == CandleType.FUNDING_RATE and df.shape[1] == len(OHLCV_COLUMNS):
+            logger.debug(f"Migrating legacy funding rate columns for {pair} on read.")
+            df.columns = OHLCV_COLUMNS
+            return df.rename(columns=FUNDING_RATE_LEGACY_RENAME).loc[:, columns]
+        raise ValueError(
+            f"Unexpected column count {df.shape[1]} for {pair}, {candle_type} - "
+            f"expected {len(columns)}."
+        )
 
     def ohlcv_purge(self, pair: str, timeframe: str, candle_type: CandleType) -> bool:
         """
@@ -372,6 +437,9 @@ class IDataHandler(ABC):
         if not pairdf.empty and candle_type == CandleType.FUNDING_RATE:
             # Funding rate data is sometimes off by a couple of ms - floor to seconds
             pairdf["date"] = pairdf["date"].dt.floor("s")
+            # Aliases only for funding rates
+            pairdf = add_candle_aliases(pairdf, candle_type)
+
         if self._check_empty_df(pairdf, pair, timeframe, candle_type, warn_no_data):
             return pairdf
         else:
@@ -390,6 +458,7 @@ class IDataHandler(ABC):
                 pair=pair,
                 fill_missing=fill_missing,
                 drop_incomplete=(drop_incomplete and enddate == pairdf.iloc[-1]["date"]),
+                candle_type=candle_type,
             )
             self._check_empty_df(pairdf, pair, timeframe, candle_type, warn_no_data)
             return pairdf

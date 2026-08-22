@@ -620,10 +620,14 @@ When hyperopting, use of the hyperoptable parameter `.value` attribute is not su
         * {column} - name of dataframe column.
         * {timeframe} - timeframe of informative dataframe.
         :param ffill: ffill dataframe after merging informative pair.
-        :param candle_type: '', mark, index, premiumIndex, or funding_rate
-        :param cache: Cache populated informative indicators in dry/live mode while the latest informative
-                      candle remains unchanged. Disable if you want the informative function to always be
-                      called. Defaults to True.
+        :param candle_type: '', spot, futures, mark, index, premiumIndex, or funding_rate.
+            Attention: Availability for non-spot/futures candle-types across exchanges may vary.
+            funding_rate candles only contain the "funding_rate" column (open for historic reasons)
+            All other columns will be missing from this dataframe.
+        :param cache: Cache populated indicators in dry/live mode while the latest informative candle
+                    remains unchanged. Entries expire after two effective informative timeframes
+                    without an update. Disable for methods that use external state, have side effects,
+                    or otherwise need to run for every base pair. Defaults to True.
         """
     ```
 
@@ -984,8 +988,33 @@ Actually available data will vary between exchanges, so this code may not work a
 
 !!! Warning "Warning about backtesting"
     Current funding-rate is not part of the historic data which means backtesting and hyperopt will not work correctly if this method is used, as the method will return up-to-date values.
-    We recommend to use the historically available funding rate for backtesting (which is automatically downloaded, and is at the frequency of what the exchange provides, usually 4h or 8h).
-    `self.dp.get_pair_dataframe(pair=metadata['pair'], timeframe='8h', candle_type="funding_rate")`
+    We recommend to use the historically available funding rate for backtesting (which is automatically downloaded, and is at the frequency of what the exchange provides, usually 1h, 4h or 8h).
+
+#### Historic funding rate data
+
+Historic funding rate dataframes contain a `date` and a `funding_rate` column - with one row per funding event (usually every 1h, 4h, or 8h), not one row per candle.
+They must therefore be merged onto your dataframe by date - assigning the column directly would align the values by position and give you wrong (or mostly `NaN`) results:
+
+``` python
+from freqtrade.strategy import merge_informative_pair
+
+funding_rates = self.dp.get_pair_dataframe(
+    pair=metadata['pair'], timeframe='1h', candle_type="funding_rate"
+)
+# Adds the column as "funding_rate_1h", forward-filled between funding events.
+dataframe = merge_informative_pair(
+    dataframe, funding_rates, self.timeframe, '1h', ffill=True
+)
+```
+
+The same can be achieved with the [informative pairs decorator](#informative-pairs-decorator-informative), using `@informative('1h', candle_type='funding_rate')`.
+
+Use `ffill=False` to keep the timestamps without funding empty (absolutely necessary if you aim to aggregate funding rates over a longer period).
+
+!!! Note "The `open` column"
+    Funding rates used to be treated as regular candles, with the rate in `open` and `high`, `low`, `close` and `volume` all set to 0.
+    `open` is still available as an alias of `funding_rate`, but the unused columns are gone.
+    Please switch to `funding_rate` - the `open` alias is deprecated and will be removed in a future version.
 
 ### Send Notification
 
