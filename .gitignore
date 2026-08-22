@@ -94,6 +94,13 @@ site/
 # PyBuilder
 target/
 
+# AI Agents
+*.local.md
+.cursor/
+.codex/
+.claude/*.local.json
+.claude/**/*.log
+
 # Jupyter Notebook
 *.ipynb_checkpoints
 
