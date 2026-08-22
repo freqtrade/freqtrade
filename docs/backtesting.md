@@ -148,10 +148,24 @@ You can also specify particular date ranges.
 
 The full timerange specification:
 
-- Use data until 2018/01/31: `--timerange=-20180131`
-- Use data since 2018/01/31: `--timerange=20180131-`
-- Use data since 2018/01/31 till 2018/03/01 : `--timerange=20180131-20180301`
-- Use data between POSIX / epoch timestamps 1527595200 1527618600: `--timerange=1527595200-1527618600`
+- Use data until 2026/01/31: `--timerange=-20260131`
+- Use data since 2026/01/31: `--timerange=20260131-`
+- Use data since 2026/01/31 till 2026/03/01 : `--timerange=20260131-20260301`
+- Use data since 2026/01/31 15:30 till 2026/03/01 18:00: `--timerange=20260131T1530-20260301T1800`
+- Use data between POSIX / epoch timestamps 1782086400 1782144960: `--timerange=1782086400-1782144960`
+
+Each side of the timerange is parsed on its own, and can use any of the following formats (all times are in UTC):
+
+| Format | Example | Description |
+|--------|---------|-------------|
+| `yyyymmdd` | `20260131` | Date - equivalent to midnight (00:00) of that day |
+| `yyyymmddThhmm` | `20260131T1530` | Date and time (hours and minutes, 24h clock) |
+| `yyyymmddThhmmss` | `20260131T053045` | Date and time, including seconds |
+| epoch (seconds) | `1782086400` | POSIX timestamp in seconds (10 digits) |
+| epoch (milliseconds) | `1782086400000` | POSIX timestamp in milliseconds (13 digits) |
+
+Formats can be mixed within one timerange - `--timerange=20260131-20260301T1200` is valid.
+Leaving one side empty (`20260131-` or `-20260301`) leaves that end of the range unbounded.
 
 ## Understand the backtesting result
 

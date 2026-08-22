@@ -16,7 +16,9 @@ options:
                         Limit command to these pairs. Pairs are space-
                         separated.
   --timerange TIMERANGE
-                        Specify what timerange of data to use.
+                        Limit action to a specific timerange. Format:
+                        (`yyyymmdd` or `yyyymmddThhmm` - e.g.
+                        `20240101-20240201T1200`).
   --export {none,trades,signals}
                         Export backtest results (default: trades).
   --backtest-filename, --export-filename PATH
