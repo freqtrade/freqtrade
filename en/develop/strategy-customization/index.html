@@ -950,6 +950,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="funding_rate(pair)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#historic-funding-rate-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Historic funding rate data
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -2911,6 +2928,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="funding_rate(pair)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#historic-funding-rate-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Historic funding rate data
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -3662,10 +3696,14 @@ and do not have access to data from other informative pairs. However, all inform
 <span class="sd">    * {column} - name of dataframe column.</span>
 <span class="sd">    * {timeframe} - timeframe of informative dataframe.</span>
 <span class="sd">    :param ffill: ffill dataframe after merging informative pair.</span>
-<span class="sd">    :param candle_type: &#39;&#39;, mark, index, premiumIndex, or funding_rate</span>
-<span class="sd">    :param cache: Cache populated informative indicators in dry/live mode while the latest informative</span>
-<span class="sd">                  candle remains unchanged. Disable if you want the informative function to always be</span>
-<span class="sd">                  called. Defaults to True.</span>
+<span class="sd">    :param candle_type: &#39;&#39;, spot, futures, mark, index, premiumIndex, or funding_rate.</span>
+<span class="sd">        Attention: Availability for non-spot/futures candle-types across exchanges may vary.</span>
+<span class="sd">        funding_rate candles only contain the &quot;funding_rate&quot; column (open for historic reasons)</span>
+<span class="sd">        All other columns will be missing from this dataframe.</span>
+<span class="sd">    :param cache: Cache populated indicators in dry/live mode while the latest informative candle</span>
+<span class="sd">                remains unchanged. Entries expire after two effective informative timeframes</span>
+<span class="sd">                without an update. Disable for methods that use external state, have side effects,</span>
+<span class="sd">                or otherwise need to run for every base pair. Defaults to True.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 </code></pre></div>
 </details>
@@ -3974,8 +4012,28 @@ Actually available data will vary between exchanges, so this code may not work a
 <div class="admonition warning">
 <p class="admonition-title">Warning about backtesting</p>
 <p>Current funding-rate is not part of the historic data which means backtesting and hyperopt will not work correctly if this method is used, as the method will return up-to-date values.
-We recommend to use the historically available funding rate for backtesting (which is automatically downloaded, and is at the frequency of what the exchange provides, usually 4h or 8h).
-<code>self.dp.get_pair_dataframe(pair=metadata['pair'], timeframe='8h', candle_type="funding_rate")</code></p>
+We recommend to use the historically available funding rate for backtesting (which is automatically downloaded, and is at the frequency of what the exchange provides, usually 1h, 4h or 8h).</p>
+</div>
+<h4 id="historic-funding-rate-data">Historic funding rate data<a class="headerlink" href="#historic-funding-rate-data" title="Permanent link">&para;</a></h4>
+<p>Historic funding rate dataframes contain a <code>date</code> and a <code>funding_rate</code> column - with one row per funding event (usually every 1h, 4h, or 8h), not one row per candle.
+They must therefore be merged onto your dataframe by date - assigning the column directly would align the values by position and give you wrong (or mostly <code>NaN</code>) results:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">freqtrade.strategy</span><span class="w"> </span><span class="kn">import</span> <span class="n">merge_informative_pair</span>
+
+<span class="n">funding_rates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">get_pair_dataframe</span><span class="p">(</span>
+    <span class="n">pair</span><span class="o">=</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;pair&#39;</span><span class="p">],</span> <span class="n">timeframe</span><span class="o">=</span><span class="s1">&#39;1h&#39;</span><span class="p">,</span> <span class="n">candle_type</span><span class="o">=</span><span class="s2">&quot;funding_rate&quot;</span>
+<span class="p">)</span>
+<span class="c1"># Adds the column as &quot;funding_rate_1h&quot;, forward-filled between funding events.</span>
+<span class="n">dataframe</span> <span class="o">=</span> <span class="n">merge_informative_pair</span><span class="p">(</span>
+    <span class="n">dataframe</span><span class="p">,</span> <span class="n">funding_rates</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeframe</span><span class="p">,</span> <span class="s1">&#39;1h&#39;</span><span class="p">,</span> <span class="n">ffill</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>The same can be achieved with the <a href="#informative-pairs-decorator-informative">informative pairs decorator</a>, using <code>@informative('1h', candle_type='funding_rate')</code>.</p>
+<p>Use <code>ffill=False</code> to keep the timestamps without funding empty (absolutely necessary if you aim to aggregate funding rates over a longer period).</p>
+<div class="admonition note">
+<p class="admonition-title">The <code>open</code> column</p>
+<p>Funding rates used to be treated as regular candles, with the rate in <code>open</code> and <code>high</code>, <code>low</code>, <code>close</code> and <code>volume</code> all set to 0.
+<code>open</code> is still available as an alias of <code>funding_rate</code>, but the unused columns are gone.
+Please switch to <code>funding_rate</code> - the <code>open</code> alias is deprecated and will be removed in a future version.</p>
 </div>
 <h3 id="send-notification">Send Notification<a class="headerlink" href="#send-notification" title="Permanent link">&para;</a></h3>
 <p>The dataprovider <code>.send_msg()</code> function allows you to send custom notifications from your strategy.

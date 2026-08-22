@@ -2448,6 +2448,7 @@ To also download data for inactive (delisted) pairs, add <code>--include-inactiv
 <li>Use <code>--timeframes</code> to specify what timeframe download the historical candle (OHLCV) data for. Default is <code>--timeframes 1m 5m</code> which will download 1-minute and 5-minute data.</li>
 <li>To use exchange, timeframe and list of pairs as defined in your configuration file, use the <code>-c/--config</code> option. With this, the script uses the whitelist defined in the config as the list of currency pairs to download data for and does not require the pairs.json file. You can combine <code>-c/--config</code> with most other options.</li>
 <li>When downloading futures data (<code>--trading-mode futures</code> or a configuration specifying futures mode), freqtrade will automatically download the necessary candle types (e.g. <code>mark</code> and <code>funding_rate</code> candles) unless specified otherwise via <code>--candle-types</code>.</li>
+<li>Funding rate data is stored with a <code>date</code> and a <code>funding_rate</code> column - unlike the other candle types, which use the regular OHLCV columns. Data downloaded with an older version is read transparently and rewritten in the current layout the next time it's stored, so no manual migration is needed.</li>
 </ul>
 <details class="note">
 <summary>Permission denied errors</summary>

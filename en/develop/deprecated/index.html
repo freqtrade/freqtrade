@@ -2033,6 +2033,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#funding-rate-data-storage-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Funding rate data storage format
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Funding rate data storage format">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#funding-rate-strategy-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Funding rate - Strategy changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2362,6 +2390,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#funding-rate-data-storage-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Funding rate data storage format
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Funding rate data storage format">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#funding-rate-strategy-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Funding rate - Strategy changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2482,6 +2538,20 @@ We do however recommend switching to other supported model libraries like LightG
 <li><a href="https://github.com/freqtrade/freqtrade/blob/c6f3b0081927e161a16b116cc47fb663f7831d30/freqtrade/freqai/prediction_models/CatboostClassifier.py">CatboostClassifier</a></li>
 <li><a href="https://github.com/freqtrade/freqtrade/blob/c6f3b0081927e161a16b116cc47fb663f7831d30/freqtrade/freqai/prediction_models/CatboostClassifierMultiTarget.py">CatboostClassifierMultiTarget</a></li>
 </ul>
+<h2 id="funding-rate-data-storage-format">Funding rate data storage format<a class="headerlink" href="#funding-rate-data-storage-format" title="Permanent link">&para;</a></h2>
+<p>With version 2026.8, funding rate data is stored with the columns it actually has - <code>date</code> and <code>funding_rate</code>.
+Previously it was stored as a regular candle, with the rate in <code>open</code> and <code>high</code>, <code>low</code>, <code>close</code> and <code>volume</code> all set to 0.</p>
+<p>Existing data does not need to be actively migrated. Files in the old layout are detected and converted while reading, and are rewritten in the new layout the next time they are stored (e.g. on the next <code>freqtrade download-data</code> run).</p>
+<h3 id="funding-rate-strategy-changes">Funding rate - Strategy changes<a class="headerlink" href="#funding-rate-strategy-changes" title="Permanent link">&para;</a></h3>
+<p>Strategies using funding rate data via <code>dp.get_pair_dataframe(..., candle_type="funding_rate")</code> or <code>@informative("1h", candle_type="funding_rate")</code> should use the <code>funding_rate</code> column instead of <code>open</code>.</p>
+<p><code>open</code> remains available as a deprecated alias of <code>funding_rate</code> - but it will be removed in a future version.
+The <code>high</code>, <code>low</code>, <code>close</code> and <code>volume</code> columns only ever contained 0 for funding rates and are no longer present.</p>
+<div class="admonition warning">
+<p class="admonition-title">Funding rate dataframes not padded</p>
+<p>Funding rate dataframes contain one row per funding event (usually every 1h, 4h, or 8h) - in backtesting as well as in dry/live.<br />
+Strategies must therefore merge funding rates onto the dataframe by date - a direct column assignment aligns the values by position and will produce wrong (or mostly <code>NaN</code>) results.<br />
+Refer to the corresponding section in the <a href="../strategy-customization/#historic-funding-rate-data">strategy customization guide</a> for details and examples.</p>
+</div>
 
 
 
