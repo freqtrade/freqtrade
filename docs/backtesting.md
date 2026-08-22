@@ -152,7 +152,7 @@ The full timerange specification:
 - Use data since 2026/01/31: `--timerange=20260131-`
 - Use data since 2026/01/31 till 2026/03/01 : `--timerange=20260131-20260301`
 - Use data since 2026/01/31 15:30 till 2026/03/01 18:00: `--timerange=20260131T1530-20260301T1800`
-- Use data between POSIX / epoch timestamps 1782086400 1527618600: `--timerange=1782086400-1782144960`
+- Use data between POSIX / epoch timestamps 1782086400 1782144960: `--timerange=1782086400-1782144960`
 
 Each side of the timerange is parsed on its own, and can use any of the following formats (all times are in UTC):
 

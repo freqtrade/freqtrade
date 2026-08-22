@@ -46,7 +46,7 @@ options:
                         `--export-directory` as base directory.
   --timerange TIMERANGE
                         Limit action to a specific timerange. Format:
-                        (`yyyymmdd` or `yyyymmddThhmm - e.g.
+                        (`yyyymmdd` or `yyyymmddThhmm` - e.g.
                         `20240101-20240201T1200`).
   -i, --timeframe TIMEFRAME
                         Specify timeframe (`1m`, `5m`, `30m`, `1h`, `1d`).

@@ -161,7 +161,7 @@ AVAILABLE_CLI_OPTIONS = {
     "timerange": Arg(
         "--timerange",
         help="Limit action to a specific timerange. Format: "
-        "(`yyyymmdd` or `yyyymmddThhmm - e.g. `20240101-20240201T1200`).",
+        "(`yyyymmdd` or `yyyymmddThhmm` - e.g. `20240101-20240201T1200`).",
     ),
     "max_open_trades": Arg(
         "--max-open-trades",

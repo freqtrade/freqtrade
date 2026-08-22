@@ -17,7 +17,7 @@ options:
                         separated.
   --timerange TIMERANGE
                         Limit action to a specific timerange. Format:
-                        (`yyyymmdd` or `yyyymmddThhmm - e.g.
+                        (`yyyymmdd` or `yyyymmddThhmm` - e.g.
                         `20240101-20240201T1200`).
   --export {none,trades,signals}
                         Export backtest results (default: trades).

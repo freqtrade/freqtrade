@@ -43,7 +43,7 @@ options:
   --exit-only           Only analyze exit signals.
   --timerange TIMERANGE
                         Limit action to a specific timerange. Format:
-                        (`yyyymmdd` or `yyyymmddThhmm - e.g.
+                        (`yyyymmdd` or `yyyymmddThhmm` - e.g.
                         `20240101-20240201T1200`).
   --rejected-signals    Analyse rejected signals
   --analysis-to-csv     Save selected analysis tables to individual CSVs
