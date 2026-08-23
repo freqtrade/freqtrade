@@ -45,7 +45,6 @@ from tests.conftest import (
     create_mock_trades,
     create_mock_trades_usdt,
     generate_test_data,
-    get_mock_coro,
     get_patched_freqtradebot,
     log_has,
     log_has_re,
@@ -388,9 +387,7 @@ def test_api_UvicornServer(mocker):
 
 
 def test_api_UvicornServer_run(mocker):
-    serve_mock = mocker.patch(
-        "freqtrade.rpc.api_server.uvicorn_threaded.UvicornServer.serve", get_mock_coro(None)
-    )
+    serve_mock = mocker.patch("freqtrade.rpc.api_server.uvicorn_threaded.UvicornServer.serve")
     s = UvicornServer(uvicorn.Config(MagicMock(), port=8080, host="127.0.0.1"))
     assert serve_mock.call_count == 0
 
@@ -401,9 +398,7 @@ def test_api_UvicornServer_run(mocker):
 
 
 def test_api_UvicornServer_run_no_uvloop(mocker, import_fails):
-    serve_mock = mocker.patch(
-        "freqtrade.rpc.api_server.uvicorn_threaded.UvicornServer.serve", get_mock_coro(None)
-    )
+    serve_mock = mocker.patch("freqtrade.rpc.api_server.uvicorn_threaded.UvicornServer.serve")
     asyncio.set_event_loop(asyncio.new_event_loop())
     s = UvicornServer(uvicorn.Config(MagicMock(), port=8080, host="127.0.0.1"))
     assert serve_mock.call_count == 0
