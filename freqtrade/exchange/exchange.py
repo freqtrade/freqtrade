@@ -140,6 +140,8 @@ class Exchange:
         "ohlcv_has_history": True,  # Some exchanges (Kraken) don't provide history via ohlcv
         "ohlcv_partial_candle": True,
         "ohlcv_require_since": False,
+        # Seconds after the candle close time to assume a candle is actually closed
+        "ohlcv_late_candle_grace_secs": 15,
         "download_data_parallel_quick": True,
         "always_require_api_keys": False,  # purge API keys for Dry-run. Must default to false.
         # Check https://github.com/ccxt/ccxt/issues/10767 for removal of ohlcv_volume_currency
@@ -229,6 +231,8 @@ class Exchange:
 
         # Holds last candle refreshed time of each pair
         self._pairs_last_refresh_time: dict[PairWithTimeframe, int] = {}
+        # Holds the time each pair was last queried from the exchange
+        self._pairs_last_poll_time: dict[PairWithTimeframe, int] = {}
         # Timestamp of last markets refresh
         self._last_markets_refresh: int = 0
 
@@ -265,6 +269,7 @@ class Exchange:
 
         # Assign this directly for easy access
         self._ohlcv_partial_candle = self._ft_has["ohlcv_partial_candle"]
+        self._ohlcv_late_candle_grace_ms = self._ft_has["ohlcv_late_candle_grace_secs"] * 1000
 
         # Initialize ccxt objects
         ccxt_config = self._ccxt_config
@@ -2896,10 +2901,19 @@ class Exchange:
         cache: bool,
         drop_incomplete: bool,
     ) -> DataFrame:
-        # keeping last candle time as last refreshed time of the pair
-        if ticks and cache:
-            idx = -2 if drop_incomplete and len(ticks) > 1 else -1
-            self._pairs_last_refresh_time[(pair, timeframe, c_type)] = ticks[idx][0]
+        # Open date of the currently forming candle.
+        curr_candle_date = dt_ts(timeframe_to_prev_date(timeframe))
+        # Only drop the last candle if it really is the currently forming one.
+        # Exchanges omitting candles without trades can return a completed
+        # candle as last element, which shouldn't be dropped.
+        drop_incomplete = drop_incomplete and bool(ticks) and ticks[-1][0] >= curr_candle_date
+        if cache:
+            # Remember when this pair was last queried - even if the response was empty.
+            self._pairs_last_poll_time[(pair, timeframe, c_type)] = dt_ts()
+            # keeping last candle time as last refreshed time of the pair
+            kept_ticks = ticks[:-1] if drop_incomplete else ticks
+            if kept_ticks and self._candle_is_final(ticks[-1][0], timeframe):
+                self._pairs_last_refresh_time[(pair, timeframe, c_type)] = kept_ticks[-1][0]
         has_cache = cache and (pair, timeframe, c_type) in self._klines
         # in case of existing cache, fill_missing happens after concatenation
         ohlcv_df = ohlcv_to_dataframe(
@@ -3027,13 +3041,50 @@ class Exchange:
                 self._expiring_candle_cache[(c[1], lookback_period)][c] = val
         return candles
 
+    def _candle_is_final(self, last_candle_date: int, timeframe: str) -> bool:
+        """
+        Whether the candles of a response can be considered final.
+        The just-closed candle may still be updated by the exchange - it's only assumed to be final
+        once a newer candle was issued, or once the grace period after its close is over.
+        :param last_candle_date: Open date of the newest candle the exchange returned (in ms)
+        :param timeframe: timeframe of the candles
+        """
+        curr_candle_date = dt_ts(timeframe_to_prev_date(timeframe))
+        if last_candle_date != (curr_candle_date - timeframe_to_msecs(timeframe)):
+            # The exchange either issued a newer candle already - or has no data for this pair
+            # since well before the last candle closed.
+            return True
+        # The just-closed candle, with no newer candle issued yet.
+        # Considered final once the grace period after its close is over.
+        return dt_ts() >= (curr_candle_date + self._ohlcv_late_candle_grace_ms)
+
     def _now_is_time_to_refresh(self, pair: str, timeframe: str, candle_type: CandleType) -> bool:
-        # Timeframe in seconds
-        interval_in_sec = timeframe_to_msecs(timeframe)
-        plr = self._pairs_last_refresh_time.get((pair, timeframe, candle_type), 0) + interval_in_sec
+        pair_key: PairWithTimeframe = (pair, timeframe, candle_type)
+        if pair_key not in self._pairs_last_refresh_time:
+            # We don't have any candle for this pair yet.
+            return True
+        # Timeframe in milliseconds
+        interval_in_msec = timeframe_to_msecs(timeframe)
+        plr = self._pairs_last_refresh_time[pair_key] + interval_in_msec
         # current,active candle open date
         now = dt_ts(timeframe_to_prev_date(timeframe))
-        return plr < now
+        if plr >= now:
+            # The last completed candle is already cached.
+            return False
+
+        if self._pairs_last_poll_time.get(pair_key, 0) < now:
+            # Pair was not queried since the current candle opened.
+            return True
+
+        # The pair was queried within the current candle, but the exchange did not return the
+        # last completed candle. Either it wasn't published yet - or the exchange omits candles
+        # without trades, in which case there is nothing to wait for.
+        if (plr + interval_in_msec) < now:
+            # More than just the last candle is missing - the exchange has no data for this
+            # pair. Re-check with the next candle instead of on every iteration.
+            return False
+        # Only the just-closed candle is missing - it may be published with a slight delay.
+        return dt_ts() < (now + self._ohlcv_late_candle_grace_ms)
 
     @retrier_async
     async def _async_get_candle_history(
