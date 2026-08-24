@@ -24,25 +24,15 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ "ubuntu-22.04", "ubuntu-24.04", "ubuntu-26.04", "ubuntu-24.04-arm", "macos-14", "macos-15" , "windows-2022", "windows-2025" ]
-        python-version: ["3.11", "3.12", "3.13", "3.14"]
-        exclude:
-          - os: "ubuntu-22.04"
-            python-version: "3.13"
-          - os: "ubuntu-22.04"
-            python-version: "3.14"
-          # Reduce ARM runs to newer python versions
-          - os: "ubuntu-24.04-arm"
-            python-version: "3.11"
-          - os: "ubuntu-24.04-arm"
-            python-version: "3.12"
-          # ubuntu 26.04 has 3.14 as default python version
-          - os: "ubuntu-26.04"
-            python-version: "3.11"
-          - os: "ubuntu-26.04"
-            python-version: "3.12"
-          - os: "ubuntu-26.04"
-            python-version: "3.13"
+        # ponytail: trimmed from upstream's full 8-OS x 4-Python compatibility matrix
+        # (~30 parallel jobs) to one OS/Python combo -- this fork's GitHub Actions
+        # concurrency limit can't run the full matrix (jobs get silently cancelled,
+        # not failed). Upstream's matrix exists to support many contributors' platforms;
+        # this fork only needs to know its own commits work. Restore the full matrix
+        # (see freqtrade/freqtrade's own ci.yml) if this fork ever needs that broader
+        # coverage and the concurrency limit is raised to match.
+        os: [ "ubuntu-24.04" ]
+        python-version: ["3.11"]
 
 
     steps:
