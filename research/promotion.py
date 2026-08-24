@@ -11,8 +11,10 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from enum import StrEnum
+from typing import cast
 
 import pandas as pd
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 from freqtrade.data.metrics import calculate_sharpe
@@ -157,6 +159,11 @@ def evaluate_paper_trading_health(
     shorter than the OOS window a candidate was originally evaluated over, so
     paper_sharpe carries materially more estimation noise than the OOS baseline it's
     compared against. Treat this as a first-pass filter for human judgment, not proof.
+
+    Known limitation: the spec's bounded-connection-timeout requirement is not
+    implemented -- init_db()'s plain string-URL signature has no way to pass
+    connect_args, and bypassing init_db to construct the engine directly is out of
+    scope here.
     """
     record = _load_promotion_record(session, promotion_id)
     if record.state != PromotionState.PAPER_TRADING.value:
@@ -187,15 +194,27 @@ def evaluate_paper_trading_health(
     days_elapsed = (now - started_at_aware).days
 
     init_db(f"sqlite:///{db_path}")
-    closed_trades = (
-        Trade.session.query(Trade)
-        .filter(
-            Trade.strategy == candidate.strategy_id,
-            Trade.is_open.is_(False),
-            Trade.close_date >= started_at_naive,
+    try:
+        closed_trades = (
+            Trade.session.query(Trade)
+            .filter(
+                Trade.strategy == candidate.strategy_id,
+                Trade.is_open.is_(False),
+                Trade.close_date >= started_at_naive,
+            )
+            .all()
         )
-        .all()
-    )
+    finally:
+        # Connection hygiene: the dry-run database file may belong to a currently
+        # running freqtrade bot process writing to it concurrently -- never leave a
+        # lingering handle on it. Release the scoped session and dispose its engine
+        # before returning, regardless of whether the query above succeeded.
+        # init_db() always binds Trade.session via sessionmaker(bind=engine) with a
+        # real Engine (see freqtrade/persistence/models.py's init_db) -- get_bind()'s
+        # broader Engine | Connection return type is never a Connection here.
+        engine = cast(Engine, Trade.session.get_bind())
+        Trade.session.remove()
+        engine.dispose()
     n_trades = len(closed_trades)
 
     if n_trades > 0:
@@ -252,6 +271,12 @@ def apply_health_evaluation(
         raise ValueError(
             f"PromotionRecord {promotion_id} is in state {record.state!r}, not "
             f"{PromotionState.PAPER_TRADING.value!r} -- cannot apply a health evaluation."
+        )
+    if evaluation["eligible"] and not evaluation["enough_evidence"]:
+        raise ValueError(
+            "evaluation is internally inconsistent: eligible=True requires "
+            "enough_evidence=True -- this should only be produced by "
+            "evaluate_paper_trading_health()."
         )
     if evaluation["eligible"]:
         record.state = PromotionState.LIVE_ELIGIBLE.value

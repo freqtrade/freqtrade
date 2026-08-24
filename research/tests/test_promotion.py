@@ -345,3 +345,50 @@ def test_apply_health_evaluation_raises_when_not_in_paper_trading(tmp_path):
 
     with pytest.raises(ValueError, match="cannot apply a health evaluation"):
         apply_health_evaluation(session, record.id, canned_evaluation)
+
+
+def test_apply_health_evaluation_raises_when_eligible_without_enough_evidence(tmp_path):
+    session = _session(tmp_path)
+    candidate = _candidate(session)
+    record = create_promotion_record(session, candidate.id)
+    start_paper_trading(session, record.id, "tradesv3.dryrun.sqlite")
+    inconsistent_evaluation = {
+        "eligible": True,
+        "enough_evidence": False,
+        "days_elapsed": 3,
+        "n_trades": 1,
+        "paper_sharpe": 1.5,
+        "degradation_ratio": 0.9,
+        "reasons": [],
+    }
+
+    with pytest.raises(ValueError, match="internally inconsistent"):
+        apply_health_evaluation(session, record.id, inconsistent_evaluation)
+
+
+def test_full_promotion_chain_from_passed_gate_through_live(tmp_path):
+    session = _session(tmp_path)
+    candidate = _candidate(session, oos_sharpe=2.0)
+    record = create_promotion_record(session, candidate.id)
+    assert record.state == PromotionState.PASSED_GATE.value
+
+    started_at = datetime.now(UTC) - timedelta(days=14)
+    dry_run_db_path = tmp_path / "dryrun_full_chain.sqlite"
+    start_paper_trading(session, record.id, str(dry_run_db_path), started_at)
+    assert record.state == PromotionState.PAPER_TRADING.value
+
+    _insert_dry_run_trades(
+        dry_run_db_path,
+        "TestStrategy",
+        started_at,
+        [8, 6, 7, 9, 5, 8, 6, 7, 9, 5],
+    )
+
+    evaluation = evaluate_paper_trading_health(session, record.id, starting_balance=1000.0)
+
+    updated = apply_health_evaluation(session, record.id, evaluation)
+    assert updated.state == PromotionState.LIVE_ELIGIBLE.value
+
+    live = promote_to_live(session, record.id)
+    assert live.state == PromotionState.LIVE.value
+    assert live.resolved_at is not None

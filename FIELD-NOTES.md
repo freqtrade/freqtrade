@@ -20,9 +20,9 @@ class-level globals on the same classes (`Trade.use_db` and `LocalTrade.bt_trade
 across `pytest --random-order -n auto` runs. Then `research/promotion.py`'s
 `evaluate_paper_trading_health` became the first code in this package to call `init_db`
 itself, deliberately, against a real dry-run database — the exact same footgun in a new
-place. The call site is `research/promotion.py:189`
+place. The call site is `research/promotion.py:196`
 (`init_db(f"sqlite:///{db_path}")`). The very next statement, the query itself, is
-`research/promotion.py:191` (`Trade.session.query`).
+`research/promotion.py:199` (`Trade.session.query`).
 
 The trap: two calls to a function like this in the same process — sequential or
 interleaved — silently redirect each other's `Trade.session`. A test file that exercises
