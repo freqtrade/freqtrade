@@ -56,6 +56,10 @@ def test_combine_dataframes_with_mean(testdatadir):
     assert "ETH/BTC" in df.columns
     assert "ADA/BTC" in df.columns
     assert "mean" in df.columns
+    assert (
+        pytest.approx(df.iloc[0]["mean"])
+        == (data["ETH/BTC"].at[0, "close"] + data["ADA/BTC"].at[0, "close"]) / 2
+    )
 
 
 def test_combined_dataframes_with_rel_mean(testdatadir):
@@ -76,6 +80,11 @@ def test_combined_dataframes_with_rel_mean(testdatadir):
     assert df.iloc[-1]["count"] == 2
     assert len(df) < len(data["BTC/USDT"])
     assert df["rel_mean"].between(-0.5, 0.5).all()
+    # mean must be the mean of the pair columns only - not including the "count" column.
+    assert (
+        pytest.approx(df.iloc[0]["mean"])
+        == (data["BTC/USDT"].at[0, "close"] + data["XRP/USDT"].at[0, "close"]) / 2
+    )
 
 
 def test_combine_dataframes_with_mean_no_data(testdatadir):
