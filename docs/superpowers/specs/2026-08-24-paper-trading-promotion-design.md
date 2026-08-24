@@ -162,8 +162,21 @@ human-initiated step this package requires before any evaluation can run — del
 manual, since actually starting a dry-run bot process is outside this package's scope
 (see "What this is not").
 
-`evaluate_paper_trading_health(session: Session, promotion_id: int, dry_run_db_path:
-str | None = None, periods_per_year: int = 365) -> dict`
+`evaluate_paper_trading_health(session: Session, promotion_id: int, starting_balance:
+float, dry_run_db_path: str | None = None, periods_per_year: int = 365) -> dict`
+
+**`starting_balance` is required, not defaulted or derived (a real gap caught while
+grounding the plan against `calculate_sharpe`'s actual signature, not something the first
+draft of this spec accounted for).** `research/walkforward.py`'s existing
+`calculate_sharpe` calls always pass `self.config["dry_run_wallet"]` — the same
+backtest `config` dict already in scope there. This function has no `config` in scope
+(only a `PromotionRecord` and a `CandidateResult` DB row), and `dry_run_wallet` isn't
+persisted on either — a paper-trading bot's actual configured wallet size lives in that
+bot's own config file, which this package doesn't read. Rather than guess, invent a
+default, or reach into a config file this module has no other reason to touch, the
+caller (a human who knows the paper-trading bot's own configured stake) supplies it
+directly, the same way `research.gate.run_promotion_gate` takes its `config` from the
+caller rather than discovering it.
 
 Loads the `PromotionRecord` (raises `ValueError` if missing) and requires its state be
 `PAPER_TRADING` (`ValueError` otherwise — evaluating a record that hasn't started paper
