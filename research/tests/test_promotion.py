@@ -145,3 +145,22 @@ def test_reject_raises_from_passed_gate_and_already_resolved_states(tmp_path):
     reject(session, record.id, "first rejection")
     with pytest.raises(ValueError, match=r"reject\(\) only applies"):
         reject(session, record.id, "second rejection")
+
+
+def test_transitions_raise_from_live(tmp_path):
+    session = _session(tmp_path)
+    candidate = _candidate(session)
+    record = create_promotion_record(session, candidate.id)
+    start_paper_trading(session, record.id, "a.sqlite")
+    record.state = PromotionState.LIVE_ELIGIBLE.value
+    session.flush()
+    promote_to_live(session, record.id)
+
+    with pytest.raises(ValueError):
+        start_paper_trading(session, record.id, "b.sqlite")
+
+    with pytest.raises(ValueError):
+        promote_to_live(session, record.id)
+
+    with pytest.raises(ValueError):
+        reject(session, record.id, "too late")
