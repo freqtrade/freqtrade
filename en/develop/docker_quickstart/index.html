@@ -2414,7 +2414,7 @@ For this, please create a Dockerfile containing installation steps for the addit
 <div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">freqtrade_custom</span>
 <span class="w">    </span><span class="nt">build</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">context</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.</span>
-<span class="w">      </span><span class="nt">dockerfile</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;./Dockerfile.&lt;yourextension&gt;&quot;</span>
+<span class="w">      </span><span class="nt">dockerfile</span><span class="p">:</span><span class="w"> </span><span class="s">"./Dockerfile.&lt;yourextension&gt;"</span>
 </code></pre></div>
 <p>You can then run <code>docker compose build --pull</code> to build the docker image, and run it using the commands described above.</p>
 <h3 id="plotting-with-docker">Plotting with docker<a class="headerlink" href="#plotting-with-docker" title="Permanent link">&para;</a></h3>
@@ -2441,9 +2441,9 @@ Please use the link that's printed in the console after startup for simplified l
   The market api requests require a synchronized clock but the time in the docker container shifts a bit over time into the past.
   To fix this issue temporarily you need to run <code>wsl --shutdown</code> and restart docker again (a popup on windows 10 will ask you to do so).
   A permanent solution is either to host the docker container on a linux host or restart the wsl from time to time with the scheduler.</p>
-<div class="highlight"><pre><span></span><code>taskkill<span class="w"> </span>/IM<span class="w"> </span><span class="s2">&quot;Docker Desktop.exe&quot;</span><span class="w"> </span>/F
+<div class="highlight"><pre><span></span><code>taskkill<span class="w"> </span>/IM<span class="w"> </span><span class="s2">"Docker Desktop.exe"</span><span class="w"> </span>/F
 wsl<span class="w"> </span>--shutdown
-start<span class="w"> </span><span class="s2">&quot;&quot;</span><span class="w"> </span><span class="s2">&quot;C:\Program Files\Docker\Docker\Docker Desktop.exe&quot;</span>
+start<span class="w"> </span><span class="s2">""</span><span class="w"> </span><span class="s2">"C:\Program Files\Docker\Docker\Docker Desktop.exe"</span>
 </code></pre></div>
 </li>
 </ul>

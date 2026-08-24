@@ -3062,7 +3062,7 @@ Using this scheme, all configuration settings will also be available as environm
 <span class="nv">FREQTRADE__EXCHANGE__SECRET</span><span class="o">=</span>&lt;yourExchangeSecret&gt;
 </code></pre></div>
 <p>Json lists are parsed as json - so you can use the following to set a list of pairs:</p>
-<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">FREQTRADE__EXCHANGE__PAIR_WHITELIST</span><span class="o">=</span><span class="s1">&#39;[&quot;BTC/USDT&quot;, &quot;ETH/USDT&quot;]&#39;</span>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">FREQTRADE__EXCHANGE__PAIR_WHITELIST</span><span class="o">=</span><span class="s1">'["BTC/USDT", "ETH/USDT"]'</span>
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -3094,9 +3094,9 @@ If a key is in more than one of the configurations, then the "last specified con
 <div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>trade<span class="w"> </span>--config<span class="w"> </span>user_data/config1.json<span class="w"> </span>--config<span class="w"> </span>user_data/config-private.json<span class="w"> </span>&lt;...&gt;
 </code></pre></div>
 <p>The below is equivalent to the example above - but having 2 configuration files in the configuration, for easier reuse.</p>
-<div class="highlight"><span class="filename">user_data/config.json</span><pre><span></span><code><span class="nt">&quot;add_config_files&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">    </span><span class="s2">&quot;config1.json&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="s2">&quot;config-private.json&quot;</span>
+<div class="highlight"><span class="filename">user_data/config.json</span><pre><span></span><code><span class="nt">"add_config_files"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="s2">"config1.json"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"config-private.json"</span>
 <span class="p">]</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>trade<span class="w"> </span>--config<span class="w"> </span>user_data/config.json<span class="w"> </span>&lt;...&gt;
@@ -3107,23 +3107,23 @@ If a key is in more than one of the configurations, then the "last specified con
 <p>If the same configuration setting takes place in both <code>config.json</code> and <code>config-import.json</code>, then the parent configuration wins.
 In the below case, <code>max_open_trades</code> would be 3 after the merging - as the reusable "import" configuration has this key overwritten.</p>
 <div class="highlight"><span class="filename">user_data/config.json</span><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;max_open_trades&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;stake_currency&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;USDT&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;add_config_files&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">        </span><span class="s2">&quot;config-import.json&quot;</span>
+<span class="w">    </span><span class="nt">"max_open_trades"</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"stake_currency"</span><span class="p">:</span><span class="w"> </span><span class="s2">"USDT"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"add_config_files"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">"config-import.json"</span>
 <span class="w">    </span><span class="p">]</span>
 <span class="p">}</span>
 </code></pre></div>
 <div class="highlight"><span class="filename">user_data/config-import.json</span><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;max_open_trades&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;stake_amount&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;unlimited&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"max_open_trades"</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"stake_amount"</span><span class="p">:</span><span class="w"> </span><span class="s2">"unlimited"</span><span class="p">,</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>Resulting combined configuration:</p>
 <div class="highlight"><span class="filename">Result</span><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;max_open_trades&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;stake_currency&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;USDT&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;stake_amount&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;unlimited&quot;</span>
+<span class="w">    </span><span class="nt">"max_open_trades"</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"stake_currency"</span><span class="p">:</span><span class="w"> </span><span class="s2">"USDT"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"stake_amount"</span><span class="p">:</span><span class="w"> </span><span class="s2">"unlimited"</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>If multiple files are in the <code>add_config_files</code> section, then they will be assumed to be at identical levels, having the last occurrence override the earlier config (unless a parent already defined such a key).</p>
@@ -3131,7 +3131,7 @@ In the below case, <code>max_open_trades</code> would be 3 after the merging - a
 <h2 id="editor-autocomplete-and-validation">Editor autocomplete and validation<a class="headerlink" href="#editor-autocomplete-and-validation" title="Permanent link">&para;</a></h2>
 <p>If you are using an editor that supports JSON schema, you can use the schema provided by Freqtrade to get autocompletion and validation of your configuration file by adding the following line to the top of your configuration file:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;$schema&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://schema.freqtrade.io/schema.json&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"$schema"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://schema.freqtrade.io/schema.json"</span><span class="p">,</span>
 <span class="p">}</span>
 </code></pre></div>
 <details class="note">
@@ -3679,10 +3679,10 @@ This exchange has also a limit on USD - where all orders must be &gt; 10$ - whic
 <h4 id="dry-run-wallet">Dry-run wallet<a class="headerlink" href="#dry-run-wallet" title="Permanent link">&para;</a></h4>
 <p>When running in dry-run mode, the bot will use a simulated wallet to execute trades. The starting balance of this wallet is defined by <code>dry_run_wallet</code> (defaults to 1000).
 For more complex scenarios, you can also assign a dictionary to <code>dry_run_wallet</code> to define the starting balance for each currency.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;dry_run_wallet&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;BTC&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.01</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;ETH&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;USDT&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"dry_run_wallet"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"BTC"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.01</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"ETH"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"USDT"</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>Command line options (<code>--dry-run-wallet</code>) can be used to override the configuration value, but only for the float value, not for the dictionary. If you'd like to use the dictionary, please adjust the configuration file.</p>
@@ -3750,8 +3750,8 @@ For example, the bot will at most use (0.05 BTC x 3) = 0.15 BTC, assuming a conf
 <div class="highlight"><pre><span></span><code><span class="n">currency_balance</span> <span class="o">/</span> <span class="p">(</span><span class="n">max_open_trades</span> <span class="o">-</span> <span class="n">current_open_trades</span><span class="p">)</span>
 </code></pre></div>
 <p>To allow the bot to trade all the available <code>stake_currency</code> in your account (minus <code>tradable_balance_ratio</code>) set</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;stake_amount&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;unlimited&quot;</span><span class="p">,</span>
-<span class="nt">&quot;tradable_balance_ratio&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.99</span><span class="p">,</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"stake_amount"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">"unlimited"</span><span class="p">,</span>
+<span class="nt">"tradable_balance_ratio"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.99</span><span class="p">,</span>
 </code></pre></div>
 <div class="admonition tip">
 <p class="admonition-title">Compounding profits</p>
@@ -3978,17 +3978,17 @@ This would result in the following pricing matrix:</p>
 <h3 id="market-order-pricing">Market order pricing<a class="headerlink" href="#market-order-pricing" title="Permanent link">&para;</a></h3>
 <p>When using market orders, prices should be configured to use the "correct" side of the orderbook to allow realistic pricing detection.
 Assuming both entry and exits are using market orders, a configuration similar to the following must be used</p>
-<div class="highlight"><pre><span></span><code>  &quot;order_types&quot;: {
-    &quot;entry&quot;: &quot;market&quot;,
-    &quot;exit&quot;: &quot;market&quot;
+<div class="highlight"><pre><span></span><code>  "order_types": {
+    "entry": "market",
+    "exit": "market"
     // ...
   },
-  &quot;entry_pricing&quot;: {
-    &quot;price_side&quot;: &quot;other&quot;,
+  "entry_pricing": {
+    "price_side": "other",
     // ...
   },
-  &quot;exit_pricing&quot;:{
-    &quot;price_side&quot;: &quot;other&quot;,
+  "exit_pricing":{
+    "price_side": "other",
     // ...
   },
 </code></pre></div>
@@ -3998,11 +3998,11 @@ Assuming both entry and exits are using market orders, a configuration similar t
 <p>The <code>minimal_roi</code> configuration parameter is a JSON object where the key is a duration
 in minutes and the value is the minimum ROI as a ratio.
 See the example below:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;minimal_roi&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;40&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.0</span><span class="p">,</span><span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="err">Exi</span><span class="kc">t</span><span class="w"> </span><span class="err">a</span><span class="kc">fter</span><span class="w"> </span><span class="mi">40</span><span class="w"> </span><span class="err">mi</span><span class="kc">nutes</span><span class="w"> </span><span class="err">i</span><span class="kc">f</span><span class="w"> </span><span class="kc">t</span><span class="err">he</span><span class="w"> </span><span class="err">pro</span><span class="kc">f</span><span class="err">i</span><span class="kc">t</span><span class="w"> </span><span class="err">is</span><span class="w"> </span><span class="kc">n</span><span class="err">o</span><span class="kc">t</span><span class="w"> </span><span class="kc">ne</span><span class="err">ga</span><span class="kc">t</span><span class="err">ive</span>
-<span class="w">    </span><span class="nt">&quot;30&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.01</span><span class="p">,</span><span class="w">   </span><span class="err">#</span><span class="w"> </span><span class="err">Exi</span><span class="kc">t</span><span class="w"> </span><span class="err">a</span><span class="kc">fter</span><span class="w"> </span><span class="mi">30</span><span class="w"> </span><span class="err">mi</span><span class="kc">nutes</span><span class="w"> </span><span class="err">i</span><span class="kc">f</span><span class="w"> </span><span class="kc">t</span><span class="err">here</span><span class="w"> </span><span class="err">is</span><span class="w"> </span><span class="err">a</span><span class="kc">t</span><span class="w"> </span><span class="err">leas</span><span class="kc">t</span><span class="w"> </span><span class="mi">1</span><span class="err">%</span><span class="w"> </span><span class="err">pro</span><span class="kc">f</span><span class="err">i</span><span class="kc">t</span>
-<span class="w">    </span><span class="nt">&quot;20&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.02</span><span class="p">,</span><span class="w">   </span><span class="err">#</span><span class="w"> </span><span class="err">Exi</span><span class="kc">t</span><span class="w"> </span><span class="err">a</span><span class="kc">fter</span><span class="w"> </span><span class="mi">20</span><span class="w"> </span><span class="err">mi</span><span class="kc">nutes</span><span class="w"> </span><span class="err">i</span><span class="kc">f</span><span class="w"> </span><span class="kc">t</span><span class="err">here</span><span class="w"> </span><span class="err">is</span><span class="w"> </span><span class="err">a</span><span class="kc">t</span><span class="w"> </span><span class="err">leas</span><span class="kc">t</span><span class="w"> </span><span class="mi">2</span><span class="err">%</span><span class="w"> </span><span class="err">pro</span><span class="kc">f</span><span class="err">i</span><span class="kc">t</span>
-<span class="w">    </span><span class="nt">&quot;0&quot;</span><span class="p">:</span><span class="w">  </span><span class="mf">0.04</span><span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="err">Exi</span><span class="kc">t</span><span class="w"> </span><span class="err">immedia</span><span class="kc">tel</span><span class="err">y</span><span class="w"> </span><span class="err">i</span><span class="kc">f</span><span class="w"> </span><span class="kc">t</span><span class="err">here</span><span class="w"> </span><span class="err">is</span><span class="w"> </span><span class="err">a</span><span class="kc">t</span><span class="w"> </span><span class="err">leas</span><span class="kc">t</span><span class="w"> </span><span class="mi">4</span><span class="err">%</span><span class="w"> </span><span class="err">pro</span><span class="kc">f</span><span class="err">i</span><span class="kc">t</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"minimal_roi"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"40"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.0</span><span class="p">,</span><span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="err">Exi</span><span class="kc">t</span><span class="w"> </span><span class="err">a</span><span class="kc">fter</span><span class="w"> </span><span class="mi">40</span><span class="w"> </span><span class="err">mi</span><span class="kc">nutes</span><span class="w"> </span><span class="err">i</span><span class="kc">f</span><span class="w"> </span><span class="kc">t</span><span class="err">he</span><span class="w"> </span><span class="err">pro</span><span class="kc">f</span><span class="err">i</span><span class="kc">t</span><span class="w"> </span><span class="err">is</span><span class="w"> </span><span class="kc">n</span><span class="err">o</span><span class="kc">t</span><span class="w"> </span><span class="kc">ne</span><span class="err">ga</span><span class="kc">t</span><span class="err">ive</span>
+<span class="w">    </span><span class="nt">"30"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.01</span><span class="p">,</span><span class="w">   </span><span class="err">#</span><span class="w"> </span><span class="err">Exi</span><span class="kc">t</span><span class="w"> </span><span class="err">a</span><span class="kc">fter</span><span class="w"> </span><span class="mi">30</span><span class="w"> </span><span class="err">mi</span><span class="kc">nutes</span><span class="w"> </span><span class="err">i</span><span class="kc">f</span><span class="w"> </span><span class="kc">t</span><span class="err">here</span><span class="w"> </span><span class="err">is</span><span class="w"> </span><span class="err">a</span><span class="kc">t</span><span class="w"> </span><span class="err">leas</span><span class="kc">t</span><span class="w"> </span><span class="mi">1</span><span class="err">%</span><span class="w"> </span><span class="err">pro</span><span class="kc">f</span><span class="err">i</span><span class="kc">t</span>
+<span class="w">    </span><span class="nt">"20"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.02</span><span class="p">,</span><span class="w">   </span><span class="err">#</span><span class="w"> </span><span class="err">Exi</span><span class="kc">t</span><span class="w"> </span><span class="err">a</span><span class="kc">fter</span><span class="w"> </span><span class="mi">20</span><span class="w"> </span><span class="err">mi</span><span class="kc">nutes</span><span class="w"> </span><span class="err">i</span><span class="kc">f</span><span class="w"> </span><span class="kc">t</span><span class="err">here</span><span class="w"> </span><span class="err">is</span><span class="w"> </span><span class="err">a</span><span class="kc">t</span><span class="w"> </span><span class="err">leas</span><span class="kc">t</span><span class="w"> </span><span class="mi">2</span><span class="err">%</span><span class="w"> </span><span class="err">pro</span><span class="kc">f</span><span class="err">i</span><span class="kc">t</span>
+<span class="w">    </span><span class="nt">"0"</span><span class="p">:</span><span class="w">  </span><span class="mf">0.04</span><span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="err">Exi</span><span class="kc">t</span><span class="w"> </span><span class="err">immedia</span><span class="kc">tel</span><span class="err">y</span><span class="w"> </span><span class="err">i</span><span class="kc">f</span><span class="w"> </span><span class="kc">t</span><span class="err">here</span><span class="w"> </span><span class="err">is</span><span class="w"> </span><span class="err">a</span><span class="kc">t</span><span class="w"> </span><span class="err">leas</span><span class="kc">t</span><span class="w"> </span><span class="mi">4</span><span class="err">%</span><span class="w"> </span><span class="err">pro</span><span class="kc">f</span><span class="err">i</span><span class="kc">t</span>
 <span class="p">},</span>
 </code></pre></div>
 <p>Most of the strategy files already include the optimal <code>minimal_roi</code> value.
@@ -4025,7 +4025,7 @@ For example, you can send <code>/forceenter ETH/BTC</code> to the bot, which wil
 <p>For example, if your strategy is using a 1h timeframe, and you only want to buy within the first 5 minutes when a new candle comes in, you can add the following configuration to your strategy:</p>
 <div class="highlight"><pre><span></span><code><span class="w">  </span><span class="p">{</span>
 <span class="w">    </span><span class="c1">//...</span>
-<span class="w">    </span><span class="nt">&quot;ignore_buying_expired_candle_after&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">300</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"ignore_buying_expired_candle_after"</span><span class="p">:</span><span class="w"> </span><span class="mi">300</span><span class="p">,</span>
 <span class="w">    </span><span class="c1">// ...</span>
 <span class="w">  </span><span class="p">}</span>
 </code></pre></div>
@@ -4043,27 +4043,27 @@ stoploss "on exchange" which means stoploss order would be placed immediately on
 <p>For information on (<code>emergency_exit</code>,<code>force_exit</code>, <code>force_entry</code>, <code>stoploss_on_exchange</code>,<code>stoploss_on_exchange_interval</code>,<code>stoploss_on_exchange_limit_ratio</code>) please see stop loss documentation <a href="../stoploss/">stop loss on exchange</a></p>
 <p>Syntax for Strategy:</p>
 <div class="highlight"><pre><span></span><code><span class="n">order_types</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;entry&quot;</span><span class="p">:</span> <span class="s2">&quot;limit&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;exit&quot;</span><span class="p">:</span> <span class="s2">&quot;limit&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;emergency_exit&quot;</span><span class="p">:</span> <span class="s2">&quot;market&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;force_entry&quot;</span><span class="p">:</span> <span class="s2">&quot;market&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;force_exit&quot;</span><span class="p">:</span> <span class="s2">&quot;market&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;stoploss&quot;</span><span class="p">:</span> <span class="s2">&quot;market&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;stoploss_on_exchange&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="s2">&quot;stoploss_on_exchange_interval&quot;</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
-    <span class="s2">&quot;stoploss_on_exchange_limit_ratio&quot;</span><span class="p">:</span> <span class="mf">0.99</span><span class="p">,</span>
+    <span class="s2">"entry"</span><span class="p">:</span> <span class="s2">"limit"</span><span class="p">,</span>
+    <span class="s2">"exit"</span><span class="p">:</span> <span class="s2">"limit"</span><span class="p">,</span>
+    <span class="s2">"emergency_exit"</span><span class="p">:</span> <span class="s2">"market"</span><span class="p">,</span>
+    <span class="s2">"force_entry"</span><span class="p">:</span> <span class="s2">"market"</span><span class="p">,</span>
+    <span class="s2">"force_exit"</span><span class="p">:</span> <span class="s2">"market"</span><span class="p">,</span>
+    <span class="s2">"stoploss"</span><span class="p">:</span> <span class="s2">"market"</span><span class="p">,</span>
+    <span class="s2">"stoploss_on_exchange"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="s2">"stoploss_on_exchange_interval"</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
+    <span class="s2">"stoploss_on_exchange_limit_ratio"</span><span class="p">:</span> <span class="mf">0.99</span><span class="p">,</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>Configuration:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;order_types&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;entry&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;limit&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;exit&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;limit&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;emergency_exit&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;market&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;force_entry&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;market&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;force_exit&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;market&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;stoploss&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;market&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;stoploss_on_exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;stoploss_on_exchange_interval&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">60</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"order_types"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"entry"</span><span class="p">:</span><span class="w"> </span><span class="s2">"limit"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"exit"</span><span class="p">:</span><span class="w"> </span><span class="s2">"limit"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"emergency_exit"</span><span class="p">:</span><span class="w"> </span><span class="s2">"market"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"force_entry"</span><span class="p">:</span><span class="w"> </span><span class="s2">"market"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"force_exit"</span><span class="p">:</span><span class="w"> </span><span class="s2">"market"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"stoploss"</span><span class="p">:</span><span class="w"> </span><span class="s2">"market"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"stoploss_on_exchange"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"stoploss_on_exchange_interval"</span><span class="p">:</span><span class="w"> </span><span class="mi">60</span>
 <span class="p">}</span>
 </code></pre></div>
 <div class="admonition note">
@@ -4106,9 +4106,9 @@ This means the order must be placed on orderbook for at least time in an unfille
 This can be set in the configuration file or in the strategy.
 Values set in the configuration file overwrite values from in the strategy, following the regular <a href="#configuration-option-prevalence">precedence rules</a>.</p>
 <p>The possible values are: <code>GTC</code> (default), <code>FOK</code> or <code>IOC</code>.</p>
-<div class="highlight"><pre><span></span><code><span class="s2">&quot;order_time_in_force&quot;</span><span class="p">:</span> <span class="p">{</span>
-    <span class="s2">&quot;entry&quot;</span><span class="p">:</span> <span class="s2">&quot;GTC&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;exit&quot;</span><span class="p">:</span> <span class="s2">&quot;GTC&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="s2">"order_time_in_force"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">"entry"</span><span class="p">:</span> <span class="s2">"GTC"</span><span class="p">,</span>
+    <span class="s2">"exit"</span><span class="p">:</span> <span class="s2">"GTC"</span>
 <span class="p">},</span>
 </code></pre></div>
 <div class="admonition warning">
@@ -4123,20 +4123,20 @@ The FIAT currency can be set in the configuration file as <code>fiat_display_cur
 <p>The <code>fiat_display_currency</code> configuration parameter sets the base currency to use for the
 conversion from coin to fiat in the bot Telegram reports.</p>
 <p>The valid values are:</p>
-<div class="highlight"><pre><span></span><code><span class="s2">&quot;AUD&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;BRL&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;CAD&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;CHF&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;CLP&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;CNY&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;CZK&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;DKK&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;EUR&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;GBP&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;HKD&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;HUF&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;IDR&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;ILS&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;INR&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;JPY&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;KRW&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;MXN&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;MYR&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;NOK&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;NZD&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;PHP&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;PKR&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;PLN&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;RUB&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;SEK&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;SGD&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;THB&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;TRY&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;TWD&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;ZAR&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;USD&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="s2">"AUD"</span><span class="p">,</span><span class="w"> </span><span class="s2">"BRL"</span><span class="p">,</span><span class="w"> </span><span class="s2">"CAD"</span><span class="p">,</span><span class="w"> </span><span class="s2">"CHF"</span><span class="p">,</span><span class="w"> </span><span class="s2">"CLP"</span><span class="p">,</span><span class="w"> </span><span class="s2">"CNY"</span><span class="p">,</span><span class="w"> </span><span class="s2">"CZK"</span><span class="p">,</span><span class="w"> </span><span class="s2">"DKK"</span><span class="p">,</span><span class="w"> </span><span class="s2">"EUR"</span><span class="p">,</span><span class="w"> </span><span class="s2">"GBP"</span><span class="p">,</span><span class="w"> </span><span class="s2">"HKD"</span><span class="p">,</span><span class="w"> </span><span class="s2">"HUF"</span><span class="p">,</span><span class="w"> </span><span class="s2">"IDR"</span><span class="p">,</span><span class="w"> </span><span class="s2">"ILS"</span><span class="p">,</span><span class="w"> </span><span class="s2">"INR"</span><span class="p">,</span><span class="w"> </span><span class="s2">"JPY"</span><span class="p">,</span><span class="w"> </span><span class="s2">"KRW"</span><span class="p">,</span><span class="w"> </span><span class="s2">"MXN"</span><span class="p">,</span><span class="w"> </span><span class="s2">"MYR"</span><span class="p">,</span><span class="w"> </span><span class="s2">"NOK"</span><span class="p">,</span><span class="w"> </span><span class="s2">"NZD"</span><span class="p">,</span><span class="w"> </span><span class="s2">"PHP"</span><span class="p">,</span><span class="w"> </span><span class="s2">"PKR"</span><span class="p">,</span><span class="w"> </span><span class="s2">"PLN"</span><span class="p">,</span><span class="w"> </span><span class="s2">"RUB"</span><span class="p">,</span><span class="w"> </span><span class="s2">"SEK"</span><span class="p">,</span><span class="w"> </span><span class="s2">"SGD"</span><span class="p">,</span><span class="w"> </span><span class="s2">"THB"</span><span class="p">,</span><span class="w"> </span><span class="s2">"TRY"</span><span class="p">,</span><span class="w"> </span><span class="s2">"TWD"</span><span class="p">,</span><span class="w"> </span><span class="s2">"ZAR"</span><span class="p">,</span><span class="w"> </span><span class="s2">"USD"</span>
 </code></pre></div>
 <p>In addition to fiat currencies, a range of crypto currencies is supported.</p>
 <p>The valid values are:</p>
-<div class="highlight"><pre><span></span><code><span class="s2">&quot;BTC&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;ETH&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;XRP&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;LTC&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;BCH&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;BNB&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="s2">"BTC"</span><span class="p">,</span><span class="w"> </span><span class="s2">"ETH"</span><span class="p">,</span><span class="w"> </span><span class="s2">"XRP"</span><span class="p">,</span><span class="w"> </span><span class="s2">"LTC"</span><span class="p">,</span><span class="w"> </span><span class="s2">"BCH"</span><span class="p">,</span><span class="w"> </span><span class="s2">"BNB"</span>
 </code></pre></div>
 <h4 id="coingecko-rate-limit-problems">Coingecko Rate limit problems<a class="headerlink" href="#coingecko-rate-limit-problems" title="Permanent link">&para;</a></h4>
 <p>On some IP ranges, coingecko is heavily rate-limiting.
 In such cases, you may want to add your coingecko API key to the configuration.</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;fiat_display_currency&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;USD&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;coingecko&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;api_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your-api&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;is_demo&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">    </span><span class="nt">"fiat_display_currency"</span><span class="p">:</span><span class="w"> </span><span class="s2">"USD"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"coingecko"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"api_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"your-api"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"is_demo"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -4148,9 +4148,9 @@ It is only used for the conversion of coin to fiat in the Telegram reports, whic
 <p>Freqtrade aims ensure data is available at all times.
 Should the websocket connection fail (or be disabled), the bot will fall back to REST API calls.</p>
 <p>Should you experience problems you suspect are caused by websockets, you can disable these via the setting <code>exchange.enable_ws</code>, which defaults to true.</p>
-<div class="highlight"><pre><span></span><code>&quot;exchange&quot;: {
+<div class="highlight"><pre><span></span><code>"exchange": {
     // ...
-    &quot;enable_ws&quot;: false,
+    "enable_ws": false,
     // ...
 }
 </code></pre></div>
@@ -4170,16 +4170,16 @@ creating trades on the exchange.</p>
 <li>Edit your <code>config.json</code> configuration file.</li>
 <li>Switch <code>dry-run</code> to <code>true</code> and specify <code>db_url</code> for a persistence database.</li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;dry_run&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<span class="nt">&quot;db_url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sqlite:///tradesv3.dryrun.sqlite&quot;</span><span class="p">,</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"dry_run"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="nt">"db_url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"sqlite:///tradesv3.dryrun.sqlite"</span><span class="p">,</span>
 </code></pre></div>
 <ol>
 <li>Remove your Exchange API key and secret (change them by empty values or fake credentials):</li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;binance&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;api_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;api_key&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;secret&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;secret&quot;</span><span class="p">,</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"exchange"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"binance"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"api_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"api_key"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"secret"</span><span class="p">:</span><span class="w"> </span><span class="s2">"secret"</span><span class="p">,</span>
 <span class="w">    </span><span class="err">...</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -4209,15 +4209,15 @@ API Keys are usually only required for live trading (trading for real money, bot
 <h3 id="to-switch-your-bot-in-production-mode">To switch your bot in production mode<a class="headerlink" href="#to-switch-your-bot-in-production-mode" title="Permanent link">&para;</a></h3>
 <p><strong>Edit your <code>config.json</code>  file.</strong></p>
 <p><strong>Switch dry-run to false and don't forget to adapt your database URL if set:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;dry_run&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"dry_run"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
 </code></pre></div>
 <p><strong>Insert your Exchange API key (change them by fake API keys):</strong></p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;binance&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;api_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;af8ddd35195e9dc500b9a6f799f6f5c93d89193b&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;secret&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;08a9dc6db3d7b53e1acebd9275677f4b0a04f1a5&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="c1">//&quot;password&quot;: &quot;&quot;, // Optional, not needed by all exchanges)</span>
+<span class="w">    </span><span class="nt">"exchange"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"binance"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"api_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"af8ddd35195e9dc500b9a6f799f6f5c93d89193b"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"secret"</span><span class="p">:</span><span class="w"> </span><span class="s2">"08a9dc6db3d7b53e1acebd9275677f4b0a04f1a5"</span><span class="p">,</span>
+<span class="w">        </span><span class="c1">//"password": "", // Optional, not needed by all exchanges)</span>
 <span class="w">        </span><span class="c1">// ...</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">    </span><span class="c1">//...</span>
@@ -4234,17 +4234,17 @@ You can then start the bot with <code>freqtrade trade --config user_data/config.
 <h2 id="using-a-proxy-with-freqtrade">Using a proxy with Freqtrade<a class="headerlink" href="#using-a-proxy-with-freqtrade" title="Permanent link">&para;</a></h2>
 <p>To use a proxy with freqtrade, export your proxy settings using the variables <code>"HTTP_PROXY"</code> and <code>"HTTPS_PROXY"</code> set to the appropriate values.
 This will have the proxy settings applied to everything (telegram, coingecko, ...) <strong>except</strong> for exchange requests.</p>
-<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">HTTP_PROXY</span><span class="o">=</span><span class="s2">&quot;http://addr:port&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">HTTPS_PROXY</span><span class="o">=</span><span class="s2">&quot;http://addr:port&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">HTTP_PROXY</span><span class="o">=</span><span class="s2">"http://addr:port"</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">HTTPS_PROXY</span><span class="o">=</span><span class="s2">"http://addr:port"</span>
 freqtrade
 </code></pre></div>
 <h3 id="proxy-exchange-requests">Proxy exchange requests<a class="headerlink" href="#proxy-exchange-requests" title="Permanent link">&para;</a></h3>
 <p>To use a proxy for exchange connections - you will have to define the proxies as part of the ccxt configuration.</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span><span class="w"> </span>
-<span class="w">  </span><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;ccxt_config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;httpsProxy&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;http://addr:port&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;wsProxy&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;http://addr:port&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"exchange"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"ccxt_config"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"httpsProxy"</span><span class="p">:</span><span class="w"> </span><span class="s2">"http://addr:port"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"wsProxy"</span><span class="p">:</span><span class="w"> </span><span class="s2">"http://addr:port"</span><span class="p">,</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>

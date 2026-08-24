@@ -2661,21 +2661,21 @@ You may also use something like <code>.*DOWN/BTC</code> or <code>.*UP/BTC</code>
 <p>By default, the <code>StaticPairList</code> method is used, which uses a statically defined pair whitelist from the configuration. The pairlist also supports wildcards (in regex-style) - so <code>.*/BTC</code> will include all pairs with BTC as a stake.</p>
 <p>It uses configuration from <code>exchange.pair_whitelist</code> and <code>exchange.pair_blacklist</code>, which in the below example, will trade BTC/USDT and ETH/USDT - and will prevent BNB/USDT trading.</p>
 <p>Both <code>pair_*list</code> parameters support regex - so values like  <code>.*/USDT</code> would enable trading all pairs that are not in the blacklist.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">,</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"exchange"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"..."</span><span class="p">,</span>
 <span class="w">    </span><span class="c1">// ... </span>
-<span class="w">    </span><span class="nt">&quot;pair_whitelist&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">        </span><span class="s2">&quot;BTC/USDT&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="s2">&quot;ETH/USDT&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"pair_whitelist"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">"BTC/USDT"</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">"ETH/USDT"</span><span class="p">,</span>
 <span class="w">        </span><span class="c1">// ...</span>
 <span class="w">    </span><span class="p">],</span>
-<span class="w">    </span><span class="nt">&quot;pair_blacklist&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">        </span><span class="s2">&quot;BNB/USDT&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"pair_blacklist"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">"BNB/USDT"</span><span class="p">,</span>
 <span class="w">        </span><span class="c1">// ...</span>
 <span class="w">    </span><span class="p">]</span>
 <span class="p">},</span>
-<span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">    </span><span class="p">{</span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;StaticPairList&quot;</span><span class="p">}</span>
+<span class="nt">"pairlists"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"StaticPairList"</span><span class="p">}</span>
 <span class="p">],</span>
 </code></pre></div>
 <p>By default, only currently enabled pairs are allowed.
@@ -2693,14 +2693,14 @@ Filtering instances (not the first position in the list) will not apply any cach
 <ul>
 <li>The <code>quoteVolume</code> is the amount of quote (stake) currency traded (bought or sold) in last 24 hours.</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"pairlists"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;VolumePairList&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;number_assets&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;sort_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;quoteVolume&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;min_value&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;max_value&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">8000000</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1800</span>
+<span class="w">        </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"VolumePairList"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"number_assets"</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"sort_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"quoteVolume"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"min_value"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"max_value"</span><span class="p">:</span><span class="w"> </span><span class="mi">8000000</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"refresh_period"</span><span class="p">:</span><span class="w"> </span><span class="mi">1800</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">],</span>
 </code></pre></div>
@@ -2709,14 +2709,14 @@ In addition to that, you can also define a maximum volume with <code>max_value</
 <h5 id="volumepairlist-advanced-mode">VolumePairList Advanced mode<a class="headerlink" href="#volumepairlist-advanced-mode" title="Permanent link">&para;</a></h5>
 <p><code>VolumePairList</code> can also operate in an advanced mode to build volume over a given timerange of specified candle size. It utilizes exchange historical candle data, builds a typical price (calculated by (open+high+low)/3) and multiplies the typical price with every candle's volume. The sum is the <code>quoteVolume</code> over the given range. This allows different scenarios, for a  more smoothened volume, when using longer ranges with larger candle sizes, or the opposite when using a short range with small candles.</p>
 <p>For convenience <code>lookback_days</code> can be specified, which will imply that 1d candles will be used for the lookback. In the example below the pairlist would be created based on the last 7 days:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"pairlists"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;VolumePairList&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;number_assets&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;sort_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;quoteVolume&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;min_value&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">86400</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;lookback_days&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">7</span>
+<span class="w">        </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"VolumePairList"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"number_assets"</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"sort_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"quoteVolume"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"min_value"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"refresh_period"</span><span class="p">:</span><span class="w"> </span><span class="mi">86400</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"lookback_days"</span><span class="p">:</span><span class="w"> </span><span class="mi">7</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">],</span>
 </code></pre></div>
@@ -2733,28 +2733,28 @@ In addition to that, you can also define a maximum volume with <code>max_value</
 <p>On some exchanges (like Gemini), regular VolumePairList does not work as the api does not natively provide 24h volume. This can be worked around by using candle data to build the volume.
 To roughly simulate 24h volume, you can use the following configuration.
 Please note that These pairlists will only refresh once per day.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"pairlists"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;VolumePairList&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;number_assets&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;sort_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;quoteVolume&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;min_value&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">86400</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;lookback_days&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">        </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"VolumePairList"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"number_assets"</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"sort_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"quoteVolume"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"min_value"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"refresh_period"</span><span class="p">:</span><span class="w"> </span><span class="mi">86400</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"lookback_days"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">],</span>
 </code></pre></div>
 </details>
 <p>More sophisticated approach can be used, by using <code>lookback_timeframe</code> for candle size and <code>lookback_period</code> which specifies the amount of candles. This example will build the volume pairs based on a rolling period of 3 days of 1h candles:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"pairlists"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;VolumePairList&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;number_assets&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;sort_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;quoteVolume&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;min_value&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3600</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;lookback_timeframe&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1h&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;lookback_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">72</span>
+<span class="w">        </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"VolumePairList"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"number_assets"</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"sort_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"quoteVolume"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"min_value"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"refresh_period"</span><span class="p">:</span><span class="w"> </span><span class="mi">3600</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"lookback_timeframe"</span><span class="p">:</span><span class="w"> </span><span class="s2">"1h"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"lookback_period"</span><span class="p">:</span><span class="w"> </span><span class="mi">72</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">],</span>
 </code></pre></div>
@@ -2781,24 +2781,24 @@ The percentage change is calculated as the change in price over the last 24 hour
 <details class="note">
 <summary>Unsupported exchanges</summary>
 <p>On some exchanges (like HTX), regular PercentChangePairList does not work as the api does not natively provide 24h percent change in price. This can be worked around by using candle data to calculate the percentage change. To roughly simulate 24h percent change, you can use the following configuration. Please note that these pairlists will only refresh once per day.
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"pairlists"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;PercentChangePairList&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;number_assets&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;min_value&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">86400</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;lookback_days&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">        </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"PercentChangePairList"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"number_assets"</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"min_value"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"refresh_period"</span><span class="p">:</span><span class="w"> </span><span class="mi">86400</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"lookback_days"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">],</span>
 </code></pre></div></p>
 </details>
 <p><strong>Example Configuration to Read from Ticker</strong></p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"pairlists"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;PercentChangePairList&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;number_assets&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">15</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;min_value&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">-10</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;max_value&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">50</span>
+<span class="w">        </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"PercentChangePairList"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"number_assets"</span><span class="p">:</span><span class="w"> </span><span class="mi">15</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"min_value"</span><span class="p">:</span><span class="w"> </span><span class="mi">-10</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"max_value"</span><span class="p">:</span><span class="w"> </span><span class="mi">50</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">],</span>
 </code></pre></div>
@@ -2808,15 +2808,15 @@ The percentage change is calculated as the change in price over the last 24 hour
 <li>Only pairs with a percentage change between -10% and 50% are considered.</li>
 </ol>
 <p><strong>Example Configuration to Read from Candles</strong></p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"pairlists"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;PercentChangePairList&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;number_assets&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">15</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;sort_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;percentage&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;min_value&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3600</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;lookback_timeframe&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1h&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;lookback_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">72</span>
+<span class="w">        </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"PercentChangePairList"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"number_assets"</span><span class="p">:</span><span class="w"> </span><span class="mi">15</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"sort_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"percentage"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"min_value"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"refresh_period"</span><span class="p">:</span><span class="w"> </span><span class="mi">3600</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"lookback_timeframe"</span><span class="p">:</span><span class="w"> </span><span class="s2">"1h"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"lookback_period"</span><span class="p">:</span><span class="w"> </span><span class="mi">72</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">],</span>
 </code></pre></div>
@@ -2840,11 +2840,11 @@ The percentage change is calculated as the change in price over the last 24 hour
 <p><a href="../producer-consumer/">Consumer mode</a> is required for this pairlist to work.</p>
 <p>The pairlist will perform a check on active pairs against the current exchange configuration to avoid attempting to trade on invalid markets.</p>
 <p>You can limit the length of the pairlist with the optional parameter <code>number_assets</code>. Using <code>"number_assets"=0</code> or omitting this key will result in the reuse of all producer pairs valid for the current setup.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"pairlists"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ProducerPairList&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;number_assets&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;producer_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;default&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ProducerPairList"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"number_assets"</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"producer_name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"default"</span><span class="p">,</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">],</span>
 </code></pre></div>
@@ -2857,18 +2857,18 @@ Obviously in complex such configurations, the Producer may not provide data for 
 <h4 id="remotepairlist">RemotePairList<a class="headerlink" href="#remotepairlist" title="Permanent link">&para;</a></h4>
 <p>It allows the user to fetch a pairlist from a remote server or a locally stored json file within the freqtrade directory, enabling dynamic updates and customization of the trading pairlist.</p>
 <p>The RemotePairList is defined in the pairlists section of the configuration settings. It uses the following configuration options:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"pairlists"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;RemotePairList&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;whitelist&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;processing_mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;filter&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;pairlist_url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://example.com/pairlist&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;number_assets&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1800</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;keep_pairlist_on_failure&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;read_timeout&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">60</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;bearer_token&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;my-bearer-token&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;save_to_file&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user_data/filename.json&quot;</span><span class="w"> </span>
+<span class="w">        </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"RemotePairList"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"mode"</span><span class="p">:</span><span class="w"> </span><span class="s2">"whitelist"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"processing_mode"</span><span class="p">:</span><span class="w"> </span><span class="s2">"filter"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"pairlist_url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://example.com/pairlist"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"number_assets"</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"refresh_period"</span><span class="p">:</span><span class="w"> </span><span class="mi">1800</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"keep_pairlist_on_failure"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"read_timeout"</span><span class="p">:</span><span class="w"> </span><span class="mi">60</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"bearer_token"</span><span class="p">:</span><span class="w"> </span><span class="s2">"my-bearer-token"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"save_to_file"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user_data/filename.json"</span><span class="w"> </span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">]</span>
 </code></pre></div>
@@ -2882,36 +2882,36 @@ Obviously in complex such configurations, the Producer may not provide data for 
 <details class="example">
 <summary>Multi bot with shared pairlist example</summary>
 <p><code>save_to_file</code> can be used to save the pairlist to a file with Bot1:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"pairlists"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;RemotePairList&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;whitelist&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;pairlist_url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://example.com/pairlist&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;number_assets&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1800</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;keep_pairlist_on_failure&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;read_timeout&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">60</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;save_to_file&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user_data/filename.json&quot;</span><span class="w"> </span>
+<span class="w">        </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"RemotePairList"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"mode"</span><span class="p">:</span><span class="w"> </span><span class="s2">"whitelist"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"pairlist_url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://example.com/pairlist"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"number_assets"</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"refresh_period"</span><span class="p">:</span><span class="w"> </span><span class="mi">1800</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"keep_pairlist_on_failure"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"read_timeout"</span><span class="p">:</span><span class="w"> </span><span class="mi">60</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"save_to_file"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user_data/filename.json"</span><span class="w"> </span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">]</span>
 </code></pre></div>
 <p>This saved pairlist file can be loaded by Bot2, or any additional bot with this configuration:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"pairlists"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;RemotePairList&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;whitelist&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;pairlist_url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;file:///user_data/filename.json&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;number_assets&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;keep_pairlist_on_failure&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"RemotePairList"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"mode"</span><span class="p">:</span><span class="w"> </span><span class="s2">"whitelist"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"pairlist_url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"file:///user_data/filename.json"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"number_assets"</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"refresh_period"</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"keep_pairlist_on_failure"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">]</span>
 </code></pre></div>
 </details>
 <p>The user is responsible for providing a server or local file that returns a JSON object with the following structure:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;pairs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;XRP/USDT&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;ETH/USDT&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;LTC/USDT&quot;</span><span class="p">],</span>
-<span class="w">    </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1800</span>
+<span class="w">    </span><span class="nt">"pairs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"XRP/USDT"</span><span class="p">,</span><span class="w"> </span><span class="s2">"ETH/USDT"</span><span class="p">,</span><span class="w"> </span><span class="s2">"LTC/USDT"</span><span class="p">],</span>
+<span class="w">    </span><span class="nt">"refresh_period"</span><span class="p">:</span><span class="w"> </span><span class="mi">1800</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>The <code>pairs</code> property should contain a list of strings with the trading pairs to be used by the bot. The <code>refresh_period</code> property is optional and specifies the number of seconds that the pairlist should be cached before being refreshed.</p>
@@ -2924,14 +2924,14 @@ Obviously in complex such configurations, the Producer may not provide data for 
 </div>
 <h4 id="marketcappairlist">MarketCapPairList<a class="headerlink" href="#marketcappairlist" title="Permanent link">&para;</a></h4>
 <p><code>MarketCapPairList</code> employs sorting/filtering of pairs by their marketcap rank based of CoinGecko. The returned pairlist will be sorted based of their marketcap ranks if used in whitelist <code>mode</code>.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"pairlists"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;MarketCapPairList&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;number_assets&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;max_rank&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">50</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">86400</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;whitelist&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;categories&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;layer-1&quot;</span><span class="p">]</span>
+<span class="w">        </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"MarketCapPairList"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"number_assets"</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"max_rank"</span><span class="p">:</span><span class="w"> </span><span class="mi">50</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"refresh_period"</span><span class="p">:</span><span class="w"> </span><span class="mi">86400</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"mode"</span><span class="p">:</span><span class="w"> </span><span class="s2">"whitelist"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"categories"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"layer-1"</span><span class="p">]</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">]</span>
 </code></pre></div>
@@ -2982,12 +2982,12 @@ be caught out buying before the pair has finished dropping in price.</p>
 <p>Offsets an incoming pairlist by a given <code>offset</code> value.</p>
 <p>As an example it can be used in conjunction with <code>VolumeFilter</code> to remove the top X volume pairs. Or to split a larger pairlist on two bot instances.</p>
 <p>Example to remove the first 10 pairs from the pairlist, and takes the next 20 (taking items 10-30 of the initial list):</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"pairlists"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="c1">// ...</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;OffsetFilter&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;offset&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;number_assets&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span>
+<span class="w">        </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"OffsetFilter"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"offset"</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"number_assets"</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">],</span>
 </code></pre></div>
@@ -3007,30 +3007,30 @@ it can not be guaranteed that pairs won't overlap due to slightly different refr
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">ccxt</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pprint</span><span class="w"> </span><span class="kn">import</span> <span class="n">pprint</span>
 <span class="n">exchange</span> <span class="o">=</span> <span class="n">ccxt</span><span class="o">.</span><span class="n">binance</span><span class="p">({</span>
-    <span class="s1">&#39;options&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;defaultType&#39;</span><span class="p">:</span> <span class="s1">&#39;swap&#39;</span><span class="p">}</span> 
+    <span class="s1">'options'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'defaultType'</span><span class="p">:</span> <span class="s1">'swap'</span><span class="p">}</span> 
     <span class="p">})</span>
 <span class="n">lm</span> <span class="o">=</span> <span class="n">exchange</span><span class="o">.</span><span class="n">load_markets</span><span class="p">()</span>
-<span class="n">pprint</span><span class="p">(</span><span class="n">lm</span><span class="p">[</span><span class="s1">&#39;XAU/USDT:USDT&#39;</span><span class="p">])</span>
+<span class="n">pprint</span><span class="p">(</span><span class="n">lm</span><span class="p">[</span><span class="s1">'XAU/USDT:USDT'</span><span class="p">])</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;XAUUSDT&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;lowercaseId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;xauusdt&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;symbol&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;XAU/USDT:USDT&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;base&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;XAU&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;quote&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;USDT&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;settle&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;USDT&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;baseId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;XAU&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;quoteId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;USDT&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;settleId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;USDT&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;swap&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"XAUUSDT"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"lowercaseId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"xauusdt"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"symbol"</span><span class="p">:</span><span class="w"> </span><span class="s2">"XAU/USDT:USDT"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"base"</span><span class="p">:</span><span class="w"> </span><span class="s2">"XAU"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"quote"</span><span class="p">:</span><span class="w"> </span><span class="s2">"USDT"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"settle"</span><span class="p">:</span><span class="w"> </span><span class="s2">"USDT"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"baseId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"XAU"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"quoteId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"USDT"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"settleId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"USDT"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"swap"</span><span class="p">,</span>
 <span class="w">    </span><span class="c1">// ...</span>
-<span class="hll"><span class="w">    </span><span class="nt">&quot;info&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span class="w">        </span><span class="nt">&quot;symbol&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;XAUUSDT&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;pair&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;XAUUSDT&quot;</span><span class="p">,</span>
-<span class="hll"><span class="w">        </span><span class="nt">&quot;contractType&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TRADIFI_PERPETUAL&quot;</span><span class="p">,</span>
-</span><span class="w">        </span><span class="nt">&quot;deliveryDate&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">4133404800000</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;onboardDate&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1765440300000</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TRADING&quot;</span><span class="p">,</span>
+<span class="hll"><span class="w">    </span><span class="nt">"info"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span class="w">        </span><span class="nt">"symbol"</span><span class="p">:</span><span class="w"> </span><span class="s2">"XAUUSDT"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"pair"</span><span class="p">:</span><span class="w"> </span><span class="s2">"XAUUSDT"</span><span class="p">,</span>
+<span class="hll"><span class="w">        </span><span class="nt">"contractType"</span><span class="p">:</span><span class="w"> </span><span class="s2">"TRADIFI_PERPETUAL"</span><span class="p">,</span>
+</span><span class="w">        </span><span class="nt">"deliveryDate"</span><span class="p">:</span><span class="w"> </span><span class="mi">4133404800000</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"onboardDate"</span><span class="p">:</span><span class="w"> </span><span class="mi">1765440300000</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"TRADING"</span><span class="p">,</span>
 <span class="w">        </span><span class="c1">// ...</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
@@ -3041,10 +3041,10 @@ Nested dictionaries can be accessed by using dot notation in the <code>info_key<
 <div class="highlight"><pre><span></span><code><span class="p">[</span>
 <span class="w">    </span><span class="c1">// ...</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;PairInformationFilter&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;selection_mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;whitelist&quot;</span><span class="p">,</span><span class="w">  </span><span class="c1">// can be whitelist or blacklist</span>
-<span class="w">        </span><span class="nt">&quot;info_key&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;info.contractType&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// can be any key in market data</span>
-<span class="w">        </span><span class="nt">&quot;info_compare_value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TRADIFI_PERPETUAL&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// can be any matching value</span>
+<span class="w">        </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"PairInformationFilter"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"selection_mode"</span><span class="p">:</span><span class="w"> </span><span class="s2">"whitelist"</span><span class="p">,</span><span class="w">  </span><span class="c1">// can be whitelist or blacklist</span>
+<span class="w">        </span><span class="nt">"info_key"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">"info.contractType"</span><span class="p">,</span><span class="w"> </span><span class="c1">// can be any key in market data</span>
+<span class="w">        </span><span class="nt">"info_compare_value"</span><span class="p">:</span><span class="w"> </span><span class="s2">"TRADIFI_PERPETUAL"</span><span class="p">,</span><span class="w"> </span><span class="c1">// can be any matching value</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">]</span>
 </code></pre></div>
@@ -3061,12 +3061,12 @@ Not defining this parameter (or setting it to 0) will use all-time performance.<
 <p>The optional <code>min_profit</code> (as ratio -&gt; a setting of <code>0.01</code> corresponds to 1%) parameter defines the minimum profit a pair must have to be considered.
 Pairs below this level will be filtered out.
 Using this parameter without <code>minutes</code> is highly discouraged, as it can lead to an empty pairlist without a way to recover.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"pairlists"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="c1">// ...</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;PerformanceFilter&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;minutes&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1440</span><span class="p">,</span><span class="w">  </span><span class="c1">// rolling 24h</span>
-<span class="w">        </span><span class="nt">&quot;min_profit&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.01</span><span class="w">  </span><span class="c1">// minimal profit 1%</span>
+<span class="w">        </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"PerformanceFilter"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"minutes"</span><span class="p">:</span><span class="w"> </span><span class="mi">1440</span><span class="p">,</span><span class="w">  </span><span class="c1">// rolling 24h</span>
+<span class="w">        </span><span class="nt">"min_profit"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.01</span><span class="w">  </span><span class="c1">// minimal profit 1%</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">],</span>
 </code></pre></div>
@@ -3116,9 +3116,9 @@ This option is disabled by default, and will only apply if set to &gt; 0.</p>
 <p>By default, ShuffleFilter will shuffle pairs once per candle.
 To shuffle on every iteration, set <code>"shuffle_frequency"</code> to <code>"iteration"</code> instead of  the default of <code>"candle"</code>.</p>
 <div class="highlight"><pre><span></span><code><span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ShuffleFilter&quot;</span><span class="p">,</span><span class="w"> </span>
-<span class="w">        </span><span class="nt">&quot;shuffle_frequency&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;candle&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;seed&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span>
+<span class="w">        </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ShuffleFilter"</span><span class="p">,</span><span class="w"> </span>
+<span class="w">        </span><span class="nt">"shuffle_frequency"</span><span class="p">:</span><span class="w"> </span><span class="s2">"candle"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"seed"</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span>
 <span class="w">    </span><span class="p">}</span>
 </code></pre></div>
 <div class="admonition tip">
@@ -3134,26 +3134,26 @@ To shuffle on every iteration, set <code>"shuffle_frequency"</code> to <code>"it
 <p>For convenience, <code>lookback_days</code> can be used instead, which implies daily candles (equivalent to setting <code>lookback_period</code> with a <code>lookback_timeframe</code> of <code>1d</code>). One of <code>lookback_days</code> or <code>lookback_period</code> must be set - setting both is ambiguous and will result in an error, as does combining <code>lookback_days</code> with a <code>lookback_timeframe</code> other than <code>1d</code>. Setting neither is deprecated and currently falls back to a lookback of 10 days - this fallback will be removed in a future version.</p>
 <p>In the below example:
 If the trading range over the last 10 days is &lt;1% or &gt;99%, remove the pair from the whitelist.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"pairlists"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;RangeStabilityFilter&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;lookback_timeframe&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1d&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;lookback_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;min_rate_of_change&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.01</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;max_rate_of_change&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.99</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">86400</span>
+<span class="w">        </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"RangeStabilityFilter"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"lookback_timeframe"</span><span class="p">:</span><span class="w"> </span><span class="s2">"1d"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"lookback_period"</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"min_rate_of_change"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.01</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"max_rate_of_change"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.99</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"refresh_period"</span><span class="p">:</span><span class="w"> </span><span class="mi">86400</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">]</span>
 </code></pre></div>
 <p>The same filter based on a trading range of 72 1h candles (3 days) would look as follows:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"pairlists"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;RangeStabilityFilter&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;lookback_timeframe&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1h&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;lookback_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">72</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;min_rate_of_change&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.01</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;max_rate_of_change&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.99</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3600</span>
+<span class="w">        </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"RangeStabilityFilter"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"lookback_timeframe"</span><span class="p">:</span><span class="w"> </span><span class="s2">"1h"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"lookback_period"</span><span class="p">:</span><span class="w"> </span><span class="mi">72</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"min_rate_of_change"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.01</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"max_rate_of_change"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.99</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"refresh_period"</span><span class="p">:</span><span class="w"> </span><span class="mi">3600</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">]</span>
 </code></pre></div>
@@ -3170,64 +3170,64 @@ Additionally, it can also be used to automatically remove pairs with extreme hig
 <p>This filter can be used to narrow down your pairs to a certain volatility or avoid very volatile pairs.</p>
 <p>In the below example:
 If the volatility over the last 10 days is not in the range of 0.05-0.50, remove the pair from the whitelist. The filter is applied every 24h.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"pairlists"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;VolatilityFilter&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;lookback_timeframe&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1d&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;lookback_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;min_volatility&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.05</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;max_volatility&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.50</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">86400</span>
+<span class="w">        </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"VolatilityFilter"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"lookback_timeframe"</span><span class="p">:</span><span class="w"> </span><span class="s2">"1d"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"lookback_period"</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"min_volatility"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.05</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"max_volatility"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.50</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"refresh_period"</span><span class="p">:</span><span class="w"> </span><span class="mi">86400</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">]</span>
 </code></pre></div>
 <p>The same filter based on the volatility of 72 1h candles (3 days) would look as follows:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"pairlists"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;VolatilityFilter&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;lookback_timeframe&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1h&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;lookback_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">72</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;min_volatility&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.05</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;max_volatility&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.50</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3600</span>
+<span class="w">        </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"VolatilityFilter"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"lookback_timeframe"</span><span class="p">:</span><span class="w"> </span><span class="s2">"1h"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"lookback_period"</span><span class="p">:</span><span class="w"> </span><span class="mi">72</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"min_volatility"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.05</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"max_volatility"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.50</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"refresh_period"</span><span class="p">:</span><span class="w"> </span><span class="mi">3600</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">]</span>
 </code></pre></div>
 <p>Adding <code>"sort_direction": "asc"</code> or <code>"sort_direction": "desc"</code> enables sorting mode for this pairlist.</p>
 <h3 id="full-example-of-pairlist-handlers">Full example of Pairlist Handlers<a class="headerlink" href="#full-example-of-pairlist-handlers" title="Permanent link">&para;</a></h3>
 <p>The below example blacklists <code>BNB/BTC</code>, uses <code>VolumePairList</code> with <code>20</code> assets, sorting pairs by <code>quoteVolume</code>, then filter future delisted pairs using <a href="#delistfilter"><code>DelistFilter</code></a> and <a href="#agefilter"><code>AgeFilter</code></a> to remove pairs that are listed less than 10 days ago. After that <a href="#precisionfilter"><code>PrecisionFilter</code></a> and <a href="#pricefilter"><code>PriceFilter</code></a> are applied, filtering all assets where 1 price unit is &gt; 1%. Then the <a href="#spreadfilter"><code>SpreadFilter</code></a> and <a href="#volatilityfilter"><code>VolatilityFilter</code></a> are applied and pairs are finally shuffled with the random seed set to some predefined value.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;pair_whitelist&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
-<span class="w">    </span><span class="nt">&quot;pair_blacklist&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;BNB/BTC&quot;</span><span class="p">]</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"exchange"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"pair_whitelist"</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">    </span><span class="nt">"pair_blacklist"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"BNB/BTC"</span><span class="p">]</span>
 <span class="p">},</span>
-<span class="nt">&quot;pairlists&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="nt">"pairlists"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;VolumePairList&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;number_assets&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;sort_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;quoteVolume&quot;</span>
+<span class="w">        </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"VolumePairList"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"number_assets"</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"sort_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"quoteVolume"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;DelistFilter&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;max_days_from_now&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"DelistFilter"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"max_days_from_now"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
 <span class="w">    </span><span class="p">},</span>
-<span class="w">    </span><span class="p">{</span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;AgeFilter&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;min_days_listed&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">},</span>
-<span class="w">    </span><span class="p">{</span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;PrecisionFilter&quot;</span><span class="p">},</span>
-<span class="w">    </span><span class="p">{</span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;PriceFilter&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;low_price_ratio&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.01</span><span class="p">},</span>
-<span class="w">    </span><span class="p">{</span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SpreadFilter&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;max_spread_ratio&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.005</span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"AgeFilter"</span><span class="p">,</span><span class="w"> </span><span class="nt">"min_days_listed"</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"PrecisionFilter"</span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"PriceFilter"</span><span class="p">,</span><span class="w"> </span><span class="nt">"low_price_ratio"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.01</span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"SpreadFilter"</span><span class="p">,</span><span class="w"> </span><span class="nt">"max_spread_ratio"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.005</span><span class="p">},</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;RangeStabilityFilter&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;lookback_days&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;min_rate_of_change&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.01</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">86400</span>
+<span class="w">        </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"RangeStabilityFilter"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"lookback_days"</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"min_rate_of_change"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.01</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"refresh_period"</span><span class="p">:</span><span class="w"> </span><span class="mi">86400</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;VolatilityFilter&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;lookback_days&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;min_volatility&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.05</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;max_volatility&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.50</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;refresh_period&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">86400</span>
+<span class="w">        </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"VolatilityFilter"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"lookback_days"</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"min_volatility"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.05</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"max_volatility"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.50</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"refresh_period"</span><span class="p">:</span><span class="w"> </span><span class="mi">86400</span>
 <span class="w">    </span><span class="p">},</span>
-<span class="w">    </span><span class="p">{</span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ShuffleFilter&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;seed&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">}</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ShuffleFilter"</span><span class="p">,</span><span class="w"> </span><span class="nt">"seed"</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">}</span>
 <span class="p">],</span>
 </code></pre></div>
 <h2 id="protections">Protections<a class="headerlink" href="#protections" title="Permanent link">&para;</a></h2>
@@ -3304,13 +3304,13 @@ If <code>trade_limit</code> or more trades resulted in stoploss, trading will st
 <span class="k">def</span><span class="w"> </span><span class="nf">protections</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="k">return</span> <span class="p">[</span>
         <span class="p">{</span>
-            <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;StoplossGuard&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;lookback_period_candles&quot;</span><span class="p">:</span> <span class="mi">24</span><span class="p">,</span>
-            <span class="s2">&quot;trade_limit&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
-            <span class="s2">&quot;stop_duration_candles&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
-            <span class="s2">&quot;required_profit&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
-            <span class="s2">&quot;only_per_pair&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-            <span class="s2">&quot;only_per_side&quot;</span><span class="p">:</span> <span class="kc">False</span>
+            <span class="s2">"method"</span><span class="p">:</span> <span class="s2">"StoplossGuard"</span><span class="p">,</span>
+            <span class="s2">"lookback_period_candles"</span><span class="p">:</span> <span class="mi">24</span><span class="p">,</span>
+            <span class="s2">"trade_limit"</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+            <span class="s2">"stop_duration_candles"</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+            <span class="s2">"required_profit"</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">"only_per_pair"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s2">"only_per_side"</span><span class="p">:</span> <span class="kc">False</span>
         <span class="p">}</span>
     <span class="p">]</span>
 </code></pre></div>
@@ -3334,12 +3334,12 @@ It supports 2 calculation modes:</p>
 <span class="k">def</span><span class="w"> </span><span class="nf">protections</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="k">return</span>  <span class="p">[</span>
         <span class="p">{</span>
-            <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;MaxDrawdown&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;calculation_mode&quot;</span><span class="p">:</span> <span class="s2">&quot;equity&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;lookback_period_candles&quot;</span><span class="p">:</span> <span class="mi">48</span><span class="p">,</span>
-            <span class="s2">&quot;trade_limit&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
-            <span class="s2">&quot;stop_duration_candles&quot;</span><span class="p">:</span> <span class="mi">12</span><span class="p">,</span>
-            <span class="s2">&quot;max_allowed_drawdown&quot;</span><span class="p">:</span> <span class="mf">0.2</span>
+            <span class="s2">"method"</span><span class="p">:</span> <span class="s2">"MaxDrawdown"</span><span class="p">,</span>
+            <span class="s2">"calculation_mode"</span><span class="p">:</span> <span class="s2">"equity"</span><span class="p">,</span>
+            <span class="s2">"lookback_period_candles"</span><span class="p">:</span> <span class="mi">48</span><span class="p">,</span>
+            <span class="s2">"trade_limit"</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+            <span class="s2">"stop_duration_candles"</span><span class="p">:</span> <span class="mi">12</span><span class="p">,</span>
+            <span class="s2">"max_allowed_drawdown"</span><span class="p">:</span> <span class="mf">0.2</span>
         <span class="p">},</span>
     <span class="p">]</span>
 </code></pre></div>
@@ -3352,12 +3352,12 @@ If that ratio is below <code>required_profit</code>, that pair will be locked fo
 <span class="k">def</span><span class="w"> </span><span class="nf">protections</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="k">return</span> <span class="p">[</span>
         <span class="p">{</span>
-            <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;LowProfitPairs&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;lookback_period_candles&quot;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>
-            <span class="s2">&quot;trade_limit&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
-            <span class="s2">&quot;stop_duration&quot;</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
-            <span class="s2">&quot;required_profit&quot;</span><span class="p">:</span> <span class="mf">0.02</span><span class="p">,</span>
-            <span class="s2">&quot;only_per_pair&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s2">"method"</span><span class="p">:</span> <span class="s2">"LowProfitPairs"</span><span class="p">,</span>
+            <span class="s2">"lookback_period_candles"</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>
+            <span class="s2">"trade_limit"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+            <span class="s2">"stop_duration"</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
+            <span class="s2">"required_profit"</span><span class="p">:</span> <span class="mf">0.02</span><span class="p">,</span>
+            <span class="s2">"only_per_pair"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
         <span class="p">}</span>
     <span class="p">]</span>
 </code></pre></div>
@@ -3368,8 +3368,8 @@ If that ratio is below <code>required_profit</code>, that pair will be locked fo
 <span class="k">def</span><span class="w"> </span><span class="nf">protections</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="k">return</span>  <span class="p">[</span>
         <span class="p">{</span>
-            <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;CooldownPeriod&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;stop_duration_candles&quot;</span><span class="p">:</span> <span class="mi">2</span>
+            <span class="s2">"method"</span><span class="p">:</span> <span class="s2">"CooldownPeriod"</span><span class="p">,</span>
+            <span class="s2">"stop_duration_candles"</span><span class="p">:</span> <span class="mi">2</span>
         <span class="p">}</span>
     <span class="p">]</span>
 </code></pre></div>
@@ -3392,43 +3392,43 @@ All protections are evaluated in the sequence they are defined.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">freqtrade.strategy</span><span class="w"> </span><span class="kn">import</span> <span class="n">IStrategy</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">)</span>
-    <span class="n">timeframe</span> <span class="o">=</span> <span class="s1">&#39;1h&#39;</span>
+    <span class="n">timeframe</span> <span class="o">=</span> <span class="s1">'1h'</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">protections</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">[</span>
             <span class="p">{</span>
-                <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;CooldownPeriod&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;stop_duration_candles&quot;</span><span class="p">:</span> <span class="mi">5</span>
+                <span class="s2">"method"</span><span class="p">:</span> <span class="s2">"CooldownPeriod"</span><span class="p">,</span>
+                <span class="s2">"stop_duration_candles"</span><span class="p">:</span> <span class="mi">5</span>
             <span class="p">},</span>
             <span class="p">{</span>
-                <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;MaxDrawdown&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;calculation_mode&quot;</span><span class="p">:</span> <span class="s2">&quot;equity&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;lookback_period_candles&quot;</span><span class="p">:</span> <span class="mi">48</span><span class="p">,</span>
-                <span class="s2">&quot;trade_limit&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
-                <span class="s2">&quot;stop_duration_candles&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
-                <span class="s2">&quot;max_allowed_drawdown&quot;</span><span class="p">:</span> <span class="mf">0.2</span>
+                <span class="s2">"method"</span><span class="p">:</span> <span class="s2">"MaxDrawdown"</span><span class="p">,</span>
+                <span class="s2">"calculation_mode"</span><span class="p">:</span> <span class="s2">"equity"</span><span class="p">,</span>
+                <span class="s2">"lookback_period_candles"</span><span class="p">:</span> <span class="mi">48</span><span class="p">,</span>
+                <span class="s2">"trade_limit"</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+                <span class="s2">"stop_duration_candles"</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+                <span class="s2">"max_allowed_drawdown"</span><span class="p">:</span> <span class="mf">0.2</span>
             <span class="p">},</span>
             <span class="p">{</span>
-                <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;StoplossGuard&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;lookback_period_candles&quot;</span><span class="p">:</span> <span class="mi">24</span><span class="p">,</span>
-                <span class="s2">&quot;trade_limit&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
-                <span class="s2">&quot;stop_duration_candles&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
-                <span class="s2">&quot;only_per_pair&quot;</span><span class="p">:</span> <span class="kc">False</span>
+                <span class="s2">"method"</span><span class="p">:</span> <span class="s2">"StoplossGuard"</span><span class="p">,</span>
+                <span class="s2">"lookback_period_candles"</span><span class="p">:</span> <span class="mi">24</span><span class="p">,</span>
+                <span class="s2">"trade_limit"</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+                <span class="s2">"stop_duration_candles"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+                <span class="s2">"only_per_pair"</span><span class="p">:</span> <span class="kc">False</span>
             <span class="p">},</span>
             <span class="p">{</span>
-                <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;LowProfitPairs&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;lookback_period_candles&quot;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>
-                <span class="s2">&quot;trade_limit&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
-                <span class="s2">&quot;stop_duration_candles&quot;</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
-                <span class="s2">&quot;required_profit&quot;</span><span class="p">:</span> <span class="mf">0.02</span>
+                <span class="s2">"method"</span><span class="p">:</span> <span class="s2">"LowProfitPairs"</span><span class="p">,</span>
+                <span class="s2">"lookback_period_candles"</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>
+                <span class="s2">"trade_limit"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+                <span class="s2">"stop_duration_candles"</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
+                <span class="s2">"required_profit"</span><span class="p">:</span> <span class="mf">0.02</span>
             <span class="p">},</span>
             <span class="p">{</span>
-                <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;LowProfitPairs&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;lookback_period_candles&quot;</span><span class="p">:</span> <span class="mi">24</span><span class="p">,</span>
-                <span class="s2">&quot;trade_limit&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
-                <span class="s2">&quot;stop_duration_candles&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
-                <span class="s2">&quot;required_profit&quot;</span><span class="p">:</span> <span class="mf">0.01</span>
+                <span class="s2">"method"</span><span class="p">:</span> <span class="s2">"LowProfitPairs"</span><span class="p">,</span>
+                <span class="s2">"lookback_period_candles"</span><span class="p">:</span> <span class="mi">24</span><span class="p">,</span>
+                <span class="s2">"trade_limit"</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+                <span class="s2">"stop_duration_candles"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+                <span class="s2">"required_profit"</span><span class="p">:</span> <span class="mf">0.01</span>
             <span class="p">}</span>
         <span class="p">]</span>
     <span class="c1"># ...</span>

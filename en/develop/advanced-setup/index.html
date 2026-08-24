@@ -2250,62 +2250,62 @@ freqtrade<span class="w"> </span>trade<span class="w"> </span>-c<span class="w">
 <p>For more information regarding usage of the sqlite databases, for example to manually enter or remove trades, please refer to the <a href="../sql_cheatsheet/">SQL Cheatsheet</a>.</p>
 <h3 id="multiple-instances-using-docker">Multiple instances using docker<a class="headerlink" href="#multiple-instances-using-docker" title="Permanent link">&para;</a></h3>
 <p>To run multiple instances of freqtrade using docker you will need to edit the docker-compose.yml file and add all the instances you want as separate services. Remember, you can separate your configuration into multiple files, so it's a good idea to think about making them modular, then if you need to edit something common to all bots, you can do that in a single config file. 
-<div class="highlight"><pre><span></span><code>---
-version: &#39;3&#39;
-services:
-  freqtrade1:
-    image: freqtradeorg/freqtrade:stable
-    # image: freqtradeorg/freqtrade:develop
-    # Use plotting image
-    # image: freqtradeorg/freqtrade:develop_plot
-    # Build step - only needed when additional dependencies are needed
-    # build:
-    #   context: .
-    #   dockerfile: &quot;./docker/Dockerfile.custom&quot;
-    restart: always
-    container_name: freqtrade1
-    volumes:
-      - &quot;./user_data:/freqtrade/user_data&quot;
-    # Expose api on port 8080 (localhost only)
-    # Please read the https://www.freqtrade.io/en/stable/rest-api/ documentation
-    # before enabling this.
-     ports:
-     - &quot;127.0.0.1:8080:8080&quot;
-    # Default command used when running `docker compose up`
-    command: &gt;
-      trade
-      --logfile /freqtrade/user_data/logs/freqtrade1.log
-      --db-url sqlite:////freqtrade/user_data/tradesv3_freqtrade1.sqlite
-      --config /freqtrade/user_data/config.json
-      --config /freqtrade/user_data/config.freqtrade1.json
-      --strategy SampleStrategy
+<div class="highlight"><pre><span></span><code><span class="nn">---</span>
+<span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">'3'</span>
+<span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">freqtrade1</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">freqtradeorg/freqtrade:stable</span>
+<span class="w">    </span><span class="c1"># image: freqtradeorg/freqtrade:develop</span>
+<span class="w">    </span><span class="c1"># Use plotting image</span>
+<span class="w">    </span><span class="c1"># image: freqtradeorg/freqtrade:develop_plot</span>
+<span class="w">    </span><span class="c1"># Build step - only needed when additional dependencies are needed</span>
+<span class="w">    </span><span class="c1"># build:</span>
+<span class="w">    </span><span class="c1">#   context: .</span>
+<span class="w">    </span><span class="c1">#   dockerfile: "./docker/Dockerfile.custom"</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">always</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">freqtrade1</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"./user_data:/freqtrade/user_data"</span>
+<span class="w">    </span><span class="c1"># Expose api on port 8080 (localhost only)</span>
+<span class="w">    </span><span class="c1"># Please read the https://www.freqtrade.io/en/stable/rest-api/ documentation</span>
+<span class="w">    </span><span class="c1"># before enabling this.</span>
+<span class="w">    </span><span class="w w-Error"> </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">     </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"127.0.0.1:8080:8080"</span>
+<span class="w">    </span><span class="c1"># Default command used when running `docker compose up`</span>
+<span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
+<span class="w">      </span><span class="no">trade</span>
+<span class="w">      </span><span class="no">--logfile /freqtrade/user_data/logs/freqtrade1.log</span>
+<span class="w">      </span><span class="no">--db-url sqlite:////freqtrade/user_data/tradesv3_freqtrade1.sqlite</span>
+<span class="w">      </span><span class="no">--config /freqtrade/user_data/config.json</span>
+<span class="w">      </span><span class="no">--config /freqtrade/user_data/config.freqtrade1.json</span>
+<span class="w">      </span><span class="no">--strategy SampleStrategy</span>
 
-  freqtrade2:
-    image: freqtradeorg/freqtrade:stable
-    # image: freqtradeorg/freqtrade:develop
-    # Use plotting image
-    # image: freqtradeorg/freqtrade:develop_plot
-    # Build step - only needed when additional dependencies are needed
-    # build:
-    #   context: .
-    #   dockerfile: &quot;./docker/Dockerfile.custom&quot;
-    restart: always
-    container_name: freqtrade2
-    volumes:
-      - &quot;./user_data:/freqtrade/user_data&quot;
-    # Expose api on port 8080 (localhost only)
-    # Please read the https://www.freqtrade.io/en/stable/rest-api/ documentation
-    # before enabling this.
-    ports:
-      - &quot;127.0.0.1:8081:8080&quot;
-    # Default command used when running `docker compose up`
-    command: &gt;
-      trade
-      --logfile /freqtrade/user_data/logs/freqtrade2.log
-      --db-url sqlite:////freqtrade/user_data/tradesv3_freqtrade2.sqlite
-      --config /freqtrade/user_data/config.json
-      --config /freqtrade/user_data/config.freqtrade2.json
-      --strategy SampleStrategy
+<span class="w">  </span><span class="nt">freqtrade2</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">freqtradeorg/freqtrade:stable</span>
+<span class="w">    </span><span class="c1"># image: freqtradeorg/freqtrade:develop</span>
+<span class="w">    </span><span class="c1"># Use plotting image</span>
+<span class="w">    </span><span class="c1"># image: freqtradeorg/freqtrade:develop_plot</span>
+<span class="w">    </span><span class="c1"># Build step - only needed when additional dependencies are needed</span>
+<span class="w">    </span><span class="c1"># build:</span>
+<span class="w">    </span><span class="c1">#   context: .</span>
+<span class="w">    </span><span class="c1">#   dockerfile: "./docker/Dockerfile.custom"</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">always</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">freqtrade2</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"./user_data:/freqtrade/user_data"</span>
+<span class="w">    </span><span class="c1"># Expose api on port 8080 (localhost only)</span>
+<span class="w">    </span><span class="c1"># Please read the https://www.freqtrade.io/en/stable/rest-api/ documentation</span>
+<span class="w">    </span><span class="c1"># before enabling this.</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"127.0.0.1:8081:8080"</span>
+<span class="w">    </span><span class="c1"># Default command used when running `docker compose up`</span>
+<span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">&gt;</span>
+<span class="w">      </span><span class="no">trade</span>
+<span class="w">      </span><span class="no">--logfile /freqtrade/user_data/logs/freqtrade2.log</span>
+<span class="w">      </span><span class="no">--db-url sqlite:////freqtrade/user_data/tradesv3_freqtrade2.sqlite</span>
+<span class="w">      </span><span class="no">--config /freqtrade/user_data/config.json</span>
+<span class="w">      </span><span class="no">--config /freqtrade/user_data/config.freqtrade2.json</span>
+<span class="w">      </span><span class="no">--strategy SampleStrategy</span>
 </code></pre></div></p>
 <p>You can use whatever naming convention you want, freqtrade1 and 2 are arbitrary. Note, that you will need to use different database files, port mappings and telegram configurations for each instance, as mentioned above. </p>
 <h2 id="use-a-different-database-system">Use a different database system<a class="headerlink" href="#use-a-different-database-system" title="Permanent link">&para;</a></h2>
@@ -2344,7 +2344,7 @@ Freqtrade does not depend or install any additional database driver. Please refe
 <div class="highlight"><pre><span></span><code>systemctl<span class="w"> </span>--user<span class="w"> </span>start<span class="w"> </span>freqtrade
 </code></pre></div>
 <p>For this to be persistent (run when user is logged out) you'll need to enable <code>linger</code> for your freqtrade user.</p>
-<div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>loginctl<span class="w"> </span>enable-linger<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$USER</span><span class="s2">&quot;</span>
+<div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>loginctl<span class="w"> </span>enable-linger<span class="w"> </span><span class="s2">"</span><span class="nv">$USER</span><span class="s2">"</span>
 </code></pre></div>
 <p>If you run the bot as a service, you can use systemd service manager as a software watchdog monitoring freqtrade bot 
 state and restarting it in the case of failures. If the <code>internals.sd_notify</code> parameter is set to true in the 
@@ -2366,35 +2366,35 @@ Using <code>--logfile logfile.log</code> will enable the RotatingFileHandler.</p
 <p>The default configuration looks roughly like the below, with the file handler being provided but not enabled as the <code>filename</code> is commented out.
 Uncomment this line and supply a valid path/filename to enable it.</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;log_config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;formatters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="hll"><span class="w">          </span><span class="nt">&quot;basic&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span class="hll"><span class="w">              </span><span class="nt">&quot;format&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;%(message)s&quot;</span>
+<span class="w">  </span><span class="nt">"log_config"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"version"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"formatters"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="hll"><span class="w">          </span><span class="nt">"basic"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span class="hll"><span class="w">              </span><span class="nt">"format"</span><span class="p">:</span><span class="w"> </span><span class="s2">"%(message)s"</span>
 </span><span class="hll"><span class="w">          </span><span class="p">},</span>
-</span><span class="w">          </span><span class="nt">&quot;standard&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">              </span><span class="nt">&quot;format&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;%(asctime)s - %(name)s - %(levelname)s - %(message)s&quot;</span>
+</span><span class="w">          </span><span class="nt">"standard"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">              </span><span class="nt">"format"</span><span class="p">:</span><span class="w"> </span><span class="s2">"%(asctime)s - %(name)s - %(levelname)s - %(message)s"</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">      </span><span class="p">},</span>
-<span class="w">      </span><span class="nt">&quot;handlers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="hll"><span class="w">          </span><span class="nt">&quot;console&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span class="hll"><span class="w">              </span><span class="nt">&quot;class&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;freqtrade.loggers.ft_rich_handler.FtRichHandler&quot;</span><span class="p">,</span>
-</span><span class="hll"><span class="w">              </span><span class="nt">&quot;formatter&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;basic&quot;</span>
+<span class="w">      </span><span class="nt">"handlers"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="hll"><span class="w">          </span><span class="nt">"console"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span class="hll"><span class="w">              </span><span class="nt">"class"</span><span class="p">:</span><span class="w"> </span><span class="s2">"freqtrade.loggers.ft_rich_handler.FtRichHandler"</span><span class="p">,</span>
+</span><span class="hll"><span class="w">              </span><span class="nt">"formatter"</span><span class="p">:</span><span class="w"> </span><span class="s2">"basic"</span>
 </span><span class="hll"><span class="w">          </span><span class="p">},</span>
-</span><span class="w">          </span><span class="nt">&quot;file&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">              </span><span class="nt">&quot;class&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;logging.handlers.RotatingFileHandler&quot;</span><span class="p">,</span>
-<span class="w">              </span><span class="nt">&quot;formatter&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;standard&quot;</span><span class="p">,</span>
-<span class="w">              </span><span class="c1">// &quot;filename&quot;: &quot;someRandomLogFile.log&quot;,</span>
-<span class="w">              </span><span class="nt">&quot;maxBytes&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10485760</span><span class="p">,</span>
-<span class="w">              </span><span class="nt">&quot;backupCount&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span>
+</span><span class="w">          </span><span class="nt">"file"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">              </span><span class="nt">"class"</span><span class="p">:</span><span class="w"> </span><span class="s2">"logging.handlers.RotatingFileHandler"</span><span class="p">,</span>
+<span class="w">              </span><span class="nt">"formatter"</span><span class="p">:</span><span class="w"> </span><span class="s2">"standard"</span><span class="p">,</span>
+<span class="w">              </span><span class="c1">// "filename": "someRandomLogFile.log",</span>
+<span class="w">              </span><span class="nt">"maxBytes"</span><span class="p">:</span><span class="w"> </span><span class="mi">10485760</span><span class="p">,</span>
+<span class="w">              </span><span class="nt">"backupCount"</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">      </span><span class="p">},</span>
-<span class="w">      </span><span class="nt">&quot;root&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">          </span><span class="nt">&quot;handlers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="hll"><span class="w">              </span><span class="s2">&quot;console&quot;</span><span class="p">,</span>
-</span><span class="w">              </span><span class="c1">// &quot;file&quot;</span>
+<span class="w">      </span><span class="nt">"root"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"handlers"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="hll"><span class="w">              </span><span class="s2">"console"</span><span class="p">,</span>
+</span><span class="w">              </span><span class="c1">// "file"</span>
 <span class="w">          </span><span class="p">],</span>
-<span class="w">          </span><span class="nt">&quot;level&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;INFO&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"level"</span><span class="p">:</span><span class="w"> </span><span class="s2">"INFO"</span><span class="p">,</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
@@ -2417,26 +2417,26 @@ If this section is left out, freqtrade will provide no output (in the non-config
 <p>To send Freqtrade log messages to a local or remote <code>syslog</code> service use the <code>"log_config"</code> setup option to configure logging.</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="c1">// ...</span>
-<span class="w">  </span><span class="nt">&quot;log_config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;formatters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;syslog_fmt&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;format&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;%(name)s - %(levelname)s - %(message)s&quot;</span>
+<span class="w">  </span><span class="nt">"log_config"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"version"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"formatters"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"syslog_fmt"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"format"</span><span class="p">:</span><span class="w"> </span><span class="s2">"%(name)s - %(levelname)s - %(message)s"</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">},</span>
-<span class="w">    </span><span class="nt">&quot;handlers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"handlers"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="c1">// Other handlers? </span>
-<span class="w">      </span><span class="nt">&quot;syslog&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">         </span><span class="nt">&quot;class&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;logging.handlers.SysLogHandler&quot;</span><span class="p">,</span>
-<span class="w">          </span><span class="nt">&quot;formatter&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;syslog_fmt&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"syslog"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">"class"</span><span class="p">:</span><span class="w"> </span><span class="s2">"logging.handlers.SysLogHandler"</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"formatter"</span><span class="p">:</span><span class="w"> </span><span class="s2">"syslog_fmt"</span><span class="p">,</span>
 <span class="w">          </span><span class="c1">// Use one of the other options above as address instead? </span>
-<span class="w">          </span><span class="nt">&quot;address&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/dev/log&quot;</span>
+<span class="w">          </span><span class="nt">"address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"/dev/log"</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">},</span>
-<span class="w">    </span><span class="nt">&quot;root&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;handlers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="nt">"root"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"handlers"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">        </span><span class="c1">// other handlers</span>
-<span class="w">        </span><span class="s2">&quot;syslog&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">"syslog"</span><span class="p">,</span>
 
 <span class="w">      </span><span class="p">]</span>
 <span class="w">    </span><span class="p">}</span>
@@ -2453,7 +2453,7 @@ If this section is left out, freqtrade will provide no output (in the non-config
 </ul>
 <p>On many systems <code>syslog</code> (<code>rsyslog</code>) fetches data from <code>journald</code> (and vice versa), so both syslog or journald can be used and the messages be viewed with both <code>journalctl</code> and a syslog viewer utility. You can combine this in any way which suites you better.</p>
 <p>For <code>rsyslog</code> the messages from the bot can be redirected into a separate dedicated log file. To achieve this, add</p>
-<div class="highlight"><pre><span></span><code>if $programname startswith &quot;freqtrade&quot; then -/var/log/freqtrade.log
+<div class="highlight"><pre><span></span><code>if $programname startswith "freqtrade" then -/var/log/freqtrade.log
 </code></pre></div>
 <p>to one of the rsyslog configuration files, for example at the end of the <code>/etc/rsyslog.d/50-default.conf</code>.</p>
 <p>For <code>syslog</code> (<code>rsyslog</code>), the reduction mode can be switched on. This will reduce the number of repeating messages. For instance, multiple bot Heartbeat messages will be reduced to a single message when nothing else happens with the bot. To achieve this, set in <code>/etc/rsyslog.conf</code>:</p>
@@ -2487,24 +2487,24 @@ $RepeatedMsgReduction on
 <p>To send Freqtrade log messages to <code>journald</code> system service, add the following configuration snippet to your configuration.</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="c1">// ...</span>
-<span class="w">  </span><span class="nt">&quot;log_config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;formatters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;journald_fmt&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;format&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;%(name)s - %(levelname)s - %(message)s&quot;</span>
+<span class="w">  </span><span class="nt">"log_config"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"version"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"formatters"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"journald_fmt"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"format"</span><span class="p">:</span><span class="w"> </span><span class="s2">"%(name)s - %(levelname)s - %(message)s"</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">},</span>
-<span class="w">    </span><span class="nt">&quot;handlers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"handlers"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="c1">// Other handlers? </span>
-<span class="w">      </span><span class="nt">&quot;journald&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">         </span><span class="nt">&quot;class&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;cysystemd.journal.JournaldLogHandler&quot;</span><span class="p">,</span>
-<span class="w">          </span><span class="nt">&quot;formatter&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;journald_fmt&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"journald"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">"class"</span><span class="p">:</span><span class="w"> </span><span class="s2">"cysystemd.journal.JournaldLogHandler"</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"formatter"</span><span class="p">:</span><span class="w"> </span><span class="s2">"journald_fmt"</span><span class="p">,</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">},</span>
-<span class="w">    </span><span class="nt">&quot;root&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;handlers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="nt">"root"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"handlers"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">        </span><span class="c1">// .. </span>
-<span class="w">        </span><span class="s2">&quot;journald&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">"journald"</span><span class="p">,</span>
 
 <span class="w">      </span><span class="p">]</span>
 <span class="w">    </span><span class="p">}</span>
@@ -2532,30 +2532,30 @@ The "fmt_dict" attribute defines the keys for the json output - as well as the <
 We recommend to keep one format in human readable form.</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="c1">// ...</span>
-<span class="w">  </span><span class="nt">&quot;log_config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;formatters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">       </span><span class="nt">&quot;json&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">          </span><span class="nt">&quot;()&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;freqtrade.loggers.json_formatter.JsonFormatter&quot;</span><span class="p">,</span>
-<span class="w">          </span><span class="nt">&quot;fmt_dict&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">              </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;asctime&quot;</span><span class="p">,</span>
-<span class="w">              </span><span class="nt">&quot;level&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;levelname&quot;</span><span class="p">,</span>
-<span class="w">              </span><span class="nt">&quot;logger&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;name&quot;</span><span class="p">,</span>
-<span class="w">              </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;message&quot;</span>
+<span class="w">  </span><span class="nt">"log_config"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"version"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"formatters"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">       </span><span class="nt">"json"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"()"</span><span class="p">:</span><span class="w"> </span><span class="s2">"freqtrade.loggers.json_formatter.JsonFormatter"</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"fmt_dict"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">              </span><span class="nt">"timestamp"</span><span class="p">:</span><span class="w"> </span><span class="s2">"asctime"</span><span class="p">,</span>
+<span class="w">              </span><span class="nt">"level"</span><span class="p">:</span><span class="w"> </span><span class="s2">"levelname"</span><span class="p">,</span>
+<span class="w">              </span><span class="nt">"logger"</span><span class="p">:</span><span class="w"> </span><span class="s2">"name"</span><span class="p">,</span>
+<span class="w">              </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"message"</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">},</span>
-<span class="w">    </span><span class="nt">&quot;handlers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"handlers"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="c1">// Other handlers? </span>
-<span class="w">      </span><span class="nt">&quot;jsonStream&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">          </span><span class="nt">&quot;class&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;logging.StreamHandler&quot;</span><span class="p">,</span>
-<span class="w">          </span><span class="nt">&quot;formatter&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;json&quot;</span>
+<span class="w">      </span><span class="nt">"jsonStream"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"class"</span><span class="p">:</span><span class="w"> </span><span class="s2">"logging.StreamHandler"</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"formatter"</span><span class="p">:</span><span class="w"> </span><span class="s2">"json"</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">},</span>
-<span class="w">    </span><span class="nt">&quot;root&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;handlers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="nt">"root"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"handlers"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">        </span><span class="c1">// .. </span>
-<span class="w">        </span><span class="s2">&quot;jsonStream&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">"jsonStream"</span><span class="p">,</span>
 
 <span class="w">      </span><span class="p">]</span>
 <span class="w">    </span><span class="p">}</span>

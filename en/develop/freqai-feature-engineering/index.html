@@ -2189,7 +2189,7 @@
 <p>Meanwhile, high level feature engineering is handled within <code>"feature_parameters":{}</code> in the FreqAI config. Within this file, it is possible to decide large scale feature expansions on top of the <code>base_features</code> such as "including correlated pairs" or "including informative timeframes" or even "including recent candles."</p>
 <p>It is advisable to start from the template <code>feature_engineering_*</code> functions in the source provided example strategy (found in <code>templates/FreqaiExampleStrategy.py</code>) to ensure that the feature definitions are following the correct conventions. Here is an example of how to set the indicators and labels in the strategy:</p>
 <div class="highlight"><pre><span></span><code>    <span class="k">def</span><span class="w"> </span><span class="nf">feature_engineering_expand_all</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">period</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        *Only functional with FreqAI enabled strategies*</span>
 <span class="sd">        This function will automatically expand the defined features on the config defined</span>
 <span class="sd">        `indicator_periods_candles`, `include_timeframes`, `include_shifted_candles`, and</span>
@@ -2202,45 +2202,45 @@
 
 <span class="sd">        Access metadata such as the current pair/timeframe/period with:</span>
 
-<span class="sd">        `metadata[&quot;pair&quot;]` `metadata[&quot;tf&quot;]`  `metadata[&quot;period&quot;]`</span>
+<span class="sd">        `metadata["pair"]` `metadata["tf"]`  `metadata["period"]`</span>
 
 <span class="sd">        :param df: strategy dataframe which will receive the features</span>
 <span class="sd">        :param period: period of the indicator - usage example:</span>
 <span class="sd">        :param metadata: metadata of current pair</span>
-<span class="sd">        dataframe[&quot;%-ema-period&quot;] = ta.EMA(dataframe, timeperiod=period)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        dataframe["%-ema-period"] = ta.EMA(dataframe, timeperiod=period)</span>
+<span class="sd">        """</span>
 
-        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-r</span><span class="s2">si-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">RSI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">period</span><span class="p">)</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;%-mfi-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">MFI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">period</span><span class="p">)</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-a</span><span class="s2">dx-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">ADX</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">period</span><span class="p">)</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-s</span><span class="s2">ma-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">SMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">period</span><span class="p">)</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-e</span><span class="s2">ma-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">EMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">period</span><span class="p">)</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">"</span><span class="si">%-r</span><span class="s2">si-period"</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">RSI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">period</span><span class="p">)</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">"%-mfi-period"</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">MFI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">period</span><span class="p">)</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">"</span><span class="si">%-a</span><span class="s2">dx-period"</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">ADX</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">period</span><span class="p">)</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">"</span><span class="si">%-s</span><span class="s2">ma-period"</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">SMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">period</span><span class="p">)</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">"</span><span class="si">%-e</span><span class="s2">ma-period"</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">EMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">period</span><span class="p">)</span>
 
         <span class="n">bollinger</span> <span class="o">=</span> <span class="n">qtpylib</span><span class="o">.</span><span class="n">bollinger_bands</span><span class="p">(</span>
             <span class="n">qtpylib</span><span class="o">.</span><span class="n">typical_price</span><span class="p">(</span><span class="n">dataframe</span><span class="p">),</span> <span class="n">window</span><span class="o">=</span><span class="n">period</span><span class="p">,</span> <span class="n">stds</span><span class="o">=</span><span class="mf">2.2</span>
         <span class="p">)</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;bb_lowerband-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bollinger</span><span class="p">[</span><span class="s2">&quot;lower&quot;</span><span class="p">]</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;bb_middleband-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bollinger</span><span class="p">[</span><span class="s2">&quot;mid&quot;</span><span class="p">]</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;bb_upperband-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bollinger</span><span class="p">[</span><span class="s2">&quot;upper&quot;</span><span class="p">]</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">"bb_lowerband-period"</span><span class="p">]</span> <span class="o">=</span> <span class="n">bollinger</span><span class="p">[</span><span class="s2">"lower"</span><span class="p">]</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">"bb_middleband-period"</span><span class="p">]</span> <span class="o">=</span> <span class="n">bollinger</span><span class="p">[</span><span class="s2">"mid"</span><span class="p">]</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">"bb_upperband-period"</span><span class="p">]</span> <span class="o">=</span> <span class="n">bollinger</span><span class="p">[</span><span class="s2">"upper"</span><span class="p">]</span>
 
-        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;%-bb_width-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;bb_upperband-period&quot;</span><span class="p">]</span>
-            <span class="o">-</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;bb_lowerband-period&quot;</span><span class="p">]</span>
-        <span class="p">)</span> <span class="o">/</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;bb_middleband-period&quot;</span><span class="p">]</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-c</span><span class="s2">lose-bb_lower-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;bb_lowerband-period&quot;</span><span class="p">]</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">"%-bb_width-period"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">dataframe</span><span class="p">[</span><span class="s2">"bb_upperband-period"</span><span class="p">]</span>
+            <span class="o">-</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">"bb_lowerband-period"</span><span class="p">]</span>
+        <span class="p">)</span> <span class="o">/</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">"bb_middleband-period"</span><span class="p">]</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">"</span><span class="si">%-c</span><span class="s2">lose-bb_lower-period"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">dataframe</span><span class="p">[</span><span class="s2">"close"</span><span class="p">]</span> <span class="o">/</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">"bb_lowerband-period"</span><span class="p">]</span>
         <span class="p">)</span>
 
-        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-r</span><span class="s2">oc-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">ROC</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">period</span><span class="p">)</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">"</span><span class="si">%-r</span><span class="s2">oc-period"</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">ROC</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">period</span><span class="p">)</span>
 
-        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-r</span><span class="s2">elative_volume-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;volume&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;volume&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="n">period</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">"</span><span class="si">%-r</span><span class="s2">elative_volume-period"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">dataframe</span><span class="p">[</span><span class="s2">"volume"</span><span class="p">]</span> <span class="o">/</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">"volume"</span><span class="p">]</span><span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="n">period</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
         <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">dataframe</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">feature_engineering_expand_basic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        *Only functional with FreqAI enabled strategies*</span>
 <span class="sd">        This function will automatically expand the defined features on the config defined</span>
 <span class="sd">        `include_timeframes`, `include_shifted_candles`, and `include_corr_pairs`.</span>
@@ -2254,22 +2254,22 @@
 
 <span class="sd">        Access metadata such as the current pair/timeframe with:</span>
 
-<span class="sd">        `metadata[&quot;pair&quot;]` `metadata[&quot;tf&quot;]`</span>
+<span class="sd">        `metadata["pair"]` `metadata["tf"]`</span>
 
 <span class="sd">        All features must be prepended with `%` to be recognized by FreqAI internals.</span>
 
 <span class="sd">        :param df: strategy dataframe which will receive the features</span>
 <span class="sd">        :param metadata: metadata of current pair</span>
-<span class="sd">        dataframe[&quot;%-pct-change&quot;] = dataframe[&quot;close&quot;].pct_change()</span>
-<span class="sd">        dataframe[&quot;%-ema-200&quot;] = ta.EMA(dataframe, timeperiod=200)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;%-pct-change&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">pct_change</span><span class="p">()</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-r</span><span class="s2">aw_volume&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;volume&quot;</span><span class="p">]</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-r</span><span class="s2">aw_price&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span>
+<span class="sd">        dataframe["%-pct-change"] = dataframe["close"].pct_change()</span>
+<span class="sd">        dataframe["%-ema-200"] = ta.EMA(dataframe, timeperiod=200)</span>
+<span class="sd">        """</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">"%-pct-change"</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">"close"</span><span class="p">]</span><span class="o">.</span><span class="n">pct_change</span><span class="p">()</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">"</span><span class="si">%-r</span><span class="s2">aw_volume"</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">"volume"</span><span class="p">]</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">"</span><span class="si">%-r</span><span class="s2">aw_price"</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">"close"</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">dataframe</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">feature_engineering_standard</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        *Only functional with FreqAI enabled strategies*</span>
 <span class="sd">        This optional function will be called once with the dataframe of the base timeframe.</span>
 <span class="sd">        This is the final function to be called, which means that the dataframe entering this</span>
@@ -2282,38 +2282,38 @@
 
 <span class="sd">        Access metadata such as the current pair with:</span>
 
-<span class="sd">        `metadata[&quot;pair&quot;]`</span>
+<span class="sd">        `metadata["pair"]`</span>
 
 <span class="sd">        All features must be prepended with `%` to be recognized by FreqAI internals.</span>
 
 <span class="sd">        :param df: strategy dataframe which will receive the features</span>
 <span class="sd">        :param metadata: metadata of current pair</span>
-<span class="sd">        usage example: dataframe[&quot;%-day_of_week&quot;] = (dataframe[&quot;date&quot;].dt.dayofweek + 1) / 7</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-d</span><span class="s2">ay_of_week&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;date&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">dayofweek</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">7</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-ho</span><span class="s2">ur_of_day&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;date&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">hour</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">25</span>
+<span class="sd">        usage example: dataframe["%-day_of_week"] = (dataframe["date"].dt.dayofweek + 1) / 7</span>
+<span class="sd">        """</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">"</span><span class="si">%-d</span><span class="s2">ay_of_week"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s2">"date"</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">dayofweek</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">7</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">"</span><span class="si">%-ho</span><span class="s2">ur_of_day"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s2">"date"</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">hour</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">25</span>
         <span class="k">return</span> <span class="n">dataframe</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">set_freqai_targets</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        *Only functional with FreqAI enabled strategies*</span>
 <span class="sd">        Required function to set the targets for the model.</span>
 <span class="sd">        All targets must be prepended with `&amp;` to be recognized by the FreqAI internals.</span>
 
 <span class="sd">        Access metadata such as the current pair with:</span>
 
-<span class="sd">        `metadata[&quot;pair&quot;]`</span>
+<span class="sd">        `metadata["pair"]`</span>
 
 <span class="sd">        :param df: strategy dataframe which will receive the targets</span>
 <span class="sd">        :param metadata: metadata of current pair</span>
-<span class="sd">        usage example: dataframe[&quot;&amp;-target&quot;] = dataframe[&quot;close&quot;].shift(-1) / dataframe[&quot;close&quot;]</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;&amp;-s_close&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span>
-            <span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">freqai_info</span><span class="p">[</span><span class="s2">&quot;feature_parameters&quot;</span><span class="p">][</span><span class="s2">&quot;label_period_candles&quot;</span><span class="p">])</span>
-            <span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">freqai_info</span><span class="p">[</span><span class="s2">&quot;feature_parameters&quot;</span><span class="p">][</span><span class="s2">&quot;label_period_candles&quot;</span><span class="p">])</span>
+<span class="sd">        usage example: dataframe["&amp;-target"] = dataframe["close"].shift(-1) / dataframe["close"]</span>
+<span class="sd">        """</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">"&amp;-s_close"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">dataframe</span><span class="p">[</span><span class="s2">"close"</span><span class="p">]</span>
+            <span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">freqai_info</span><span class="p">[</span><span class="s2">"feature_parameters"</span><span class="p">][</span><span class="s2">"label_period_candles"</span><span class="p">])</span>
+            <span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">freqai_info</span><span class="p">[</span><span class="s2">"feature_parameters"</span><span class="p">][</span><span class="s2">"label_period_candles"</span><span class="p">])</span>
             <span class="o">.</span><span class="n">mean</span><span class="p">()</span>
-            <span class="o">/</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span>
+            <span class="o">/</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">"close"</span><span class="p">]</span>
             <span class="o">-</span> <span class="mi">1</span>
             <span class="p">)</span>
 
@@ -2323,18 +2323,18 @@
 and has therefore not prepended it with <code>%</code>. The user does, however, wish to pass <code>bb_width</code> to the
 model for training/prediction and has therefore prepended it with <code>%</code>.</p>
 <p>After having defined the <code>base features</code>, the next step is to expand upon them using the powerful <code>feature_parameters</code> in the configuration file:</p>
-<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&quot;freqai&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">"freqai"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="c1">//...</span>
-<span class="w">        </span><span class="nt">&quot;feature_parameters&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;include_timeframes&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;5m&quot;</span><span class="p">,</span><span class="s2">&quot;15m&quot;</span><span class="p">,</span><span class="s2">&quot;4h&quot;</span><span class="p">],</span>
-<span class="w">            </span><span class="nt">&quot;include_corr_pairlist&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">                </span><span class="s2">&quot;ETH/USD&quot;</span><span class="p">,</span>
-<span class="w">                </span><span class="s2">&quot;LINK/USD&quot;</span><span class="p">,</span>
-<span class="w">                </span><span class="s2">&quot;BNB/USD&quot;</span>
+<span class="w">        </span><span class="nt">"feature_parameters"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">"include_timeframes"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"5m"</span><span class="p">,</span><span class="s2">"15m"</span><span class="p">,</span><span class="s2">"4h"</span><span class="p">],</span>
+<span class="w">            </span><span class="nt">"include_corr_pairlist"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="s2">"ETH/USD"</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">"LINK/USD"</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">"BNB/USD"</span>
 <span class="w">            </span><span class="p">],</span>
-<span class="w">            </span><span class="nt">&quot;label_period_candles&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">24</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;include_shifted_candles&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;indicator_periods_candles&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">20</span><span class="p">]</span>
+<span class="w">            </span><span class="nt">"label_period_candles"</span><span class="p">:</span><span class="w"> </span><span class="mi">24</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"include_shifted_candles"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"indicator_periods_candles"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">20</span><span class="p">]</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="c1">//...</span>
 <span class="w">    </span><span class="p">}</span>
@@ -2351,16 +2351,16 @@ model for training/prediction and has therefore prepended it with <code>%</code>
 <h3 id="gain-finer-control-over-feature_engineering_-functions-with-metadata">Gain finer control over <code>feature_engineering_*</code> functions with <code>metadata</code><a class="headerlink" href="#gain-finer-control-over-feature_engineering_-functions-with-metadata" title="Permanent link">&para;</a></h3>
 <p>All <code>feature_engineering_*</code> and <code>set_freqai_targets()</code> functions are passed a <code>metadata</code> dictionary which contains information about the <code>pair</code>, <code>tf</code> (timeframe), and <code>period</code> that FreqAI is automating for feature building. As such, a user can use <code>metadata</code> inside <code>feature_engineering_*</code> functions as criteria for blocking/reserving features for certain timeframes, periods, pairs etc.</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">feature_engineering_expand_all</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">period</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
-    <span class="k">if</span> <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;tf&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;1h&quot;</span><span class="p">:</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">%-r</span><span class="s2">oc-period&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">ROC</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">period</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">metadata</span><span class="p">[</span><span class="s2">"tf"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"1h"</span><span class="p">:</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">"</span><span class="si">%-r</span><span class="s2">oc-period"</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">ROC</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">period</span><span class="p">)</span>
 </code></pre></div>
 <p>This will block <code>ta.ROC()</code> from being added to any timeframes other than <code>"1h"</code>.</p>
 <h3 id="returning-additional-info-from-training">Returning additional info from training<a class="headerlink" href="#returning-additional-info-from-training" title="Permanent link">&para;</a></h3>
 <p>Important metrics can be returned to the strategy at the end of each model training by assigning them to <code>dk.data['extra_returns_per_train']['my_new_value'] = XYZ</code> inside the custom prediction model class. </p>
 <p>FreqAI takes the <code>my_new_value</code> assigned in this dictionary and expands it to fit the dataframe that is returned to the strategy. You can then use the returned metrics in your strategy through <code>dataframe['my_new_value']</code>. An example of how return values can be used in FreqAI are the <code>&amp;*_mean</code> and <code>&amp;*_std</code> values that are used to <a href="../freqai-configuration/#creating-a-dynamic-target-threshold">created a dynamic target threshold</a>.</p>
 <p>Another example, where the user wants to use live metrics from the trade database, is shown below:</p>
-<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&quot;freqai&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;extra_returns_per_train&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;total_profit&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">"freqai"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"extra_returns_per_train"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"total_profit"</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 </code></pre></div>
 <p>You need to set the standard dictionary in the config so that FreqAI can return proper dataframe shapes. These values will likely be overridden by the prediction model, but in the case where the model has yet to set them, or needs a default initial value, the pre-set values are what will be returned.</p>
@@ -2388,33 +2388,33 @@ model for training/prediction and has therefore prepended it with <code>%</code>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">MyFreqaiModel</span><span class="p">(</span><span class="n">BaseRegressionModel</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Some cool custom model</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_dictionary</span><span class="p">:</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">dk</span><span class="p">:</span> <span class="n">FreqaiDataKitchen</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        My custom fit function</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">model</span> <span class="o">=</span> <span class="n">cool_model</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">model</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">define_data_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Pipeline</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        User defines their custom feature pipeline here (if they wish)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">feature_pipeline</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">([</span>
-            <span class="p">(</span><span class="s1">&#39;qt&#39;</span><span class="p">,</span> <span class="n">SKLearnWrapper</span><span class="p">(</span><span class="n">QuantileTransformer</span><span class="p">(</span><span class="n">output_distribution</span><span class="o">=</span><span class="s1">&#39;normal&#39;</span><span class="p">))),</span>
-            <span class="p">(</span><span class="s1">&#39;di&#39;</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">DissimilarityIndex</span><span class="p">(</span><span class="n">di_threshold</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+            <span class="p">(</span><span class="s1">'qt'</span><span class="p">,</span> <span class="n">SKLearnWrapper</span><span class="p">(</span><span class="n">QuantileTransformer</span><span class="p">(</span><span class="n">output_distribution</span><span class="o">=</span><span class="s1">'normal'</span><span class="p">))),</span>
+            <span class="p">(</span><span class="s1">'di'</span><span class="p">,</span> <span class="n">ds</span><span class="o">.</span><span class="n">DissimilarityIndex</span><span class="p">(</span><span class="n">di_threshold</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
         <span class="p">])</span>
 
         <span class="k">return</span> <span class="n">feature_pipeline</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">define_label_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Pipeline</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        User defines their custom label pipeline here (if they wish)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">label_pipeline</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">([</span>
-            <span class="p">(</span><span class="s1">&#39;qt&#39;</span><span class="p">,</span> <span class="n">SKLearnWrapper</span><span class="p">(</span><span class="n">StandardScaler</span><span class="p">())),</span>
+            <span class="p">(</span><span class="s1">'qt'</span><span class="p">,</span> <span class="n">SKLearnWrapper</span><span class="p">(</span><span class="n">StandardScaler</span><span class="p">())),</span>
         <span class="p">])</span>
 
         <span class="k">return</span> <span class="n">label_pipeline</span>
@@ -2426,7 +2426,7 @@ model for training/prediction and has therefore prepended it with <code>%</code>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">MyCoolTransform</span><span class="p">(</span><span class="n">BaseTransform</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">param1</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;param1&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">param1</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'param1'</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sample_weight</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">feature_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="c1"># do something with X, y, sample_weight, or/and feature_list</span>
@@ -2453,9 +2453,9 @@ model for training/prediction and has therefore prepended it with <code>%</code>
 <h3 id="identifying-outliers-with-the-dissimilarity-index-di">Identifying outliers with the Dissimilarity Index (DI)<a class="headerlink" href="#identifying-outliers-with-the-dissimilarity-index-di" title="Permanent link">&para;</a></h3>
 <p>The Dissimilarity Index (DI) aims to quantify the uncertainty associated with each prediction made by the model. </p>
 <p>You can tell FreqAI to remove outlier data points from the training/test data sets using the DI by including the following statement in the config:</p>
-<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&quot;freqai&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;feature_parameters&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;DI_threshold&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">"freqai"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"feature_parameters"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">"DI_threshold"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 </code></pre></div>
@@ -2472,9 +2472,9 @@ model for training/prediction and has therefore prepended it with <code>%</code>
 <p><img alt="DI" src="../assets/freqai_DI.jpg" /></p>
 <h3 id="identifying-outliers-using-a-support-vector-machine-svm">Identifying outliers using a Support Vector Machine (SVM)<a class="headerlink" href="#identifying-outliers-using-a-support-vector-machine-svm" title="Permanent link">&para;</a></h3>
 <p>You can tell FreqAI to remove outlier data points from the training/test data sets using a Support Vector Machine (SVM) by including the following statement in the config:</p>
-<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&quot;freqai&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;feature_parameters&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;use_SVM_to_remove_outliers&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">"freqai"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"feature_parameters"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">"use_SVM_to_remove_outliers"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 </code></pre></div>
@@ -2484,9 +2484,9 @@ model for training/prediction and has therefore prepended it with <code>%</code>
 <p>The parameter <code>nu</code>, <em>very</em> broadly, is the amount of data points that should be considered outliers and should be between 0 and 1.</p>
 <h3 id="identifying-outliers-with-dbscan">Identifying outliers with DBSCAN<a class="headerlink" href="#identifying-outliers-with-dbscan" title="Permanent link">&para;</a></h3>
 <p>You can configure FreqAI to use DBSCAN to cluster and remove outliers from the training/test data set or incoming outliers from predictions, by activating <code>use_DBSCAN_to_remove_outliers</code> in the config:</p>
-<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&quot;freqai&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;feature_parameters&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;use_DBSCAN_to_remove_outliers&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">"freqai"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"feature_parameters"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">"use_DBSCAN_to_remove_outliers"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 </code></pre></div>
@@ -2496,9 +2496,9 @@ model for training/prediction and has therefore prepended it with <code>%</code>
 <p>FreqAI uses <code>sklearn.cluster.DBSCAN</code> (details are available on scikit-learn's webpage <a href="https://scikit-learn.org/stable/modules/generated/sklearn.cluster.DBSCAN.html">here</a> (external website)) with <code>min_samples</code> (<span class="arithmatex">\(N\)</span>) taken as &frac14; of the no. of time points (candles) in the feature set. <code>eps</code> (<span class="arithmatex">\(\varepsilon\)</span>) is computed automatically as the elbow point in the <em>k-distance graph</em> computed from the nearest neighbors in the pairwise distances of all data points in the feature set.</p>
 <h3 id="data-dimensionality-reduction-with-principal-component-analysis">Data dimensionality reduction with Principal Component Analysis<a class="headerlink" href="#data-dimensionality-reduction-with-principal-component-analysis" title="Permanent link">&para;</a></h3>
 <p>You can reduce the dimensionality of your features by activating the principal_component_analysis in the config:</p>
-<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&quot;freqai&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;feature_parameters&quot;</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;principal_component_analysis&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">"freqai"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"feature_parameters"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">"principal_component_analysis"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 </code></pre></div>

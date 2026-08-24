@@ -2884,25 +2884,25 @@ These are available from <code>conftest.py</code> and can be imported in any tes
 <span class="k">def</span><span class="w"> </span><span class="nf">test_method_to_test</span><span class="p">(</span><span class="n">caplog</span><span class="p">):</span>
     <span class="n">method_to_test</span><span class="p">()</span>
 
-    <span class="k">assert</span> <span class="n">log_has</span><span class="p">(</span><span class="s2">&quot;This event happened&quot;</span><span class="p">,</span> <span class="n">caplog</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">log_has</span><span class="p">(</span><span class="s2">"This event happened"</span><span class="p">,</span> <span class="n">caplog</span><span class="p">)</span>
     <span class="c1"># Check regex with trailing number ...</span>
-    <span class="k">assert</span> <span class="n">log_has_re</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;This dynamic event happened and produced \d+&quot;</span><span class="p">,</span> <span class="n">caplog</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">log_has_re</span><span class="p">(</span><span class="sa">r</span><span class="s2">"This dynamic event happened and produced \d+"</span><span class="p">,</span> <span class="n">caplog</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="debug-configuration">Debug configuration<a class="headerlink" href="#debug-configuration" title="Permanent link">&para;</a></h3>
 <p>To debug freqtrade, we recommend VSCode (with the Python extension) with the following launch configuration (located in <code>.vscode/launch.json</code>).
 Details will obviously vary between setups - but this should work to get you started.</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;freqtrade trade&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;debugpy&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;request&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;launch&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;module&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;freqtrade&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;console&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integratedTerminal&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">        </span><span class="s2">&quot;trade&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"freqtrade trade"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"debugpy"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"request"</span><span class="p">:</span><span class="w"> </span><span class="s2">"launch"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"module"</span><span class="p">:</span><span class="w"> </span><span class="s2">"freqtrade"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"console"</span><span class="p">:</span><span class="w"> </span><span class="s2">"integratedTerminal"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"args"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">"trade"</span><span class="p">,</span>
 <span class="w">        </span><span class="c1">// Optional:</span>
-<span class="w">        </span><span class="c1">// &quot;--userdir&quot;, &quot;user_data&quot;,</span>
-<span class="w">        </span><span class="s2">&quot;--strategy&quot;</span><span class="p">,</span><span class="w"> </span>
-<span class="w">        </span><span class="s2">&quot;MyAwesomeStrategy&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="c1">// "--userdir", "user_data",</span>
+<span class="w">        </span><span class="s2">"--strategy"</span><span class="p">,</span><span class="w"> </span>
+<span class="w">        </span><span class="s2">"MyAwesomeStrategy"</span><span class="p">,</span>
 <span class="w">    </span><span class="p">]</span>
 <span class="p">},</span>
 </code></pre></div>
@@ -3093,9 +3093,9 @@ We query the api (<code>ct.fetch_ohlcv()</code>) for the timeframe and look at t
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">ccxt</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timezone</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">freqtrade.data.converter</span><span class="w"> </span><span class="kn">import</span> <span class="n">ohlcv_to_dataframe</span>
-<span class="n">ct</span> <span class="o">=</span> <span class="n">ccxt</span><span class="o">.</span><span class="n">binance</span><span class="p">()</span>  <span class="c1"># Use the exchange you&#39;re testing</span>
-<span class="n">timeframe</span> <span class="o">=</span> <span class="s2">&quot;1d&quot;</span>
-<span class="n">pair</span> <span class="o">=</span> <span class="s2">&quot;BTC/USDT&quot;</span>  <span class="c1"># Make sure to use a pair that exists on that exchange!</span>
+<span class="n">ct</span> <span class="o">=</span> <span class="n">ccxt</span><span class="o">.</span><span class="n">binance</span><span class="p">()</span>  <span class="c1"># Use the exchange you're testing</span>
+<span class="n">timeframe</span> <span class="o">=</span> <span class="s2">"1d"</span>
+<span class="n">pair</span> <span class="o">=</span> <span class="s2">"BTC/USDT"</span>  <span class="c1"># Make sure to use a pair that exists on that exchange!</span>
 <span class="n">raw</span> <span class="o">=</span> <span class="n">ct</span><span class="o">.</span><span class="n">fetch_ohlcv</span><span class="p">(</span><span class="n">pair</span><span class="p">,</span> <span class="n">timeframe</span><span class="o">=</span><span class="n">timeframe</span><span class="p">)</span>
 
 <span class="c1"># convert to dataframe</span>
@@ -3118,17 +3118,17 @@ Another way is to run this command multiple times in a row and observe if the vo
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 
 <span class="n">exchange</span> <span class="o">=</span> <span class="n">ccxt</span><span class="o">.</span><span class="n">binance</span><span class="p">({</span>
-    <span class="s1">&#39;apiKey&#39;</span><span class="p">:</span> <span class="s1">&#39;&lt;apikey&gt;&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;secret&#39;</span><span class="p">:</span> <span class="s1">&#39;&lt;secret&gt;&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;options&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;defaultType&#39;</span><span class="p">:</span> <span class="s1">&#39;swap&#39;</span><span class="p">}</span>
+    <span class="s1">'apiKey'</span><span class="p">:</span> <span class="s1">'&lt;apikey&gt;'</span><span class="p">,</span>
+    <span class="s1">'secret'</span><span class="p">:</span> <span class="s1">'&lt;secret&gt;'</span><span class="p">,</span>
+    <span class="s1">'options'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'defaultType'</span><span class="p">:</span> <span class="s1">'swap'</span><span class="p">}</span>
     <span class="p">})</span>
 <span class="n">_</span> <span class="o">=</span> <span class="n">exchange</span><span class="o">.</span><span class="n">load_markets</span><span class="p">()</span>
 
 <span class="n">lev_tiers</span> <span class="o">=</span> <span class="n">exchange</span><span class="o">.</span><span class="n">fetch_leverage_tiers</span><span class="p">()</span>
 
 <span class="c1"># Assumes this is running in the root of the repository.</span>
-<span class="n">file</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s1">&#39;freqtrade/exchange/binance_leverage_tiers.json&#39;</span><span class="p">)</span>
-<span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">lev_tiers</span><span class="o">.</span><span class="n">items</span><span class="p">())),</span> <span class="n">file</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s1">&#39;w&#39;</span><span class="p">),</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">file</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s1">'freqtrade/exchange/binance_leverage_tiers.json'</span><span class="p">)</span>
+<span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">lev_tiers</span><span class="o">.</span><span class="n">items</span><span class="p">())),</span> <span class="n">file</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s1">'w'</span><span class="p">),</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 </code></pre></div>
 <p>This file should then be contributed upstream, so others can benefit from this, too.</p>
 <h2 id="updating-example-notebooks">Updating example notebooks<a class="headerlink" href="#updating-example-notebooks" title="Permanent link">&para;</a></h2>
@@ -3141,7 +3141,7 @@ jupyter<span class="w"> </span>nbconvert<span class="w"> </span>--ClearOutputPre
 <div class="highlight"><pre><span></span><code><span class="c1"># Assume a dedicated user directory for this output</span>
 freqtrade<span class="w"> </span>create-userdir<span class="w"> </span>--userdir<span class="w"> </span>user_data_bttest/
 <span class="c1"># set can_short = True</span>
-sed<span class="w"> </span>-i<span class="w"> </span><span class="s2">&quot;s/can_short: bool = False/can_short: bool = True/&quot;</span><span class="w"> </span>user_data_bttest/strategies/sample_strategy.py
+sed<span class="w"> </span>-i<span class="w"> </span><span class="s2">"s/can_short: bool = False/can_short: bool = True/"</span><span class="w"> </span>user_data_bttest/strategies/sample_strategy.py
 
 freqtrade<span class="w"> </span>download-data<span class="w"> </span>--timerange<span class="w"> </span><span class="m">20250625</span>-20250801<span class="w"> </span>--config<span class="w"> </span>tests/testdata/config.tests.usdt.json<span class="w"> </span>--userdir<span class="w"> </span>user_data_bttest/<span class="w"> </span>-t<span class="w"> </span>5m
 

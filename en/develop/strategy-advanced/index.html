@@ -2114,13 +2114,13 @@ Freqtrade will attempt to reverse this action on retrieval, so from a strategy p
     <span class="k">def</span><span class="w"> </span><span class="nf">bot_loop_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">trade</span> <span class="ow">in</span> <span class="n">Trade</span><span class="o">.</span><span class="n">get_open_order_trades</span><span class="p">():</span>
             <span class="n">fills</span> <span class="o">=</span> <span class="n">trade</span><span class="o">.</span><span class="n">select_filled_orders</span><span class="p">(</span><span class="n">trade</span><span class="o">.</span><span class="n">entry_side</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">trade</span><span class="o">.</span><span class="n">pair</span> <span class="o">==</span> <span class="s1">&#39;ETH/USDT&#39;</span><span class="p">:</span>
-                <span class="n">trade_entry_type</span> <span class="o">=</span> <span class="n">trade</span><span class="o">.</span><span class="n">get_custom_data</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s1">&#39;entry_type&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">trade</span><span class="o">.</span><span class="n">pair</span> <span class="o">==</span> <span class="s1">'ETH/USDT'</span><span class="p">:</span>
+                <span class="n">trade_entry_type</span> <span class="o">=</span> <span class="n">trade</span><span class="o">.</span><span class="n">get_custom_data</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s1">'entry_type'</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">trade_entry_type</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">trade_entry_type</span> <span class="o">=</span> <span class="s1">&#39;breakout&#39;</span> <span class="k">if</span> <span class="s1">&#39;entry_1&#39;</span> <span class="ow">in</span> <span class="n">trade</span><span class="o">.</span><span class="n">enter_tag</span> <span class="k">else</span> <span class="s1">&#39;dip&#39;</span>
+                    <span class="n">trade_entry_type</span> <span class="o">=</span> <span class="s1">'breakout'</span> <span class="k">if</span> <span class="s1">'entry_1'</span> <span class="ow">in</span> <span class="n">trade</span><span class="o">.</span><span class="n">enter_tag</span> <span class="k">else</span> <span class="s1">'dip'</span>
                 <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">fills</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-                    <span class="n">trade_entry_type</span> <span class="o">=</span> <span class="s1">&#39;buy_up&#39;</span>
-                <span class="n">trade</span><span class="o">.</span><span class="n">set_custom_data</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s1">&#39;entry_type&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">trade_entry_type</span><span class="p">)</span>
+                    <span class="n">trade_entry_type</span> <span class="o">=</span> <span class="s1">'buy_up'</span>
+                <span class="n">trade</span><span class="o">.</span><span class="n">set_custom_data</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s1">'entry_type'</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">trade_entry_type</span><span class="p">)</span>
         <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">bot_loop_start</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">adjust_entry_price</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="n">Trade</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="n">Order</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -2128,40 +2128,40 @@ Freqtrade will attempt to reverse this action on retrieval, so from a strategy p
                            <span class="n">entry_tag</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">side</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
         <span class="c1"># Limit orders to use and follow SMA200 as price target for the first 10 minutes since entry trigger for BTC/USDT pair.</span>
         <span class="k">if</span> <span class="p">(</span>
-            <span class="n">pair</span> <span class="o">==</span> <span class="s1">&#39;BTC/USDT&#39;</span> 
-            <span class="ow">and</span> <span class="n">entry_tag</span> <span class="o">==</span> <span class="s1">&#39;long_sma200&#39;</span> 
-            <span class="ow">and</span> <span class="n">side</span> <span class="o">==</span> <span class="s1">&#39;long&#39;</span> 
+            <span class="n">pair</span> <span class="o">==</span> <span class="s1">'BTC/USDT'</span> 
+            <span class="ow">and</span> <span class="n">entry_tag</span> <span class="o">==</span> <span class="s1">'long_sma200'</span> 
+            <span class="ow">and</span> <span class="n">side</span> <span class="o">==</span> <span class="s1">'long'</span> 
             <span class="ow">and</span> <span class="p">(</span><span class="n">current_time</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">10</span><span class="p">))</span> <span class="o">&gt;</span> <span class="n">trade</span><span class="o">.</span><span class="n">open_date_utc</span> 
             <span class="ow">and</span> <span class="n">order</span><span class="o">.</span><span class="n">filled</span> <span class="o">==</span> <span class="mf">0.0</span>
         <span class="p">):</span>
             <span class="n">dataframe</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">get_analyzed_dataframe</span><span class="p">(</span><span class="n">pair</span><span class="o">=</span><span class="n">pair</span><span class="p">,</span> <span class="n">timeframe</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timeframe</span><span class="p">)</span>
             <span class="n">current_candle</span> <span class="o">=</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>
             <span class="c1"># store information about entry adjustment</span>
-            <span class="n">existing_count</span> <span class="o">=</span> <span class="n">trade</span><span class="o">.</span><span class="n">get_custom_data</span><span class="p">(</span><span class="s1">&#39;num_entry_adjustments&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">existing_count</span> <span class="o">=</span> <span class="n">trade</span><span class="o">.</span><span class="n">get_custom_data</span><span class="p">(</span><span class="s1">'num_entry_adjustments'</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">existing_count</span><span class="p">:</span>
                 <span class="n">existing_count</span> <span class="o">=</span> <span class="mi">1</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">existing_count</span> <span class="o">+=</span> <span class="mi">1</span>
-            <span class="n">trade</span><span class="o">.</span><span class="n">set_custom_data</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s1">&#39;num_entry_adjustments&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">existing_count</span><span class="p">)</span>
+            <span class="n">trade</span><span class="o">.</span><span class="n">set_custom_data</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s1">'num_entry_adjustments'</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">existing_count</span><span class="p">)</span>
 
             <span class="c1"># adjust order price</span>
-            <span class="k">return</span> <span class="n">current_candle</span><span class="p">[</span><span class="s1">&#39;sma_200&#39;</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">current_candle</span><span class="p">[</span><span class="s1">'sma_200'</span><span class="p">]</span>
 
         <span class="c1"># default: maintain existing order</span>
         <span class="k">return</span> <span class="n">current_order_rate</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">custom_exit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="n">Trade</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">current_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">current_profit</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 
-        <span class="n">entry_adjustment_count</span> <span class="o">=</span> <span class="n">trade</span><span class="o">.</span><span class="n">get_custom_data</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s1">&#39;num_entry_adjustments&#39;</span><span class="p">)</span>
-        <span class="n">trade_entry_type</span> <span class="o">=</span> <span class="n">trade</span><span class="o">.</span><span class="n">get_custom_data</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s1">&#39;entry_type&#39;</span><span class="p">)</span>
+        <span class="n">entry_adjustment_count</span> <span class="o">=</span> <span class="n">trade</span><span class="o">.</span><span class="n">get_custom_data</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s1">'num_entry_adjustments'</span><span class="p">)</span>
+        <span class="n">trade_entry_type</span> <span class="o">=</span> <span class="n">trade</span><span class="o">.</span><span class="n">get_custom_data</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s1">'entry_type'</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">entry_adjustment_count</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">current_profit</span> <span class="o">&gt;</span> <span class="mf">0.01</span> <span class="ow">and</span> <span class="p">(</span><span class="n">current_time</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">trade</span><span class="o">.</span><span class="n">open_date_utc</span><span class="p">):</span>
-                <span class="k">return</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;exit_1&#39;</span>
+                <span class="k">return</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">'exit_1'</span>
         <span class="k">else</span>
             <span class="k">if</span> <span class="n">entry_adjustment_count</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="k">if</span> <span class="n">current_profit</span> <span class="o">&gt;</span> <span class="mf">0.05</span><span class="p">:</span>
-                <span class="k">return</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;exit_2&#39;</span>
-            <span class="k">if</span> <span class="n">trade_entry_type</span> <span class="o">==</span> <span class="s1">&#39;breakout&#39;</span> <span class="ow">and</span> <span class="n">current_profit</span> <span class="o">&gt;</span> <span class="mf">0.1</span><span class="p">:</span>
-                <span class="k">return</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;exit_3</span>
+                <span class="k">return</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">'exit_2'</span>
+            <span class="k">if</span> <span class="n">trade_entry_type</span> <span class="o">==</span> <span class="s1">'breakout'</span> <span class="ow">and</span> <span class="n">current_profit</span> <span class="o">&gt;</span> <span class="mf">0.1</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">'exit_3</span>
 
         <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">None</span>
 </code></pre></div>
@@ -2202,14 +2202,14 @@ Please use <a href="#storing-information-persistent">Persistent Storage</a> inst
 
     <span class="k">def</span><span class="w"> </span><span class="nf">populate_indicators</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
         <span class="c1"># Check if the entry already exists</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;pair&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_info</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">metadata</span><span class="p">[</span><span class="s2">"pair"</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_info</span><span class="p">:</span>
             <span class="c1"># Create empty entry for this pair</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">custom_info</span><span class="p">[</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;pair&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">custom_info</span><span class="p">[</span><span class="n">metadata</span><span class="p">[</span><span class="s2">"pair"</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
 
-        <span class="k">if</span> <span class="s2">&quot;crosstime&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_info</span><span class="p">[</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;pair&quot;</span><span class="p">]]:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">custom_info</span><span class="p">[</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;pair&quot;</span><span class="p">]][</span><span class="s2">&quot;crosstime&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="s2">"crosstime"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_info</span><span class="p">[</span><span class="n">metadata</span><span class="p">[</span><span class="s2">"pair"</span><span class="p">]]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">custom_info</span><span class="p">[</span><span class="n">metadata</span><span class="p">[</span><span class="s2">"pair"</span><span class="p">]][</span><span class="s2">"crosstime"</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">custom_info</span><span class="p">[</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;pair&quot;</span><span class="p">]][</span><span class="s2">&quot;crosstime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">custom_info</span><span class="p">[</span><span class="n">metadata</span><span class="p">[</span><span class="s2">"pair"</span><span class="p">]][</span><span class="s2">"crosstime"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
 </code></pre></div>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
@@ -2225,9 +2225,9 @@ Please use <a href="#storing-information-persistent">Persistent Storage</a> inst
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">freqtrade.exchange</span><span class="w"> </span><span class="kn">import</span> <span class="n">timeframe_to_prev_date</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">confirm_trade_exit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="s1">&#39;Trade&#39;</span><span class="p">,</span> <span class="n">order_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">amount</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">confirm_trade_exit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="s1">'Trade'</span><span class="p">,</span> <span class="n">order_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">amount</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
                            <span class="n">rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">time_in_force</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">exit_reason</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-                           <span class="n">current_time</span><span class="p">:</span> <span class="s1">&#39;datetime&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+                           <span class="n">current_time</span><span class="p">:</span> <span class="s1">'datetime'</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="c1"># Obtain pair dataframe.</span>
         <span class="n">dataframe</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">get_analyzed_dataframe</span><span class="p">(</span><span class="n">pair</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeframe</span><span class="p">)</span>
 
@@ -2240,7 +2240,7 @@ Please use <a href="#storing-information-persistent">Persistent Storage</a> inst
         <span class="c1"># rounded.</span>
         <span class="n">trade_date</span> <span class="o">=</span> <span class="n">timeframe_to_prev_date</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timeframe</span><span class="p">,</span> <span class="n">trade</span><span class="o">.</span><span class="n">open_date_utc</span><span class="p">)</span>
         <span class="c1"># Look up trade candle.</span>
-        <span class="n">trade_candle</span> <span class="o">=</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;date&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">trade_date</span><span class="p">]</span>
+        <span class="n">trade_candle</span> <span class="o">=</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'date'</span><span class="p">]</span> <span class="o">==</span> <span class="n">trade_date</span><span class="p">]</span>
         <span class="c1"># trade_candle may be empty for trades that just opened as it is still incomplete.</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">trade_candle</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
             <span class="n">trade_candle</span> <span class="o">=</span> <span class="n">trade_candle</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>
@@ -2257,9 +2257,9 @@ Also, this will only work starting with version 2021.5.</p>
 <p>When your strategy has multiple entry signals, you can name the signal that triggered.
 Then you can access your entry signal on <code>custom_exit</code></p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">populate_entry_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;enter_tag&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
-    <span class="n">signal_rsi</span> <span class="o">=</span> <span class="p">(</span><span class="n">qtpylib</span><span class="o">.</span><span class="n">crossed_above</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;rsi&quot;</span><span class="p">],</span> <span class="mi">35</span><span class="p">))</span>
-    <span class="n">signal_bblower</span> <span class="o">=</span> <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;bb_lowerband&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">])</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s2">"enter_tag"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">""</span>
+    <span class="n">signal_rsi</span> <span class="o">=</span> <span class="p">(</span><span class="n">qtpylib</span><span class="o">.</span><span class="n">crossed_above</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s2">"rsi"</span><span class="p">],</span> <span class="mi">35</span><span class="p">))</span>
+    <span class="n">signal_bblower</span> <span class="o">=</span> <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s2">"bb_lowerband"</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">"close"</span><span class="p">])</span>
     <span class="c1"># Additional conditions</span>
     <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
         <span class="p">(</span>
@@ -2267,12 +2267,12 @@ Then you can access your entry signal on <code>custom_exit</code></p>
             <span class="o">|</span> <span class="n">signal_bblower</span>
             <span class="c1"># ... additional signals to enter a long position</span>
         <span class="p">)</span>
-        <span class="o">&amp;</span> <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;volume&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
-            <span class="p">,</span> <span class="s2">&quot;enter_long&quot;</span>
+        <span class="o">&amp;</span> <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s2">"volume"</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="p">,</span> <span class="s2">"enter_long"</span>
         <span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
     <span class="c1"># Concatenate the tags so all signals are kept</span>
-    <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">signal_rsi</span><span class="p">,</span> <span class="s2">&quot;enter_tag&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="s2">&quot;long_signal_rsi &quot;</span>
-    <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">signal_bblower</span><span class="p">,</span> <span class="s2">&quot;enter_tag&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="s2">&quot;long_signal_bblower &quot;</span>
+    <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">signal_rsi</span><span class="p">,</span> <span class="s2">"enter_tag"</span><span class="p">]</span> <span class="o">+=</span> <span class="s2">"long_signal_rsi "</span>
+    <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">signal_bblower</span><span class="p">,</span> <span class="s2">"enter_tag"</span><span class="p">]</span> <span class="o">+=</span> <span class="s2">"long_signal_bblower "</span>
 
     <span class="k">return</span> <span class="n">dataframe</span>
 
@@ -2280,10 +2280,10 @@ Then you can access your entry signal on <code>custom_exit</code></p>
                 <span class="n">current_profit</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
     <span class="n">dataframe</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">get_analyzed_dataframe</span><span class="p">(</span><span class="n">pair</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeframe</span><span class="p">)</span>
     <span class="n">last_candle</span> <span class="o">=</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>
-    <span class="k">if</span> <span class="s2">&quot;long_signal_rsi&quot;</span> <span class="ow">in</span> <span class="n">trade</span><span class="o">.</span><span class="n">enter_tag</span> <span class="ow">and</span> <span class="n">last_candle</span><span class="p">[</span><span class="s2">&quot;rsi&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">80</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">&quot;exit_signal_rsi&quot;</span>
-    <span class="k">if</span> <span class="s2">&quot;long_signal_bblower&quot;</span> <span class="ow">in</span> <span class="n">trade</span><span class="o">.</span><span class="n">enter_tag</span> <span class="ow">and</span> <span class="n">last_candle</span><span class="p">[</span><span class="s2">&quot;high&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">last_candle</span><span class="p">[</span><span class="s2">&quot;bb_upperband&quot;</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="s2">&quot;exit_signal_bblower&quot;</span>
+    <span class="k">if</span> <span class="s2">"long_signal_rsi"</span> <span class="ow">in</span> <span class="n">trade</span><span class="o">.</span><span class="n">enter_tag</span> <span class="ow">and</span> <span class="n">last_candle</span><span class="p">[</span><span class="s2">"rsi"</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">80</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"exit_signal_rsi"</span>
+    <span class="k">if</span> <span class="s2">"long_signal_bblower"</span> <span class="ow">in</span> <span class="n">trade</span><span class="o">.</span><span class="n">enter_tag</span> <span class="ow">and</span> <span class="n">last_candle</span><span class="p">[</span><span class="s2">"high"</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">last_candle</span><span class="p">[</span><span class="s2">"bb_upperband"</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="s2">"exit_signal_bblower"</span>
     <span class="c1"># ...</span>
     <span class="k">return</span> <span class="kc">None</span>
 </code></pre></div>
@@ -2301,9 +2301,9 @@ These results are a consequence of the strategy overwriting prior tags - where t
 <h2 id="exit-tag">Exit tag<a class="headerlink" href="#exit-tag" title="Permanent link">&para;</a></h2>
 <p>Similar to <a href="#enter-tag">Entry Tagging</a>, you can also specify an exit tag.</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">populate_exit_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;exit_tag&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
-    <span class="n">rsi_exit_signal</span> <span class="o">=</span> <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;rsi&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">70</span><span class="p">)</span>
-    <span class="n">ema_exit_signal</span>  <span class="o">=</span> <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;ema20&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;ema50&quot;</span><span class="p">])</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s2">"exit_tag"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">""</span>
+    <span class="n">rsi_exit_signal</span> <span class="o">=</span> <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s2">"rsi"</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">70</span><span class="p">)</span>
+    <span class="n">ema_exit_signal</span>  <span class="o">=</span> <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s2">"ema20"</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">"ema50"</span><span class="p">])</span>
     <span class="c1"># Additional conditions</span>
     <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
         <span class="p">(</span>
@@ -2311,12 +2311,12 @@ These results are a consequence of the strategy overwriting prior tags - where t
             <span class="o">|</span> <span class="n">ema_exit_signal</span>
             <span class="c1"># ... additional signals to exit a long position</span>
         <span class="p">)</span> <span class="o">&amp;</span>
-        <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;volume&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s2">"volume"</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
         <span class="p">,</span>
-    <span class="s2">&quot;exit_long&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="s2">"exit_long"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
     <span class="c1"># Concatenate the tags so all signals are kept</span>
-    <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">rsi_exit_signal</span><span class="p">,</span> <span class="s2">&quot;exit_tag&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="s2">&quot;exit_signal_rsi &quot;</span>
-    <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">rsi_exit_signal2</span><span class="p">,</span> <span class="s2">&quot;exit_tag&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="s2">&quot;exit_signal_rsi &quot;</span>
+    <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">rsi_exit_signal</span><span class="p">,</span> <span class="s2">"exit_tag"</span><span class="p">]</span> <span class="o">+=</span> <span class="s2">"exit_signal_rsi "</span>
+    <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">rsi_exit_signal2</span><span class="p">,</span> <span class="s2">"exit_tag"</span><span class="p">]</span> <span class="o">+=</span> <span class="s2">"exit_signal_rsi "</span>
 
     <span class="k">return</span> <span class="n">dataframe</span>
 </code></pre></div>
@@ -2328,10 +2328,10 @@ These results are a consequence of the strategy overwriting prior tags - where t
 <h2 id="strategy-version">Strategy version<a class="headerlink" href="#strategy-version" title="Permanent link">&para;</a></h2>
 <p>You can implement custom strategy versioning by using the "version" method, and returning the version you would like this strategy to have.</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">version</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Returns version of the strategy.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="s2">&quot;1.1&quot;</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="s2">"1.1"</span>
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -2363,12 +2363,12 @@ in your chosen config file.</p>
 <p>This is a quick example, how to generate the BASE64 string in python</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">base64</span><span class="w"> </span><span class="kn">import</span> <span class="n">urlsafe_b64encode</span>
 
-<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="s1">'r'</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
     <span class="n">content</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
-<span class="n">content</span> <span class="o">=</span> <span class="n">urlsafe_b64encode</span><span class="p">(</span><span class="n">content</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">))</span>
+<span class="n">content</span> <span class="o">=</span> <span class="n">urlsafe_b64encode</span><span class="p">(</span><span class="n">content</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">'utf-8'</span><span class="p">))</span>
 </code></pre></div>
 <p>The variable 'content', will contain the strategy file in a BASE64 encoded form. Which can now be set in your configurations file as following</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;strategy&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;NameOfStrategy:BASE64String&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"strategy"</span><span class="p">:</span><span class="w"> </span><span class="s2">"NameOfStrategy:BASE64String"</span>
 </code></pre></div>
 <p>Please ensure that 'NameOfStrategy' is identical to the strategy name!</p>
 <h2 id="performance-warning">Performance warning<a class="headerlink" href="#performance-warning" title="Permanent link">&para;</a></h2>
@@ -2381,13 +2381,13 @@ use <code>pd.concat(axis=1)</code>.
 This can have slight performance implications, which are usually only visible during hyperopt (when optimizing an indicator).</p>
 <p>For example:</p>
 <div class="highlight"><pre><span></span><code><span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">buy_ema_short</span><span class="o">.</span><span class="n">range</span><span class="p">:</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;ema_short_</span><span class="si">{</span><span class="n">val</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">EMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">val</span><span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="sa">f</span><span class="s1">'ema_short_</span><span class="si">{</span><span class="n">val</span><span class="si">}</span><span class="s1">'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">EMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">val</span><span class="p">)</span>
 </code></pre></div>
 <p>should be rewritten to</p>
 <div class="highlight"><pre><span></span><code><span class="n">frames</span> <span class="o">=</span> <span class="p">[</span><span class="n">dataframe</span><span class="p">]</span>
 <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">buy_ema_short</span><span class="o">.</span><span class="n">range</span><span class="p">:</span>
     <span class="n">frames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">DataFrame</span><span class="p">({</span>
-        <span class="sa">f</span><span class="s1">&#39;ema_short_</span><span class="si">{</span><span class="n">val</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">:</span> <span class="n">ta</span><span class="o">.</span><span class="n">EMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">val</span><span class="p">)</span>
+        <span class="sa">f</span><span class="s1">'ema_short_</span><span class="si">{</span><span class="n">val</span><span class="si">}</span><span class="s1">'</span><span class="p">:</span> <span class="n">ta</span><span class="o">.</span><span class="n">EMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">val</span><span class="p">)</span>
     <span class="p">}))</span>
 
 <span class="c1"># Combine all dataframes, and reassign the original dataframe column</span>

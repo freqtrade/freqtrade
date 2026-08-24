@@ -2373,7 +2373,7 @@ If you are updating existing data after inserting new pairs that you have no dat
 <span class="go">  --dl-trades           Download trades instead of OHLCV data.</span>
 <span class="go">  --convert             Convert downloaded trades to OHLCV data. Only</span>
 <span class="go">                        applicable in combination with `--dl-trades`. Will be</span>
-<span class="go">                        automatic for exchanges which don&#39;t have historic</span>
+<span class="go">                        automatic for exchanges which don't have historic</span>
 <span class="go">                        OHLCV (e.g. Kraken). If not provided, use `trades-to-</span>
 <span class="go">                        ohlcv` to convert trades data to OHLCV data.</span>
 <span class="go">  --exchange EXCHANGE   Exchange name. Only valid if no config is provided.</span>
@@ -2393,7 +2393,7 @@ If you are updating existing data after inserting new pairs that you have no dat
 <span class="go">  --candle-types {spot,futures,mark,index,premiumIndex,funding_rate} [{spot,futures,mark,index,premiumIndex,funding_rate} ...]</span>
 <span class="go">                        Select candle type to download. Defaults to the</span>
 <span class="go">                        necessary candles for the selected trading mode (e.g.</span>
-<span class="go">                        &#39;spot&#39; or (&#39;futures&#39;, &#39;funding_rate&#39; and &#39;mark&#39;) for</span>
+<span class="go">                        'spot' or ('futures', 'funding_rate' and 'mark') for</span>
 <span class="go">                        futures).</span>
 <span class="go">  --prepend             Allow data prepending. (Data-appending is disabled)</span>
 
@@ -2403,9 +2403,9 @@ If you are updating existing data after inserting new pairs that you have no dat
 <span class="go">                        useful if you are redirecting output to a file.</span>
 <span class="go">  --logfile, --log-file FILE</span>
 <span class="go">                        Log to the file specified. Special values are:</span>
-<span class="go">                        &#39;syslog&#39;, &#39;journald&#39;. See the documentation for more</span>
+<span class="go">                        'syslog', 'journald'. See the documentation for more</span>
 <span class="go">                        details.</span>
-<span class="go">  -V, --version         show program&#39;s version number and exit</span>
+<span class="go">  -V, --version         show program's version number and exit</span>
 <span class="go">  -c, --config PATH     Specify configuration file (default:</span>
 <span class="go">                        `userdir/config.json` or `config.json` whichever</span>
 <span class="go">                        exists). Multiple --config options may be used. Can be</span>
@@ -2437,7 +2437,7 @@ To also download data for inactive (delisted) pairs, add <code>--include-inactiv
 <div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>download-data<span class="w"> </span>--exchange<span class="w"> </span>binance<span class="w"> </span>--pairs<span class="w"> </span>ETH/USDT<span class="w"> </span>XRP/USDT<span class="w"> </span>BTC/USDT
 </code></pre></div>
 <p>or as regex (in this case, to download all active USDT pairs)</p>
-<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>download-data<span class="w"> </span>--exchange<span class="w"> </span>binance<span class="w"> </span>--pairs<span class="w"> </span><span class="s2">&quot;.*/USDT&quot;</span>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>download-data<span class="w"> </span>--exchange<span class="w"> </span>binance<span class="w"> </span>--pairs<span class="w"> </span><span class="s2">".*/USDT"</span>
 </code></pre></div>
 <h3 id="other-notes">Other Notes<a class="headerlink" href="#other-notes" title="Permanent link">&para;</a></h3>
 <ul>
@@ -2455,7 +2455,7 @@ To also download data for inactive (delisted) pairs, add <code>--include-inactiv
 <details class="note">
 <summary>Permission denied errors</summary>
 <p>If your configuration directory <code>user_data</code> was made by docker, you may get the following error:</p>
-<div class="highlight"><pre><span></span><code>cp: cannot create regular file &#39;user_data/data/binance/pairs.json&#39;: Permission denied
+<div class="highlight"><pre><span></span><code>cp: cannot create regular file 'user_data/data/binance/pairs.json': Permission denied
 </code></pre></div>
 <p>You can fix the permissions of your user-data directory as follows:</p>
 <div class="highlight"><pre><span></span><code>sudo chown -R $UID:$GID user_data
@@ -2482,8 +2482,8 @@ You can do so by using the <code>--prepend</code> flag, combined with <code>--ti
 <p>This can be changed via the <code>--data-format-ohlcv</code> and <code>--data-format-trades</code> command line arguments respectively.
 To persist this change, you should also add the following snippet to your configuration, so you don't have to insert the above arguments each time:</p>
 <div class="highlight"><pre><span></span><code>    // ...
-    &quot;dataformat_ohlcv&quot;: &quot;feather&quot;,
-    &quot;dataformat_trades&quot;: &quot;feather&quot;,
+    "dataformat_ohlcv": "feather",
+    "dataformat_trades": "feather",
     // ...
 </code></pre></div>
 <p>If the default data-format has been changed during download, then the keys <code>dataformat_ohlcv</code> and <code>dataformat_trades</code> in the configuration file need to be adjusted to the selected dataformat as well.</p>
@@ -2554,10 +2554,10 @@ touch<span class="w"> </span>user_data/data/binance/pairs.json
 <p>The format of the <code>pairs.json</code> file is a simple json list.
 Mixing different stake-currencies is allowed for this file, since it's only used for downloading.</p>
 <div class="highlight"><pre><span></span><code><span class="p">[</span>
-<span class="w">    </span><span class="s2">&quot;ETH/BTC&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="s2">&quot;ETH/USDT&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="s2">&quot;BTC/USDT&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="s2">&quot;XRP/ETH&quot;</span>
+<span class="w">    </span><span class="s2">"ETH/BTC"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"ETH/USDT"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"BTC/USDT"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"XRP/ETH"</span>
 <span class="p">]</span>
 </code></pre></div>
 <div class="admonition note">
@@ -2603,9 +2603,9 @@ You can force the usage of this file via <code>--pairs-file pairs.json</code> - 
 <span class="go">                        useful if you are redirecting output to a file.</span>
 <span class="go">  --logfile, --log-file FILE</span>
 <span class="go">                        Log to the file specified. Special values are:</span>
-<span class="go">                        &#39;syslog&#39;, &#39;journald&#39;. See the documentation for more</span>
+<span class="go">                        'syslog', 'journald'. See the documentation for more</span>
 <span class="go">                        details.</span>
-<span class="go">  -V, --version         show program&#39;s version number and exit</span>
+<span class="go">  -V, --version         show program's version number and exit</span>
 <span class="go">  -c, --config PATH     Specify configuration file (default:</span>
 <span class="go">                        `userdir/config.json` or `config.json` whichever</span>
 <span class="go">                        exists). Multiple --config options may be used. Can be</span>
@@ -2649,9 +2649,9 @@ It'll also remove original json data files (<code>--erase</code> parameter).</p>
 <span class="go">                        useful if you are redirecting output to a file.</span>
 <span class="go">  --logfile, --log-file FILE</span>
 <span class="go">                        Log to the file specified. Special values are:</span>
-<span class="go">                        &#39;syslog&#39;, &#39;journald&#39;. See the documentation for more</span>
+<span class="go">                        'syslog', 'journald'. See the documentation for more</span>
 <span class="go">                        details.</span>
-<span class="go">  -V, --version         show program&#39;s version number and exit</span>
+<span class="go">  -V, --version         show program's version number and exit</span>
 <span class="go">  -c, --config PATH     Specify configuration file (default:</span>
 <span class="go">                        `userdir/config.json` or `config.json` whichever</span>
 <span class="go">                        exists). Multiple --config options may be used. Can be</span>
@@ -2704,9 +2704,9 @@ This command will allow you to repeat this last step for additional timeframes w
 <span class="go">                        useful if you are redirecting output to a file.</span>
 <span class="go">  --logfile, --log-file FILE</span>
 <span class="go">                        Log to the file specified. Special values are:</span>
-<span class="go">                        &#39;syslog&#39;, &#39;journald&#39;. See the documentation for more</span>
+<span class="go">                        'syslog', 'journald'. See the documentation for more</span>
 <span class="go">                        details.</span>
-<span class="go">  -V, --version         show program&#39;s version number and exit</span>
+<span class="go">  -V, --version         show program's version number and exit</span>
 <span class="go">  -c, --config PATH     Specify configuration file (default:</span>
 <span class="go">                        `userdir/config.json` or `config.json` whichever</span>
 <span class="go">                        exists). Multiple --config options may be used. Can be</span>
@@ -2756,9 +2756,9 @@ This command will allow you to repeat this last step for additional timeframes w
 <span class="go">                        useful if you are redirecting output to a file.</span>
 <span class="go">  --logfile, --log-file FILE</span>
 <span class="go">                        Log to the file specified. Special values are:</span>
-<span class="go">                        &#39;syslog&#39;, &#39;journald&#39;. See the documentation for more</span>
+<span class="go">                        'syslog', 'journald'. See the documentation for more</span>
 <span class="go">                        details.</span>
-<span class="go">  -V, --version         show program&#39;s version number and exit</span>
+<span class="go">  -V, --version         show program's version number and exit</span>
 <span class="go">  -c, --config PATH     Specify configuration file (default:</span>
 <span class="go">                        `userdir/config.json` or `config.json` whichever</span>
 <span class="go">                        exists). Multiple --config options may be used. Can be</span>

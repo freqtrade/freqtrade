@@ -2081,7 +2081,7 @@ This prevents you from installing the full jupyter suite multiple times per syst
 pip<span class="w"> </span>install<span class="w"> </span>ipykernel
 ipython<span class="w"> </span>kernel<span class="w"> </span>install<span class="w"> </span>--user<span class="w"> </span>--name<span class="o">=</span>freqtrade
 <span class="c1"># Restart jupyter (lab / notebook)</span>
-<span class="c1"># select kernel &quot;freqtrade&quot; in the notebook</span>
+<span class="c1"># select kernel "freqtrade" in the notebook</span>
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -2143,14 +2143,14 @@ ipython<span class="w"> </span>kernel<span class="w"> </span>install<span class=
 <span class="c1"># Change directory</span>
 <span class="c1"># Modify this cell to insure that the output shows the correct path.</span>
 <span class="c1"># Define all paths relative to the project root shown in the cell output</span>
-<span class="n">project_root</span> <span class="o">=</span> <span class="s2">&quot;somedir/freqtrade&quot;</span>
+<span class="n">project_root</span> <span class="o">=</span> <span class="s2">"somedir/freqtrade"</span>
 <span class="n">i</span><span class="o">=</span><span class="mi">0</span>
 <span class="k">try</span><span class="p">:</span>
     <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">project_root</span><span class="p">)</span>
-    <span class="k">assert</span> <span class="n">Path</span><span class="p">(</span><span class="s1">&#39;LICENSE&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">is_file</span><span class="p">()</span>
+    <span class="k">assert</span> <span class="n">Path</span><span class="p">(</span><span class="s1">'LICENSE'</span><span class="p">)</span><span class="o">.</span><span class="n">is_file</span><span class="p">()</span>
 <span class="k">except</span><span class="p">:</span>
-    <span class="k">while</span> <span class="n">i</span><span class="o">&lt;</span><span class="mi">4</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="n">Path</span><span class="p">(</span><span class="s1">&#39;LICENSE&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">is_file</span><span class="p">()):</span>
-        <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">Path</span><span class="o">.</span><span class="n">cwd</span><span class="p">(),</span> <span class="s1">&#39;../&#39;</span><span class="p">))</span>
+    <span class="k">while</span> <span class="n">i</span><span class="o">&lt;</span><span class="mi">4</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="n">Path</span><span class="p">(</span><span class="s1">'LICENSE'</span><span class="p">)</span><span class="o">.</span><span class="n">is_file</span><span class="p">()):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">Path</span><span class="o">.</span><span class="n">cwd</span><span class="p">(),</span> <span class="s1">'../'</span><span class="p">))</span>
         <span class="n">i</span><span class="o">+=</span><span class="mi">1</span>
     <span class="n">project_root</span> <span class="o">=</span> <span class="n">Path</span><span class="o">.</span><span class="n">cwd</span><span class="p">()</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">Path</span><span class="o">.</span><span class="n">cwd</span><span class="p">())</span>
@@ -2162,15 +2162,15 @@ This will also run through the whole Configuration initialization, so the config
 <span class="kn">from</span><span class="w"> </span><span class="nn">freqtrade.configuration</span><span class="w"> </span><span class="kn">import</span> <span class="n">Configuration</span>
 
 <span class="c1"># Load config from multiple files</span>
-<span class="n">config</span> <span class="o">=</span> <span class="n">Configuration</span><span class="o">.</span><span class="n">from_files</span><span class="p">([</span><span class="s2">&quot;config1.json&quot;</span><span class="p">,</span> <span class="s2">&quot;config2.json&quot;</span><span class="p">])</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">Configuration</span><span class="o">.</span><span class="n">from_files</span><span class="p">([</span><span class="s2">"config1.json"</span><span class="p">,</span> <span class="s2">"config2.json"</span><span class="p">])</span>
 
 <span class="c1"># Show the config in memory</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;original_config&#39;</span><span class="p">],</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">'original_config'</span><span class="p">],</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
 </code></pre></div>
 <p>For Interactive environments, have an additional configuration specifying <code>user_data_dir</code> and pass this in last, so you don't have to change directories while running the bot.
 Best avoid relative paths, since this starts at the storage location of the jupyter notebook, unless the directory is changed.</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;user_data_dir&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;~/.freqtrade/&quot;</span>
+<span class="w">    </span><span class="nt">"user_data_dir"</span><span class="p">:</span><span class="w"> </span><span class="s2">"~/.freqtrade/"</span>
 <span class="p">}</span>
 </code></pre></div>
 <h3 id="further-data-analysis-documentation">Further Data analysis documentation<a class="headerlink" href="#further-data-analysis-documentation" title="Permanent link">&para;</a></h3>

@@ -2520,7 +2520,7 @@ rm<span class="w"> </span>user_data/data/&lt;exchange&gt;/futures/*-mark*
 rm<span class="w"> </span>user_data/data/&lt;exchange&gt;/futures/*-funding_rate*
 
 <span class="c1"># download new data (only required once to fix the mark and funding fee data)</span>
-freqtrade<span class="w"> </span>download-data<span class="w"> </span>-t<span class="w"> </span>1h<span class="w"> </span>--trading-mode<span class="w"> </span>futures<span class="w"> </span>--candle-types<span class="w"> </span>funding_rate<span class="w"> </span>mark<span class="w"> </span><span class="o">[</span>...<span class="o">]</span><span class="w"> </span>--timerange<span class="w"> </span>&lt;full<span class="w"> </span>timerange<span class="w"> </span>you<span class="err">&#39;</span>ve<span class="w"> </span>got<span class="w"> </span>other<span class="w"> </span>data<span class="w"> </span><span class="k">for</span>&gt;
+freqtrade<span class="w"> </span>download-data<span class="w"> </span>-t<span class="w"> </span>1h<span class="w"> </span>--trading-mode<span class="w"> </span>futures<span class="w"> </span>--candle-types<span class="w"> </span>funding_rate<span class="w"> </span>mark<span class="w"> </span><span class="o">[</span>...<span class="o">]</span><span class="w"> </span>--timerange<span class="w"> </span>&lt;full<span class="w"> </span>timerange<span class="w"> </span>you<span class="err">'</span>ve<span class="w"> </span>got<span class="w"> </span>other<span class="w"> </span>data<span class="w"> </span><span class="k">for</span>&gt;
 </code></pre></div>
 <p>The result of the above will be that your funding_rates and mark data will have the 1h timeframe.
 you can verify this with <code>freqtrade list-data --exchange &lt;yourexchange&gt; --show</code>.</p>

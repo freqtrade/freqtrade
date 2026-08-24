@@ -2278,10 +2278,10 @@ Stoploss calculations do include fees, so a stoploss of -10% is placed exactly 1
 <h2 id="stop-loss-on-exchangefreqtrade">Stop Loss On-Exchange/Freqtrade<a class="headerlink" href="#stop-loss-on-exchangefreqtrade" title="Permanent link">&para;</a></h2>
 <p>Those stoploss modes can be <em>on exchange</em> or <em>off exchange</em>.</p>
 <p>These modes can be configured with these values:</p>
-<div class="highlight"><pre><span></span><code>    <span class="s1">&#39;emergency_exit&#39;</span><span class="p">:</span> <span class="s1">&#39;market&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;stoploss_on_exchange&#39;</span><span class="p">:</span> <span class="kc">False</span>
-    <span class="s1">&#39;stoploss_on_exchange_interval&#39;</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
-    <span class="s1">&#39;stoploss_on_exchange_limit_ratio&#39;</span><span class="p">:</span> <span class="mf">0.99</span>
+<div class="highlight"><pre><span></span><code>    <span class="s1">'emergency_exit'</span><span class="p">:</span> <span class="s1">'market'</span><span class="p">,</span>
+    <span class="s1">'stoploss_on_exchange'</span><span class="p">:</span> <span class="kc">False</span>
+    <span class="s1">'stoploss_on_exchange_interval'</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
+    <span class="s1">'stoploss_on_exchange_limit_ratio'</span><span class="p">:</span> <span class="mf">0.99</span>
 </code></pre></div>
 <p>Stoploss on exchange is only supported for the following exchanges, and not all exchanges support both stop-limit and stop-market.
 The Order-type will be ignored if only one mode is available.</p>
@@ -2473,13 +2473,13 @@ The naming for these prices in exchange terminology often varies, but is usually
 The below is the default which is used if not changed in strategy or configuration file.</p>
 <p>Example from strategy file:</p>
 <div class="highlight"><pre><span></span><code><span class="n">order_types</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;entry&quot;</span><span class="p">:</span> <span class="s2">&quot;limit&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;exit&quot;</span><span class="p">:</span> <span class="s2">&quot;limit&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;emergency_exit&quot;</span><span class="p">:</span> <span class="s2">&quot;market&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;stoploss&quot;</span><span class="p">:</span> <span class="s2">&quot;market&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;stoploss_on_exchange&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-    <span class="s2">&quot;stoploss_on_exchange_interval&quot;</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
-    <span class="s2">&quot;stoploss_on_exchange_limit_ratio&quot;</span><span class="p">:</span> <span class="mf">0.99</span>
+    <span class="s2">"entry"</span><span class="p">:</span> <span class="s2">"limit"</span><span class="p">,</span>
+    <span class="s2">"exit"</span><span class="p">:</span> <span class="s2">"limit"</span><span class="p">,</span>
+    <span class="s2">"emergency_exit"</span><span class="p">:</span> <span class="s2">"market"</span><span class="p">,</span>
+    <span class="s2">"stoploss"</span><span class="p">:</span> <span class="s2">"market"</span><span class="p">,</span>
+    <span class="s2">"stoploss_on_exchange"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="s2">"stoploss_on_exchange_interval"</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
+    <span class="s2">"stoploss_on_exchange_limit_ratio"</span><span class="p">:</span> <span class="mf">0.99</span>
 <span class="p">}</span>
 </code></pre></div>
 <h2 id="stop-loss-types">Stop Loss Types<a class="headerlink" href="#stop-loss-types" title="Permanent link">&para;</a></h2>

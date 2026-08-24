@@ -3149,14 +3149,14 @@ This can be used to perform actions that must only be performed once and runs af
     <span class="c1"># ... populate_* methods</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">bot_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Called only once after bot instantiation.</span>
-<span class="sd">        :param **kwargs: Ensure to keep this here so updates to this won&#39;t break your strategy.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;runmode&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;live&quot;</span><span class="p">,</span> <span class="s2">&quot;dry_run&quot;</span><span class="p">):</span>
+<span class="sd">        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"runmode"</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"live"</span><span class="p">,</span> <span class="s2">"dry_run"</span><span class="p">):</span>
             <span class="c1"># Assign this to the class by using self.*</span>
             <span class="c1"># can then be used by populate_* methods</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">custom_remote_data</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;https://some_remote_source.example.com&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">custom_remote_data</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"https://some_remote_source.example.com"</span><span class="p">)</span>
 </code></pre></div>
 <p>During hyperopt, this runs only once at startup.</p>
 <h2 id="bot-loop-start">Bot loop start<a class="headerlink" href="#bot-loop-start" title="Permanent link">&para;</a></h2>
@@ -3171,17 +3171,17 @@ This can be used to perform calculations which are pair independent (apply to al
     <span class="c1"># ... populate_* methods</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">bot_loop_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Called at the start of the bot iteration (one loop).</span>
 <span class="sd">        Might be used to perform pair-independent tasks</span>
 <span class="sd">        (e.g. gather some remote resource for comparison)</span>
 <span class="sd">        :param current_time: datetime object, containing the current datetime</span>
-<span class="sd">        :param **kwargs: Ensure to keep this here so updates to this won&#39;t break your strategy.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;runmode&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;live&quot;</span><span class="p">,</span> <span class="s2">&quot;dry_run&quot;</span><span class="p">):</span>
+<span class="sd">        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"runmode"</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"live"</span><span class="p">,</span> <span class="s2">"dry_run"</span><span class="p">):</span>
             <span class="c1"># Assign this to the class by using self.*</span>
             <span class="c1"># can then be used by populate_* methods</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">remote_data</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;https://some_remote_source.example.com&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">remote_data</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"https://some_remote_source.example.com"</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="stake-size-management">Stake size management<a class="headerlink" href="#stake-size-management" title="Permanent link">&para;</a></h2>
 <p>Called before entering a trade, makes it possible to manage your position size when placing a new trade.</p>
@@ -3196,13 +3196,13 @@ This can be used to perform calculations which are pair independent (apply to al
         <span class="n">dataframe</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">get_analyzed_dataframe</span><span class="p">(</span><span class="n">pair</span><span class="o">=</span><span class="n">pair</span><span class="p">,</span> <span class="n">timeframe</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timeframe</span><span class="p">)</span>
         <span class="n">current_candle</span> <span class="o">=</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>
 
-        <span class="k">if</span> <span class="n">current_candle</span><span class="p">[</span><span class="s2">&quot;fastk_rsi_1h&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">current_candle</span><span class="p">[</span><span class="s2">&quot;fastd_rsi_1h&quot;</span><span class="p">]:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;stake_amount&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;unlimited&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">current_candle</span><span class="p">[</span><span class="s2">"fastk_rsi_1h"</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">current_candle</span><span class="p">[</span><span class="s2">"fastd_rsi_1h"</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"stake_amount"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"unlimited"</span><span class="p">:</span>
                 <span class="c1"># Use entire available wallet during favorable conditions when in compounding mode.</span>
                 <span class="k">return</span> <span class="n">max_stake</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="c1"># Compound profits during favorable conditions instead of using a static stake.</span>
-                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">wallets</span><span class="o">.</span><span class="n">get_total_stake_amount</span><span class="p">()</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;max_open_trades&quot;</span><span class="p">]</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">wallets</span><span class="o">.</span><span class="n">get_total_stake_amount</span><span class="p">()</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"max_open_trades"</span><span class="p">]</span>
 
         <span class="c1"># Use default stake amount.</span>
         <span class="k">return</span> <span class="n">proposed_stake</span>
@@ -3237,17 +3237,17 @@ This can be used to perform calculations which are pair independent (apply to al
 
         <span class="c1"># Above 20% profit, sell when rsi &lt; 80</span>
         <span class="k">if</span> <span class="n">current_profit</span> <span class="o">&gt;</span> <span class="mf">0.2</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">last_candle</span><span class="p">[</span><span class="s2">&quot;rsi&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">80</span><span class="p">:</span>
-                <span class="k">return</span> <span class="s2">&quot;rsi_below_80&quot;</span>
+            <span class="k">if</span> <span class="n">last_candle</span><span class="p">[</span><span class="s2">"rsi"</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">80</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s2">"rsi_below_80"</span>
 
         <span class="c1"># Between 2% and 10%, sell if EMA-long above EMA-short</span>
         <span class="k">if</span> <span class="mf">0.02</span> <span class="o">&lt;</span> <span class="n">current_profit</span> <span class="o">&lt;</span> <span class="mf">0.1</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">last_candle</span><span class="p">[</span><span class="s2">&quot;emalong&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">last_candle</span><span class="p">[</span><span class="s2">&quot;emashort&quot;</span><span class="p">]:</span>
-                <span class="k">return</span> <span class="s2">&quot;ema_long_below_80&quot;</span>
+            <span class="k">if</span> <span class="n">last_candle</span><span class="p">[</span><span class="s2">"emalong"</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">last_candle</span><span class="p">[</span><span class="s2">"emashort"</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="s2">"ema_long_below_80"</span>
 
         <span class="c1"># Sell any positions at a loss if they are held for more than one day.</span>
         <span class="k">if</span> <span class="n">current_profit</span> <span class="o">&lt;</span> <span class="mf">0.0</span> <span class="ow">and</span> <span class="p">(</span><span class="n">current_time</span> <span class="o">-</span> <span class="n">trade</span><span class="o">.</span><span class="n">open_date_utc</span><span class="p">)</span><span class="o">.</span><span class="n">days</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">return</span> <span class="s2">&quot;unclog&quot;</span>
+            <span class="k">return</span> <span class="s2">"unclog"</span>
 </code></pre></div>
 <p>See <a href="../strategy-advanced/#dataframe-access">Dataframe access</a> for more information about dataframe use in strategy callbacks.</p>
 <h2 id="custom-stoploss">Custom stoploss<a class="headerlink" href="#custom-stoploss" title="Permanent link">&para;</a></h2>
@@ -3295,7 +3295,7 @@ Of course, many more things are possible, and all examples can be combined at wi
     <span class="k">def</span><span class="w"> </span><span class="nf">custom_stoploss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="n">Trade</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span>
                         <span class="n">current_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">current_profit</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">after_fill</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> 
                         <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Custom stoploss logic, returning the new distance relative to current_rate (as ratio).</span>
 <span class="sd">        e.g. returning -0.05 would create a stoploss 5% below current_rate.</span>
 <span class="sd">        The custom stoploss can never be below self.stoploss, which serves as a hard maximum loss.</span>
@@ -3305,15 +3305,15 @@ Of course, many more things are possible, and all examples can be combined at wi
 <span class="sd">        When not implemented by a strategy, returns the initial stoploss value.</span>
 <span class="sd">        Only called when use_custom_stoploss is set to True.</span>
 
-<span class="sd">        :param pair: Pair that&#39;s currently analyzed</span>
+<span class="sd">        :param pair: Pair that's currently analyzed</span>
 <span class="sd">        :param trade: trade object.</span>
 <span class="sd">        :param current_time: datetime object, containing the current datetime</span>
 <span class="sd">        :param current_rate: Rate, calculated based on pricing settings in exit_pricing.</span>
 <span class="sd">        :param current_profit: Current profit (as ratio), calculated based on current_rate.</span>
 <span class="sd">        :param after_fill: True if the stoploss is called after the order was filled.</span>
-<span class="sd">        :param **kwargs: Ensure to keep this here so updates to this won&#39;t break your strategy.</span>
+<span class="sd">        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.</span>
 <span class="sd">        :return float: New stoploss value, relative to the current_rate</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">return</span> <span class="o">-</span><span class="mf">0.04</span> <span class="o">*</span> <span class="n">trade</span><span class="o">.</span><span class="n">leverage</span>
 </code></pre></div>
 <h4 id="time-based-trailing-stop">Time based trailing stop<a class="headerlink" href="#time-based-trailing-stop" title="Permanent link">&para;</a></h4>
@@ -3377,9 +3377,9 @@ In this example, we'll trail the highest price with 10% trailing stoploss for <c
                         <span class="n">current_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">current_profit</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">after_fill</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
                         <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 
-        <span class="k">if</span> <span class="n">pair</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;ETH/BTC&quot;</span><span class="p">,</span> <span class="s2">&quot;XRP/BTC&quot;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">pair</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"ETH/BTC"</span><span class="p">,</span> <span class="s2">"XRP/BTC"</span><span class="p">):</span>
             <span class="k">return</span> <span class="o">-</span><span class="mf">0.10</span> <span class="o">*</span> <span class="n">trade</span><span class="o">.</span><span class="n">leverage</span>
-        <span class="k">elif</span> <span class="n">pair</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;LTC/BTC&quot;</span><span class="p">):</span>
+        <span class="k">elif</span> <span class="n">pair</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"LTC/BTC"</span><span class="p">):</span>
             <span class="k">return</span> <span class="o">-</span><span class="mf">0.05</span> <span class="o">*</span> <span class="n">trade</span><span class="o">.</span><span class="n">leverage</span>
         <span class="k">return</span> <span class="o">-</span><span class="mf">0.15</span> <span class="o">*</span> <span class="n">trade</span><span class="o">.</span><span class="n">leverage</span>
 </code></pre></div>
@@ -3446,7 +3446,7 @@ In this example, we'll trail the highest price with 10% trailing stoploss for <c
 
     <span class="k">def</span><span class="w"> </span><span class="nf">populate_indicators</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
         <span class="c1"># &lt;...&gt;</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;sar&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">SAR</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">"sar"</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">SAR</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
 
     <span class="n">use_custom_stoploss</span> <span class="o">=</span> <span class="kc">True</span>
 
@@ -3458,7 +3458,7 @@ In this example, we'll trail the highest price with 10% trailing stoploss for <c
         <span class="n">last_candle</span> <span class="o">=</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>
 
         <span class="c1"># Use parabolic sar as absolute stoploss price</span>
-        <span class="n">stoploss_price</span> <span class="o">=</span> <span class="n">last_candle</span><span class="p">[</span><span class="s2">&quot;sar&quot;</span><span class="p">]</span>
+        <span class="n">stoploss_price</span> <span class="o">=</span> <span class="n">last_candle</span><span class="p">[</span><span class="s2">"sar"</span><span class="p">]</span>
 
         <span class="c1"># Convert absolute price to percentage relative to current_rate</span>
         <span class="k">if</span> <span class="n">stoploss_price</span> <span class="o">&lt;</span> <span class="n">current_rate</span><span class="p">:</span>
@@ -3519,7 +3519,7 @@ For futures, we need to adjust the direction (up or down), as well as adjust for
     <span class="n">use_custom_stoploss</span> <span class="o">=</span> <span class="kc">True</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">populate_indicators</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;atr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">ATR</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">14</span><span class="p">)</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">"atr"</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">ATR</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">14</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">dataframe</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">custom_stoploss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="n">Trade</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span>
@@ -3529,7 +3529,7 @@ For futures, we need to adjust the direction (up or down), as well as adjust for
         <span class="n">trade_date</span> <span class="o">=</span> <span class="n">timeframe_to_prev_date</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timeframe</span><span class="p">,</span> <span class="n">trade</span><span class="o">.</span><span class="n">open_date_utc</span><span class="p">)</span>
         <span class="n">candle</span> <span class="o">=</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>
         <span class="n">side</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">trade</span><span class="o">.</span><span class="n">is_short</span> <span class="k">else</span> <span class="o">-</span><span class="mi">1</span>
-        <span class="k">return</span> <span class="n">stoploss_from_absolute</span><span class="p">(</span><span class="n">current_rate</span> <span class="o">+</span> <span class="p">(</span><span class="n">side</span> <span class="o">*</span> <span class="n">candle</span><span class="p">[</span><span class="s2">&quot;atr&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mi">2</span><span class="p">),</span> 
+        <span class="k">return</span> <span class="n">stoploss_from_absolute</span><span class="p">(</span><span class="n">current_rate</span> <span class="o">+</span> <span class="p">(</span><span class="n">side</span> <span class="o">*</span> <span class="n">candle</span><span class="p">[</span><span class="s2">"atr"</span><span class="p">]</span> <span class="o">*</span> <span class="mi">2</span><span class="p">),</span> 
                                       <span class="n">current_rate</span><span class="o">=</span><span class="n">current_rate</span><span class="p">,</span> 
                                       <span class="n">is_short</span><span class="o">=</span><span class="n">trade</span><span class="o">.</span><span class="n">is_short</span><span class="p">,</span>
                                       <span class="n">leverage</span><span class="o">=</span><span class="n">trade</span><span class="o">.</span><span class="n">leverage</span><span class="p">)</span>
@@ -3555,24 +3555,24 @@ For futures, we need to adjust the direction (up or down), as well as adjust for
 
     <span class="k">def</span><span class="w"> </span><span class="nf">custom_roi</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="n">Trade</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">trade_duration</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
                    <span class="n">entry_tag</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">side</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Custom ROI logic, returns a new minimum ROI threshold (as a ratio, e.g., 0.05 for +5%).</span>
 <span class="sd">        Only called when use_custom_roi is set to True.</span>
 
 <span class="sd">        If used at the same time as minimal_roi, an exit will be triggered when the lower</span>
-<span class="sd">        threshold is reached. Example: If minimal_roi = {&quot;0&quot;: 0.01} and custom_roi returns 0.05,</span>
+<span class="sd">        threshold is reached. Example: If minimal_roi = {"0": 0.01} and custom_roi returns 0.05,</span>
 <span class="sd">        an exit will be triggered if profit reaches 5%.</span>
 
-<span class="sd">        :param pair: Pair that&#39;s currently analyzed.</span>
+<span class="sd">        :param pair: Pair that's currently analyzed.</span>
 <span class="sd">        :param trade: trade object.</span>
 <span class="sd">        :param current_time: datetime object, containing the current datetime.</span>
 <span class="sd">        :param trade_duration: Current trade duration in minutes.</span>
 <span class="sd">        :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.</span>
-<span class="sd">        :param side: &#39;long&#39; or &#39;short&#39; - indicating the direction of the current trade.</span>
-<span class="sd">        :param **kwargs: Ensure to keep this here so updates to this won&#39;t break your strategy.</span>
+<span class="sd">        :param side: 'long' or 'short' - indicating the direction of the current trade.</span>
+<span class="sd">        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.</span>
 <span class="sd">        :return float: New ROI value as a ratio, or None to fall back to minimal_roi logic.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="mf">0.05</span> <span class="k">if</span> <span class="n">side</span> <span class="o">==</span> <span class="s2">&quot;long&quot;</span> <span class="k">else</span> <span class="mf">0.02</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="mf">0.05</span> <span class="k">if</span> <span class="n">side</span> <span class="o">==</span> <span class="s2">"long"</span> <span class="k">else</span> <span class="mf">0.02</span>
 </code></pre></div>
 <h4 id="custom-roi-per-pair">Custom ROI per pair<a class="headerlink" href="#custom-roi-per-pair" title="Permanent link">&para;</a></h4>
 <p>Use different ROI thresholds depending on the <code>pair</code>.</p>
@@ -3589,9 +3589,9 @@ For futures, we need to adjust the direction (up or down), as well as adjust for
 
         <span class="n">stake</span> <span class="o">=</span> <span class="n">trade</span><span class="o">.</span><span class="n">stake_currency</span>
         <span class="n">roi_map</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="sa">f</span><span class="s2">&quot;BTC/</span><span class="si">{</span><span class="n">stake</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">:</span> <span class="mf">0.02</span><span class="p">,</span> <span class="c1"># 2% for BTC</span>
-            <span class="sa">f</span><span class="s2">&quot;ETH/</span><span class="si">{</span><span class="n">stake</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">:</span> <span class="mf">0.03</span><span class="p">,</span> <span class="c1"># 3% for ETH</span>
-            <span class="sa">f</span><span class="s2">&quot;XRP/</span><span class="si">{</span><span class="n">stake</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">:</span> <span class="mf">0.04</span><span class="p">,</span> <span class="c1"># 4% for XRP</span>
+            <span class="sa">f</span><span class="s2">"BTC/</span><span class="si">{</span><span class="n">stake</span><span class="si">}</span><span class="s2">"</span><span class="p">:</span> <span class="mf">0.02</span><span class="p">,</span> <span class="c1"># 2% for BTC</span>
+            <span class="sa">f</span><span class="s2">"ETH/</span><span class="si">{</span><span class="n">stake</span><span class="si">}</span><span class="s2">"</span><span class="p">:</span> <span class="mf">0.03</span><span class="p">,</span> <span class="c1"># 3% for ETH</span>
+            <span class="sa">f</span><span class="s2">"XRP/</span><span class="si">{</span><span class="n">stake</span><span class="si">}</span><span class="s2">"</span><span class="p">:</span> <span class="mf">0.04</span><span class="p">,</span> <span class="c1"># 4% for XRP</span>
         <span class="p">}</span>
 
         <span class="k">return</span> <span class="n">roi_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">pair</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">)</span> <span class="c1"># 1% for any other pair</span>
@@ -3610,9 +3610,9 @@ For futures, we need to adjust the direction (up or down), as well as adjust for
                    <span class="n">entry_tag</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">side</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 
         <span class="n">roi_by_tag</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;breakout&quot;</span><span class="p">:</span> <span class="mf">0.08</span><span class="p">,</span>       <span class="c1"># 8% if tag is &quot;breakout&quot;</span>
-            <span class="s2">&quot;rsi_overbought&quot;</span><span class="p">:</span> <span class="mf">0.05</span><span class="p">,</span> <span class="c1"># 5% if tag is &quot;rsi_overbought&quot;</span>
-            <span class="s2">&quot;mean_reversion&quot;</span><span class="p">:</span> <span class="mf">0.03</span><span class="p">,</span> <span class="c1"># 3% if tag is &quot;mean_reversion&quot;</span>
+            <span class="s2">"breakout"</span><span class="p">:</span> <span class="mf">0.08</span><span class="p">,</span>       <span class="c1"># 8% if tag is "breakout"</span>
+            <span class="s2">"rsi_overbought"</span><span class="p">:</span> <span class="mf">0.05</span><span class="p">,</span> <span class="c1"># 5% if tag is "rsi_overbought"</span>
+            <span class="s2">"mean_reversion"</span><span class="p">:</span> <span class="mf">0.03</span><span class="p">,</span> <span class="c1"># 3% if tag is "mean_reversion"</span>
         <span class="p">}</span>
 
         <span class="k">return</span> <span class="n">roi_by_tag</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">entry_tag</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">)</span>  <span class="c1"># 1% if tag is unknown</span>
@@ -3629,14 +3629,14 @@ For futures, we need to adjust the direction (up or down), as well as adjust for
 
     <span class="k">def</span><span class="w"> </span><span class="nf">populate_indicators</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
         <span class="c1"># &lt;...&gt;</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;atr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">ATR</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">"atr"</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">ATR</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">custom_roi</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="n">Trade</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">trade_duration</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
                    <span class="n">entry_tag</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">side</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 
         <span class="n">dataframe</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">get_analyzed_dataframe</span><span class="p">(</span><span class="n">pair</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeframe</span><span class="p">)</span>
         <span class="n">last_candle</span> <span class="o">=</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>
-        <span class="n">atr_ratio</span> <span class="o">=</span> <span class="n">last_candle</span><span class="p">[</span><span class="s2">&quot;atr&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">last_candle</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span>
+        <span class="n">atr_ratio</span> <span class="o">=</span> <span class="n">last_candle</span><span class="p">[</span><span class="s2">"atr"</span><span class="p">]</span> <span class="o">/</span> <span class="n">last_candle</span><span class="p">[</span><span class="s2">"close"</span><span class="p">]</span>
 
         <span class="k">return</span> <span class="n">atr_ratio</span> <span class="c1"># Returns the ATR value as ratio</span>
 </code></pre></div>
@@ -3665,7 +3665,7 @@ For futures, we need to adjust the direction (up or down), as well as adjust for
 
         <span class="n">dataframe</span><span class="p">,</span> <span class="n">last_updated</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">get_analyzed_dataframe</span><span class="p">(</span><span class="n">pair</span><span class="o">=</span><span class="n">pair</span><span class="p">,</span>
                                                                 <span class="n">timeframe</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timeframe</span><span class="p">)</span>
-        <span class="n">new_entryprice</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;bollinger_10_lowerband&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">iat</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">new_entryprice</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">"bollinger_10_lowerband"</span><span class="p">]</span><span class="o">.</span><span class="n">iat</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
         <span class="k">return</span> <span class="n">new_entryprice</span>
 
@@ -3675,7 +3675,7 @@ For futures, we need to adjust the direction (up or down), as well as adjust for
 
         <span class="n">dataframe</span><span class="p">,</span> <span class="n">last_updated</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">get_analyzed_dataframe</span><span class="p">(</span><span class="n">pair</span><span class="o">=</span><span class="n">pair</span><span class="p">,</span>
                                                                 <span class="n">timeframe</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timeframe</span><span class="p">)</span>
-        <span class="n">new_exitprice</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;bollinger_10_upperband&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">iat</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">new_exitprice</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">"bollinger_10_upperband"</span><span class="p">]</span><span class="o">.</span><span class="n">iat</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
         <span class="k">return</span> <span class="n">new_exitprice</span>
 </code></pre></div>
@@ -3717,8 +3717,8 @@ It applies a tight timeout for higher priced assets, while allowing more time to
 
     <span class="c1"># Set unfilledtimeout to 25 hours, since the maximum timeout from below is 24 hours.</span>
     <span class="n">unfilledtimeout</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;entry&quot;</span><span class="p">:</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">25</span><span class="p">,</span>
-        <span class="s2">&quot;exit&quot;</span><span class="p">:</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">25</span>
+        <span class="s2">"entry"</span><span class="p">:</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">25</span><span class="p">,</span>
+        <span class="s2">"exit"</span><span class="p">:</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">25</span>
     <span class="p">}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">check_entry_timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="n">Trade</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="n">Order</span><span class="p">,</span>
@@ -3755,14 +3755,14 @@ It applies a tight timeout for higher priced assets, while allowing more time to
 
     <span class="c1"># Set unfilledtimeout to 25 hours, since the maximum timeout from below is 24 hours.</span>
     <span class="n">unfilledtimeout</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;entry&quot;</span><span class="p">:</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">25</span><span class="p">,</span>
-        <span class="s2">&quot;exit&quot;</span><span class="p">:</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">25</span>
+        <span class="s2">"entry"</span><span class="p">:</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">25</span><span class="p">,</span>
+        <span class="s2">"exit"</span><span class="p">:</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">25</span>
     <span class="p">}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">check_entry_timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="n">Trade</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="n">Order</span><span class="p">,</span>
                             <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="n">ob</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">orderbook</span><span class="p">(</span><span class="n">pair</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-        <span class="n">current_price</span> <span class="o">=</span> <span class="n">ob</span><span class="p">[</span><span class="s2">&quot;bids&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">current_price</span> <span class="o">=</span> <span class="n">ob</span><span class="p">[</span><span class="s2">"bids"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
         <span class="c1"># Cancel buy order if price is more than 2% above the order.</span>
         <span class="k">if</span> <span class="n">current_price</span> <span class="o">&gt;</span> <span class="n">order</span><span class="o">.</span><span class="n">price</span> <span class="o">*</span> <span class="mf">1.02</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">True</span>
@@ -3772,7 +3772,7 @@ It applies a tight timeout for higher priced assets, while allowing more time to
     <span class="k">def</span><span class="w"> </span><span class="nf">check_exit_timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="n">Trade</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="n">Order</span><span class="p">,</span>
                            <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="n">ob</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">orderbook</span><span class="p">(</span><span class="n">pair</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-        <span class="n">current_price</span> <span class="o">=</span> <span class="n">ob</span><span class="p">[</span><span class="s2">&quot;asks&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">current_price</span> <span class="o">=</span> <span class="n">ob</span><span class="p">[</span><span class="s2">"asks"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
         <span class="c1"># Cancel sell order if price is more than 2% below the order.</span>
         <span class="k">if</span> <span class="n">current_price</span> <span class="o">&lt;</span> <span class="n">order</span><span class="o">.</span><span class="n">price</span> <span class="o">*</span> <span class="mf">0.98</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">True</span>
@@ -3793,7 +3793,7 @@ This are the last methods that will be called before an order is placed.</p>
     <span class="k">def</span><span class="w"> </span><span class="nf">confirm_trade_entry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">order_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">amount</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
                             <span class="n">time_in_force</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">entry_tag</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
                             <span class="n">side</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Called right before placing a entry order.</span>
 <span class="sd">        Timing for this function is critical, so avoid doing heavy computations or</span>
 <span class="sd">        network requests in this method.</span>
@@ -3802,19 +3802,19 @@ This are the last methods that will be called before an order is placed.</p>
 
 <span class="sd">        When not implemented by a strategy, returns True (always confirming).</span>
 
-<span class="sd">        :param pair: Pair that&#39;s about to be bought/shorted.</span>
+<span class="sd">        :param pair: Pair that's about to be bought/shorted.</span>
 <span class="sd">        :param order_type: Order type (as configured in order_types). usually limit or market.</span>
-<span class="sd">        :param amount: Amount in target (base) currency that&#39;s going to be traded.</span>
-<span class="sd">        :param rate: Rate that&#39;s going to be used when using limit orders </span>
+<span class="sd">        :param amount: Amount in target (base) currency that's going to be traded.</span>
+<span class="sd">        :param rate: Rate that's going to be used when using limit orders </span>
 <span class="sd">                     or current rate for market orders.</span>
 <span class="sd">        :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).</span>
 <span class="sd">        :param current_time: datetime object, containing the current datetime</span>
 <span class="sd">        :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.</span>
-<span class="sd">        :param side: &quot;long&quot; or &quot;short&quot; - indicating the direction of the proposed trade</span>
-<span class="sd">        :param **kwargs: Ensure to keep this here so updates to this won&#39;t break your strategy.</span>
+<span class="sd">        :param side: "long" or "short" - indicating the direction of the proposed trade</span>
+<span class="sd">        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.</span>
 <span class="sd">        :return bool: When True is returned, then the buy-order is placed on the exchange.</span>
 <span class="sd">            False aborts the process</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">return</span> <span class="kc">True</span>
 </code></pre></div>
 <h3 id="trade-exit-sell-order-confirmation">Trade exit (sell order) confirmation<a class="headerlink" href="#trade-exit-sell-order-confirmation" title="Permanent link">&para;</a></h3>
@@ -3836,7 +3836,7 @@ The exit-reasons (if applicable) will be in the following sequence:</p>
     <span class="k">def</span><span class="w"> </span><span class="nf">confirm_trade_exit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="n">Trade</span><span class="p">,</span> <span class="n">order_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">amount</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
                            <span class="n">rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">time_in_force</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">exit_reason</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                            <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Called right before placing a regular exit order.</span>
 <span class="sd">        Timing for this function is critical, so avoid doing heavy computations or</span>
 <span class="sd">        network requests in this method.</span>
@@ -3845,25 +3845,25 @@ The exit-reasons (if applicable) will be in the following sequence:</p>
 
 <span class="sd">        When not implemented by a strategy, returns True (always confirming).</span>
 
-<span class="sd">        :param pair: Pair for trade that&#39;s about to be exited.</span>
+<span class="sd">        :param pair: Pair for trade that's about to be exited.</span>
 <span class="sd">        :param trade: trade object.</span>
 <span class="sd">        :param order_type: Order type (as configured in order_types). usually limit or market.</span>
 <span class="sd">        :param amount: Amount in base currency.</span>
-<span class="sd">        :param rate: Rate that&#39;s going to be used when using limit orders</span>
+<span class="sd">        :param rate: Rate that's going to be used when using limit orders</span>
 <span class="sd">                     or current rate for market orders.</span>
 <span class="sd">        :param time_in_force: Time in force. Defaults to GTC (Good-til-cancelled).</span>
 <span class="sd">        :param exit_reason: Exit reason.</span>
-<span class="sd">            Can be any of [&quot;roi&quot;, &quot;stop_loss&quot;, &quot;stoploss_on_exchange&quot;, &quot;trailing_stop_loss&quot;,</span>
-<span class="sd">                           &quot;exit_signal&quot;, &quot;force_exit&quot;, &quot;emergency_exit&quot;]</span>
+<span class="sd">            Can be any of ["roi", "stop_loss", "stoploss_on_exchange", "trailing_stop_loss",</span>
+<span class="sd">                           "exit_signal", "force_exit", "emergency_exit"]</span>
 <span class="sd">        :param current_time: datetime object, containing the current datetime</span>
-<span class="sd">        :param **kwargs: Ensure to keep this here so updates to this won&#39;t break your strategy.</span>
+<span class="sd">        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.</span>
 <span class="sd">        :return bool: When True, then the exit-order is placed on the exchange.</span>
 <span class="sd">            False aborts the process</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">exit_reason</span> <span class="o">==</span> <span class="s2">&quot;force_exit&quot;</span> <span class="ow">and</span> <span class="n">trade</span><span class="o">.</span><span class="n">calc_profit_ratio</span><span class="p">(</span><span class="n">rate</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">exit_reason</span> <span class="o">==</span> <span class="s2">"force_exit"</span> <span class="ow">and</span> <span class="n">trade</span><span class="o">.</span><span class="n">calc_profit_ratio</span><span class="p">(</span><span class="n">rate</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="c1"># Reject force-sells with negative profit</span>
             <span class="c1"># This is just a sample, please adjust to your needs</span>
-            <span class="c1"># (this does not necessarily make sense, assuming you know when you&#39;re force-selling)</span>
+            <span class="c1"># (this does not necessarily make sense, assuming you know when you're force-selling)</span>
             <span class="k">return</span> <span class="kc">False</span>
         <span class="k">return</span> <span class="kc">True</span>
 </code></pre></div>
@@ -3957,7 +3957,7 @@ Regular stoploss rules still apply (cannot move down).</p>
                               <span class="n">current_entry_profit</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">current_exit_profit</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
                               <span class="o">**</span><span class="n">kwargs</span>
                               <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Custom trade adjustment logic, returning the stake amount that a trade should be</span>
 <span class="sd">        increased or decreased.</span>
 <span class="sd">        This means extra entry or exit orders with additional fees.</span>
@@ -3978,19 +3978,19 @@ Regular stoploss rules still apply (cannot move down).</p>
 <span class="sd">        :param current_exit_rate: Current rate using exit pricing.</span>
 <span class="sd">        :param current_entry_profit: Current profit using entry pricing.</span>
 <span class="sd">        :param current_exit_profit: Current profit using exit pricing.</span>
-<span class="sd">        :param **kwargs: Ensure to keep this here so updates to this won&#39;t break your strategy.</span>
+<span class="sd">        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.</span>
 <span class="sd">        :return float: Stake amount to adjust your trade,</span>
 <span class="sd">                       Positive values to increase position, Negative values to decrease position.</span>
 <span class="sd">                       Return None for no action.</span>
 <span class="sd">                       Optionally, return a tuple with a 2nd element with an order reason</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">if</span> <span class="n">trade</span><span class="o">.</span><span class="n">has_open_orders</span><span class="p">:</span>
             <span class="c1"># Only act if no orders are open</span>
             <span class="k">return</span>
 
         <span class="k">if</span> <span class="n">current_profit</span> <span class="o">&gt;</span> <span class="mf">0.05</span> <span class="ow">and</span> <span class="n">trade</span><span class="o">.</span><span class="n">nr_of_successful_exits</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="c1"># Take half of the profit at +5%</span>
-            <span class="k">return</span> <span class="o">-</span><span class="p">(</span><span class="n">trade</span><span class="o">.</span><span class="n">stake_amount</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="s2">&quot;half_profit_5%&quot;</span>
+            <span class="k">return</span> <span class="o">-</span><span class="p">(</span><span class="n">trade</span><span class="o">.</span><span class="n">stake_amount</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="s2">"half_profit_5%"</span>
 
         <span class="k">if</span> <span class="n">current_profit</span> <span class="o">&gt;</span> <span class="o">-</span><span class="mf">0.05</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span>
@@ -4000,7 +4000,7 @@ Regular stoploss rules still apply (cannot move down).</p>
         <span class="c1"># Only buy when not actively falling price.</span>
         <span class="n">last_candle</span> <span class="o">=</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>
         <span class="n">previous_candle</span> <span class="o">=</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">last_candle</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">previous_candle</span><span class="p">[</span><span class="s2">&quot;close&quot;</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">last_candle</span><span class="p">[</span><span class="s2">"close"</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">previous_candle</span><span class="p">[</span><span class="s2">"close"</span><span class="p">]:</span>
             <span class="k">return</span> <span class="kc">None</span>
 
         <span class="n">filled_entries</span> <span class="o">=</span> <span class="n">trade</span><span class="o">.</span><span class="n">select_filled_orders</span><span class="p">(</span><span class="n">trade</span><span class="o">.</span><span class="n">entry_side</span><span class="p">)</span>
@@ -4018,7 +4018,7 @@ Regular stoploss rules still apply (cannot move down).</p>
             <span class="n">stake_amount</span> <span class="o">=</span> <span class="n">filled_entries</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stake_amount_filled</span>
             <span class="c1"># This then calculates current safety order size</span>
             <span class="n">stake_amount</span> <span class="o">=</span> <span class="n">stake_amount</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="p">(</span><span class="n">count_of_entries</span> <span class="o">*</span> <span class="mf">0.25</span><span class="p">))</span>
-            <span class="k">return</span> <span class="n">stake_amount</span><span class="p">,</span> <span class="s2">&quot;1/3rd_increase&quot;</span>
+            <span class="k">return</span> <span class="n">stake_amount</span><span class="p">,</span> <span class="s2">"1/3rd_increase"</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exception</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span>
 
@@ -4078,7 +4078,7 @@ Orders that are cancelled via the above methods will not have this callback call
         <span class="n">is_entry</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Exit and entry order price re-adjustment logic, returning the user desired limit price.</span>
 <span class="sd">        This only executes when a order was already placed, still open (unfilled fully or partially)</span>
 <span class="sd">        and not timed out on subsequent candles after entry trigger.</span>
@@ -4089,25 +4089,25 @@ Orders that are cancelled via the above methods will not have this callback call
 <span class="sd">        If current_order_rate is returned then the existing order is maintained.</span>
 <span class="sd">        If None is returned then order gets canceled but not replaced by a new one.</span>
 
-<span class="sd">        :param pair: Pair that&#39;s currently analyzed</span>
+<span class="sd">        :param pair: Pair that's currently analyzed</span>
 <span class="sd">        :param trade: Trade object.</span>
 <span class="sd">        :param order: Order object</span>
 <span class="sd">        :param current_time: datetime object, containing the current datetime</span>
 <span class="sd">        :param proposed_rate: Rate, calculated based on pricing settings in entry_pricing.</span>
 <span class="sd">        :param current_order_rate: Rate of the existing order in place.</span>
 <span class="sd">        :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.</span>
-<span class="sd">        :param side: &#39;long&#39; or &#39;short&#39; - indicating the direction of the proposed trade</span>
-<span class="sd">        :param is_entry: True if the order is an entry order, False if it&#39;s an exit order.</span>
-<span class="sd">        :param **kwargs: Ensure to keep this here so updates to this won&#39;t break your strategy.</span>
+<span class="sd">        :param side: 'long' or 'short' - indicating the direction of the proposed trade</span>
+<span class="sd">        :param is_entry: True if the order is an entry order, False if it's an exit order.</span>
+<span class="sd">        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.</span>
 <span class="sd">        :return float or None: New entry price value if provided</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
 
         <span class="c1"># Limit entry orders to use and follow SMA200 as price target for the first 10 minutes since entry trigger for BTC/USDT pair.</span>
         <span class="k">if</span> <span class="p">(</span>
             <span class="n">is_entry</span>
-            <span class="ow">and</span> <span class="n">pair</span> <span class="o">==</span> <span class="s2">&quot;BTC/USDT&quot;</span> 
-            <span class="ow">and</span> <span class="n">entry_tag</span> <span class="o">==</span> <span class="s2">&quot;long_sma200&quot;</span> 
-            <span class="ow">and</span> <span class="n">side</span> <span class="o">==</span> <span class="s2">&quot;long&quot;</span> 
+            <span class="ow">and</span> <span class="n">pair</span> <span class="o">==</span> <span class="s2">"BTC/USDT"</span> 
+            <span class="ow">and</span> <span class="n">entry_tag</span> <span class="o">==</span> <span class="s2">"long_sma200"</span> 
+            <span class="ow">and</span> <span class="n">side</span> <span class="o">==</span> <span class="s2">"long"</span> 
             <span class="ow">and</span> <span class="p">(</span><span class="n">current_time</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">10</span><span class="p">))</span> <span class="o">&lt;=</span> <span class="n">trade</span><span class="o">.</span><span class="n">open_date_utc</span>
         <span class="p">):</span>
             <span class="c1"># just cancel the order if it has been filled more than half of the amount</span>
@@ -4117,7 +4117,7 @@ Orders that are cancelled via the above methods will not have this callback call
                 <span class="n">dataframe</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">get_analyzed_dataframe</span><span class="p">(</span><span class="n">pair</span><span class="o">=</span><span class="n">pair</span><span class="p">,</span> <span class="n">timeframe</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timeframe</span><span class="p">)</span>
                 <span class="n">current_candle</span> <span class="o">=</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>
                 <span class="c1"># desired price</span>
-                <span class="k">return</span> <span class="n">current_candle</span><span class="p">[</span><span class="s2">&quot;sma_200&quot;</span><span class="p">]</span>
+                <span class="k">return</span> <span class="n">current_candle</span><span class="p">[</span><span class="s2">"sma_200"</span><span class="p">]</span>
         <span class="c1"># default: maintain existing order</span>
         <span class="k">return</span> <span class="n">current_order_rate</span>
 </code></pre></div>
@@ -4148,18 +4148,18 @@ For markets / exchanges that don't support leverage, this method is ignored.</p>
     <span class="k">def</span><span class="w"> </span><span class="nf">leverage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">current_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
                  <span class="n">proposed_leverage</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">max_leverage</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">entry_tag</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">side</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                  <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Customize leverage for each new trade. This method is only called in futures mode.</span>
 
-<span class="sd">        :param pair: Pair that&#39;s currently analyzed</span>
+<span class="sd">        :param pair: Pair that's currently analyzed</span>
 <span class="sd">        :param current_time: datetime object, containing the current datetime</span>
 <span class="sd">        :param current_rate: Rate, calculated based on pricing settings in exit_pricing.</span>
 <span class="sd">        :param proposed_leverage: A leverage proposed by the bot.</span>
 <span class="sd">        :param max_leverage: Max leverage allowed on this pair</span>
 <span class="sd">        :param entry_tag: Optional entry_tag (buy_tag) if provided with the buy signal.</span>
-<span class="sd">        :param side: &quot;long&quot; or &quot;short&quot; - indicating the direction of the proposed trade</span>
+<span class="sd">        :param side: "long" or "short" - indicating the direction of the proposed trade</span>
 <span class="sd">        :return: A leverage amount, which is between 1.0 and max_leverage.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">return</span> <span class="mf">1.0</span>
 </code></pre></div>
 <p>All profit calculations include leverage. Stoploss / ROI also include leverage in their calculation.
@@ -4172,21 +4172,21 @@ It will be called independent of the order type (entry, exit, stoploss or positi
 
 <span class="k">class</span><span class="w"> </span><span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">order_filled</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="n">Trade</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="n">Order</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Called right after an order fills. </span>
 <span class="sd">        Will be called for all order types (entry, exit, stoploss, position adjustment).</span>
 <span class="sd">        :param pair: Pair for trade</span>
 <span class="sd">        :param trade: trade object.</span>
 <span class="sd">        :param order: Order object.</span>
 <span class="sd">        :param current_time: datetime object, containing the current datetime</span>
-<span class="sd">        :param **kwargs: Ensure to keep this here so updates to this won&#39;t break your strategy.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.</span>
+<span class="sd">        """</span>
         <span class="c1"># Obtain pair dataframe (just to show how to access it)</span>
         <span class="n">dataframe</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">get_analyzed_dataframe</span><span class="p">(</span><span class="n">trade</span><span class="o">.</span><span class="n">pair</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeframe</span><span class="p">)</span>
         <span class="n">last_candle</span> <span class="o">=</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="p">(</span><span class="n">trade</span><span class="o">.</span><span class="n">nr_of_successful_entries</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">order</span><span class="o">.</span><span class="n">ft_order_side</span> <span class="o">==</span> <span class="n">trade</span><span class="o">.</span><span class="n">entry_side</span><span class="p">):</span>
-            <span class="n">trade</span><span class="o">.</span><span class="n">set_custom_data</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;entry_candle_high&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">last_candle</span><span class="p">[</span><span class="s2">&quot;high&quot;</span><span class="p">])</span>
+            <span class="n">trade</span><span class="o">.</span><span class="n">set_custom_data</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">"entry_candle_high"</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">last_candle</span><span class="p">[</span><span class="s2">"high"</span><span class="p">])</span>
 
         <span class="k">return</span> <span class="kc">None</span>
 </code></pre></div>
@@ -4204,42 +4204,42 @@ Depending on the content returned - the chart can display horizontal areas, vert
 <p>Currently two types of annotations are supported, <code>area</code> and <code>line</code>.</p>
 <h4 id="area">Area<a class="headerlink" href="#area" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;area&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// Type of the annotation, currently only &quot;area&quot; is supported</span>
-<span class="w">    </span><span class="nt">&quot;start&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2024-01-01 15:00:00&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// Start date of the area</span>
-<span class="w">    </span><span class="nt">&quot;end&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2024-01-01 16:00:00&quot;</span><span class="p">,</span><span class="w">  </span><span class="c1">// End date of the area</span>
-<span class="w">    </span><span class="nt">&quot;y_start&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">94000.2</span><span class="p">,</span><span class="w">  </span><span class="c1">// Price / y axis value</span>
-<span class="w">    </span><span class="nt">&quot;y_end&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">98000</span><span class="p">,</span><span class="w"> </span><span class="c1">// Price / y axis value</span>
-<span class="w">    </span><span class="nt">&quot;color&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;z_level&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="c1">// z-level, higher values are drawn on top of lower values. Positions relative to the Chart elements need to be set in freqUI.</span>
-<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;some label&quot;</span>
+<span class="w">    </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"area"</span><span class="p">,</span><span class="w"> </span><span class="c1">// Type of the annotation, currently only "area" is supported</span>
+<span class="w">    </span><span class="nt">"start"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2024-01-01 15:00:00"</span><span class="p">,</span><span class="w"> </span><span class="c1">// Start date of the area</span>
+<span class="w">    </span><span class="nt">"end"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2024-01-01 16:00:00"</span><span class="p">,</span><span class="w">  </span><span class="c1">// End date of the area</span>
+<span class="w">    </span><span class="nt">"y_start"</span><span class="p">:</span><span class="w"> </span><span class="mf">94000.2</span><span class="p">,</span><span class="w">  </span><span class="c1">// Price / y axis value</span>
+<span class="w">    </span><span class="nt">"y_end"</span><span class="p">:</span><span class="w"> </span><span class="mi">98000</span><span class="p">,</span><span class="w"> </span><span class="c1">// Price / y axis value</span>
+<span class="w">    </span><span class="nt">"color"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"z_level"</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="c1">// z-level, higher values are drawn on top of lower values. Positions relative to the Chart elements need to be set in freqUI.</span>
+<span class="w">    </span><span class="nt">"label"</span><span class="p">:</span><span class="w"> </span><span class="s2">"some label"</span>
 <span class="p">}</span>
 </code></pre></div>
 <h4 id="line">Line<a class="headerlink" href="#line" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;line&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// Type of the annotation, currently only &quot;line&quot; is supported</span>
-<span class="w">    </span><span class="nt">&quot;start&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2024-01-01 15:00:00&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// Start date of the line</span>
-<span class="w">    </span><span class="nt">&quot;end&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2024-01-01 16:00:00&quot;</span><span class="p">,</span><span class="w">  </span><span class="c1">// End date of the line</span>
-<span class="w">    </span><span class="nt">&quot;y_start&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">94000.2</span><span class="p">,</span><span class="w">  </span><span class="c1">// Price / y axis value</span>
-<span class="w">    </span><span class="nt">&quot;y_end&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">98000</span><span class="p">,</span><span class="w"> </span><span class="c1">// Price / y axis value</span>
-<span class="w">    </span><span class="nt">&quot;color&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;z_level&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="c1">// z-level, higher values are drawn on top of lower values. Positions relative to the Chart elements need to be set in freqUI.</span>
-<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;some label&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;width&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="c1">// Optional, line width in pixels. Defaults to 1</span>
-<span class="w">    </span><span class="nt">&quot;line_style&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;dashed&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// Optional, can be &quot;solid&quot;, &quot;dashed&quot; or &quot;dotted&quot;. Defaults to &quot;solid&quot;</span>
+<span class="w">    </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"line"</span><span class="p">,</span><span class="w"> </span><span class="c1">// Type of the annotation, currently only "line" is supported</span>
+<span class="w">    </span><span class="nt">"start"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2024-01-01 15:00:00"</span><span class="p">,</span><span class="w"> </span><span class="c1">// Start date of the line</span>
+<span class="w">    </span><span class="nt">"end"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2024-01-01 16:00:00"</span><span class="p">,</span><span class="w">  </span><span class="c1">// End date of the line</span>
+<span class="w">    </span><span class="nt">"y_start"</span><span class="p">:</span><span class="w"> </span><span class="mf">94000.2</span><span class="p">,</span><span class="w">  </span><span class="c1">// Price / y axis value</span>
+<span class="w">    </span><span class="nt">"y_end"</span><span class="p">:</span><span class="w"> </span><span class="mi">98000</span><span class="p">,</span><span class="w"> </span><span class="c1">// Price / y axis value</span>
+<span class="w">    </span><span class="nt">"color"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"z_level"</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="c1">// z-level, higher values are drawn on top of lower values. Positions relative to the Chart elements need to be set in freqUI.</span>
+<span class="w">    </span><span class="nt">"label"</span><span class="p">:</span><span class="w"> </span><span class="s2">"some label"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"width"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="c1">// Optional, line width in pixels. Defaults to 1</span>
+<span class="w">    </span><span class="nt">"line_style"</span><span class="p">:</span><span class="w"> </span><span class="s2">"dashed"</span><span class="p">,</span><span class="w"> </span><span class="c1">// Optional, can be "solid", "dashed" or "dotted". Defaults to "solid"</span>
 
 <span class="p">}</span>
 </code></pre></div>
 <h4 id="point">Point<a class="headerlink" href="#point" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;point&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// Type of the annotation, currently only &quot;point&quot; is supported</span>
-<span class="w">    </span><span class="nt">&quot;x&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2024-01-01 15:00:00&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// Start date of the point</span>
-<span class="w">    </span><span class="nt">&quot;y&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">94000.2</span><span class="p">,</span><span class="w">  </span><span class="c1">// Price / y axis value</span>
-<span class="w">    </span><span class="nt">&quot;color&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;z_level&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="c1">// z-level, higher values are drawn on top of lower values. Positions relative to the Chart elements need to be set in freqUI.</span>
-<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;some label&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;size&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="c1">// Optional, line width in pixels. Defaults to 10</span>
-<span class="w">    </span><span class="nt">&quot;shape&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;circle&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// Optional, can be &quot;circle&quot;, &quot;rect&quot;, &quot;roundRect&quot;, &quot;triangle&quot;, &quot;pin&quot;, &quot;arrow&quot;, &quot;none&quot;.</span>
-<span class="w">    </span><span class="nt">&quot;rotate&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="c1">// Optional, rotation of the shape/symbol in degrees. Defaults to 0</span>
+<span class="w">    </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"point"</span><span class="p">,</span><span class="w"> </span><span class="c1">// Type of the annotation, currently only "point" is supported</span>
+<span class="w">    </span><span class="nt">"x"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2024-01-01 15:00:00"</span><span class="p">,</span><span class="w"> </span><span class="c1">// Start date of the point</span>
+<span class="w">    </span><span class="nt">"y"</span><span class="p">:</span><span class="w"> </span><span class="mf">94000.2</span><span class="p">,</span><span class="w">  </span><span class="c1">// Price / y axis value</span>
+<span class="w">    </span><span class="nt">"color"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"z_level"</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="c1">// z-level, higher values are drawn on top of lower values. Positions relative to the Chart elements need to be set in freqUI.</span>
+<span class="w">    </span><span class="nt">"label"</span><span class="p">:</span><span class="w"> </span><span class="s2">"some label"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"size"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="c1">// Optional, line width in pixels. Defaults to 10</span>
+<span class="w">    </span><span class="nt">"shape"</span><span class="p">:</span><span class="w"> </span><span class="s2">"circle"</span><span class="p">,</span><span class="w"> </span><span class="c1">// Optional, can be "circle", "rect", "roundRect", "triangle", "pin", "arrow", "none".</span>
+<span class="w">    </span><span class="nt">"rotate"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="c1">// Optional, rotation of the shape/symbol in degrees. Defaults to 0</span>
 
 <span class="p">}</span>
 </code></pre></div>
@@ -4251,31 +4251,31 @@ This is obviously a very basic example.</p>
     <span class="k">def</span><span class="w"> </span><span class="nf">plot_annotations</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">start_date</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">end_date</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">AnnotationType</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Retrieve area annotations for a chart.</span>
 <span class="sd">        Must be returned as array, with type, label, color, start, end, y_start, y_end.</span>
 <span class="sd">        All settings except for type are optional - though it usually makes sense to include either</span>
-<span class="sd">        &quot;start and end&quot; or &quot;y_start and y_end&quot; for either horizontal or vertical plots</span>
+<span class="sd">        "start and end" or "y_start and y_end" for either horizontal or vertical plots</span>
 <span class="sd">        (or all 4 for boxes).</span>
-<span class="sd">        :param pair: Pair that&#39;s currently analyzed</span>
+<span class="sd">        :param pair: Pair that's currently analyzed</span>
 <span class="sd">        :param start_date: Start date of the chart data being requested</span>
 <span class="sd">        :param end_date: End date of the chart data being requested</span>
 <span class="sd">        :param dataframe: DataFrame with the analyzed data for the chart</span>
-<span class="sd">        :param **kwargs: Ensure to keep this here so updates to this won&#39;t break your strategy.</span>
+<span class="sd">        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.</span>
 <span class="sd">        :return: List of AnnotationType objects</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">annotations</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">while</span> <span class="n">start_dt</span> <span class="o">&lt;</span> <span class="n">end_date</span><span class="p">:</span>
             <span class="n">start_dt</span> <span class="o">+=</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">start_dt</span><span class="o">.</span><span class="n">hour</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">15</span><span class="p">):</span>
                 <span class="n">annotations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                     <span class="p">{</span>
-                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;area&quot;</span><span class="p">,</span>
-                        <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;Trade open and close hours&quot;</span><span class="p">,</span>
-                        <span class="s2">&quot;start&quot;</span><span class="p">:</span> <span class="n">start_dt</span><span class="p">,</span>
-                        <span class="s2">&quot;end&quot;</span><span class="p">:</span> <span class="n">start_dt</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                        <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"area"</span><span class="p">,</span>
+                        <span class="s2">"label"</span><span class="p">:</span> <span class="s2">"Trade open and close hours"</span><span class="p">,</span>
+                        <span class="s2">"start"</span><span class="p">:</span> <span class="n">start_dt</span><span class="p">,</span>
+                        <span class="s2">"end"</span><span class="p">:</span> <span class="n">start_dt</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
                         <span class="c1"># Omitting y_start and y_end will result in a vertical area spanning the whole height of the main Chart</span>
-                        <span class="s2">&quot;color&quot;</span><span class="p">:</span> <span class="s2">&quot;rgba(133, 133, 133, 0.4)&quot;</span><span class="p">,</span>
+                        <span class="s2">"color"</span><span class="p">:</span> <span class="s2">"rgba(133, 133, 133, 0.4)"</span><span class="p">,</span>
                     <span class="p">}</span>
                 <span class="p">)</span>
 
@@ -4305,25 +4305,25 @@ Use the annotation feature with care.</p>
             <span class="k">if</span> <span class="p">(</span><span class="n">start_dt</span><span class="o">.</span><span class="n">hour</span> <span class="o">%</span> <span class="mi">4</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">annotations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                     <span class="p">{</span>
-                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;area&quot;</span><span class="p">,</span>
-                        <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;4h&quot;</span><span class="p">,</span>
-                        <span class="s2">&quot;start&quot;</span><span class="p">:</span> <span class="n">start_dt</span><span class="p">,</span>
-                        <span class="s2">&quot;end&quot;</span><span class="p">:</span> <span class="n">start_dt</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
-                        <span class="s2">&quot;color&quot;</span><span class="p">:</span> <span class="s2">&quot;rgba(133, 133, 133, 0.4)&quot;</span><span class="p">,</span>
+                        <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"area"</span><span class="p">,</span>
+                        <span class="s2">"label"</span><span class="p">:</span> <span class="s2">"4h"</span><span class="p">,</span>
+                        <span class="s2">"start"</span><span class="p">:</span> <span class="n">start_dt</span><span class="p">,</span>
+                        <span class="s2">"end"</span><span class="p">:</span> <span class="n">start_dt</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                        <span class="s2">"color"</span><span class="p">:</span> <span class="s2">"rgba(133, 133, 133, 0.4)"</span><span class="p">,</span>
                     <span class="p">}</span>
                 <span class="p">)</span>
             <span class="k">elif</span> <span class="p">(</span><span class="n">start_dt</span><span class="o">.</span><span class="n">hour</span> <span class="o">%</span> <span class="mi">2</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">price</span> <span class="o">=</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;date&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">start_dt</span><span class="p">,</span> <span class="s2">&quot;close&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+            <span class="n">price</span> <span class="o">=</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">dataframe</span><span class="p">[</span><span class="s2">"date"</span><span class="p">]</span> <span class="o">==</span> <span class="n">start_dt</span><span class="p">,</span> <span class="s2">"close"</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
                 <span class="n">annotations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                     <span class="p">{</span>
-                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;area&quot;</span><span class="p">,</span>
-                        <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;2h&quot;</span><span class="p">,</span>
-                        <span class="s2">&quot;start&quot;</span><span class="p">:</span> <span class="n">start_dt</span><span class="p">,</span>
-                        <span class="s2">&quot;end&quot;</span><span class="p">:</span> <span class="n">start_dt</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
-                        <span class="s2">&quot;y_end&quot;</span><span class="p">:</span> <span class="n">price</span> <span class="o">*</span> <span class="mf">1.01</span><span class="p">,</span>
-                        <span class="s2">&quot;y_start&quot;</span><span class="p">:</span> <span class="n">price</span> <span class="o">*</span> <span class="mf">0.99</span><span class="p">,</span>
-                        <span class="s2">&quot;color&quot;</span><span class="p">:</span> <span class="s2">&quot;rgba(0, 255, 0, 0.4)&quot;</span><span class="p">,</span>
-                        <span class="s2">&quot;z_level&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+                        <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"area"</span><span class="p">,</span>
+                        <span class="s2">"label"</span><span class="p">:</span> <span class="s2">"2h"</span><span class="p">,</span>
+                        <span class="s2">"start"</span><span class="p">:</span> <span class="n">start_dt</span><span class="p">,</span>
+                        <span class="s2">"end"</span><span class="p">:</span> <span class="n">start_dt</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                        <span class="s2">"y_end"</span><span class="p">:</span> <span class="n">price</span> <span class="o">*</span> <span class="mf">1.01</span><span class="p">,</span>
+                        <span class="s2">"y_start"</span><span class="p">:</span> <span class="n">price</span> <span class="o">*</span> <span class="mf">0.99</span><span class="p">,</span>
+                        <span class="s2">"color"</span><span class="p">:</span> <span class="s2">"rgba(0, 255, 0, 0.4)"</span><span class="p">,</span>
+                        <span class="s2">"z_level"</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
                     <span class="p">}</span>
                 <span class="p">)</span>
 

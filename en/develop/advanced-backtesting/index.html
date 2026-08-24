@@ -2121,7 +2121,7 @@ If you want to analyze results from an earlier backtest, use the <code>--backtes
 <div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>-c<span class="w"> </span>&lt;config.json&gt;<span class="w"> </span>--strategy<span class="w"> </span>&lt;strategy_name&gt;<span class="w"> </span>--timerange<span class="w"> </span>&lt;timerange&gt;<span class="w"> </span>--export<span class="w"> </span>signals<span class="w"> </span>--backtest-filename<span class="w"> </span>backtest-result-2025-03-05_20-38-34.zip
 </code></pre></div>
 <p>You should see some output similar to below in the logs with the name of the timestamped filename that was exported:</p>
-<div class="highlight"><pre><span></span><code>2022-06-14 16:28:32,698 - freqtrade.misc - INFO - dumping json to &quot;mystrat_backtest-2022-06-14_16-28-32.json&quot;
+<div class="highlight"><pre><span></span><code>2022-06-14 16:28:32,698 - freqtrade.misc - INFO - dumping json to "mystrat_backtest-2022-06-14_16-28-32.json"
 </code></pre></div>
 <p>You can then use that filename in <code>backtesting-analysis</code>:</p>
 <div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting-analysis<span class="w"> </span>-c<span class="w"> </span>&lt;config.json&gt;<span class="w"> </span>--backtest-filename<span class="o">=</span>backtest-result-2025-03-05_20-38-34.zip
@@ -2131,8 +2131,8 @@ If you want to analyze results from an earlier backtest, use the <code>--backtes
 </code></pre></div>
 <h3 id="tuning-the-buy-tags-and-sell-tags-to-display">Tuning the buy tags and sell tags to display<a class="headerlink" href="#tuning-the-buy-tags-and-sell-tags-to-display" title="Permanent link">&para;</a></h3>
 <p>To show only certain buy and sell tags in the displayed output, use the following two options:</p>
-<div class="highlight"><pre><span></span><code>--enter-reason-list : Space-separated list of enter signals to analyse. Default: &quot;all&quot;
---exit-reason-list : Space-separated list of exit signals to analyse. Default: &quot;all&quot;
+<div class="highlight"><pre><span></span><code>--enter-reason-list : Space-separated list of enter signals to analyse. Default: "all"
+--exit-reason-list : Space-separated list of exit signals to analyse. Default: "all"
 </code></pre></div>
 <p>For example:</p>
 <div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting-analysis<span class="w"> </span>-c<span class="w"> </span>&lt;config.json&gt;<span class="w"> </span>--analysis-groups<span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="m">2</span><span class="w"> </span>--enter-reason-list<span class="w"> </span>enter_tag_a<span class="w"> </span>enter_tag_b<span class="w"> </span>--exit-reason-list<span class="w"> </span>roi<span class="w"> </span>custom_exit_tag_a<span class="w"> </span>stop_loss

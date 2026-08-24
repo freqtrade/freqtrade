@@ -2182,18 +2182,18 @@ Please follow the <a href="https://www.freqtrade.io/en/stable/data-download/">do
 <span class="c1"># Change directory</span>
 <span class="c1"># Modify this cell to insure that the output shows the correct path.</span>
 <span class="c1"># Define all paths relative to the project root shown in the cell output</span>
-<span class="n">project_root</span> <span class="o">=</span> <span class="s2">&quot;somedir/freqtrade&quot;</span>
+<span class="n">project_root</span> <span class="o">=</span> <span class="s2">"somedir/freqtrade"</span>
 <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
 <span class="k">try</span><span class="p">:</span>
     <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">project_root</span><span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;LICENSE&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"LICENSE"</span><span class="p">)</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
         <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">4</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;LICENSE&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">is_file</span><span class="p">()):</span>
-            <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">Path</span><span class="o">.</span><span class="n">cwd</span><span class="p">(),</span> <span class="s2">&quot;../&quot;</span><span class="p">))</span>
+        <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">4</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"LICENSE"</span><span class="p">)</span><span class="o">.</span><span class="n">is_file</span><span class="p">()):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">Path</span><span class="o">.</span><span class="n">cwd</span><span class="p">(),</span> <span class="s2">"../"</span><span class="p">))</span>
             <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
         <span class="n">project_root</span> <span class="o">=</span> <span class="n">Path</span><span class="o">.</span><span class="n">cwd</span><span class="p">()</span>
 <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Please define the project root relative to the current directory&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Please define the project root relative to the current directory"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">Path</span><span class="o">.</span><span class="n">cwd</span><span class="p">())</span>
 </code></pre></div>
 <h3 id="configure-freqtrade-environment">Configure Freqtrade environment<a class="headerlink" href="#configure-freqtrade-environment" title="Permanent link">&para;</a></h3>
@@ -2205,16 +2205,16 @@ Please follow the <a href="https://www.freqtrade.io/en/stable/data-download/">do
 <span class="c1"># Initialize empty configuration object</span>
 <span class="n">config</span> <span class="o">=</span> <span class="n">Configuration</span><span class="o">.</span><span class="n">from_files</span><span class="p">([])</span>
 <span class="c1"># Optionally (recommended), use existing configuration file</span>
-<span class="c1"># config = Configuration.from_files([&quot;user_data/config.json&quot;])</span>
+<span class="c1"># config = Configuration.from_files(["user_data/config.json"])</span>
 
 <span class="c1"># Define some constants</span>
-<span class="n">config</span><span class="p">[</span><span class="s2">&quot;timeframe&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;5m&quot;</span>
+<span class="n">config</span><span class="p">[</span><span class="s2">"timeframe"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"5m"</span>
 <span class="c1"># Name of the strategy class</span>
-<span class="n">config</span><span class="p">[</span><span class="s2">&quot;strategy&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;SampleStrategy&quot;</span>
+<span class="n">config</span><span class="p">[</span><span class="s2">"strategy"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"SampleStrategy"</span>
 <span class="c1"># Location of the data</span>
-<span class="n">data_location</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;datadir&quot;</span><span class="p">]</span>
+<span class="n">data_location</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">"datadir"</span><span class="p">]</span>
 <span class="c1"># Pair to analyze - Only use one pair here</span>
-<span class="n">pair</span> <span class="o">=</span> <span class="s2">&quot;BTC/USDT&quot;</span>
+<span class="n">pair</span> <span class="o">=</span> <span class="s2">"BTC/USDT"</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="c1"># Load data using values set above</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">freqtrade.data.history</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_pair_history</span>
@@ -2223,14 +2223,14 @@ Please follow the <a href="https://www.freqtrade.io/en/stable/data-download/">do
 
 <span class="n">candles</span> <span class="o">=</span> <span class="n">load_pair_history</span><span class="p">(</span>
     <span class="n">datadir</span><span class="o">=</span><span class="n">data_location</span><span class="p">,</span>
-    <span class="n">timeframe</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;timeframe&quot;</span><span class="p">],</span>
+    <span class="n">timeframe</span><span class="o">=</span><span class="n">config</span><span class="p">[</span><span class="s2">"timeframe"</span><span class="p">],</span>
     <span class="n">pair</span><span class="o">=</span><span class="n">pair</span><span class="p">,</span>
-    <span class="n">data_format</span><span class="o">=</span><span class="s2">&quot;json&quot;</span><span class="p">,</span>  <span class="c1"># Make sure to update this to your data</span>
+    <span class="n">data_format</span><span class="o">=</span><span class="s2">"json"</span><span class="p">,</span>  <span class="c1"># Make sure to update this to your data</span>
     <span class="n">candle_type</span><span class="o">=</span><span class="n">CandleType</span><span class="o">.</span><span class="n">SPOT</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="c1"># Confirm success</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loaded </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">candles</span><span class="p">)</span><span class="si">}</span><span class="s2"> rows of data for </span><span class="si">{</span><span class="n">pair</span><span class="si">}</span><span class="s2"> from </span><span class="si">{</span><span class="n">data_location</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Loaded </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">candles</span><span class="p">)</span><span class="si">}</span><span class="s2"> rows of data for </span><span class="si">{</span><span class="n">pair</span><span class="si">}</span><span class="s2"> from </span><span class="si">{</span><span class="n">data_location</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 <span class="n">candles</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
 </code></pre></div>
 <h2 id="load-and-run-strategy">Load and run strategy<a class="headerlink" href="#load-and-run-strategy" title="Permanent link">&para;</a></h2>
@@ -2247,7 +2247,7 @@ Please follow the <a href="https://www.freqtrade.io/en/stable/data-download/">do
 <span class="n">strategy</span><span class="o">.</span><span class="n">ft_bot_start</span><span class="p">()</span>
 
 <span class="c1"># Generate buy/sell signals using strategy</span>
-<span class="n">df</span> <span class="o">=</span> <span class="n">strategy</span><span class="o">.</span><span class="n">analyze_ticker</span><span class="p">(</span><span class="n">candles</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;pair&quot;</span><span class="p">:</span> <span class="n">pair</span><span class="p">})</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">strategy</span><span class="o">.</span><span class="n">analyze_ticker</span><span class="p">(</span><span class="n">candles</span><span class="p">,</span> <span class="p">{</span><span class="s2">"pair"</span><span class="p">:</span> <span class="n">pair</span><span class="p">})</span>
 <span class="n">df</span><span class="o">.</span><span class="n">tail</span><span class="p">()</span>
 </code></pre></div>
 <h3 id="display-the-trade-details">Display the trade details<a class="headerlink" href="#display-the-trade-details" title="Permanent link">&para;</a></h3>
@@ -2261,8 +2261,8 @@ Please follow the <a href="https://www.freqtrade.io/en/stable/data-download/">do
     * Assuming you use only one condition such as, <code>df['rsi'] &lt; 30</code> as buy condition, this will generate multiple "buy" signals for each pair in sequence (until rsi returns &gt; 29). The bot will only buy on the first of these signals (and also only if a trade-slot ("max_open_trades") is still available), or on one of the middle signals, as soon as a "slot" becomes available.  </li>
 </ul>
 <div class="highlight"><pre><span></span><code><span class="c1"># Report results</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Generated </span><span class="si">{</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;enter_long&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="si">}</span><span class="s2"> entry signals&quot;</span><span class="p">)</span>
-<span class="n">data</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">&quot;date&quot;</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Generated </span><span class="si">{</span><span class="n">df</span><span class="p">[</span><span class="s1">'enter_long'</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="si">}</span><span class="s2"> entry signals"</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s2">"date"</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="n">data</span><span class="o">.</span><span class="n">tail</span><span class="p">()</span>
 </code></pre></div>
 <h2 id="load-existing-objects-into-a-jupyter-notebook">Load existing objects into a Jupyter notebook<a class="headerlink" href="#load-existing-objects-into-a-jupyter-notebook" title="Permanent link">&para;</a></h2>
@@ -2273,41 +2273,41 @@ They will allow you to drill deeper into your results, and perform analysis whic
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">freqtrade.data.btanalysis</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_backtest_data</span><span class="p">,</span> <span class="n">load_backtest_stats</span>
 
 
-<span class="c1"># if backtest_dir points to a directory, it&#39;ll automatically load the last backtest file.</span>
-<span class="n">backtest_dir</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;user_data_dir&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="s2">&quot;backtest_results&quot;</span>
+<span class="c1"># if backtest_dir points to a directory, it'll automatically load the last backtest file.</span>
+<span class="n">backtest_dir</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">"user_data_dir"</span><span class="p">]</span> <span class="o">/</span> <span class="s2">"backtest_results"</span>
 <span class="c1"># backtest_dir can also point to a specific file</span>
 <span class="c1"># backtest_dir = (</span>
-<span class="c1">#   config[&quot;user_data_dir&quot;] / &quot;backtest_results/backtest-result-2020-07-01_20-04-22.json&quot;</span>
+<span class="c1">#   config["user_data_dir"] / "backtest_results/backtest-result-2020-07-01_20-04-22.json"</span>
 <span class="c1"># )</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="c1"># You can get the full backtest statistics by using the following command.</span>
 <span class="c1"># This contains all information used to generate the backtest result.</span>
 <span class="n">stats</span> <span class="o">=</span> <span class="n">load_backtest_stats</span><span class="p">(</span><span class="n">backtest_dir</span><span class="p">)</span>
 
-<span class="n">strategy</span> <span class="o">=</span> <span class="s2">&quot;SampleStrategy&quot;</span>
+<span class="n">strategy</span> <span class="o">=</span> <span class="s2">"SampleStrategy"</span>
 <span class="c1"># All statistics are available per strategy, so if `--strategy-list` was used during backtest,</span>
 <span class="c1"># this will be reflected here as well.</span>
 <span class="c1"># Example usages:</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">stats</span><span class="p">[</span><span class="s2">&quot;strategy&quot;</span><span class="p">][</span><span class="n">strategy</span><span class="p">][</span><span class="s2">&quot;results_per_pair&quot;</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">stats</span><span class="p">[</span><span class="s2">"strategy"</span><span class="p">][</span><span class="n">strategy</span><span class="p">][</span><span class="s2">"results_per_pair"</span><span class="p">])</span>
 <span class="c1"># Get pairlist used for this backtest</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">stats</span><span class="p">[</span><span class="s2">&quot;strategy&quot;</span><span class="p">][</span><span class="n">strategy</span><span class="p">][</span><span class="s2">&quot;pairlist&quot;</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">stats</span><span class="p">[</span><span class="s2">"strategy"</span><span class="p">][</span><span class="n">strategy</span><span class="p">][</span><span class="s2">"pairlist"</span><span class="p">])</span>
 <span class="c1"># Get market change (average change of all pairs from start to end of the backtest period)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">stats</span><span class="p">[</span><span class="s2">&quot;strategy&quot;</span><span class="p">][</span><span class="n">strategy</span><span class="p">][</span><span class="s2">&quot;market_change&quot;</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">stats</span><span class="p">[</span><span class="s2">"strategy"</span><span class="p">][</span><span class="n">strategy</span><span class="p">][</span><span class="s2">"market_change"</span><span class="p">])</span>
 <span class="c1"># Maximum drawdown ()</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">stats</span><span class="p">[</span><span class="s2">&quot;strategy&quot;</span><span class="p">][</span><span class="n">strategy</span><span class="p">][</span><span class="s2">&quot;max_drawdown_abs&quot;</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">stats</span><span class="p">[</span><span class="s2">"strategy"</span><span class="p">][</span><span class="n">strategy</span><span class="p">][</span><span class="s2">"max_drawdown_abs"</span><span class="p">])</span>
 <span class="c1"># Maximum drawdown start and end</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">stats</span><span class="p">[</span><span class="s2">&quot;strategy&quot;</span><span class="p">][</span><span class="n">strategy</span><span class="p">][</span><span class="s2">&quot;drawdown_start&quot;</span><span class="p">])</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">stats</span><span class="p">[</span><span class="s2">&quot;strategy&quot;</span><span class="p">][</span><span class="n">strategy</span><span class="p">][</span><span class="s2">&quot;drawdown_end&quot;</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">stats</span><span class="p">[</span><span class="s2">"strategy"</span><span class="p">][</span><span class="n">strategy</span><span class="p">][</span><span class="s2">"drawdown_start"</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">stats</span><span class="p">[</span><span class="s2">"strategy"</span><span class="p">][</span><span class="n">strategy</span><span class="p">][</span><span class="s2">"drawdown_end"</span><span class="p">])</span>
 
 
 <span class="c1"># Get strategy comparison (only relevant if multiple strategies were compared)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">stats</span><span class="p">[</span><span class="s2">&quot;strategy_comparison&quot;</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">stats</span><span class="p">[</span><span class="s2">"strategy_comparison"</span><span class="p">])</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="c1"># Load backtested trades as dataframe</span>
 <span class="n">trades</span> <span class="o">=</span> <span class="n">load_backtest_data</span><span class="p">(</span><span class="n">backtest_dir</span><span class="p">)</span>
 
 <span class="c1"># Show value-counts per pair</span>
-<span class="n">trades</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;pair&quot;</span><span class="p">)[</span><span class="s2">&quot;exit_reason&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span>
+<span class="n">trades</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">"pair"</span><span class="p">)[</span><span class="s2">"exit_reason"</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span>
 </code></pre></div>
 <h2 id="plotting-daily-profit-equity-line">Plotting daily profit / equity line<a class="headerlink" href="#plotting-daily-profit-equity-line" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="c1"># Plotting equity line (starting with 0 on day 1 and adding daily profit for each backtested day)</span>
@@ -2319,17 +2319,17 @@ They will allow you to drill deeper into your results, and perform analysis whic
 <span class="kn">from</span><span class="w"> </span><span class="nn">freqtrade.data.btanalysis</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_backtest_stats</span>
 
 
-<span class="c1"># strategy = &#39;SampleStrategy&#39;</span>
-<span class="c1"># config = Configuration.from_files([&quot;user_data/config.json&quot;])</span>
-<span class="c1"># backtest_dir = config[&quot;user_data_dir&quot;] / &quot;backtest_results&quot;</span>
+<span class="c1"># strategy = 'SampleStrategy'</span>
+<span class="c1"># config = Configuration.from_files(["user_data/config.json"])</span>
+<span class="c1"># backtest_dir = config["user_data_dir"] / "backtest_results"</span>
 
 <span class="n">stats</span> <span class="o">=</span> <span class="n">load_backtest_stats</span><span class="p">(</span><span class="n">backtest_dir</span><span class="p">)</span>
-<span class="n">strategy_stats</span> <span class="o">=</span> <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;strategy&quot;</span><span class="p">][</span><span class="n">strategy</span><span class="p">]</span>
+<span class="n">strategy_stats</span> <span class="o">=</span> <span class="n">stats</span><span class="p">[</span><span class="s2">"strategy"</span><span class="p">][</span><span class="n">strategy</span><span class="p">]</span>
 
-<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;dates&quot;</span><span class="p">,</span> <span class="s2">&quot;equity&quot;</span><span class="p">],</span> <span class="n">data</span><span class="o">=</span><span class="n">strategy_stats</span><span class="p">[</span><span class="s2">&quot;daily_profit&quot;</span><span class="p">])</span>
-<span class="n">df</span><span class="p">[</span><span class="s2">&quot;equity_daily&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;equity&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">cumsum</span><span class="p">()</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">"dates"</span><span class="p">,</span> <span class="s2">"equity"</span><span class="p">],</span> <span class="n">data</span><span class="o">=</span><span class="n">strategy_stats</span><span class="p">[</span><span class="s2">"daily_profit"</span><span class="p">])</span>
+<span class="n">df</span><span class="p">[</span><span class="s2">"equity_daily"</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">"equity"</span><span class="p">]</span><span class="o">.</span><span class="n">cumsum</span><span class="p">()</span>
 
-<span class="n">fig</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="s2">&quot;dates&quot;</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="s2">&quot;equity_daily&quot;</span><span class="p">)</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">px</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="s2">"dates"</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="s2">"equity_daily"</span><span class="p">)</span>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </code></pre></div>
 <h3 id="load-live-trading-results-into-a-pandas-dataframe">Load live trading results into a pandas dataframe<a class="headerlink" href="#load-live-trading-results-into-a-pandas-dataframe" title="Permanent link">&para;</a></h3>
@@ -2338,10 +2338,10 @@ They will allow you to drill deeper into your results, and perform analysis whic
 
 
 <span class="c1"># Fetch trades from database</span>
-<span class="n">trades</span> <span class="o">=</span> <span class="n">load_trades_from_db</span><span class="p">(</span><span class="s2">&quot;sqlite:///tradesv3.sqlite&quot;</span><span class="p">)</span>
+<span class="n">trades</span> <span class="o">=</span> <span class="n">load_trades_from_db</span><span class="p">(</span><span class="s2">"sqlite:///tradesv3.sqlite"</span><span class="p">)</span>
 
 <span class="c1"># Display results</span>
-<span class="n">trades</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;pair&quot;</span><span class="p">)[</span><span class="s2">&quot;exit_reason&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span>
+<span class="n">trades</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">"pair"</span><span class="p">)[</span><span class="s2">"exit_reason"</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span>
 </code></pre></div>
 <h2 id="analyze-the-loaded-trades-for-trade-parallelism">Analyze the loaded trades for trade parallelism<a class="headerlink" href="#analyze-the-loaded-trades-for-trade-parallelism" title="Permanent link">&para;</a></h2>
 <p>This can be useful to find the best <code>max_open_trades</code> parameter, when used with backtesting in conjunction with a very high <code>max_open_trades</code> setting.</p>
@@ -2350,7 +2350,7 @@ They will allow you to drill deeper into your results, and perform analysis whic
 
 
 <span class="c1"># Analyze the above</span>
-<span class="n">parallel_trades</span> <span class="o">=</span> <span class="n">analyze_trade_parallelism</span><span class="p">(</span><span class="n">trades</span><span class="p">,</span> <span class="s2">&quot;5m&quot;</span><span class="p">)</span>
+<span class="n">parallel_trades</span> <span class="o">=</span> <span class="n">analyze_trade_parallelism</span><span class="p">(</span><span class="n">trades</span><span class="p">,</span> <span class="s2">"5m"</span><span class="p">)</span>
 
 <span class="n">parallel_trades</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 </code></pre></div>
@@ -2362,30 +2362,30 @@ They will allow you to drill deeper into your results, and perform analysis whic
 <span class="c1"># Limit graph period to keep plotly quick and reactive</span>
 
 <span class="c1"># Filter trades to one pair</span>
-<span class="n">trades_red</span> <span class="o">=</span> <span class="n">trades</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">trades</span><span class="p">[</span><span class="s2">&quot;pair&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">pair</span><span class="p">]</span>
+<span class="n">trades_red</span> <span class="o">=</span> <span class="n">trades</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">trades</span><span class="p">[</span><span class="s2">"pair"</span><span class="p">]</span> <span class="o">==</span> <span class="n">pair</span><span class="p">]</span>
 
-<span class="n">data_red</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;2019-06-01&quot;</span><span class="p">:</span><span class="s2">&quot;2019-06-10&quot;</span><span class="p">]</span>
+<span class="n">data_red</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">"2019-06-01"</span><span class="p">:</span><span class="s2">"2019-06-10"</span><span class="p">]</span>
 <span class="c1"># Generate candlestick graph</span>
 <span class="n">graph</span> <span class="o">=</span> <span class="n">generate_candlestick_graph</span><span class="p">(</span>
     <span class="n">pair</span><span class="o">=</span><span class="n">pair</span><span class="p">,</span>
     <span class="n">data</span><span class="o">=</span><span class="n">data_red</span><span class="p">,</span>
     <span class="n">trades</span><span class="o">=</span><span class="n">trades_red</span><span class="p">,</span>
-    <span class="n">indicators1</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;sma20&quot;</span><span class="p">,</span> <span class="s2">&quot;ema50&quot;</span><span class="p">,</span> <span class="s2">&quot;ema55&quot;</span><span class="p">],</span>
-    <span class="n">indicators2</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;rsi&quot;</span><span class="p">,</span> <span class="s2">&quot;macd&quot;</span><span class="p">,</span> <span class="s2">&quot;macdsignal&quot;</span><span class="p">,</span> <span class="s2">&quot;macdhist&quot;</span><span class="p">],</span>
+    <span class="n">indicators1</span><span class="o">=</span><span class="p">[</span><span class="s2">"sma20"</span><span class="p">,</span> <span class="s2">"ema50"</span><span class="p">,</span> <span class="s2">"ema55"</span><span class="p">],</span>
+    <span class="n">indicators2</span><span class="o">=</span><span class="p">[</span><span class="s2">"rsi"</span><span class="p">,</span> <span class="s2">"macd"</span><span class="p">,</span> <span class="s2">"macdsignal"</span><span class="p">,</span> <span class="s2">"macdhist"</span><span class="p">],</span>
 <span class="p">)</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="c1"># Show graph inline</span>
 <span class="c1"># graph.show()</span>
 
 <span class="c1"># Render graph in a separate window</span>
-<span class="n">graph</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">renderer</span><span class="o">=</span><span class="s2">&quot;browser&quot;</span><span class="p">)</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">renderer</span><span class="o">=</span><span class="s2">"browser"</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="plot-average-profit-per-trade-as-distribution-graph">Plot average profit per trade as distribution graph<a class="headerlink" href="#plot-average-profit-per-trade-as-distribution-graph" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">plotly.figure_factory</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ff</span>
 
 
 <span class="n">hist_data</span> <span class="o">=</span> <span class="p">[</span><span class="n">trades</span><span class="o">.</span><span class="n">profit_ratio</span><span class="p">]</span>
-<span class="n">group_labels</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;profit_ratio&quot;</span><span class="p">]</span>  <span class="c1"># name of the dataset</span>
+<span class="n">group_labels</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"profit_ratio"</span><span class="p">]</span>  <span class="c1"># name of the dataset</span>
 
 <span class="n">fig</span> <span class="o">=</span> <span class="n">ff</span><span class="o">.</span><span class="n">create_distplot</span><span class="p">(</span><span class="n">hist_data</span><span class="p">,</span> <span class="n">group_labels</span><span class="p">,</span> <span class="n">bin_size</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>

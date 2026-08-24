@@ -2241,17 +2241,17 @@
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
 <p>Enable the rest API by adding the api_server section to your configuration and setting <code>api_server.enabled</code> to <code>true</code>.</p>
 <p>Sample configuration:</p>
-<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&quot;api_server&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;listen_ip_address&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;listen_port&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">8080</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;verbosity&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;error&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;enable_openapi&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;jwt_secret_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;somethingRandomSomethingRandom123&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;CORS_origins&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
-<span class="w">        </span><span class="nt">&quot;username&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Freqtrader&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;password&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SuperSecret1!&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;ws_token&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sercet_Ws_t0ken&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">"api_server"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"enabled"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"listen_ip_address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"127.0.0.1"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"listen_port"</span><span class="p">:</span><span class="w"> </span><span class="mi">8080</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"verbosity"</span><span class="p">:</span><span class="w"> </span><span class="s2">"error"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"enable_openapi"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"jwt_secret_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"somethingRandomSomethingRandom123"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"CORS_origins"</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">        </span><span class="nt">"username"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Freqtrader"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"password"</span><span class="p">:</span><span class="w"> </span><span class="s2">"SuperSecret1!"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"ws_token"</span><span class="p">:</span><span class="w"> </span><span class="s2">"sercet_Ws_t0ken"</span>
 <span class="w">    </span><span class="p">},</span>
 </code></pre></div>
 <div class="admonition danger">
@@ -2266,7 +2266,7 @@ Setup of these tools is not part of this tutorial, however many good tutorials c
 </details>
 <p>You can then access the API by going to <code>http://127.0.0.1:8080/api/v1/ping</code> in a browser to check if the API is running correctly.
 This should return the response:</p>
-<div class="highlight"><pre><span></span><code><span class="go">{&quot;status&quot;:&quot;pong&quot;}</span>
+<div class="highlight"><pre><span></span><code><span class="go">{"status":"pong"}</span>
 </code></pre></div>
 <p>All other endpoints return sensitive info and require authentication and are therefore not available through a web browser.</p>
 <h3 id="security">Security<a class="headerlink" href="#security" title="Permanent link">&para;</a></h3>
@@ -2285,18 +2285,18 @@ Also change <code>jwt_secret_key</code> to something random (no need to remember
 </div>
 <h3 id="configuration-with-docker">Configuration with docker<a class="headerlink" href="#configuration-with-docker" title="Permanent link">&para;</a></h3>
 <p>If you run your bot using docker, you'll need to have the bot listen to incoming connections. The security is then handled by docker.</p>
-<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">&quot;api_server&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;listen_ip_address&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;0.0.0.0&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;listen_port&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">8080</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;username&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Freqtrader&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;password&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SuperSecret1!&quot;</span><span class="p">,</span>
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">"api_server"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"enabled"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"listen_ip_address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0.0.0.0"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"listen_port"</span><span class="p">:</span><span class="w"> </span><span class="mi">8080</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"username"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Freqtrader"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"password"</span><span class="p">:</span><span class="w"> </span><span class="s2">"SuperSecret1!"</span><span class="p">,</span>
 <span class="w">        </span><span class="c1">//...</span>
 <span class="w">    </span><span class="p">},</span>
 </code></pre></div>
 <p>Make sure that the following 2 lines are available in your docker-compose file:</p>
-<div class="highlight"><pre><span></span><code>    ports:
-      - &quot;127.0.0.1:8080:8080&quot;
+<div class="highlight"><pre><span></span><code><span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"127.0.0.1:8080:8080"</span>
 </code></pre></div>
 <div class="admonition danger">
 <p class="admonition-title">Security warning</p>
@@ -2313,12 +2313,12 @@ This <strong>may</strong> be safe if you're running the bot in a secure environm
 <p>By default, the script assumes <code>127.0.0.1</code> (localhost) and port <code>8080</code> to be used, however you can specify a configuration file to override this behaviour.</p>
 <h4 id="minimalistic-client-config">Minimalistic client config<a class="headerlink" href="#minimalistic-client-config" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;api_server&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;listen_ip_address&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;0.0.0.0&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;listen_port&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">8080</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;username&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Freqtrader&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;password&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SuperSecret1!&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"api_server"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"enabled"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"listen_ip_address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0.0.0.0"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"listen_port"</span><span class="p">:</span><span class="w"> </span><span class="mi">8080</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"username"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Freqtrader"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"password"</span><span class="p">:</span><span class="w"> </span><span class="s2">"SuperSecret1!"</span><span class="p">,</span>
 <span class="w">        </span><span class="c1">//...</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
@@ -2343,7 +2343,7 @@ to do so, please use the following:</p>
 <span class="nb">print</span><span class="p">(</span><span class="n">ping</span><span class="p">)</span>
 
 <span class="c1"># Add pairs to blacklist</span>
-<span class="n">client</span><span class="o">.</span><span class="n">blacklist</span><span class="p">(</span><span class="s2">&quot;BTC/USDT&quot;</span><span class="p">,</span> <span class="s2">&quot;ETH/USDT&quot;</span><span class="p">)</span>
+<span class="n">client</span><span class="o">.</span><span class="n">blacklist</span><span class="p">(</span><span class="s2">"BTC/USDT"</span><span class="p">,</span> <span class="s2">"ETH/USDT"</span><span class="p">)</span>
 <span class="c1"># Add pairs to blacklist by supplying a list</span>
 <span class="n">client</span><span class="o">.</span><span class="n">blacklist</span><span class="p">(</span><span class="o">*</span><span class="n">listPairs</span><span class="p">)</span>
 <span class="c1"># ... </span>
@@ -2368,7 +2368,7 @@ to do so, please use the following:</p>
 <span class="go">blacklist</span>
 <span class="go">    Show the current blacklist.</span>
 
-<span class="go">:param add: List of coins to add (example: &quot;BNB/BTC&quot;)</span>
+<span class="go">:param add: List of coins to add (example: "BNB/BTC")</span>
 
 <span class="go">cancel_open_order</span>
 <span class="go">    Cancel open order for trade.</span>
@@ -2410,12 +2410,12 @@ to do so, please use the following:</p>
 <span class="go">    Force entering a trade</span>
 
 <span class="go">:param pair: Pair to buy (ETH/BTC)</span>
-<span class="go">:param side: &#39;long&#39; or &#39;short&#39;</span>
+<span class="go">:param side: 'long' or 'short'</span>
 <span class="go">:param price: Optional - price to buy</span>
-<span class="go">:param order_type: Optional keyword argument - &#39;limit&#39; or &#39;market&#39;</span>
+<span class="go">:param order_type: Optional keyword argument - 'limit' or 'market'</span>
 <span class="go">:param stake_amount: Optional keyword argument - stake amount (as float)</span>
 <span class="go">:param leverage: Optional keyword argument - leverage (as float)</span>
-<span class="go">:param enter_tag: Optional keyword argument - entry tag (as string, default: &#39;force_enter&#39;)</span>
+<span class="go">:param enter_tag: Optional keyword argument - entry tag (as string, default: 'force_enter')</span>
 
 <span class="go">forceexit</span>
 <span class="go">    Force-exit a trade.</span>
@@ -2444,7 +2444,7 @@ to do so, please use the following:</p>
 <span class="go">    Lock pair</span>
 
 <span class="go">:param pair: Pair to lock</span>
-<span class="go">:param until: Lock until this date (format &quot;2024-03-30 16:00:00Z&quot;)</span>
+<span class="go">:param until: Lock until this date (format "2024-03-30 16:00:00Z")</span>
 <span class="go">:param side: Side to lock (long, short, *)</span>
 <span class="go">:param reason: Reason for the lock</span>
 
@@ -2502,7 +2502,7 @@ to do so, please use the following:</p>
 <span class="go">    Returns part of the configuration, relevant for trading operations.</span>
 
 <span class="go">start</span>
-<span class="go">    Start the bot if it&#39;s in the stopped state.</span>
+<span class="go">    Start the bot if it's in the stopped state.</span>
 
 <span class="go">stats</span>
 <span class="go">    Return the stats report (durations, sell-reasons).</span>
@@ -2800,20 +2800,20 @@ This can be used to consume real-time data from your bot, such as entry/exit fil
 <p>To generate a safe <code>ws_token</code> you can run the following code:</p>
 <div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">secrets</span>
 <span class="o">&gt;&gt;&gt;</span> <span class="n">secrets</span><span class="o">.</span><span class="n">token_urlsafe</span><span class="p">(</span><span class="mi">25</span><span class="p">)</span>
-<span class="s1">&#39;hZ-y58LXyX_HZ8O1cJzVyN6ePWrLpNQv4Q&#39;</span>
+<span class="s1">'hZ-y58LXyX_HZ8O1cJzVyN6ePWrLpNQv4Q'</span>
 </code></pre></div>
 <p>You would then add that token under <code>ws_token</code> in your <code>api_server</code> config. Like so:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;api_server&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;listen_ip_address&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;listen_port&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">8080</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;verbosity&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;error&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;enable_openapi&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;jwt_secret_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;somethingRandomSomethingRandom123&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;CORS_origins&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
-<span class="w">    </span><span class="nt">&quot;username&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Freqtrader&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;password&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SuperSecret1!&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;ws_token&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;hZ-y58LXyX_HZ8O1cJzVyN6ePWrLpNQv4Q&quot;</span><span class="w"> </span><span class="c1">// &lt;-----</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"api_server"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"enabled"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"listen_ip_address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"127.0.0.1"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"listen_port"</span><span class="p">:</span><span class="w"> </span><span class="mi">8080</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"verbosity"</span><span class="p">:</span><span class="w"> </span><span class="s2">"error"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"enable_openapi"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"jwt_secret_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"somethingRandomSomethingRandom123"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"CORS_origins"</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span>
+<span class="w">    </span><span class="nt">"username"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Freqtrader"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"password"</span><span class="p">:</span><span class="w"> </span><span class="s2">"SuperSecret1!"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"ws_token"</span><span class="p">:</span><span class="w"> </span><span class="s2">"hZ-y58LXyX_HZ8O1cJzVyN6ePWrLpNQv4Q"</span><span class="w"> </span><span class="c1">// &lt;-----</span>
 <span class="p">},</span>
 </code></pre></div>
 <p>You can now connect to the endpoint at <code>http://localhost:8080/api/v1/message/ws?token=hZ-y58LXyX_HZ8O1cJzVyN6ePWrLpNQv4Q</code>.</p>
@@ -2824,18 +2824,18 @@ This can be used to consume real-time data from your bot, such as entry/exit fil
 <h4 id="using-the-websocket">Using the WebSocket<a class="headerlink" href="#using-the-websocket" title="Permanent link">&para;</a></h4>
 <p>Once connected to the WebSocket, the bot will broadcast RPC messages to anyone who is subscribed to them. To subscribe to a list of messages, you must send a JSON request through the WebSocket like the one below. The <code>data</code> key must be a list of message type strings.</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;subscribe&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;whitelist&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;analyzed_df&quot;</span><span class="p">]</span><span class="w"> </span><span class="c1">// A list of string message types</span>
+<span class="w">  </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"subscribe"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"whitelist"</span><span class="p">,</span><span class="w"> </span><span class="s2">"analyzed_df"</span><span class="p">]</span><span class="w"> </span><span class="c1">// A list of string message types</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>For a list of message types, please refer to the RPCMessageType enum in <code>freqtrade/enums/rpcmessagetype.py</code></p>
 <p>Now anytime those types of RPC messages are sent in the bot, you will receive them through the WebSocket as long as the connection is active. They typically take the same form as the request:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;analyzed_df&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;key&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;NEO/BTC&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;5m&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;spot&quot;</span><span class="p">],</span>
-<span class="w">      </span><span class="nt">&quot;df&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span><span class="w"> </span><span class="c1">// The dataframe</span>
-<span class="w">      </span><span class="nt">&quot;la&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2022-09-08 22:14:41.457786+00:00&quot;</span>
+<span class="w">  </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"analyzed_df"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"key"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"NEO/BTC"</span><span class="p">,</span><span class="w"> </span><span class="s2">"5m"</span><span class="p">,</span><span class="w"> </span><span class="s2">"spot"</span><span class="p">],</span>
+<span class="w">      </span><span class="nt">"df"</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span><span class="w"> </span><span class="c1">// The dataframe</span>
+<span class="w">      </span><span class="nt">"la"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2022-09-08 22:14:41.457786+00:00"</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -2845,7 +2845,7 @@ This can be used to consume real-time data from your bot, such as entry/exit fil
 <div class="highlight"><pre><span></span><code>http {
     map $http_upgrade $connection_upgrade {
         default upgrade;
-        &#39;&#39; close;
+        '' close;
     }
 
     #...
@@ -2884,15 +2884,15 @@ This will enable the Swagger UI at the <code>/docs</code> endpoint. By default, 
 <p>Freqtrade's REST API also offers JWT (JSON Web Tokens).
 You can login using the following command, and subsequently use the resulting access_token.</p>
 <div class="highlight"><pre><span></span><code>&gt;<span class="w"> </span>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>--user<span class="w"> </span>Freqtrader<span class="w"> </span>http://localhost:8080/api/v1/token/login
-<span class="o">{</span><span class="s2">&quot;access_token&quot;</span>:<span class="s2">&quot;eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1ODkxMTk2ODEsIm5iZiI6MTU4OTExOTY4MSwianRpIjoiMmEwYmY0NWUtMjhmOS00YTUzLTlmNzItMmM5ZWVlYThkNzc2IiwiZXhwIjoxNTg5MTIwNTgxLCJpZGVudGl0eSI6eyJ1IjoiRnJlcXRyYWRlciJ9LCJmcmVzaCI6ZmFsc2UsInR5cGUiOiJhY2Nlc3MifQ.qt6MAXYIa-l556OM7arBvYJ0SDI9J8bIk3_glDujF5g&quot;</span>,<span class="s2">&quot;refresh_token&quot;</span>:<span class="s2">&quot;eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1ODkxMTk2ODEsIm5iZiI6MTU4OTExOTY4MSwianRpIjoiZWQ1ZWI3YjAtYjMwMy00YzAyLTg2N2MtNWViMjIxNWQ2YTMxIiwiZXhwIjoxNTkxNzExNjgxLCJpZGVudGl0eSI6eyJ1IjoiRnJlcXRyYWRlciJ9LCJ0eXBlIjoicmVmcmVzaCJ9.d1AT_jYICyTAjD0fiQAr52rkRqtxCjUGEMwlNuuzgNQ&quot;</span><span class="o">}</span>
+<span class="o">{</span><span class="s2">"access_token"</span>:<span class="s2">"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1ODkxMTk2ODEsIm5iZiI6MTU4OTExOTY4MSwianRpIjoiMmEwYmY0NWUtMjhmOS00YTUzLTlmNzItMmM5ZWVlYThkNzc2IiwiZXhwIjoxNTg5MTIwNTgxLCJpZGVudGl0eSI6eyJ1IjoiRnJlcXRyYWRlciJ9LCJmcmVzaCI6ZmFsc2UsInR5cGUiOiJhY2Nlc3MifQ.qt6MAXYIa-l556OM7arBvYJ0SDI9J8bIk3_glDujF5g"</span>,<span class="s2">"refresh_token"</span>:<span class="s2">"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1ODkxMTk2ODEsIm5iZiI6MTU4OTExOTY4MSwianRpIjoiZWQ1ZWI3YjAtYjMwMy00YzAyLTg2N2MtNWViMjIxNWQ2YTMxIiwiZXhwIjoxNTkxNzExNjgxLCJpZGVudGl0eSI6eyJ1IjoiRnJlcXRyYWRlciJ9LCJ0eXBlIjoicmVmcmVzaCJ9.d1AT_jYICyTAjD0fiQAr52rkRqtxCjUGEMwlNuuzgNQ"</span><span class="o">}</span>
 
-&gt;<span class="w"> </span><span class="nv">access_token</span><span class="o">=</span><span class="s2">&quot;eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1ODkxMTk2ODEsIm5iZiI6MTU4OTExOTY4MSwianRpIjoiMmEwYmY0NWUtMjhmOS00YTUzLTlmNzItMmM5ZWVlYThkNzc2IiwiZXhwIjoxNTg5MTIwNTgxLCJpZGVudGl0eSI6eyJ1IjoiRnJlcXRyYWRlciJ9LCJmcmVzaCI6ZmFsc2UsInR5cGUiOiJhY2Nlc3MifQ.qt6MAXYIa-l556OM7arBvYJ0SDI9J8bIk3_glDujF5g&quot;</span>
+&gt;<span class="w"> </span><span class="nv">access_token</span><span class="o">=</span><span class="s2">"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1ODkxMTk2ODEsIm5iZiI6MTU4OTExOTY4MSwianRpIjoiMmEwYmY0NWUtMjhmOS00YTUzLTlmNzItMmM5ZWVlYThkNzc2IiwiZXhwIjoxNTg5MTIwNTgxLCJpZGVudGl0eSI6eyJ1IjoiRnJlcXRyYWRlciJ9LCJmcmVzaCI6ZmFsc2UsInR5cGUiOiJhY2Nlc3MifQ.qt6MAXYIa-l556OM7arBvYJ0SDI9J8bIk3_glDujF5g"</span>
 <span class="c1"># Use access_token for authentication</span>
-&gt;<span class="w"> </span>curl<span class="w"> </span>-X<span class="w"> </span>GET<span class="w"> </span>--header<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="si">${</span><span class="nv">access_token</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span>http://localhost:8080/api/v1/count
+&gt;<span class="w"> </span>curl<span class="w"> </span>-X<span class="w"> </span>GET<span class="w"> </span>--header<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="si">${</span><span class="nv">access_token</span><span class="si">}</span><span class="s2">"</span><span class="w"> </span>http://localhost:8080/api/v1/count
 </code></pre></div>
 <p>Since the access token has a short timeout (15 min) - the <code>token/refresh</code> request should be used periodically to get a fresh access token:</p>
-<div class="highlight"><pre><span></span><code>&gt;<span class="w"> </span>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>--header<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="si">${</span><span class="nv">refresh_token</span><span class="si">}</span><span class="s2">&quot;</span>http://localhost:8080/api/v1/token/refresh
-<span class="o">{</span><span class="s2">&quot;access_token&quot;</span>:<span class="s2">&quot;eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1ODkxMTk5NzQsIm5iZiI6MTU4OTExOTk3NCwianRpIjoiMDBjNTlhMWUtMjBmYS00ZTk0LTliZjAtNWQwNTg2MTdiZDIyIiwiZXhwIjoxNTg5MTIwODc0LCJpZGVudGl0eSI6eyJ1IjoiRnJlcXRyYWRlciJ9LCJmcmVzaCI6ZmFsc2UsInR5cGUiOiJhY2Nlc3MifQ.1seHlII3WprjjclY6DpRhen0rqdF4j6jbvxIhUFaSbs&quot;</span><span class="o">}</span>
+<div class="highlight"><pre><span></span><code>&gt;<span class="w"> </span>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>--header<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="si">${</span><span class="nv">refresh_token</span><span class="si">}</span><span class="s2">"</span>http://localhost:8080/api/v1/token/refresh
+<span class="o">{</span><span class="s2">"access_token"</span>:<span class="s2">"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE1ODkxMTk5NzQsIm5iZiI6MTU4OTExOTk3NCwianRpIjoiMDBjNTlhMWUtMjBmYS00ZTk0LTliZjAtNWQwNTg2MTdiZDIyIiwiZXhwIjoxNTg5MTIwODc0LCJpZGVudGl0eSI6eyJ1IjoiRnJlcXRyYWRlciJ9LCJmcmVzaCI6ZmFsc2UsInR5cGUiOiJhY2Nlc3MifQ.1seHlII3WprjjclY6DpRhen0rqdF4j6jbvxIhUFaSbs"</span><span class="o">}</span>
 </code></pre></div>
 <h2 id="cors">CORS<a class="headerlink" href="#cors" title="Permanent link">&para;</a></h2>
 <p>This whole section is only necessary in cross-origin cases (where you multiple bot API's running on <code>localhost:8081</code>, <code>localhost:8082</code>, ...), and want to combine them into one FreqUI instance.</p>
@@ -2907,8 +2907,8 @@ It consists of a list of allowed URL's that are allowed to consume resources fro
 <p>Assuming your application is deployed as <code>https://frequi.freqtrade.io/home/</code> - this would mean that the following configuration becomes necessary:</p>
 <div class="highlight"><pre><span></span><code>{
     //...
-    &quot;jwt_secret_key&quot;: &quot;somethingRandomSomethingRandom123&quot;,
-    &quot;CORS_origins&quot;: [&quot;https://frequi.freqtrade.io&quot;],
+    "jwt_secret_key": "somethingRandomSomethingRandom123",
+    "CORS_origins": ["https://frequi.freqtrade.io"],
     //...
 }
 </code></pre></div>
@@ -2917,8 +2917,8 @@ It consists of a list of allowed URL's that are allowed to consume resources fro
 <p>The correct configuration for this case is <code>http://localhost:8080</code> - the main part of the URL including the port.</p>
 <div class="highlight"><pre><span></span><code>{
     //...
-    &quot;jwt_secret_key&quot;: &quot;somethingRandomSomethingRandom123&quot;,
-    &quot;CORS_origins&quot;: [&quot;http://localhost:8080&quot;],
+    "jwt_secret_key": "somethingRandomSomethingRandom123",
+    "CORS_origins": ["http://localhost:8080"],
     //...
 }
 </code></pre></div>

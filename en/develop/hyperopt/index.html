@@ -2950,7 +2950,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </s
 <span class="go">                        not be listed here): default, all, buy, sell, enter,</span>
 <span class="go">                        exit, roi, stoploss, trailing, protection, trades.</span>
 <span class="go">                        Default: `default` - which includes all spaces except</span>
-<span class="go">                        for &#39;trailing&#39;, &#39;protection&#39;, and &#39;trades&#39;.</span>
+<span class="go">                        for 'trailing', 'protection', and 'trades'.</span>
 <span class="go">  --print-all           Print all results, not only the best ones.</span>
 <span class="go">  --print-json          Print output in JSON format.</span>
 <span class="go">  -j, --job-workers JOBS</span>
@@ -2991,9 +2991,9 @@ pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </s
 <span class="go">                        useful if you are redirecting output to a file.</span>
 <span class="go">  --logfile, --log-file FILE</span>
 <span class="go">                        Log to the file specified. Special values are:</span>
-<span class="go">                        &#39;syslog&#39;, &#39;journald&#39;. See the documentation for more</span>
+<span class="go">                        'syslog', 'journald'. See the documentation for more</span>
 <span class="go">                        details.</span>
-<span class="go">  -V, --version         show program&#39;s version number and exit</span>
+<span class="go">  -V, --version         show program's version number and exit</span>
 <span class="go">  -c, --config PATH     Specify configuration file (default:</span>
 <span class="go">                        `userdir/config.json` or `config.json` whichever</span>
 <span class="go">                        exists). Multiple --config options may be used. Can be</span>
@@ -3089,30 +3089,30 @@ If you decide to use RSI or ADX, which values should I use for them?</p>
 <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">MyAwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">populate_indicators</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Generate all indicators used by the strategy</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;adx&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">ADX</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">RSI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
+<span class="sd">        """</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s1">'adx'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">ADX</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s1">'rsi'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">RSI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
         <span class="n">macd</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">MACD</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;macd&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">macd</span><span class="p">[</span><span class="s1">&#39;macd&#39;</span><span class="p">]</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;macdsignal&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">macd</span><span class="p">[</span><span class="s1">&#39;macdsignal&#39;</span><span class="p">]</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;macdhist&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">macd</span><span class="p">[</span><span class="s1">&#39;macdhist&#39;</span><span class="p">]</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s1">'macd'</span><span class="p">]</span> <span class="o">=</span> <span class="n">macd</span><span class="p">[</span><span class="s1">'macd'</span><span class="p">]</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s1">'macdsignal'</span><span class="p">]</span> <span class="o">=</span> <span class="n">macd</span><span class="p">[</span><span class="s1">'macdsignal'</span><span class="p">]</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s1">'macdhist'</span><span class="p">]</span> <span class="o">=</span> <span class="n">macd</span><span class="p">[</span><span class="s1">'macdhist'</span><span class="p">]</span>
 
         <span class="n">bollinger</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">BBANDS</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">nbdevup</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">nbdevdn</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;bb_lowerband&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bollinger</span><span class="p">[</span><span class="s1">&#39;lowerband&#39;</span><span class="p">]</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;bb_middleband&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bollinger</span><span class="p">[</span><span class="s1">&#39;middleband&#39;</span><span class="p">]</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;bb_upperband&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bollinger</span><span class="p">[</span><span class="s1">&#39;upperband&#39;</span><span class="p">]</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s1">'bb_lowerband'</span><span class="p">]</span> <span class="o">=</span> <span class="n">bollinger</span><span class="p">[</span><span class="s1">'lowerband'</span><span class="p">]</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s1">'bb_middleband'</span><span class="p">]</span> <span class="o">=</span> <span class="n">bollinger</span><span class="p">[</span><span class="s1">'middleband'</span><span class="p">]</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s1">'bb_upperband'</span><span class="p">]</span> <span class="o">=</span> <span class="n">bollinger</span><span class="p">[</span><span class="s1">'upperband'</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">dataframe</span>
 </code></pre></div>
 <h3 id="hyperoptable-parameters">Hyperoptable parameters<a class="headerlink" href="#hyperoptable-parameters" title="Permanent link">&para;</a></h3>
 <p>We continue to define hyperoptable parameters:</p>
 <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">MyAwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
-    <span class="n">buy_adx</span> <span class="o">=</span> <span class="n">DecimalParameter</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="n">decimals</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">30.1</span><span class="p">,</span> <span class="n">space</span><span class="o">=</span><span class="s2">&quot;buy&quot;</span><span class="p">)</span>
-    <span class="n">buy_rsi</span> <span class="o">=</span> <span class="n">IntParameter</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">space</span><span class="o">=</span><span class="s2">&quot;buy&quot;</span><span class="p">)</span>
-    <span class="n">buy_adx_enabled</span> <span class="o">=</span> <span class="n">BooleanParameter</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">space</span><span class="o">=</span><span class="s2">&quot;buy&quot;</span><span class="p">)</span>
-    <span class="n">buy_rsi_enabled</span> <span class="o">=</span> <span class="n">CategoricalParameter</span><span class="p">([</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">],</span> <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">space</span><span class="o">=</span><span class="s2">&quot;buy&quot;</span><span class="p">)</span>
-    <span class="n">buy_trigger</span> <span class="o">=</span> <span class="n">CategoricalParameter</span><span class="p">([</span><span class="s2">&quot;bb_lower&quot;</span><span class="p">,</span> <span class="s2">&quot;macd_cross_signal&quot;</span><span class="p">],</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;bb_lower&quot;</span><span class="p">,</span> <span class="n">space</span><span class="o">=</span><span class="s2">&quot;buy&quot;</span><span class="p">)</span>
+    <span class="n">buy_adx</span> <span class="o">=</span> <span class="n">DecimalParameter</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="n">decimals</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mf">30.1</span><span class="p">,</span> <span class="n">space</span><span class="o">=</span><span class="s2">"buy"</span><span class="p">)</span>
+    <span class="n">buy_rsi</span> <span class="o">=</span> <span class="n">IntParameter</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">space</span><span class="o">=</span><span class="s2">"buy"</span><span class="p">)</span>
+    <span class="n">buy_adx_enabled</span> <span class="o">=</span> <span class="n">BooleanParameter</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">space</span><span class="o">=</span><span class="s2">"buy"</span><span class="p">)</span>
+    <span class="n">buy_rsi_enabled</span> <span class="o">=</span> <span class="n">CategoricalParameter</span><span class="p">([</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">],</span> <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">space</span><span class="o">=</span><span class="s2">"buy"</span><span class="p">)</span>
+    <span class="n">buy_trigger</span> <span class="o">=</span> <span class="n">CategoricalParameter</span><span class="p">([</span><span class="s2">"bb_lower"</span><span class="p">,</span> <span class="s2">"macd_cross_signal"</span><span class="p">],</span> <span class="n">default</span><span class="o">=</span><span class="s2">"bb_lower"</span><span class="p">,</span> <span class="n">space</span><span class="o">=</span><span class="s2">"buy"</span><span class="p">)</span>
 </code></pre></div>
 <p>The above definition says: I have five parameters I want to randomly combine to find the best combination.<br />
 <code>buy_rsi</code> is an integer parameter, which will be tested between 20 and 40. This space has a size of 20.<br />
@@ -3135,25 +3135,25 @@ Spaces can also be custom named (e.g. <code>space='my_custom_space'</code>), wit
         <span class="n">conditions</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="c1"># GUARDS AND TRENDS</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">buy_adx_enabled</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
-            <span class="n">conditions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;adx&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">buy_adx</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+            <span class="n">conditions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'adx'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">buy_adx</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">buy_rsi_enabled</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
-            <span class="n">conditions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">buy_rsi</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+            <span class="n">conditions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'rsi'</span><span class="p">]</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">buy_rsi</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
 
         <span class="c1"># TRIGGERS</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">buy_trigger</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="s1">&#39;bb_lower&#39;</span><span class="p">:</span>
-            <span class="n">conditions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;close&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;bb_lowerband&#39;</span><span class="p">])</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">buy_trigger</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="s1">&#39;macd_cross_signal&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">buy_trigger</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="s1">'bb_lower'</span><span class="p">:</span>
+            <span class="n">conditions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'close'</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">'bb_lowerband'</span><span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">buy_trigger</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="s1">'macd_cross_signal'</span><span class="p">:</span>
             <span class="n">conditions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">qtpylib</span><span class="o">.</span><span class="n">crossed_above</span><span class="p">(</span>
-                <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;macd&#39;</span><span class="p">],</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;macdsignal&#39;</span><span class="p">]</span>
+                <span class="n">dataframe</span><span class="p">[</span><span class="s1">'macd'</span><span class="p">],</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">'macdsignal'</span><span class="p">]</span>
             <span class="p">))</span>
 
         <span class="c1"># Check that volume is not 0</span>
-        <span class="n">conditions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;volume&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">conditions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'volume'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">conditions</span><span class="p">:</span>
             <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
                 <span class="n">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">x</span> <span class="o">&amp;</span> <span class="n">y</span><span class="p">,</span> <span class="n">conditions</span><span class="p">),</span>
-                <span class="s1">&#39;enter_long&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="s1">'enter_long'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
 
         <span class="k">return</span> <span class="n">dataframe</span>
 </code></pre></div>
@@ -3204,9 +3204,9 @@ By default, we assume a stoploss of 5% - and a take-profit (<code>minimal_roi</c
 
 <span class="k">class</span><span class="w"> </span><span class="nc">MyAwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
     <span class="n">stoploss</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.05</span>
-    <span class="n">timeframe</span> <span class="o">=</span> <span class="s1">&#39;15m&#39;</span>
+    <span class="n">timeframe</span> <span class="o">=</span> <span class="s1">'15m'</span>
     <span class="n">minimal_roi</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;0&quot;</span><span class="p">:</span>  <span class="mf">0.10</span>
+        <span class="s2">"0"</span><span class="p">:</span>  <span class="mf">0.10</span>
     <span class="p">}</span>
     <span class="c1"># Define the parameter spaces</span>
     <span class="n">buy_ema_short</span> <span class="o">=</span> <span class="n">IntParameter</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
@@ -3214,46 +3214,46 @@ By default, we assume a stoploss of 5% - and a take-profit (<code>minimal_roi</c
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">populate_indicators</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate all indicators used by the strategy&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Generate all indicators used by the strategy"""</span>
 
         <span class="c1"># Calculate all ema_short values</span>
         <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">buy_ema_short</span><span class="o">.</span><span class="n">range</span><span class="p">:</span>
-            <span class="n">dataframe</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;ema_short_</span><span class="si">{</span><span class="n">val</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">EMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">val</span><span class="p">)</span>
+            <span class="n">dataframe</span><span class="p">[</span><span class="sa">f</span><span class="s1">'ema_short_</span><span class="si">{</span><span class="n">val</span><span class="si">}</span><span class="s1">'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">EMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">val</span><span class="p">)</span>
 
         <span class="c1"># Calculate all ema_long values</span>
         <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">buy_ema_long</span><span class="o">.</span><span class="n">range</span><span class="p">:</span>
-            <span class="n">dataframe</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;ema_long_</span><span class="si">{</span><span class="n">val</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">EMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">val</span><span class="p">)</span>
+            <span class="n">dataframe</span><span class="p">[</span><span class="sa">f</span><span class="s1">'ema_long_</span><span class="si">{</span><span class="n">val</span><span class="si">}</span><span class="s1">'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">EMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="n">val</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">dataframe</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">populate_entry_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
         <span class="n">conditions</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">conditions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">qtpylib</span><span class="o">.</span><span class="n">crossed_above</span><span class="p">(</span>
-                <span class="n">dataframe</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;ema_short_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">buy_ema_short</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">],</span> <span class="n">dataframe</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;ema_long_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">buy_ema_long</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]</span>
+                <span class="n">dataframe</span><span class="p">[</span><span class="sa">f</span><span class="s1">'ema_short_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">buy_ema_short</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s1">'</span><span class="p">],</span> <span class="n">dataframe</span><span class="p">[</span><span class="sa">f</span><span class="s1">'ema_long_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">buy_ema_long</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s1">'</span><span class="p">]</span>
             <span class="p">))</span>
 
         <span class="c1"># Check that volume is not 0</span>
-        <span class="n">conditions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;volume&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">conditions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'volume'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">conditions</span><span class="p">:</span>
             <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
                 <span class="n">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">x</span> <span class="o">&amp;</span> <span class="n">y</span><span class="p">,</span> <span class="n">conditions</span><span class="p">),</span>
-                <span class="s1">&#39;enter_long&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="s1">'enter_long'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
         <span class="k">return</span> <span class="n">dataframe</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">populate_exit_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
         <span class="n">conditions</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">conditions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">qtpylib</span><span class="o">.</span><span class="n">crossed_above</span><span class="p">(</span>
-                <span class="n">dataframe</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;ema_long_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">buy_ema_long</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">],</span> <span class="n">dataframe</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;ema_short_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">buy_ema_short</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]</span>
+                <span class="n">dataframe</span><span class="p">[</span><span class="sa">f</span><span class="s1">'ema_long_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">buy_ema_long</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s1">'</span><span class="p">],</span> <span class="n">dataframe</span><span class="p">[</span><span class="sa">f</span><span class="s1">'ema_short_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">buy_ema_short</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s1">'</span><span class="p">]</span>
             <span class="p">))</span>
 
         <span class="c1"># Check that volume is not 0</span>
-        <span class="n">conditions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;volume&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">conditions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'volume'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">conditions</span><span class="p">:</span>
             <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
                 <span class="n">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">x</span> <span class="o">&amp;</span> <span class="n">y</span><span class="p">,</span> <span class="n">conditions</span><span class="p">),</span>
-                <span class="s1">&#39;exit_long&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="s1">'exit_long'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
         <span class="k">return</span> <span class="n">dataframe</span>
 </code></pre></div>
 <p>Breaking it down:</p>
@@ -3294,11 +3294,11 @@ By using this in a loop, hyperopt will generate 48 new columns (<code>['buy_ema_
 
 <span class="k">class</span><span class="w"> </span><span class="nc">MyAwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
     <span class="n">stoploss</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.05</span>
-    <span class="n">timeframe</span> <span class="o">=</span> <span class="s1">&#39;15m&#39;</span>
+    <span class="n">timeframe</span> <span class="o">=</span> <span class="s1">'15m'</span>
     <span class="c1"># Define the parameter spaces</span>
-    <span class="n">cooldown_lookback</span> <span class="o">=</span> <span class="n">IntParameter</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">48</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">space</span><span class="o">=</span><span class="s2">&quot;protection&quot;</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">stop_duration</span> <span class="o">=</span> <span class="n">IntParameter</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">space</span><span class="o">=</span><span class="s2">&quot;protection&quot;</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">use_stop_protection</span> <span class="o">=</span> <span class="n">BooleanParameter</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">space</span><span class="o">=</span><span class="s2">&quot;protection&quot;</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">cooldown_lookback</span> <span class="o">=</span> <span class="n">IntParameter</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">48</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">space</span><span class="o">=</span><span class="s2">"protection"</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">stop_duration</span> <span class="o">=</span> <span class="n">IntParameter</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">space</span><span class="o">=</span><span class="s2">"protection"</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">use_stop_protection</span> <span class="o">=</span> <span class="n">BooleanParameter</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">space</span><span class="o">=</span><span class="s2">"protection"</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 
     <span class="nd">@property</span>
@@ -3306,16 +3306,16 @@ By using this in a loop, hyperopt will generate 48 new columns (<code>['buy_ema_
         <span class="n">prot</span> <span class="o">=</span> <span class="p">[]</span>
 
         <span class="n">prot</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
-            <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;CooldownPeriod&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;stop_duration_candles&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">cooldown_lookback</span><span class="o">.</span><span class="n">value</span>
+            <span class="s2">"method"</span><span class="p">:</span> <span class="s2">"CooldownPeriod"</span><span class="p">,</span>
+            <span class="s2">"stop_duration_candles"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">cooldown_lookback</span><span class="o">.</span><span class="n">value</span>
         <span class="p">})</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_stop_protection</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
             <span class="n">prot</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
-                <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;StoplossGuard&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;lookback_period_candles&quot;</span><span class="p">:</span> <span class="mi">24</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span>
-                <span class="s2">&quot;trade_limit&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
-                <span class="s2">&quot;stop_duration_candles&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">stop_duration</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
-                <span class="s2">&quot;only_per_pair&quot;</span><span class="p">:</span> <span class="kc">False</span>
+                <span class="s2">"method"</span><span class="p">:</span> <span class="s2">"StoplossGuard"</span><span class="p">,</span>
+                <span class="s2">"lookback_period_candles"</span><span class="p">:</span> <span class="mi">24</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span>
+                <span class="s2">"trade_limit"</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+                <span class="s2">"stop_duration_candles"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">stop_duration</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+                <span class="s2">"only_per_pair"</span><span class="p">:</span> <span class="kc">False</span>
             <span class="p">})</span>
 
         <span class="k">return</span> <span class="n">prot</span>
@@ -3341,8 +3341,8 @@ In simple terms, the following configuration will be converted to the below.</p>
 <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">MyAwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
     <span class="n">protections</span> <span class="o">=</span> <span class="p">[</span>
         <span class="p">{</span>
-            <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;CooldownPeriod&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;stop_duration_candles&quot;</span><span class="p">:</span> <span class="mi">4</span>
+            <span class="s2">"method"</span><span class="p">:</span> <span class="s2">"CooldownPeriod"</span><span class="p">,</span>
+            <span class="s2">"stop_duration_candles"</span><span class="p">:</span> <span class="mi">4</span>
         <span class="p">}</span>
     <span class="p">]</span>
 </code></pre></div>
@@ -3353,8 +3353,8 @@ In simple terms, the following configuration will be converted to the below.</p>
     <span class="k">def</span><span class="w"> </span><span class="nf">protections</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">[</span>
             <span class="p">{</span>
-                <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;CooldownPeriod&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;stop_duration_candles&quot;</span><span class="p">:</span> <span class="mi">4</span>
+                <span class="s2">"method"</span><span class="p">:</span> <span class="s2">"CooldownPeriod"</span><span class="p">,</span>
+                <span class="s2">"stop_duration_candles"</span><span class="p">:</span> <span class="mi">4</span>
             <span class="p">}</span>
         <span class="p">]</span>
 </code></pre></div>
@@ -3372,10 +3372,10 @@ In simple terms, the following configuration will be converted to the below.</p>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">MyAwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
     <span class="n">stoploss</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.05</span>
-    <span class="n">timeframe</span> <span class="o">=</span> <span class="s1">&#39;15m&#39;</span>
+    <span class="n">timeframe</span> <span class="o">=</span> <span class="s1">'15m'</span>
 
     <span class="c1"># Define the parameter spaces</span>
-    <span class="n">max_epa</span> <span class="o">=</span> <span class="n">CategoricalParameter</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="n">default</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">space</span><span class="o">=</span><span class="s2">&quot;buy&quot;</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">max_epa</span> <span class="o">=</span> <span class="n">CategoricalParameter</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span> <span class="n">default</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">space</span><span class="o">=</span><span class="s2">"buy"</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">max_entry_position_adjustment</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -3388,7 +3388,7 @@ In simple terms, the following configuration will be converted to the below.</p>
 <details class="tip">
 <summary>Using <code>IntParameter</code></summary>
 <p>You can also use the <code>IntParameter</code> for this optimization, but you must explicitly return an integer:
-<div class="highlight"><pre><span></span><code><span class="n">max_epa</span> <span class="o">=</span> <span class="n">IntParameter</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">space</span><span class="o">=</span><span class="s2">&quot;buy&quot;</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="n">max_epa</span> <span class="o">=</span> <span class="n">IntParameter</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">space</span><span class="o">=</span><span class="s2">"buy"</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 <span class="nd">@property</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">max_entry_position_adjustment</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -3471,11 +3471,11 @@ Given the following result from hyperopt:</p>
 
     # Buy hyperspace params:
     buy_params = {
-        &#39;buy_adx&#39;: 44,
-        &#39;buy_rsi&#39;: 29,
-        &#39;buy_adx_enabled&#39;: False,
-        &#39;buy_rsi_enabled&#39;: True,
-        &#39;buy_trigger&#39;: &#39;bb_lower&#39;
+        'buy_adx': 44,
+        'buy_rsi': 29,
+        'buy_adx_enabled': False,
+        'buy_rsi_enabled': True,
+        'buy_trigger': 'bb_lower'
     }
 </code></pre></div>
 <p>You should understand this result like:</p>
@@ -3492,11 +3492,11 @@ This file is also updated when using the <code>hyperopt-show</code> sub-command,
 <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">MyAwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
     <span class="c1"># Buy hyperspace params:</span>
     <span class="n">buy_params</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s1">&#39;buy_adx&#39;</span><span class="p">:</span> <span class="mi">44</span><span class="p">,</span>
-        <span class="s1">&#39;buy_rsi&#39;</span><span class="p">:</span> <span class="mi">29</span><span class="p">,</span>
-        <span class="s1">&#39;buy_adx_enabled&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="s1">&#39;buy_rsi_enabled&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-        <span class="s1">&#39;buy_trigger&#39;</span><span class="p">:</span> <span class="s1">&#39;bb_lower&#39;</span>
+        <span class="s1">'buy_adx'</span><span class="p">:</span> <span class="mi">44</span><span class="p">,</span>
+        <span class="s1">'buy_rsi'</span><span class="p">:</span> <span class="mi">29</span><span class="p">,</span>
+        <span class="s1">'buy_adx_enabled'</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s1">'buy_rsi_enabled'</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s1">'buy_trigger'</span><span class="p">:</span> <span class="s1">'bb_lower'</span>
     <span class="p">}</span>
 </code></pre></div>
 <div class="admonition note">
@@ -3520,7 +3520,7 @@ The prevalence is therefore: config &gt; parameter file &gt; strategy <code>*_pa
 </code></pre></div>
 <p>In order to use this best ROI table found by Hyperopt in backtesting and for live trades/dry-run, copy-paste it as the value of the <code>minimal_roi</code> attribute of your custom strategy:</p>
 <div class="highlight"><pre><span></span><code>    # Minimal ROI designed for the strategy.
-    # This attribute will be overridden if the config file contains &quot;minimal_roi&quot;
+    # This attribute will be overridden if the config file contains "minimal_roi"
     minimal_roi = {
         0: 0.10674,
         21: 0.09158,
@@ -3608,18 +3608,18 @@ The prevalence is therefore: config &gt; parameter file &gt; strategy <code>*_pa
 
     # Buy hyperspace params:
     buy_params = {
-        &#39;buy_adx&#39;: 44,
-        &#39;buy_rsi&#39;: 29,
-        &#39;buy_adx_enabled&#39;: False,
-        &#39;buy_rsi_enabled&#39;: True,
-        &#39;buy_trigger&#39;: &#39;bb_lower&#39;
+        'buy_adx': 44,
+        'buy_rsi': 29,
+        'buy_adx_enabled': False,
+        'buy_rsi_enabled': True,
+        'buy_trigger': 'bb_lower'
     }
 
     stoploss: -0.27996
 </code></pre></div>
 <p>In order to use this best stoploss value found by Hyperopt in backtesting and for live trades/dry-run, copy-paste it as the value of the <code>stoploss</code> attribute of your custom strategy:</p>
 <div class="highlight"><pre><span></span><code>    <span class="c1"># Optimal stoploss designed for the strategy</span>
-    <span class="c1"># This attribute will be overridden if the config file contains &quot;stoploss&quot;</span>
+    <span class="c1"># This attribute will be overridden if the config file contains "stoploss"</span>
     <span class="n">stoploss</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.27996</span>
 </code></pre></div>
 <p>As stated in the comment, you can also use it as the value of the <code>stoploss</code> setting in the configuration file.</p>
@@ -3701,7 +3701,7 @@ To combat these, you have multiple options:</p>
 Basically all points in your space have been hit (or a local minima has been hit) - and hyperopt does no longer find points in the multi-dimensional space it did not try yet.
 Freqtrade tries to counter the "local minima" problem by using new, randomized points in this case.</p>
 <p>Example:</p>
-<div class="highlight"><pre><span></span><code><span class="n">buy_ema_short</span> <span class="o">=</span> <span class="n">IntParameter</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">space</span><span class="o">=</span><span class="s2">&quot;buy&quot;</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="n">buy_ema_short</span> <span class="o">=</span> <span class="n">IntParameter</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">space</span><span class="o">=</span><span class="s2">"buy"</span><span class="p">,</span> <span class="n">optimize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="c1"># This is the only parameter in the buy space</span>
 </code></pre></div>
 <p>The <code>buy_ema_short</code> space has 15 possible values (<code>5, 6, ... 19, 20</code>). If you now run hyperopt for the buy space, hyperopt will only have 15 values to try before running out of options.
@@ -3720,7 +3720,7 @@ Your epochs should therefore be aligned to the possible values - or you should b
     <span class="o">...</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">populate_entry_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;This is a debug message&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"This is a debug message"</span><span class="p">)</span>
         <span class="o">...</span>
 </code></pre></div>
 <div class="admonition note">

@@ -2790,7 +2790,7 @@ This image comes with python3.11 preinstalled, making it easy to get freqtrade u
 <p>Tested using a Raspberry Pi 3 with the Raspbian Buster lite image, all updates applied.</p>
 <div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>python3-venv<span class="w"> </span>libatlas-base-dev<span class="w"> </span>cmake<span class="w"> </span>curl<span class="w"> </span>libffi-dev
 <span class="c1"># Use piwheels.org to speed up installation</span>
-sudo<span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;[global]\nextra-index-url=https://www.piwheels.org/simple&quot;</span><span class="w"> </span>&gt;<span class="w"> </span>tee<span class="w"> </span>/etc/pip.conf
+sudo<span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">"[global]\nextra-index-url=https://www.piwheels.org/simple"</span><span class="w"> </span>&gt;<span class="w"> </span>tee<span class="w"> </span>/etc/pip.conf
 
 git<span class="w"> </span>clone<span class="w"> </span>https://github.com/freqtrade/freqtrade.git
 <span class="nb">cd</span><span class="w"> </span>freqtrade
@@ -2922,7 +2922,7 @@ python3<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </s
 <div class="highlight"><pre><span></span><code><span class="c1"># download freqtrade</span>
 git<span class="w"> </span>clone<span class="w"> </span>https://github.com/freqtrade/freqtrade.git
 
-<span class="c1"># enter downloaded directory &#39;freqtrade&#39;</span>
+<span class="c1"># enter downloaded directory 'freqtrade'</span>
 <span class="nb">cd</span><span class="w"> </span>freqtrade<span class="w">      </span>
 </code></pre></div>
 <h4 id="freqtrade-install-conda-environment">Freqtrade install: Conda Environment<a class="headerlink" href="#freqtrade-install-conda-environment" title="Permanent link">&para;</a></h4>
@@ -2943,7 +2943,7 @@ conda<span class="w"> </span>env<span class="w"> </span>create<span class="w"> <
 <div class="highlight"><pre><span></span><code><span class="c1"># enter conda environment</span>
 conda<span class="w"> </span>activate<span class="w"> </span>freqtrade
 
-<span class="c1"># exit conda environment - don&#39;t do it now</span>
+<span class="c1"># exit conda environment - don't do it now</span>
 conda<span class="w"> </span>deactivate
 </code></pre></div>
 <p>Install last python dependencies with pip</p>
@@ -3019,7 +3019,7 @@ For MacOS 10.14, this can be accomplished with the below command.</p>
 </code></pre></div>
 <p>If this file is inexistent, then you're probably on a different version of MacOS, so you may need to consult the internet for specific resolution details.</p>
 <h3 id="windows-installation-error">Windows Installation error<a class="headerlink" href="#windows-installation-error" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>error:<span class="w"> </span>Microsoft<span class="w"> </span>Visual<span class="w"> </span>C++<span class="w"> </span><span class="m">14</span>.0<span class="w"> </span>is<span class="w"> </span>required.<span class="w"> </span>Get<span class="w"> </span>it<span class="w"> </span>with<span class="w"> </span><span class="s2">&quot;Microsoft Visual C++ Build Tools&quot;</span>:<span class="w"> </span>http://landinghub.visualstudio.com/visual-cpp-build-tools
+<div class="highlight"><pre><span></span><code>error:<span class="w"> </span>Microsoft<span class="w"> </span>Visual<span class="w"> </span>C++<span class="w"> </span><span class="m">14</span>.0<span class="w"> </span>is<span class="w"> </span>required.<span class="w"> </span>Get<span class="w"> </span>it<span class="w"> </span>with<span class="w"> </span><span class="s2">"Microsoft Visual C++ Build Tools"</span>:<span class="w"> </span>http://landinghub.visualstudio.com/visual-cpp-build-tools
 </code></pre></div>
 <p>Unfortunately, many packages requiring compilation don't provide a pre-built wheel. It is therefore mandatory to have a C/C++ compiler installed and available for your python environment to use.</p>
 <p>You can download the Visual C++ build tools from <a href="https://visualstudio.microsoft.com/visual-cpp-build-tools/">the Visual Studio website</a> and install "Desktop development with C++" in it's default configuration. Unfortunately, this is a heavy download / dependency so you might want to consider WSL2 or <a href="../docker_quickstart/">docker compose</a> first.</p>

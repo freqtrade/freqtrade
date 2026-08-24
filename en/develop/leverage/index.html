@@ -2317,8 +2317,8 @@ Also, never risk more than what you can afford to lose.</p>
 <p>In addition to the gains/losses from the change in price of the futures contract, traders also exchange <em>funding fees</em>, which are gains/losses worth an amount that is derived from the difference in price between the futures contract and the underlying asset. The difference in price between a futures contract and the underlying asset varies between exchanges.</p>
 <p>To trade in futures markets, you'll have to set <code>trading_mode</code> to "futures".
 You will also have to pick a "margin mode" (explanation below).</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;trading_mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;futures&quot;</span><span class="p">,</span>
-<span class="nt">&quot;margin_mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;isolated&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"trading_mode"</span><span class="p">:</span><span class="w"> </span><span class="s2">"futures"</span><span class="p">,</span>
+<span class="nt">"margin_mode"</span><span class="p">:</span><span class="w"> </span><span class="s2">"isolated"</span>
 </code></pre></div>
 <h5 id="pair-namings">Pair namings<a class="headerlink" href="#pair-namings" title="Permanent link">&para;</a></h5>
 <p>Freqtrade follows the <a href="https://docs.ccxt.com/#/README?id=perpetual-swap-perpetual-future">ccxt naming conventions for futures</a>.
@@ -2329,11 +2329,11 @@ While freqtrade currently only supports one margin mode, this will change, and b
 <p>The possible values are: <code>isolated</code>, or <code>cross</code>.</p>
 <h4 id="isolated-margin-mode">Isolated margin mode<a class="headerlink" href="#isolated-margin-mode" title="Permanent link">&para;</a></h4>
 <p>Each market(trading pair), keeps collateral in a separate account</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;margin_mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;isolated&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"margin_mode"</span><span class="p">:</span><span class="w"> </span><span class="s2">"isolated"</span>
 </code></pre></div>
 <h4 id="cross-margin-mode">Cross margin mode<a class="headerlink" href="#cross-margin-mode" title="Permanent link">&para;</a></h4>
 <p>One account is used to share collateral between markets (trading pairs). Margin is taken from total account balance to avoid liquidation when needed.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;margin_mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;cross&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"margin_mode"</span><span class="p">:</span><span class="w"> </span><span class="s2">"cross"</span>
 </code></pre></div>
 <p>Please read the <a href="../exchanges/">exchange specific notes</a> for exchanges that support this mode and how they differ.</p>
 <div class="admonition warning">

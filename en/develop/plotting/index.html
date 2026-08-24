@@ -2056,11 +2056,11 @@ This is mostly for the performance problems even medium sized plots can cause, b
 <span class="go">  --indicators1 INDICATORS1 [INDICATORS1 ...]</span>
 <span class="go">                        Set indicators from your strategy you want in the</span>
 <span class="go">                        first row of the graph. Space-separated list. Example:</span>
-<span class="go">                        `ema3 ema5`. Default: `[&#39;sma&#39;, &#39;ema3&#39;, &#39;ema5&#39;]`.</span>
+<span class="go">                        `ema3 ema5`. Default: `['sma', 'ema3', 'ema5']`.</span>
 <span class="go">  --indicators2 INDICATORS2 [INDICATORS2 ...]</span>
 <span class="go">                        Set indicators from your strategy you want in the</span>
 <span class="go">                        third row of the graph. Space-separated list. Example:</span>
-<span class="go">                        `fastd fastk`. Default: `[&#39;macd&#39;, &#39;macdsignal&#39;]`.</span>
+<span class="go">                        `fastd fastk`. Default: `['macd', 'macdsignal']`.</span>
 <span class="go">  --plot-limit INT      Specify tick limit for plotting. Notice: too high</span>
 <span class="go">                        values cause huge files. Default: 750.</span>
 <span class="go">  --db-url PATH         Override trades database URL, this is useful in custom</span>
@@ -2092,9 +2092,9 @@ This is mostly for the performance problems even medium sized plots can cause, b
 <span class="go">                        useful if you are redirecting output to a file.</span>
 <span class="go">  --logfile, --log-file FILE</span>
 <span class="go">                        Log to the file specified. Special values are:</span>
-<span class="go">                        &#39;syslog&#39;, &#39;journald&#39;. See the documentation for more</span>
+<span class="go">                        'syslog', 'journald'. See the documentation for more</span>
 <span class="go">                        details.</span>
-<span class="go">  -V, --version         show program&#39;s version number and exit</span>
+<span class="go">  -V, --version         show program's version number and exit</span>
 <span class="go">  -c, --config PATH     Specify configuration file (default:</span>
 <span class="go">                        `userdir/config.json` or `config.json` whichever</span>
 <span class="go">                        exists). Multiple --config options may be used. Can be</span>
@@ -2179,41 +2179,41 @@ It also allows multiple subplots to display both MACD and RSI at the same time.<
 <p>Sample configuration with inline comments explaining the process:</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@property</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">plot_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">        There are a lot of solutions how to build the return dictionary.</span>
 <span class="sd">        The only important point is the return value.</span>
 <span class="sd">        Example:</span>
-<span class="sd">            plot_config = {&#39;main_plot&#39;: {}, &#39;subplots&#39;: {}}</span>
+<span class="sd">            plot_config = {'main_plot': {}, 'subplots': {}}</span>
 
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">plot_config</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="n">plot_config</span><span class="p">[</span><span class="s1">&#39;main_plot&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">plot_config</span><span class="p">[</span><span class="s1">'main_plot'</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
         <span class="c1"># Configuration for main plot indicators.</span>
         <span class="c1"># Assumes 2 parameters, emashort and emalong to be specified.</span>
-        <span class="sa">f</span><span class="s1">&#39;ema_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">emashort</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="s1">&#39;red&#39;</span><span class="p">},</span>
-        <span class="sa">f</span><span class="s1">&#39;ema_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">emalong</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="s1">&#39;#CCCCCC&#39;</span><span class="p">},</span>
+        <span class="sa">f</span><span class="s1">'ema_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">emashort</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s1">'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'color'</span><span class="p">:</span> <span class="s1">'red'</span><span class="p">},</span>
+        <span class="sa">f</span><span class="s1">'ema_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">emalong</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s1">'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'color'</span><span class="p">:</span> <span class="s1">'#CCCCCC'</span><span class="p">},</span>
         <span class="c1"># By omitting color, a random color is selected.</span>
-        <span class="s1">&#39;sar&#39;</span><span class="p">:</span> <span class="p">{},</span>
+        <span class="s1">'sar'</span><span class="p">:</span> <span class="p">{},</span>
         <span class="c1"># fill area between senkou_a and senkou_b</span>
-        <span class="s1">&#39;senkou_a&#39;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="s1">&#39;green&#39;</span><span class="p">,</span> <span class="c1">#optional</span>
-            <span class="s1">&#39;fill_to&#39;</span><span class="p">:</span> <span class="s1">&#39;senkou_b&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;fill_label&#39;</span><span class="p">:</span> <span class="s1">&#39;Ichimoku Cloud&#39;</span><span class="p">,</span> <span class="c1">#optional</span>
-            <span class="s1">&#39;fill_color&#39;</span><span class="p">:</span> <span class="s1">&#39;rgba(255,76,46,0.2)&#39;</span><span class="p">,</span> <span class="c1">#optional</span>
+        <span class="s1">'senkou_a'</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">'color'</span><span class="p">:</span> <span class="s1">'green'</span><span class="p">,</span> <span class="c1">#optional</span>
+            <span class="s1">'fill_to'</span><span class="p">:</span> <span class="s1">'senkou_b'</span><span class="p">,</span>
+            <span class="s1">'fill_label'</span><span class="p">:</span> <span class="s1">'Ichimoku Cloud'</span><span class="p">,</span> <span class="c1">#optional</span>
+            <span class="s1">'fill_color'</span><span class="p">:</span> <span class="s1">'rgba(255,76,46,0.2)'</span><span class="p">,</span> <span class="c1">#optional</span>
         <span class="p">},</span>
         <span class="c1"># plot senkou_b, too. Not only the area to it.</span>
-        <span class="s1">&#39;senkou_b&#39;</span><span class="p">:</span> <span class="p">{}</span>
+        <span class="s1">'senkou_b'</span><span class="p">:</span> <span class="p">{}</span>
     <span class="p">}</span>
-    <span class="n">plot_config</span><span class="p">[</span><span class="s1">&#39;subplots&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">plot_config</span><span class="p">[</span><span class="s1">'subplots'</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
          <span class="c1"># Create subplot MACD</span>
-        <span class="s2">&quot;MACD&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s1">&#39;macd&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="s1">&#39;blue&#39;</span><span class="p">,</span> <span class="s1">&#39;fill_to&#39;</span><span class="p">:</span> <span class="s1">&#39;macdhist&#39;</span><span class="p">},</span>
-            <span class="s1">&#39;macdsignal&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="s1">&#39;orange&#39;</span><span class="p">},</span>
-            <span class="s1">&#39;macdhist&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;bar&#39;</span><span class="p">,</span> <span class="s1">&#39;plotly&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;opacity&#39;</span><span class="p">:</span> <span class="mf">0.9</span><span class="p">}}</span>
+        <span class="s2">"MACD"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">'macd'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'color'</span><span class="p">:</span> <span class="s1">'blue'</span><span class="p">,</span> <span class="s1">'fill_to'</span><span class="p">:</span> <span class="s1">'macdhist'</span><span class="p">},</span>
+            <span class="s1">'macdsignal'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'color'</span><span class="p">:</span> <span class="s1">'orange'</span><span class="p">},</span>
+            <span class="s1">'macdhist'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'type'</span><span class="p">:</span> <span class="s1">'bar'</span><span class="p">,</span> <span class="s1">'plotly'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'opacity'</span><span class="p">:</span> <span class="mf">0.9</span><span class="p">}}</span>
         <span class="p">},</span>
         <span class="c1"># Additional subplot RSI</span>
-        <span class="s2">&quot;RSI&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s1">&#39;rsi&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="s1">&#39;red&#39;</span><span class="p">}</span>
+        <span class="s2">"RSI"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">'rsi'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'color'</span><span class="p">:</span> <span class="s1">'red'</span><span class="p">}</span>
         <span class="p">}</span>
     <span class="p">}</span>
 
@@ -2224,33 +2224,33 @@ It also allows multiple subplots to display both MACD and RSI at the same time.<
 <p>Assigning <code>plot_config</code> is also possible as Attribute (this used to be the default way).
 This has the disadvantage that strategy parameters are not available, preventing certain configurations from working.</p>
 <div class="highlight"><pre><span></span><code>    <span class="n">plot_config</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s1">&#39;main_plot&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">'main_plot'</span><span class="p">:</span> <span class="p">{</span>
             <span class="c1"># Configuration for main plot indicators.</span>
             <span class="c1"># Specifies `ema10` to be red, and `ema50` to be a shade of gray</span>
-            <span class="s1">&#39;ema10&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="s1">&#39;red&#39;</span><span class="p">},</span>
-            <span class="s1">&#39;ema50&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="s1">&#39;#CCCCCC&#39;</span><span class="p">},</span>
+            <span class="s1">'ema10'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'color'</span><span class="p">:</span> <span class="s1">'red'</span><span class="p">},</span>
+            <span class="s1">'ema50'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'color'</span><span class="p">:</span> <span class="s1">'#CCCCCC'</span><span class="p">},</span>
             <span class="c1"># By omitting color, a random color is selected.</span>
-            <span class="s1">&#39;sar&#39;</span><span class="p">:</span> <span class="p">{},</span>
+            <span class="s1">'sar'</span><span class="p">:</span> <span class="p">{},</span>
         <span class="c1"># fill area between senkou_a and senkou_b</span>
-        <span class="s1">&#39;senkou_a&#39;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="s1">&#39;green&#39;</span><span class="p">,</span> <span class="c1">#optional</span>
-            <span class="s1">&#39;fill_to&#39;</span><span class="p">:</span> <span class="s1">&#39;senkou_b&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;fill_label&#39;</span><span class="p">:</span> <span class="s1">&#39;Ichimoku Cloud&#39;</span><span class="p">,</span> <span class="c1">#optional</span>
-            <span class="s1">&#39;fill_color&#39;</span><span class="p">:</span> <span class="s1">&#39;rgba(255,76,46,0.2)&#39;</span><span class="p">,</span> <span class="c1">#optional</span>
+        <span class="s1">'senkou_a'</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">'color'</span><span class="p">:</span> <span class="s1">'green'</span><span class="p">,</span> <span class="c1">#optional</span>
+            <span class="s1">'fill_to'</span><span class="p">:</span> <span class="s1">'senkou_b'</span><span class="p">,</span>
+            <span class="s1">'fill_label'</span><span class="p">:</span> <span class="s1">'Ichimoku Cloud'</span><span class="p">,</span> <span class="c1">#optional</span>
+            <span class="s1">'fill_color'</span><span class="p">:</span> <span class="s1">'rgba(255,76,46,0.2)'</span><span class="p">,</span> <span class="c1">#optional</span>
         <span class="p">},</span>
         <span class="c1"># plot senkou_b, too. Not only the area to it.</span>
-        <span class="s1">&#39;senkou_b&#39;</span><span class="p">:</span> <span class="p">{}</span>
+        <span class="s1">'senkou_b'</span><span class="p">:</span> <span class="p">{}</span>
         <span class="p">},</span>
-        <span class="s1">&#39;subplots&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">'subplots'</span><span class="p">:</span> <span class="p">{</span>
             <span class="c1"># Create subplot MACD</span>
-            <span class="s2">&quot;MACD&quot;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s1">&#39;macd&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="s1">&#39;blue&#39;</span><span class="p">,</span> <span class="s1">&#39;fill_to&#39;</span><span class="p">:</span> <span class="s1">&#39;macdhist&#39;</span><span class="p">},</span>
-                <span class="s1">&#39;macdsignal&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="s1">&#39;orange&#39;</span><span class="p">},</span>
-                <span class="s1">&#39;macdhist&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;bar&#39;</span><span class="p">,</span> <span class="s1">&#39;plotly&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;opacity&#39;</span><span class="p">:</span> <span class="mf">0.9</span><span class="p">}}</span>
+            <span class="s2">"MACD"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">'macd'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'color'</span><span class="p">:</span> <span class="s1">'blue'</span><span class="p">,</span> <span class="s1">'fill_to'</span><span class="p">:</span> <span class="s1">'macdhist'</span><span class="p">},</span>
+                <span class="s1">'macdsignal'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'color'</span><span class="p">:</span> <span class="s1">'orange'</span><span class="p">},</span>
+                <span class="s1">'macdhist'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'type'</span><span class="p">:</span> <span class="s1">'bar'</span><span class="p">,</span> <span class="s1">'plotly'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'opacity'</span><span class="p">:</span> <span class="mf">0.9</span><span class="p">}}</span>
             <span class="p">},</span>
             <span class="c1"># Additional subplot RSI</span>
-            <span class="s2">&quot;RSI&quot;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s1">&#39;rsi&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="s1">&#39;red&#39;</span><span class="p">}</span>
+            <span class="s2">"RSI"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">'rsi'</span><span class="p">:</span> <span class="p">{</span><span class="s1">'color'</span><span class="p">:</span> <span class="s1">'red'</span><span class="p">}</span>
             <span class="p">}</span>
         <span class="p">}</span>
     <span class="p">}</span>
@@ -2332,9 +2332,9 @@ This graph will also highlight the start (and end) of the Max drawdown period.</
 <span class="go">                        useful if you are redirecting output to a file.</span>
 <span class="go">  --logfile, --log-file FILE</span>
 <span class="go">                        Log to the file specified. Special values are:</span>
-<span class="go">                        &#39;syslog&#39;, &#39;journald&#39;. See the documentation for more</span>
+<span class="go">                        'syslog', 'journald'. See the documentation for more</span>
 <span class="go">                        details.</span>
-<span class="go">  -V, --version         show program&#39;s version number and exit</span>
+<span class="go">  -V, --version         show program's version number and exit</span>
 <span class="go">  -c, --config PATH     Specify configuration file (default:</span>
 <span class="go">                        `userdir/config.json` or `config.json` whichever</span>
 <span class="go">                        exists). Multiple --config options may be used. Can be</span>

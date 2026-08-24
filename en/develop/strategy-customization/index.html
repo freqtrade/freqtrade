@@ -3264,14 +3264,14 @@ Pandas is a great library developed for processing large amounts of data in tabu
 <span class="go">4 2021-11-09 23:45:00+00:00  67160.48  67160.48  66901.26  66943.37  111.39292</span>
 </code></pre></div>
 <p>A dataframe is a table where columns are not single values, but a series of data values. As such, simple python comparisons like the following will not work:</p>
-<div class="highlight"><pre><span></span><code>    <span class="k">if</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">30</span><span class="p">:</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;enter_long&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+<div class="highlight"><pre><span></span><code>    <span class="k">if</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">'rsi'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">30</span><span class="p">:</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s1">'enter_long'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
 </code></pre></div>
 <p>The above section will fail with <code>The truth value of a Series is ambiguous [...]</code>.</p>
 <p>This must instead be written in a pandas-compatible way, so the operation is performed across the whole dataframe, i.e. <code>vectorisation</code>.</p>
 <div class="highlight"><pre><span></span><code>    <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
-        <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">30</span><span class="p">)</span>
-    <span class="p">,</span> <span class="s1">&#39;enter_long&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'rsi'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">30</span><span class="p">)</span>
+    <span class="p">,</span> <span class="s1">'enter_long'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
 </code></pre></div>
 <p>With this section, you have a new column in your dataframe, which has <code>1</code> assigned whenever RSI is above 30.</p>
 <p>Freqtrade uses this new column as an entry signal, where it is assumed that a trade will subsequently open on the next open candle.</p>
@@ -3301,7 +3301,7 @@ delay as possible, usually by running a low number of pairs and having a CPU wit
 <p>It's important to always return the dataframe from these three functions without removing/modifying the columns <code>"open", "high", "low", "close", "volume"</code>, otherwise these fields would contain something unexpected.</p>
 <p>Sample:</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">populate_indicators</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Adds several different TA indicators to the given DataFrame</span>
 
 <span class="sd">    Performance Note: For the best performance be frugal on the number of indicators</span>
@@ -3310,33 +3310,33 @@ delay as possible, usually by running a low number of pairs and having a CPU wit
 <span class="sd">    :param dataframe: Dataframe with data from the exchange</span>
 <span class="sd">    :param metadata: Additional information, like the currently traded pair</span>
 <span class="sd">    :return: a Dataframe with all mandatory indicators for the strategies</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;sar&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">SAR</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;adx&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">ADX</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
+<span class="sd">    """</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">'sar'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">SAR</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">'adx'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">ADX</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
     <span class="n">stoch</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">STOCHF</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;fastd&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">stoch</span><span class="p">[</span><span class="s1">&#39;fastd&#39;</span><span class="p">]</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;fastk&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">stoch</span><span class="p">[</span><span class="s1">&#39;fastk&#39;</span><span class="p">]</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;bb_lower&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">BBANDS</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">nbdevup</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">nbdevdn</span><span class="o">=</span><span class="mi">2</span><span class="p">)[</span><span class="s1">&#39;lowerband&#39;</span><span class="p">]</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;sma&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">SMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">40</span><span class="p">)</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">TEMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;mfi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">MFI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">RSI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;ema5&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">EMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;ema10&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">EMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;ema50&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">EMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;ema100&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">EMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;ao&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">awesome_oscillator</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">'fastd'</span><span class="p">]</span> <span class="o">=</span> <span class="n">stoch</span><span class="p">[</span><span class="s1">'fastd'</span><span class="p">]</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">'fastk'</span><span class="p">]</span> <span class="o">=</span> <span class="n">stoch</span><span class="p">[</span><span class="s1">'fastk'</span><span class="p">]</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">'bb_lower'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">BBANDS</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">nbdevup</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">nbdevdn</span><span class="o">=</span><span class="mi">2</span><span class="p">)[</span><span class="s1">'lowerband'</span><span class="p">]</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">'sma'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">SMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">40</span><span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">'tema'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">TEMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">'mfi'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">MFI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">'rsi'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">RSI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">'ema5'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">EMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">'ema10'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">EMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">'ema50'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">EMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">'ema100'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">EMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">'ao'</span><span class="p">]</span> <span class="o">=</span> <span class="n">awesome_oscillator</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
     <span class="n">macd</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">MACD</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;macd&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">macd</span><span class="p">[</span><span class="s1">&#39;macd&#39;</span><span class="p">]</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;macdsignal&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">macd</span><span class="p">[</span><span class="s1">&#39;macdsignal&#39;</span><span class="p">]</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;macdhist&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">macd</span><span class="p">[</span><span class="s1">&#39;macdhist&#39;</span><span class="p">]</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">'macd'</span><span class="p">]</span> <span class="o">=</span> <span class="n">macd</span><span class="p">[</span><span class="s1">'macd'</span><span class="p">]</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">'macdsignal'</span><span class="p">]</span> <span class="o">=</span> <span class="n">macd</span><span class="p">[</span><span class="s1">'macdsignal'</span><span class="p">]</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">'macdhist'</span><span class="p">]</span> <span class="o">=</span> <span class="n">macd</span><span class="p">[</span><span class="s1">'macdhist'</span><span class="p">]</span>
     <span class="n">hilbert</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">HT_SINE</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;htsine&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hilbert</span><span class="p">[</span><span class="s1">&#39;sine&#39;</span><span class="p">]</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;htleadsine&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hilbert</span><span class="p">[</span><span class="s1">&#39;leadsine&#39;</span><span class="p">]</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;plus_dm&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">PLUS_DM</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;plus_di&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">PLUS_DI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;minus_dm&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">MINUS_DM</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;minus_di&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">MINUS_DI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">'htsine'</span><span class="p">]</span> <span class="o">=</span> <span class="n">hilbert</span><span class="p">[</span><span class="s1">'sine'</span><span class="p">]</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">'htleadsine'</span><span class="p">]</span> <span class="o">=</span> <span class="n">hilbert</span><span class="p">[</span><span class="s1">'leadsine'</span><span class="p">]</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">'plus_dm'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">PLUS_DM</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">'plus_di'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">PLUS_DI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">'minus_dm'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">MINUS_DM</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">'minus_di'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">MINUS_DI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">)</span>
 
     <span class="c1"># remember to always return the dataframe</span>
     <span class="k">return</span> <span class="n">dataframe</span>
@@ -3360,7 +3360,7 @@ Then uncomment indicators you need.</p>
 <p>This should be set to the maximum number of candles that the strategy requires to calculate stable indicators. In the case where a user includes higher timeframes with informative pairs, the <code>startup_candle_count</code> does not necessarily change. The value is the maximum period (in candles) that any of the informatives timeframes need to compute stable indicators.</p>
 <p>You can use <a href="../recursive-analysis/">recursive-analysis</a> to check and find the correct <code>startup_candle_count</code> to be used. When recursive analysis shows a variance of 0%, then you can be sure that you have enough startup candle data.</p>
 <p>In this example strategy, this should be set to 400 (<code>startup_candle_count = 400</code>), since the minimum needed history for ema100 calculation to make sure the value is correct is 400 candles.</p>
-<div class="highlight"><pre><span></span><code>    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;ema100&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">EMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code>    <span class="n">dataframe</span><span class="p">[</span><span class="s1">'ema100'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">EMA</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
 </code></pre></div>
 <p>By letting the bot know how much history is needed, backtest trades can start at the specified timerange during backtesting and hyperopt.</p>
 <div class="admonition warning">
@@ -3391,20 +3391,20 @@ This is capped to 5 total calls to avoid overloading the exchange, or make freqt
 <p>You can name your entry signals by using the <code>"enter_tag"</code> column, which can help debug and assess your strategy later.</p>
 <p>Sample from <code>user_data/strategies/sample_strategy.py</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">populate_entry_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Based on TA indicators, populates the buy signal for the given dataframe</span>
 <span class="sd">    :param dataframe: DataFrame populated with indicators</span>
 <span class="sd">    :param metadata: Additional information, like the currently traded pair</span>
 <span class="sd">    :return: DataFrame with buy column</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
         <span class="p">(</span>
-            <span class="p">(</span><span class="n">qtpylib</span><span class="o">.</span><span class="n">crossed_above</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">],</span> <span class="mi">30</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Signal: RSI crosses above 30</span>
-            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;bb_middleband&#39;</span><span class="p">])</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
-            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
-            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;volume&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># Make sure Volume is not 0</span>
+            <span class="p">(</span><span class="n">qtpylib</span><span class="o">.</span><span class="n">crossed_above</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'rsi'</span><span class="p">],</span> <span class="mi">30</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Signal: RSI crosses above 30</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'tema'</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">'bb_middleband'</span><span class="p">])</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'tema'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">'tema'</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'volume'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># Make sure Volume is not 0</span>
         <span class="p">),</span>
-        <span class="p">[</span><span class="s1">&#39;enter_long&#39;</span><span class="p">,</span> <span class="s1">&#39;enter_tag&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;rsi_cross&#39;</span><span class="p">)</span>
+        <span class="p">[</span><span class="s1">'enter_long'</span><span class="p">,</span> <span class="s1">'enter_tag'</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">'rsi_cross'</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">dataframe</span>
 </code></pre></div>
@@ -3420,21 +3420,21 @@ Also, make sure you set <a href="#can-short"><code>can_short</code></a> appropri
 <span class="k">def</span><span class="w"> </span><span class="nf">populate_entry_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
     <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
         <span class="p">(</span>
-            <span class="p">(</span><span class="n">qtpylib</span><span class="o">.</span><span class="n">crossed_above</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">],</span> <span class="mi">30</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Signal: RSI crosses above 30</span>
-            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;bb_middleband&#39;</span><span class="p">])</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
-            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
-            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;volume&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># Make sure Volume is not 0</span>
+            <span class="p">(</span><span class="n">qtpylib</span><span class="o">.</span><span class="n">crossed_above</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'rsi'</span><span class="p">],</span> <span class="mi">30</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Signal: RSI crosses above 30</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'tema'</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">'bb_middleband'</span><span class="p">])</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'tema'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">'tema'</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'volume'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># Make sure Volume is not 0</span>
         <span class="p">),</span>
-        <span class="p">[</span><span class="s1">&#39;enter_long&#39;</span><span class="p">,</span> <span class="s1">&#39;enter_tag&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;rsi_cross&#39;</span><span class="p">)</span>
+        <span class="p">[</span><span class="s1">'enter_long'</span><span class="p">,</span> <span class="s1">'enter_tag'</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">'rsi_cross'</span><span class="p">)</span>
 
     <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
         <span class="p">(</span>
-            <span class="p">(</span><span class="n">qtpylib</span><span class="o">.</span><span class="n">crossed_below</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">],</span> <span class="mi">70</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Signal: RSI crosses below 70</span>
-            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;bb_middleband&#39;</span><span class="p">])</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
-            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
-            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;volume&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># Make sure Volume is not 0</span>
+            <span class="p">(</span><span class="n">qtpylib</span><span class="o">.</span><span class="n">crossed_below</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'rsi'</span><span class="p">],</span> <span class="mi">70</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Signal: RSI crosses below 70</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'tema'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">'bb_middleband'</span><span class="p">])</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'tema'</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">'tema'</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'volume'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># Make sure Volume is not 0</span>
         <span class="p">),</span>
-        <span class="p">[</span><span class="s1">&#39;enter_short&#39;</span><span class="p">,</span> <span class="s1">&#39;enter_tag&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;rsi_cross&#39;</span><span class="p">)</span>
+        <span class="p">[</span><span class="s1">'enter_short'</span><span class="p">,</span> <span class="s1">'enter_tag'</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">'rsi_cross'</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">dataframe</span>
 </code></pre></div>
@@ -3452,20 +3452,20 @@ Also, make sure you set <a href="#can-short"><code>can_short</code></a> appropri
 <p>You can name your exit signals by using the <code>"exit_tag"</code> column, which can help debug and assess your strategy later.</p>
 <p>Sample from <code>user_data/strategies/sample_strategy.py</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">populate_exit_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Based on TA indicators, populates the exit signal for the given dataframe</span>
 <span class="sd">    :param dataframe: DataFrame populated with indicators</span>
 <span class="sd">    :param metadata: Additional information, like the currently traded pair</span>
 <span class="sd">    :return: DataFrame with buy column</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
         <span class="p">(</span>
-            <span class="p">(</span><span class="n">qtpylib</span><span class="o">.</span><span class="n">crossed_above</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">],</span> <span class="mi">70</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Signal: RSI crosses above 70</span>
-            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;bb_middleband&#39;</span><span class="p">])</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
-            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
-            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;volume&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># Make sure Volume is not 0</span>
+            <span class="p">(</span><span class="n">qtpylib</span><span class="o">.</span><span class="n">crossed_above</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'rsi'</span><span class="p">],</span> <span class="mi">70</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Signal: RSI crosses above 70</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'tema'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">'bb_middleband'</span><span class="p">])</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'tema'</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">'tema'</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'volume'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># Make sure Volume is not 0</span>
         <span class="p">),</span>
-        <span class="p">[</span><span class="s1">&#39;exit_long&#39;</span><span class="p">,</span> <span class="s1">&#39;exit_tag&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;rsi_too_high&#39;</span><span class="p">)</span>
+        <span class="p">[</span><span class="s1">'exit_long'</span><span class="p">,</span> <span class="s1">'exit_tag'</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">'rsi_too_high'</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">dataframe</span>
 </code></pre></div>
 <details class="note">
@@ -3480,20 +3480,20 @@ Also, make sure you set <a href="#can-short"><code>can_short</code></a> appropri
 <span class="k">def</span><span class="w"> </span><span class="nf">populate_exit_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
     <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
         <span class="p">(</span>
-            <span class="p">(</span><span class="n">qtpylib</span><span class="o">.</span><span class="n">crossed_above</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">],</span> <span class="mi">70</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Signal: RSI crosses above 70</span>
-            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;bb_middleband&#39;</span><span class="p">])</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
-            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
-            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;volume&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># Make sure Volume is not 0</span>
+            <span class="p">(</span><span class="n">qtpylib</span><span class="o">.</span><span class="n">crossed_above</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'rsi'</span><span class="p">],</span> <span class="mi">70</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Signal: RSI crosses above 70</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'tema'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">'bb_middleband'</span><span class="p">])</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'tema'</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">'tema'</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'volume'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># Make sure Volume is not 0</span>
         <span class="p">),</span>
-        <span class="p">[</span><span class="s1">&#39;exit_long&#39;</span><span class="p">,</span> <span class="s1">&#39;exit_tag&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;rsi_too_high&#39;</span><span class="p">)</span>
+        <span class="p">[</span><span class="s1">'exit_long'</span><span class="p">,</span> <span class="s1">'exit_tag'</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">'rsi_too_high'</span><span class="p">)</span>
     <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
         <span class="p">(</span>
-            <span class="p">(</span><span class="n">qtpylib</span><span class="o">.</span><span class="n">crossed_below</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">],</span> <span class="mi">30</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Signal: RSI crosses below 30</span>
-            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;bb_middleband&#39;</span><span class="p">])</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
-            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;tema&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
-            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;volume&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># Make sure Volume is not 0</span>
+            <span class="p">(</span><span class="n">qtpylib</span><span class="o">.</span><span class="n">crossed_below</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'rsi'</span><span class="p">],</span> <span class="mi">30</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Signal: RSI crosses below 30</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'tema'</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">'bb_middleband'</span><span class="p">])</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'tema'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">'tema'</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Guard</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'volume'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># Make sure Volume is not 0</span>
         <span class="p">),</span>
-        <span class="p">[</span><span class="s1">&#39;exit_short&#39;</span><span class="p">,</span> <span class="s1">&#39;exit_tag&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;rsi_too_low&#39;</span><span class="p">)</span>
+        <span class="p">[</span><span class="s1">'exit_short'</span><span class="p">,</span> <span class="s1">'exit_tag'</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">'rsi_too_low'</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">dataframe</span>
 </code></pre></div>
 </details>
@@ -3501,10 +3501,10 @@ Also, make sure you set <a href="#can-short"><code>can_short</code></a> appropri
 <p>The <code>minimal_roi</code> strategy variable defines the minimal Return On Investment (ROI) a trade should reach before exiting, independent from the exit signal.</p>
 <p>It is of the following format, i.e. a python <code>dict</code>, with the dict key (left side of the colon) being the minutes passed since the trade opened, and the value (right side of the colon) being the percentage.</p>
 <div class="highlight"><pre><span></span><code><span class="n">minimal_roi</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;40&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
-    <span class="s2">&quot;30&quot;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">,</span>
-    <span class="s2">&quot;20&quot;</span><span class="p">:</span> <span class="mf">0.02</span><span class="p">,</span>
-    <span class="s2">&quot;0&quot;</span><span class="p">:</span> <span class="mf">0.04</span>
+    <span class="s2">"40"</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="s2">"30"</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">,</span>
+    <span class="s2">"20"</span><span class="p">:</span> <span class="mf">0.02</span><span class="p">,</span>
+    <span class="s2">"0"</span><span class="p">:</span> <span class="mf">0.04</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>The above configuration would therefore mean:</p>
@@ -3526,10 +3526,10 @@ Also, make sure you set <a href="#can-short"><code>can_short</code></a> appropri
 
 <span class="k">class</span><span class="w"> </span><span class="nc">AwesomeStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
 
-    <span class="n">timeframe</span> <span class="o">=</span> <span class="s2">&quot;1d&quot;</span>
+    <span class="n">timeframe</span> <span class="o">=</span> <span class="s2">"1d"</span>
     <span class="n">timeframe_mins</span> <span class="o">=</span> <span class="n">timeframe_to_minutes</span><span class="p">(</span><span class="n">timeframe</span><span class="p">)</span>
     <span class="n">minimal_roi</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;0&quot;</span><span class="p">:</span> <span class="mf">0.05</span><span class="p">,</span>                      <span class="c1"># 5% for the first 3 candles</span>
+        <span class="s2">"0"</span><span class="p">:</span> <span class="mf">0.05</span><span class="p">,</span>                      <span class="c1"># 5% for the first 3 candles</span>
         <span class="nb">str</span><span class="p">(</span><span class="n">timeframe_mins</span> <span class="o">*</span> <span class="mi">3</span><span class="p">):</span> <span class="mf">0.02</span><span class="p">,</span>  <span class="c1"># 2% after 3 candles</span>
         <span class="nb">str</span><span class="p">(</span><span class="n">timeframe_mins</span> <span class="o">*</span> <span class="mi">6</span><span class="p">):</span> <span class="mf">0.01</span><span class="p">,</span>  <span class="c1"># 1% After 6 candles</span>
     <span class="p">}</span>
@@ -3621,8 +3621,8 @@ It will also include a "status" field, highlighting potential problems.</p>
 <p>The pairs need to be specified as tuples in the format <code>("pair", "timeframe")</code>, with pair as the first and timeframe as the second argument.</p>
 <p>Sample:</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">informative_pairs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-    <span class="k">return</span> <span class="p">[(</span><span class="s2">&quot;ETH/USDT&quot;</span><span class="p">,</span> <span class="s2">&quot;5m&quot;</span><span class="p">),</span>
-            <span class="p">(</span><span class="s2">&quot;BTC/TUSD&quot;</span><span class="p">,</span> <span class="s2">&quot;15m&quot;</span><span class="p">),</span>
+    <span class="k">return</span> <span class="p">[(</span><span class="s2">"ETH/USDT"</span><span class="p">,</span> <span class="s2">"5m"</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">"BTC/TUSD"</span><span class="p">,</span> <span class="s2">"15m"</span><span class="p">),</span>
             <span class="p">]</span>
 </code></pre></div>
 <p>A full sample can be found <a href="#complete-dataprovider-sample">in the DataProvider section</a>.</p>
@@ -3641,10 +3641,10 @@ In general, spot pairs cannot be used in futures markets, and futures candles ca
 Details about this may vary, if they do, this can be found in the exchange documentation.</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">informative_pairs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="k">return</span> <span class="p">[</span>
-        <span class="p">(</span><span class="s2">&quot;ETH/USDT&quot;</span><span class="p">,</span> <span class="s2">&quot;5m&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>   <span class="c1"># Uses default candletype, depends on trading_mode (recommended)</span>
-        <span class="p">(</span><span class="s2">&quot;ETH/USDT&quot;</span><span class="p">,</span> <span class="s2">&quot;5m&quot;</span><span class="p">,</span> <span class="s2">&quot;spot&quot;</span><span class="p">),</span>   <span class="c1"># Forces usage of spot candles (only valid for bots running on spot markets).</span>
-        <span class="p">(</span><span class="s2">&quot;BTC/TUSD&quot;</span><span class="p">,</span> <span class="s2">&quot;15m&quot;</span><span class="p">,</span> <span class="s2">&quot;futures&quot;</span><span class="p">),</span>  <span class="c1"># Uses futures candles (only bots with `trading_mode=futures`)</span>
-        <span class="p">(</span><span class="s2">&quot;BTC/TUSD&quot;</span><span class="p">,</span> <span class="s2">&quot;15m&quot;</span><span class="p">,</span> <span class="s2">&quot;mark&quot;</span><span class="p">),</span>  <span class="c1"># Uses mark candles (only bots with `trading_mode=futures`)</span>
+        <span class="p">(</span><span class="s2">"ETH/USDT"</span><span class="p">,</span> <span class="s2">"5m"</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span>   <span class="c1"># Uses default candletype, depends on trading_mode (recommended)</span>
+        <span class="p">(</span><span class="s2">"ETH/USDT"</span><span class="p">,</span> <span class="s2">"5m"</span><span class="p">,</span> <span class="s2">"spot"</span><span class="p">),</span>   <span class="c1"># Forces usage of spot candles (only valid for bots running on spot markets).</span>
+        <span class="p">(</span><span class="s2">"BTC/TUSD"</span><span class="p">,</span> <span class="s2">"15m"</span><span class="p">,</span> <span class="s2">"futures"</span><span class="p">),</span>  <span class="c1"># Uses futures candles (only bots with `trading_mode=futures`)</span>
+        <span class="p">(</span><span class="s2">"BTC/TUSD"</span><span class="p">,</span> <span class="s2">"15m"</span><span class="p">,</span> <span class="s2">"mark"</span><span class="p">),</span>  <span class="c1"># Uses mark candles (only bots with `trading_mode=futures`)</span>
     <span class="p">]</span>
 </code></pre></div>
 </details>
@@ -3661,22 +3661,22 @@ and do not have access to data from other informative pairs. However, all inform
 <summary>Full documentation</summary>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">informative</span><span class="p">(</span>
     <span class="n">timeframe</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">asset</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">asset</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">,</span>
     <span class="n">fmt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">candle_type</span><span class="p">:</span> <span class="n">CandleType</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">ffill</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">PopulateIndicators</span><span class="p">],</span> <span class="n">PopulateIndicators</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    A decorator for populate_indicators_Nn(self, dataframe, metadata), allowing these functions to</span>
 <span class="sd">    define informative indicators.</span>
 
 <span class="sd">    Example usage:</span>
 
-<span class="sd">        @informative(&#39;1h&#39;)</span>
+<span class="sd">        @informative('1h')</span>
 <span class="sd">        def populate_indicators_1h(self, dataframe: DataFrame, metadata: dict) -&gt; DataFrame:</span>
-<span class="sd">            dataframe[&#39;rsi&#39;] = ta.RSI(dataframe, timeperiod=14)</span>
+<span class="sd">            dataframe['rsi'] = ta.RSI(dataframe, timeperiod=14)</span>
 <span class="sd">            return dataframe</span>
 
 <span class="sd">    :param timeframe: Informative timeframe. Must always be equal or higher than strategy timeframe.</span>
@@ -3687,24 +3687,24 @@ and do not have access to data from other informative pairs. However, all inform
 <span class="sd">    * {base}_{quote}_{column}_{timeframe} if asset is specified.</span>
 <span class="sd">    * {column}_{timeframe} if asset is not specified.</span>
 <span class="sd">    Pair format supports these format variables:</span>
-<span class="sd">    * {base} - base currency in lower case, for example &#39;eth&#39;.</span>
+<span class="sd">    * {base} - base currency in lower case, for example 'eth'.</span>
 <span class="sd">    * {BASE} - same as {base}, except in upper case.</span>
-<span class="sd">    * {quote} - quote currency in lower case, for example &#39;usdt&#39;.</span>
+<span class="sd">    * {quote} - quote currency in lower case, for example 'usdt'.</span>
 <span class="sd">    * {QUOTE} - same as {quote}, except in upper case.</span>
 <span class="sd">    Format string additionally supports this variables.</span>
-<span class="sd">    * {asset} - full name of the asset, for example &#39;BTC/USDT&#39;.</span>
+<span class="sd">    * {asset} - full name of the asset, for example 'BTC/USDT'.</span>
 <span class="sd">    * {column} - name of dataframe column.</span>
 <span class="sd">    * {timeframe} - timeframe of informative dataframe.</span>
 <span class="sd">    :param ffill: ffill dataframe after merging informative pair.</span>
-<span class="sd">    :param candle_type: &#39;&#39;, spot, futures, mark, index, premiumIndex, or funding_rate.</span>
+<span class="sd">    :param candle_type: '', spot, futures, mark, index, premiumIndex, or funding_rate.</span>
 <span class="sd">        Attention: Availability for non-spot/futures candle-types across exchanges may vary.</span>
-<span class="sd">        funding_rate candles only contain the &quot;funding_rate&quot; column (open for historic reasons)</span>
+<span class="sd">        funding_rate candles only contain the "funding_rate" column (open for historic reasons)</span>
 <span class="sd">        All other columns will be missing from this dataframe.</span>
 <span class="sd">    :param cache: Cache populated indicators in dry/live mode while the latest informative candle</span>
 <span class="sd">                remains unchanged. Entries expire after two effective informative timeframes</span>
 <span class="sd">                without an update. Disable for methods that use external state, have side effects,</span>
 <span class="sd">                or otherwise need to run for every base pair. Defaults to True.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div>
 </details>
 <p><strong>Caching</strong> is enabled by default, and will greatly improve performance when using informative pairs. When caching is enabled, the informative function will only be called when a new informative candle is available (live/dry only, all other modes ignore this flag). Otherwise, the cached, precalculated dataframe will be used.<br />
@@ -3728,42 +3728,42 @@ be returned by informative callbacks or column formatters, or exist in the base 
     <span class="c1"># def informative_pairs(self): ...</span>
 
     <span class="c1"># Define informative upper timeframe for each pair. Decorators can be stacked on same </span>
-    <span class="c1"># method. Available in populate_indicators as &#39;rsi_30m&#39; and &#39;rsi_1h&#39;.</span>
-    <span class="nd">@informative</span><span class="p">(</span><span class="s1">&#39;30m&#39;</span><span class="p">)</span>
-    <span class="nd">@informative</span><span class="p">(</span><span class="s1">&#39;1h&#39;</span><span class="p">)</span>
+    <span class="c1"># method. Available in populate_indicators as 'rsi_30m' and 'rsi_1h'.</span>
+    <span class="nd">@informative</span><span class="p">(</span><span class="s1">'30m'</span><span class="p">)</span>
+    <span class="nd">@informative</span><span class="p">(</span><span class="s1">'1h'</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">populate_indicators_1h</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">RSI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">14</span><span class="p">)</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s1">'rsi'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">RSI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">14</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">dataframe</span>
 
     <span class="c1"># Define BTC/STAKE informative pair. Available in populate_indicators and other methods as</span>
-    <span class="c1"># &#39;btc_rsi_1h&#39;. Current stake currency should be specified as {stake} format variable </span>
+    <span class="c1"># 'btc_rsi_1h'. Current stake currency should be specified as {stake} format variable </span>
     <span class="c1"># instead of hard-coding actual stake currency. Available in populate_indicators and other </span>
-    <span class="c1"># methods as &#39;btc_usdt_rsi_1h&#39; (when stake currency is USDT).</span>
-    <span class="nd">@informative</span><span class="p">(</span><span class="s1">&#39;1h&#39;</span><span class="p">,</span> <span class="s1">&#39;BTC/</span><span class="si">{stake}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="c1"># methods as 'btc_usdt_rsi_1h' (when stake currency is USDT).</span>
+    <span class="nd">@informative</span><span class="p">(</span><span class="s1">'1h'</span><span class="p">,</span> <span class="s1">'BTC/</span><span class="si">{stake}</span><span class="s1">'</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">populate_indicators_btc_1h</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">RSI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">14</span><span class="p">)</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s1">'rsi'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">RSI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">14</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">dataframe</span>
 
     <span class="c1"># Define BTC/ETH informative pair. You must specify quote currency if it is different from</span>
-    <span class="c1"># stake currency. Available in populate_indicators and other methods as &#39;eth_btc_rsi_1h&#39;.</span>
-    <span class="nd">@informative</span><span class="p">(</span><span class="s1">&#39;1h&#39;</span><span class="p">,</span> <span class="s1">&#39;ETH/BTC&#39;</span><span class="p">)</span>
+    <span class="c1"># stake currency. Available in populate_indicators and other methods as 'eth_btc_rsi_1h'.</span>
+    <span class="nd">@informative</span><span class="p">(</span><span class="s1">'1h'</span><span class="p">,</span> <span class="s1">'ETH/BTC'</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">populate_indicators_eth_btc_1h</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">RSI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">14</span><span class="p">)</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s1">'rsi'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">RSI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">14</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">dataframe</span>
 
     <span class="c1"># Define BTC/STAKE informative pair. A custom formatter may be specified for formatting</span>
     <span class="c1"># column names. A callable `fmt(**kwargs) -&gt; str` may be specified, to implement custom</span>
-    <span class="c1"># formatting. Available in populate_indicators and other methods as &#39;rsi_upper_1h&#39;.</span>
-    <span class="nd">@informative</span><span class="p">(</span><span class="s1">&#39;1h&#39;</span><span class="p">,</span> <span class="s1">&#39;BTC/</span><span class="si">{stake}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">{column}</span><span class="s1">_</span><span class="si">{timeframe}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="c1"># formatting. Available in populate_indicators and other methods as 'rsi_upper_1h'.</span>
+    <span class="nd">@informative</span><span class="p">(</span><span class="s1">'1h'</span><span class="p">,</span> <span class="s1">'BTC/</span><span class="si">{stake}</span><span class="s1">'</span><span class="p">,</span> <span class="s1">'</span><span class="si">{column}</span><span class="s1">_</span><span class="si">{timeframe}</span><span class="s1">'</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">populate_indicators_btc_1h_2</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi_upper&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">RSI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">14</span><span class="p">)</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s1">'rsi_upper'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">RSI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">14</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">dataframe</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">populate_indicators</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
         <span class="c1"># Strategy timeframe indicators for current pair.</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">RSI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">14</span><span class="p">)</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s1">'rsi'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">RSI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">14</span><span class="p">)</span>
         <span class="c1"># Informative pairs are available in this method.</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi_less&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi_1h&#39;</span><span class="p">]</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s1">'rsi_less'</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">'rsi'</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">'rsi_1h'</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">dataframe</span>
 </code></pre></div>
 </details>
@@ -3771,14 +3771,14 @@ be returned by informative callbacks or column formatters, or exist in the base 
 <p class="admonition-title">Note</p>
 <p>Use string formatting when accessing informative dataframes of other pairs. This will allow easily changing stake currency in config without having to adjust strategy code.</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">populate_entry_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
-    <span class="n">stake</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;stake_currency&#39;</span><span class="p">]</span>
+    <span class="n">stake</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">'stake_currency'</span><span class="p">]</span>
     <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
         <span class="p">(</span>
-            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;btc_</span><span class="si">{</span><span class="n">stake</span><span class="si">}</span><span class="s1">_rsi_1h&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">35</span><span class="p">)</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="sa">f</span><span class="s1">'btc_</span><span class="si">{</span><span class="n">stake</span><span class="si">}</span><span class="s1">_rsi_1h'</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">35</span><span class="p">)</span>
             <span class="o">&amp;</span>
-            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;volume&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'volume'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
         <span class="p">),</span>
-        <span class="p">[</span><span class="s1">&#39;enter_long&#39;</span><span class="p">,</span> <span class="s1">&#39;enter_tag&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;buy_signal_rsi&#39;</span><span class="p">)</span>
+        <span class="p">[</span><span class="s1">'enter_long'</span><span class="p">,</span> <span class="s1">'enter_tag'</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">'buy_signal_rsi'</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">dataframe</span>
 </code></pre></div>
@@ -3801,35 +3801,35 @@ be returned by informative callbacks or column formatters, or exist in the base 
 <div class="admonition example">
 <p class="admonition-title">Column renaming</p>
 <p>Assuming <code>inf_tf = '1d'</code> the resulting columns will be:</p>
-<div class="highlight"><pre><span></span><code><span class="s1">&#39;date&#39;</span><span class="p">,</span> <span class="s1">&#39;open&#39;</span><span class="p">,</span> <span class="s1">&#39;high&#39;</span><span class="p">,</span> <span class="s1">&#39;low&#39;</span><span class="p">,</span> <span class="s1">&#39;close&#39;</span><span class="p">,</span> <span class="s1">&#39;rsi&#39;</span>                     <span class="c1"># from the original dataframe</span>
-<span class="s1">&#39;date_1d&#39;</span><span class="p">,</span> <span class="s1">&#39;open_1d&#39;</span><span class="p">,</span> <span class="s1">&#39;high_1d&#39;</span><span class="p">,</span> <span class="s1">&#39;low_1d&#39;</span><span class="p">,</span> <span class="s1">&#39;close_1d&#39;</span><span class="p">,</span> <span class="s1">&#39;rsi_1d&#39;</span>   <span class="c1"># from the informative dataframe</span>
+<div class="highlight"><pre><span></span><code><span class="s1">'date'</span><span class="p">,</span> <span class="s1">'open'</span><span class="p">,</span> <span class="s1">'high'</span><span class="p">,</span> <span class="s1">'low'</span><span class="p">,</span> <span class="s1">'close'</span><span class="p">,</span> <span class="s1">'rsi'</span>                     <span class="c1"># from the original dataframe</span>
+<span class="s1">'date_1d'</span><span class="p">,</span> <span class="s1">'open_1d'</span><span class="p">,</span> <span class="s1">'high_1d'</span><span class="p">,</span> <span class="s1">'low_1d'</span><span class="p">,</span> <span class="s1">'close_1d'</span><span class="p">,</span> <span class="s1">'rsi_1d'</span>   <span class="c1"># from the informative dataframe</span>
 </code></pre></div>
 </div>
 <details class="example">
 <summary>Column renaming - 1h</summary>
 <p>Assuming <code>inf_tf = '1h'</code> the resulting columns will be:</p>
-<div class="highlight"><pre><span></span><code><span class="s1">&#39;date&#39;</span><span class="p">,</span> <span class="s1">&#39;open&#39;</span><span class="p">,</span> <span class="s1">&#39;high&#39;</span><span class="p">,</span> <span class="s1">&#39;low&#39;</span><span class="p">,</span> <span class="s1">&#39;close&#39;</span><span class="p">,</span> <span class="s1">&#39;rsi&#39;</span>                     <span class="c1"># from the original dataframe</span>
-<span class="s1">&#39;date_1h&#39;</span><span class="p">,</span> <span class="s1">&#39;open_1h&#39;</span><span class="p">,</span> <span class="s1">&#39;high_1h&#39;</span><span class="p">,</span> <span class="s1">&#39;low_1h&#39;</span><span class="p">,</span> <span class="s1">&#39;close_1h&#39;</span><span class="p">,</span> <span class="s1">&#39;rsi_1h&#39;</span>   <span class="c1"># from the informative dataframe</span>
+<div class="highlight"><pre><span></span><code><span class="s1">'date'</span><span class="p">,</span> <span class="s1">'open'</span><span class="p">,</span> <span class="s1">'high'</span><span class="p">,</span> <span class="s1">'low'</span><span class="p">,</span> <span class="s1">'close'</span><span class="p">,</span> <span class="s1">'rsi'</span>                     <span class="c1"># from the original dataframe</span>
+<span class="s1">'date_1h'</span><span class="p">,</span> <span class="s1">'open_1h'</span><span class="p">,</span> <span class="s1">'high_1h'</span><span class="p">,</span> <span class="s1">'low_1h'</span><span class="p">,</span> <span class="s1">'close_1h'</span><span class="p">,</span> <span class="s1">'rsi_1h'</span>   <span class="c1"># from the informative dataframe</span>
 </code></pre></div>
 </details>
 <details class="example">
 <summary>Custom implementation</summary>
 <p>A custom implementation for this is possible, and can be done as follows:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Shift date by 1 candle</span>
-<span class="c1"># This is necessary since the data is always the &quot;open date&quot;</span>
+<span class="c1"># This is necessary since the data is always the "open date"</span>
 <span class="c1"># and a 15m candle starting at 12:15 should not know the close of the 1h candle from 12:00 to 13:00</span>
 <span class="n">minutes</span> <span class="o">=</span> <span class="n">timeframe_to_minutes</span><span class="p">(</span><span class="n">inf_tf</span><span class="p">)</span>
 <span class="c1"># Only do this if the timeframes are different:</span>
-<span class="n">informative</span><span class="p">[</span><span class="s1">&#39;date_merge&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">informative</span><span class="p">[</span><span class="s2">&quot;date&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="p">,</span> <span class="s1">&#39;m&#39;</span><span class="p">)</span>
+<span class="n">informative</span><span class="p">[</span><span class="s1">'date_merge'</span><span class="p">]</span> <span class="o">=</span> <span class="n">informative</span><span class="p">[</span><span class="s2">"date"</span><span class="p">]</span> <span class="o">+</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="p">,</span> <span class="s1">'m'</span><span class="p">)</span>
 
 <span class="c1"># Rename columns to be unique</span>
-<span class="n">informative</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">inf_tf</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">informative</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
-<span class="c1"># Assuming inf_tf = &#39;1d&#39; - then the columns will now be:</span>
+<span class="n">informative</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">inf_tf</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">informative</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
+<span class="c1"># Assuming inf_tf = '1d' - then the columns will now be:</span>
 <span class="c1"># date_1d, open_1d, high_1d, low_1d, close_1d, rsi_1d</span>
 
 <span class="c1"># Combine the 2 dataframes</span>
 <span class="c1"># all indicators on the informative sample MUST be calculated before this point</span>
-<span class="n">dataframe</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">informative</span><span class="p">,</span> <span class="n">left_on</span><span class="o">=</span><span class="s1">&#39;date&#39;</span><span class="p">,</span> <span class="n">right_on</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;date_merge_</span><span class="si">{</span><span class="n">inf_tf</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">)</span>
+<span class="n">dataframe</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">informative</span><span class="p">,</span> <span class="n">left_on</span><span class="o">=</span><span class="s1">'date'</span><span class="p">,</span> <span class="n">right_on</span><span class="o">=</span><span class="sa">f</span><span class="s1">'date_merge_</span><span class="si">{</span><span class="n">inf_tf</span><span class="si">}</span><span class="s1">'</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">'left'</span><span class="p">)</span>
 <span class="c1"># FFill to have the 1d value available in every row throughout the day.</span>
 <span class="c1"># Without this, comparisons would only work once per day.</span>
 <span class="n">dataframe</span> <span class="o">=</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">ffill</span><span class="p">()</span>
@@ -3867,7 +3867,7 @@ It is also not available in <code>populate_entry_trend()</code> and <code>popula
 <h3 id="example-usages">Example Usages<a class="headerlink" href="#example-usages" title="Permanent link">&para;</a></h3>
 <h3 id="available_pairs"><em>available_pairs</em><a class="headerlink" href="#available_pairs" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">for</span> <span class="n">pair</span><span class="p">,</span> <span class="n">timeframe</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">available_pairs</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;available </span><span class="si">{</span><span class="n">pair</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">timeframe</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"available </span><span class="si">{</span><span class="n">pair</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">timeframe</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="current_whitelist"><em>current_whitelist()</em><a class="headerlink" href="#current_whitelist" title="Permanent link">&para;</a></h3>
 <p>Imagine you've developed a strategy that trades the <code>5m</code> timeframe using signals generated from a <code>1d</code> timeframe on the top 10 exchange pairs by volume.</p>
@@ -3881,7 +3881,7 @@ It is also not available in <code>populate_entry_trend()</code> and <code>popula
         <span class="c1"># get access to all pairs available in whitelist.</span>
         <span class="n">pairs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">current_whitelist</span><span class="p">()</span>
         <span class="c1"># Assign timeframe to each pair so they can be downloaded and cached for strategy.</span>
-        <span class="n">informative_pairs</span> <span class="o">=</span> <span class="p">[(</span><span class="n">pair</span><span class="p">,</span> <span class="s1">&#39;1d&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">pairs</span><span class="p">]</span>
+        <span class="n">informative_pairs</span> <span class="o">=</span> <span class="p">[(</span><span class="n">pair</span><span class="p">,</span> <span class="s1">'1d'</span><span class="p">)</span> <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">pairs</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">informative_pairs</span>
 </code></pre></div>
 <details class="note">
@@ -3905,7 +3905,7 @@ Within <a href="../strategy-callbacks/">callbacks</a>, you'll get the full timer
 <p>This method is used by freqtrade internally to determine the last signal.
 It can also be used in specific callbacks to get the signal that caused the action (see <a href="../strategy-advanced/">Advanced Strategy Documentation</a> for more details on available callbacks).</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># fetch current dataframe</span>
-<span class="n">dataframe</span><span class="p">,</span> <span class="n">last_updated</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">get_analyzed_dataframe</span><span class="p">(</span><span class="n">pair</span><span class="o">=</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;pair&#39;</span><span class="p">],</span>
+<span class="n">dataframe</span><span class="p">,</span> <span class="n">last_updated</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">get_analyzed_dataframe</span><span class="p">(</span><span class="n">pair</span><span class="o">=</span><span class="n">metadata</span><span class="p">[</span><span class="s1">'pair'</span><span class="p">],</span>
                                                          <span class="n">timeframe</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timeframe</span><span class="p">)</span>
 </code></pre></div>
 <div class="admonition note">
@@ -3916,19 +3916,19 @@ This should not happen when using whitelisted pairs.</p>
 </div>
 <h3 id="orderbookpair-maximum"><em>orderbook(pair, maximum)</em><a class="headerlink" href="#orderbookpair-maximum" title="Permanent link">&para;</a></h3>
 <p>Retrieve the current order book for a pair.</p>
-<div class="highlight"><pre><span></span><code><span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">runmode</span><span class="o">.</span><span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;live&#39;</span><span class="p">,</span> <span class="s1">&#39;dry_run&#39;</span><span class="p">):</span>
-    <span class="n">ob</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">orderbook</span><span class="p">(</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;pair&#39;</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;best_bid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ob</span><span class="p">[</span><span class="s1">&#39;bids&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;best_ask&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ob</span><span class="p">[</span><span class="s1">&#39;asks&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+<div class="highlight"><pre><span></span><code><span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">runmode</span><span class="o">.</span><span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'live'</span><span class="p">,</span> <span class="s1">'dry_run'</span><span class="p">):</span>
+    <span class="n">ob</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">orderbook</span><span class="p">(</span><span class="n">metadata</span><span class="p">[</span><span class="s1">'pair'</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">'best_bid'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ob</span><span class="p">[</span><span class="s1">'bids'</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">'best_ask'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ob</span><span class="p">[</span><span class="s1">'asks'</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
 </code></pre></div>
 <p>The orderbook structure is aligned with the order structure from <a href="https://github.com/ccxt/ccxt/wiki/Manual#order-book-structure">ccxt</a>, so the result will be formatted as follows:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="s1">&#39;bids&#39;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="s1">'bids'</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">        </span><span class="p">[</span><span class="w"> </span><span class="nx">price</span><span class="p">,</span><span class="w"> </span><span class="nx">amount</span><span class="w"> </span><span class="p">],</span><span class="w"> </span><span class="c1">// [ float, float ]</span>
 <span class="w">        </span><span class="p">[</span><span class="w"> </span><span class="nx">price</span><span class="p">,</span><span class="w"> </span><span class="nx">amount</span><span class="w"> </span><span class="p">],</span>
 <span class="w">        </span><span class="p">...</span>
 <span class="w">    </span><span class="p">],</span>
-<span class="w">    </span><span class="s1">&#39;asks&#39;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="s1">'asks'</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">        </span><span class="p">[</span><span class="w"> </span><span class="nx">price</span><span class="p">,</span><span class="w"> </span><span class="nx">amount</span><span class="w"> </span><span class="p">],</span>
 <span class="w">        </span><span class="p">[</span><span class="w"> </span><span class="nx">price</span><span class="p">,</span><span class="w"> </span><span class="nx">amount</span><span class="w"> </span><span class="p">],</span>
 <span class="w">        </span><span class="c1">//...</span>
@@ -3942,11 +3942,11 @@ This should not happen when using whitelisted pairs.</p>
 <p>The order book is not part of the historic data which means backtesting and hyperopt will not work correctly if this method is used, as the method will return up-to-date values.</p>
 </div>
 <h3 id="tickerpair"><em>ticker(pair)</em><a class="headerlink" href="#tickerpair" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">runmode</span><span class="o">.</span><span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;live&#39;</span><span class="p">,</span> <span class="s1">&#39;dry_run&#39;</span><span class="p">):</span>
-    <span class="n">ticker</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">ticker</span><span class="p">(</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;pair&#39;</span><span class="p">])</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;last_price&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ticker</span><span class="p">[</span><span class="s1">&#39;last&#39;</span><span class="p">]</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;volume24h&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ticker</span><span class="p">[</span><span class="s1">&#39;quoteVolume&#39;</span><span class="p">]</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;vwap&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ticker</span><span class="p">[</span><span class="s1">&#39;vwap&#39;</span><span class="p">]</span>
+<div class="highlight"><pre><span></span><code><span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">runmode</span><span class="o">.</span><span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'live'</span><span class="p">,</span> <span class="s1">'dry_run'</span><span class="p">):</span>
+    <span class="n">ticker</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">ticker</span><span class="p">(</span><span class="n">metadata</span><span class="p">[</span><span class="s1">'pair'</span><span class="p">])</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">'last_price'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ticker</span><span class="p">[</span><span class="s1">'last'</span><span class="p">]</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">'volume24h'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ticker</span><span class="p">[</span><span class="s1">'quoteVolume'</span><span class="p">]</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">'vwap'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ticker</span><span class="p">[</span><span class="s1">'vwap'</span><span class="p">]</span>
 </code></pre></div>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
@@ -3962,10 +3962,10 @@ data returned from the exchange and add appropriate error handling / defaults.</
 <h3 id="check_delistingpair"><em>check_delisting(pair)</em><a class="headerlink" href="#check_delistingpair" title="Permanent link">&para;</a></h3>
 <p>Return Datetime of the pair delisting schedule if any, otherwise return None</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">custom_exit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">trade</span><span class="p">:</span> <span class="n">Trade</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">current_rate</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">current_profit</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">runmode</span><span class="o">.</span><span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;live&#39;</span><span class="p">,</span> <span class="s1">&#39;dry_run&#39;</span><span class="p">):</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">runmode</span><span class="o">.</span><span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'live'</span><span class="p">,</span> <span class="s1">'dry_run'</span><span class="p">):</span>
         <span class="n">delisting_dt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">check_delisting</span><span class="p">(</span><span class="n">pair</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">delisting_dt</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="s2">&quot;delist&quot;</span>
+            <span class="k">return</span> <span class="s2">"delist"</span>
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Availabiity of delisting information</p>
@@ -3977,34 +3977,34 @@ data returned from the exchange and add appropriate error handling / defaults.</
 </div>
 <h3 id="funding_ratepair"><em>funding_rate(pair)</em><a class="headerlink" href="#funding_ratepair" title="Permanent link">&para;</a></h3>
 <p>Retrieves the current funding rate for the pair and only works for futures pairs in the format of <code>base/quote:settle</code> (e.g. <code>ETH/USDT:USDT</code>).</p>
-<div class="highlight"><pre><span></span><code><span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">runmode</span><span class="o">.</span><span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;live&#39;</span><span class="p">,</span> <span class="s1">&#39;dry_run&#39;</span><span class="p">):</span>
-    <span class="n">funding_rate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">funding_rate</span><span class="p">(</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;pair&#39;</span><span class="p">])</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;current_funding_rate&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">funding_rate</span><span class="p">[</span><span class="s1">&#39;fundingRate&#39;</span><span class="p">]</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;next_funding_timestamp&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">funding_rate</span><span class="p">[</span><span class="s1">&#39;fundingTimestamp&#39;</span><span class="p">]</span>
-    <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;next_funding_datetime&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">funding_rate</span><span class="p">[</span><span class="s1">&#39;fundingDatetime&#39;</span><span class="p">]</span>
+<div class="highlight"><pre><span></span><code><span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">runmode</span><span class="o">.</span><span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'live'</span><span class="p">,</span> <span class="s1">'dry_run'</span><span class="p">):</span>
+    <span class="n">funding_rate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">funding_rate</span><span class="p">(</span><span class="n">metadata</span><span class="p">[</span><span class="s1">'pair'</span><span class="p">])</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">'current_funding_rate'</span><span class="p">]</span> <span class="o">=</span> <span class="n">funding_rate</span><span class="p">[</span><span class="s1">'fundingRate'</span><span class="p">]</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">'next_funding_timestamp'</span><span class="p">]</span> <span class="o">=</span> <span class="n">funding_rate</span><span class="p">[</span><span class="s1">'fundingTimestamp'</span><span class="p">]</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">'next_funding_datetime'</span><span class="p">]</span> <span class="o">=</span> <span class="n">funding_rate</span><span class="p">[</span><span class="s1">'fundingDatetime'</span><span class="p">]</span>
 </code></pre></div>
 <p>The funding rate structure is aligned with the funding rate structure from <a href="https://github.com/ccxt/ccxt/wiki/Manual#funding-rate-structure">ccxt</a>, so the result will be formatted as follows:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-    <span class="s2">&quot;info&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">"info"</span><span class="p">:</span> <span class="p">{</span>
         <span class="c1"># ... </span>
     <span class="p">},</span>
-    <span class="s2">&quot;symbol&quot;</span><span class="p">:</span> <span class="s2">&quot;BTC/USDT:USDT&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;markPrice&quot;</span><span class="p">:</span> <span class="mf">110730.7</span><span class="p">,</span>
-    <span class="s2">&quot;indexPrice&quot;</span><span class="p">:</span> <span class="mf">110782.52</span><span class="p">,</span>
-    <span class="s2">&quot;interestRate&quot;</span><span class="p">:</span> <span class="mf">0.0001</span><span class="p">,</span>
-    <span class="s2">&quot;estimatedSettlePrice&quot;</span><span class="p">:</span> <span class="mf">110822.67200153</span><span class="p">,</span>
-    <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="mi">1757146321001</span><span class="p">,</span>
-    <span class="s2">&quot;datetime&quot;</span><span class="p">:</span> <span class="s2">&quot;2025-09-06T08:12:01.001Z&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;fundingRate&quot;</span><span class="p">:</span> <span class="mf">5.609e-05</span><span class="p">,</span>
-    <span class="s2">&quot;fundingTimestamp&quot;</span><span class="p">:</span> <span class="mi">1757174400000</span><span class="p">,</span>
-    <span class="s2">&quot;fundingDatetime&quot;</span><span class="p">:</span> <span class="s2">&quot;2025-09-06T16:00:00.000Z&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;nextFundingRate&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="s2">&quot;nextFundingTimestamp&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="s2">&quot;nextFundingDatetime&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="s2">&quot;previousFundingRate&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="s2">&quot;previousFundingTimestamp&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="s2">&quot;previousFundingDatetime&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="s2">&quot;interval&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="s2">"symbol"</span><span class="p">:</span> <span class="s2">"BTC/USDT:USDT"</span><span class="p">,</span>
+    <span class="s2">"markPrice"</span><span class="p">:</span> <span class="mf">110730.7</span><span class="p">,</span>
+    <span class="s2">"indexPrice"</span><span class="p">:</span> <span class="mf">110782.52</span><span class="p">,</span>
+    <span class="s2">"interestRate"</span><span class="p">:</span> <span class="mf">0.0001</span><span class="p">,</span>
+    <span class="s2">"estimatedSettlePrice"</span><span class="p">:</span> <span class="mf">110822.67200153</span><span class="p">,</span>
+    <span class="s2">"timestamp"</span><span class="p">:</span> <span class="mi">1757146321001</span><span class="p">,</span>
+    <span class="s2">"datetime"</span><span class="p">:</span> <span class="s2">"2025-09-06T08:12:01.001Z"</span><span class="p">,</span>
+    <span class="s2">"fundingRate"</span><span class="p">:</span> <span class="mf">5.609e-05</span><span class="p">,</span>
+    <span class="s2">"fundingTimestamp"</span><span class="p">:</span> <span class="mi">1757174400000</span><span class="p">,</span>
+    <span class="s2">"fundingDatetime"</span><span class="p">:</span> <span class="s2">"2025-09-06T16:00:00.000Z"</span><span class="p">,</span>
+    <span class="s2">"nextFundingRate"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="s2">"nextFundingTimestamp"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="s2">"nextFundingDatetime"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="s2">"previousFundingRate"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="s2">"previousFundingTimestamp"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="s2">"previousFundingDatetime"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="s2">"interval"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>Therefore, using <code>funding_rate['fundingRate']</code> as demonstrated above will use the current funding rate.
@@ -4020,11 +4020,11 @@ They must therefore be merged onto your dataframe by date - assigning the column
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">freqtrade.strategy</span><span class="w"> </span><span class="kn">import</span> <span class="n">merge_informative_pair</span>
 
 <span class="n">funding_rates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">get_pair_dataframe</span><span class="p">(</span>
-    <span class="n">pair</span><span class="o">=</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;pair&#39;</span><span class="p">],</span> <span class="n">timeframe</span><span class="o">=</span><span class="s1">&#39;1h&#39;</span><span class="p">,</span> <span class="n">candle_type</span><span class="o">=</span><span class="s2">&quot;funding_rate&quot;</span>
+    <span class="n">pair</span><span class="o">=</span><span class="n">metadata</span><span class="p">[</span><span class="s1">'pair'</span><span class="p">],</span> <span class="n">timeframe</span><span class="o">=</span><span class="s1">'1h'</span><span class="p">,</span> <span class="n">candle_type</span><span class="o">=</span><span class="s2">"funding_rate"</span>
 <span class="p">)</span>
-<span class="c1"># Adds the column as &quot;funding_rate_1h&quot;, forward-filled between funding events.</span>
+<span class="c1"># Adds the column as "funding_rate_1h", forward-filled between funding events.</span>
 <span class="n">dataframe</span> <span class="o">=</span> <span class="n">merge_informative_pair</span><span class="p">(</span>
-    <span class="n">dataframe</span><span class="p">,</span> <span class="n">funding_rates</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeframe</span><span class="p">,</span> <span class="s1">&#39;1h&#39;</span><span class="p">,</span> <span class="n">ffill</span><span class="o">=</span><span class="kc">True</span>
+    <span class="n">dataframe</span><span class="p">,</span> <span class="n">funding_rates</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeframe</span><span class="p">,</span> <span class="s1">'1h'</span><span class="p">,</span> <span class="n">ffill</span><span class="o">=</span><span class="kc">True</span>
 <span class="p">)</span>
 </code></pre></div>
 <p>The same can be achieved with the <a href="#informative-pairs-decorator-informative">informative pairs decorator</a>, using <code>@informative('1h', candle_type='funding_rate')</code>.</p>
@@ -4038,10 +4038,10 @@ Please switch to <code>funding_rate</code> - the <code>open</code> alias is depr
 <h3 id="send-notification">Send Notification<a class="headerlink" href="#send-notification" title="Permanent link">&para;</a></h3>
 <p>The dataprovider <code>.send_msg()</code> function allows you to send custom notifications from your strategy.
 Identical notifications will only be sent once per candle, unless the 2<sup>nd</sup> argument (<code>always_send</code>) is set to True.</p>
-<div class="highlight"><pre><span></span><code>    <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">send_msg</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;pair&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> just got hot!&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code>    <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">send_msg</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">metadata</span><span class="p">[</span><span class="s1">'pair'</span><span class="p">]</span><span class="si">}</span><span class="s2"> just got hot!"</span><span class="p">)</span>
 
     <span class="c1"># Force send this notification, avoid caching (Please read warning below!)</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">send_msg</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;pair&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> just got hot!&quot;</span><span class="p">,</span> <span class="n">always_send</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">send_msg</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">metadata</span><span class="p">[</span><span class="s1">'pair'</span><span class="p">]</span><span class="si">}</span><span class="s2"> just got hot!"</span><span class="p">,</span> <span class="n">always_send</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </code></pre></div>
 <p>Notifications will only be sent in trading modes (Live/Dry-run) - so this method can be called without conditions for backtesting.</p>
 <div class="admonition warning">
@@ -4055,7 +4055,7 @@ Identical notifications will only be sent once per candle, unless the 2<sup>nd</
 <span class="k">class</span><span class="w"> </span><span class="nc">SampleStrategy</span><span class="p">(</span><span class="n">IStrategy</span><span class="p">):</span>
     <span class="c1"># strategy init stuff...</span>
 
-    <span class="n">timeframe</span> <span class="o">=</span> <span class="s1">&#39;5m&#39;</span>
+    <span class="n">timeframe</span> <span class="o">=</span> <span class="s1">'5m'</span>
 
     <span class="c1"># more strategy init stuff..</span>
 
@@ -4064,23 +4064,23 @@ Identical notifications will only be sent once per candle, unless the 2<sup>nd</
         <span class="c1"># get access to all pairs available in whitelist.</span>
         <span class="n">pairs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">current_whitelist</span><span class="p">()</span>
         <span class="c1"># Assign tf to each pair so they can be downloaded and cached for strategy.</span>
-        <span class="n">informative_pairs</span> <span class="o">=</span> <span class="p">[(</span><span class="n">pair</span><span class="p">,</span> <span class="s1">&#39;1d&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">pairs</span><span class="p">]</span>
-        <span class="c1"># Optionally Add additional &quot;static&quot; pairs</span>
-        <span class="n">informative_pairs</span> <span class="o">+=</span> <span class="p">[(</span><span class="s2">&quot;ETH/USDT&quot;</span><span class="p">,</span> <span class="s2">&quot;5m&quot;</span><span class="p">),</span>
-                              <span class="p">(</span><span class="s2">&quot;BTC/TUSD&quot;</span><span class="p">,</span> <span class="s2">&quot;15m&quot;</span><span class="p">),</span>
+        <span class="n">informative_pairs</span> <span class="o">=</span> <span class="p">[(</span><span class="n">pair</span><span class="p">,</span> <span class="s1">'1d'</span><span class="p">)</span> <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">pairs</span><span class="p">]</span>
+        <span class="c1"># Optionally Add additional "static" pairs</span>
+        <span class="n">informative_pairs</span> <span class="o">+=</span> <span class="p">[(</span><span class="s2">"ETH/USDT"</span><span class="p">,</span> <span class="s2">"5m"</span><span class="p">),</span>
+                              <span class="p">(</span><span class="s2">"BTC/TUSD"</span><span class="p">,</span> <span class="s2">"15m"</span><span class="p">),</span>
                             <span class="p">]</span>
         <span class="k">return</span> <span class="n">informative_pairs</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">populate_indicators</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="p">:</span>
-            <span class="c1"># Don&#39;t do anything if DataProvider is not available.</span>
+            <span class="c1"># Don't do anything if DataProvider is not available.</span>
             <span class="k">return</span> <span class="n">dataframe</span>
 
-        <span class="n">inf_tf</span> <span class="o">=</span> <span class="s1">&#39;1d&#39;</span>
+        <span class="n">inf_tf</span> <span class="o">=</span> <span class="s1">'1d'</span>
         <span class="c1"># Get the informative pair</span>
-        <span class="n">informative</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">get_pair_dataframe</span><span class="p">(</span><span class="n">pair</span><span class="o">=</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;pair&#39;</span><span class="p">],</span> <span class="n">timeframe</span><span class="o">=</span><span class="n">inf_tf</span><span class="p">)</span>
+        <span class="n">informative</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">get_pair_dataframe</span><span class="p">(</span><span class="n">pair</span><span class="o">=</span><span class="n">metadata</span><span class="p">[</span><span class="s1">'pair'</span><span class="p">],</span> <span class="n">timeframe</span><span class="o">=</span><span class="n">inf_tf</span><span class="p">)</span>
         <span class="c1"># Get the 14 day rsi</span>
-        <span class="n">informative</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">RSI</span><span class="p">(</span><span class="n">informative</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">14</span><span class="p">)</span>
+        <span class="n">informative</span><span class="p">[</span><span class="s1">'rsi'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">RSI</span><span class="p">(</span><span class="n">informative</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">14</span><span class="p">)</span>
 
         <span class="c1"># Use the helper function merge_informative_pair to safely merge the pair</span>
         <span class="c1"># Automatically renames the columns and merges a shorter timeframe dataframe and a longer timeframe informative pair</span>
@@ -4090,7 +4090,7 @@ Identical notifications will only be sent once per candle, unless the 2<sup>nd</
         <span class="n">dataframe</span> <span class="o">=</span> <span class="n">merge_informative_pair</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">informative</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeframe</span><span class="p">,</span> <span class="n">inf_tf</span><span class="p">,</span> <span class="n">ffill</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="c1"># Calculate rsi of the original dataframe (5m timeframe)</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">RSI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">14</span><span class="p">)</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s1">'rsi'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">RSI</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">timeperiod</span><span class="o">=</span><span class="mi">14</span><span class="p">)</span>
 
         <span class="c1"># Do other stuff</span>
         <span class="c1"># ...</span>
@@ -4101,11 +4101,11 @@ Identical notifications will only be sent once per candle, unless the 2<sup>nd</
 
         <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
             <span class="p">(</span>
-                <span class="p">(</span><span class="n">qtpylib</span><span class="o">.</span><span class="n">crossed_above</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi&#39;</span><span class="p">],</span> <span class="mi">30</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Signal: RSI crosses above 30</span>
-                <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;rsi_1d&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">30</span><span class="p">)</span> <span class="o">&amp;</span>                     <span class="c1"># Ensure daily RSI is &lt; 30</span>
-                <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">&#39;volume&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>                        <span class="c1"># Ensure this candle had volume (important for backtesting)</span>
+                <span class="p">(</span><span class="n">qtpylib</span><span class="o">.</span><span class="n">crossed_above</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'rsi'</span><span class="p">],</span> <span class="mi">30</span><span class="p">))</span> <span class="o">&amp;</span>  <span class="c1"># Signal: RSI crosses above 30</span>
+                <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'rsi_1d'</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">30</span><span class="p">)</span> <span class="o">&amp;</span>                     <span class="c1"># Ensure daily RSI is &lt; 30</span>
+                <span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="s1">'volume'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>                        <span class="c1"># Ensure this candle had volume (important for backtesting)</span>
             <span class="p">),</span>
-            <span class="p">[</span><span class="s1">&#39;enter_long&#39;</span><span class="p">,</span> <span class="s1">&#39;enter_tag&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;rsi_cross&#39;</span><span class="p">)</span>
+            <span class="p">[</span><span class="s1">'enter_long'</span><span class="p">,</span> <span class="s1">'enter_tag'</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">'rsi_cross'</span><span class="p">)</span>
 </code></pre></div>
 <hr />
 <h2 id="additional-data-wallets">Additional data (Wallets)<a class="headerlink" href="#additional-data-wallets" title="Permanent link">&para;</a></h2>
@@ -4118,9 +4118,9 @@ Within <a href="../strategy-callbacks/">callbacks</a>, you'll get the wallet sta
 </div>
 <p>Always check if <code>wallets</code> is available to avoid failures during backtesting.</p>
 <div class="highlight"><pre><span></span><code><span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">wallets</span><span class="p">:</span>
-    <span class="n">free_eth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wallets</span><span class="o">.</span><span class="n">get_free</span><span class="p">(</span><span class="s1">&#39;ETH&#39;</span><span class="p">)</span>
-    <span class="n">used_eth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wallets</span><span class="o">.</span><span class="n">get_used</span><span class="p">(</span><span class="s1">&#39;ETH&#39;</span><span class="p">)</span>
-    <span class="n">total_eth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wallets</span><span class="o">.</span><span class="n">get_total</span><span class="p">(</span><span class="s1">&#39;ETH&#39;</span><span class="p">)</span>
+    <span class="n">free_eth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wallets</span><span class="o">.</span><span class="n">get_free</span><span class="p">(</span><span class="s1">'ETH'</span><span class="p">)</span>
+    <span class="n">used_eth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wallets</span><span class="o">.</span><span class="n">get_used</span><span class="p">(</span><span class="s1">'ETH'</span><span class="p">)</span>
+    <span class="n">total_eth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wallets</span><span class="o">.</span><span class="n">get_total</span><span class="p">(</span><span class="s1">'ETH'</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="possible-options-for-wallets">Possible options for Wallets<a class="headerlink" href="#possible-options-for-wallets" title="Permanent link">&para;</a></h3>
 <ul>
@@ -4135,7 +4135,7 @@ Within <a href="../strategy-callbacks/">callbacks</a>, you'll get the wallet sta
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">freqtrade.persistence</span><span class="w"> </span><span class="kn">import</span> <span class="n">Trade</span>
 </code></pre></div>
 <p>The following example queries trades from today for the current pair (<code>metadata['pair']</code>). Other filters can easily be added.</p>
-<div class="highlight"><pre><span></span><code><span class="n">trades</span> <span class="o">=</span> <span class="n">Trade</span><span class="o">.</span><span class="n">get_trades_proxy</span><span class="p">(</span><span class="n">pair</span><span class="o">=</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;pair&#39;</span><span class="p">],</span>
+<div class="highlight"><pre><span></span><code><span class="n">trades</span> <span class="o">=</span> <span class="n">Trade</span><span class="o">.</span><span class="n">get_trades_proxy</span><span class="p">(</span><span class="n">pair</span><span class="o">=</span><span class="n">metadata</span><span class="p">[</span><span class="s1">'pair'</span><span class="p">],</span>
                                 <span class="n">open_date</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
                                 <span class="n">is_open</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="p">])</span><span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">Trade</span><span class="o">.</span><span class="n">close_date</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
@@ -4173,16 +4173,16 @@ Within <a href="../strategy-callbacks/">callbacks</a>, you'll get the wallet sta
 <span class="c1"># --------</span>
 
 <span class="c1"># Within populate indicators (or populate_entry_trend):</span>
-<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;runmode&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;live&#39;</span><span class="p">,</span> <span class="s1">&#39;dry_run&#39;</span><span class="p">):</span>
+<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s1">'runmode'</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'live'</span><span class="p">,</span> <span class="s1">'dry_run'</span><span class="p">):</span>
     <span class="c1"># fetch closed trades for the last 2 days</span>
     <span class="n">trades</span> <span class="o">=</span> <span class="n">Trade</span><span class="o">.</span><span class="n">get_trades_proxy</span><span class="p">(</span>
-        <span class="n">pair</span><span class="o">=</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;pair&#39;</span><span class="p">],</span> <span class="n">is_open</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+        <span class="n">pair</span><span class="o">=</span><span class="n">metadata</span><span class="p">[</span><span class="s1">'pair'</span><span class="p">],</span> <span class="n">is_open</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
         <span class="n">open_date</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
-    <span class="c1"># Analyze the conditions you&#39;d like to lock the pair .... will probably be different for every strategy</span>
+    <span class="c1"># Analyze the conditions you'd like to lock the pair .... will probably be different for every strategy</span>
     <span class="n">sumprofit</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">trade</span><span class="o">.</span><span class="n">close_profit</span> <span class="k">for</span> <span class="n">trade</span> <span class="ow">in</span> <span class="n">trades</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">sumprofit</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
         <span class="c1"># Lock pair for 12 hours</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">lock_pair</span><span class="p">(</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;pair&#39;</span><span class="p">],</span> <span class="n">until</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">12</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lock_pair</span><span class="p">(</span><span class="n">metadata</span><span class="p">[</span><span class="s1">'pair'</span><span class="p">],</span> <span class="n">until</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">12</span><span class="p">))</span>
 </code></pre></div>
 <h2 id="print-the-main-dataframe">Print the main dataframe<a class="headerlink" href="#print-the-main-dataframe" title="Permanent link">&para;</a></h2>
 <p>To inspect the current main dataframe, you can issue a print-statement in either <code>populate_entry_trend()</code> or <code>populate_exit_trend()</code>.
@@ -4192,10 +4192,10 @@ You may also want to print the pair so it's clear what data is currently shown.<
         <span class="p">(</span>
             <span class="c1">#&gt;&gt; whatever condition&lt;&lt;&lt;</span>
         <span class="p">),</span>
-        <span class="p">[</span><span class="s1">&#39;enter_long&#39;</span><span class="p">,</span> <span class="s1">&#39;enter_tag&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;somestring&#39;</span><span class="p">)</span>
+        <span class="p">[</span><span class="s1">'enter_long'</span><span class="p">,</span> <span class="s1">'enter_tag'</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">'somestring'</span><span class="p">)</span>
 
     <span class="c1"># Print the Analyzed pair</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;result for </span><span class="si">{</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;pair&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"result for </span><span class="si">{</span><span class="n">metadata</span><span class="p">[</span><span class="s1">'pair'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
     <span class="c1"># Inspect the last 5 rows</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">dataframe</span><span class="o">.</span><span class="n">tail</span><span class="p">())</span>

@@ -2449,7 +2449,7 @@ To learn how to get data for the pairs and exchange you're interested in, head o
 <span class="go">  --enable-dynamic-pairlist</span>
 <span class="go">                        Enables dynamic pairlist refreshes in backtesting. The</span>
 <span class="go">                        pairlist will be generated for each new candle if</span>
-<span class="go">                        you&#39;re using a pairlist handler that supports this</span>
+<span class="go">                        you're using a pairlist handler that supports this</span>
 <span class="go">                        feature, for example, ShuffleFilter.</span>
 <span class="go">  --dry-run-wallet, --starting-balance DRY_RUN_WALLET</span>
 <span class="go">                        Starting balance, used for backtesting / hyperopt and</span>
@@ -2488,9 +2488,9 @@ To learn how to get data for the pairs and exchange you're interested in, head o
 <span class="go">                        useful if you are redirecting output to a file.</span>
 <span class="go">  --logfile, --log-file FILE</span>
 <span class="go">                        Log to the file specified. Special values are:</span>
-<span class="go">                        &#39;syslog&#39;, &#39;journald&#39;. See the documentation for more</span>
+<span class="go">                        'syslog', 'journald'. See the documentation for more</span>
 <span class="go">                        details.</span>
-<span class="go">  -V, --version         show program&#39;s version number and exit</span>
+<span class="go">  -V, --version         show program's version number and exit</span>
 <span class="go">  -c, --config PATH     Specify configuration file (default:</span>
 <span class="go">                        `userdir/config.json` or `config.json` whichever</span>
 <span class="go">                        exists). Multiple --config options may be used. Can be</span>
@@ -2781,8 +2781,8 @@ The column <code>Tot Profit %</code> shows instead the total profit % in relatio
 <p>In the above results, we have a starting balance of 1000 USDT and an absolute profit of 54.774 USDT - so the <code>Tot Profit %</code> will be <code>(54.774 / 1000) * 100 ~= 5.48%</code>.</p>
 <p>Your strategy performance is influenced by your entry strategy, your exit strategy, and also by the <code>minimal_roi</code> and <code>stop_loss</code> you have set.</p>
 <p>For example, if your <code>minimal_roi</code> is only <code>"0":  0.01</code> you cannot expect the bot to make more profit than 1% (because it will exit every time a trade reaches 1%).</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;minimal_roi&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;0&quot;</span><span class="p">:</span><span class="w">  </span><span class="mf">0.01</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"minimal_roi"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"0"</span><span class="p">:</span><span class="w">  </span><span class="mf">0.01</span>
 <span class="p">},</span>
 </code></pre></div>
 <p>On the other hand, if you set a too high <code>minimal_roi</code> like <code>"0":  0.55</code>

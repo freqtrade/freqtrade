@@ -2870,25 +2870,25 @@ A current list of these can be found in the "Home" section of this documentation
 <p>Some exchanges require special configuration, which can be found below.</p>
 <h3 id="sample-exchange-configuration">Sample exchange configuration<a class="headerlink" href="#sample-exchange-configuration" title="Permanent link">&para;</a></h3>
 <p>A exchange configuration for "binance" would look as follows:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;binance&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;api_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_exchange_api_key&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;secret&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_exchange_secret&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;ccxt_config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
-<span class="w">    </span><span class="nt">&quot;ccxt_async_config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"exchange"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"binance"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"api_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"your_exchange_api_key"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"secret"</span><span class="p">:</span><span class="w"> </span><span class="s2">"your_exchange_secret"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"ccxt_config"</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
+<span class="w">    </span><span class="nt">"ccxt_async_config"</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
 <span class="w">    </span><span class="c1">// ... </span>
 </code></pre></div>
 <h3 id="setting-rate-limits">Setting rate limits<a class="headerlink" href="#setting-rate-limits" title="Permanent link">&para;</a></h3>
 <p>Usually, rate limits set by CCXT are reliable and work well.
 In case of problems related to rate-limits (usually DDOS Exceptions in your logs), it's easy to change rateLimit settings to other values.</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;kraken&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;api_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_exchange_api_key&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;secret&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_exchange_secret&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;ccxt_config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;enableRateLimit&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">},</span>
-<span class="w">    </span><span class="nt">&quot;ccxt_async_config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;enableRateLimit&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;rateLimit&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3100</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"exchange"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"kraken"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"api_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"your_exchange_api_key"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"secret"</span><span class="p">:</span><span class="w"> </span><span class="s2">"your_exchange_secret"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"ccxt_config"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"enableRateLimit"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"ccxt_async_config"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"enableRateLimit"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"rateLimit"</span><span class="p">:</span><span class="w"> </span><span class="mi">3100</span>
 <span class="w">    </span><span class="p">},</span>
 </code></pre></div>
 <p>This configuration enables kraken, as well as rate-limiting to avoid bans from the exchange.
@@ -2922,29 +2922,29 @@ Binance accounts may use <code>BNB</code> for fees, and if a trade happens to be
 <h3 id="binance-rsa-keys">Binance RSA keys<a class="headerlink" href="#binance-rsa-keys" title="Permanent link">&para;</a></h3>
 <p>Freqtrade supports binance RSA API keys.</p>
 <p>We recommend to use them as environment variable.</p>
-<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">FREQTRADE__EXCHANGE__SECRET</span><span class="o">=</span><span class="s2">&quot;</span><span class="k">$(</span>cat<span class="w"> </span>./rsa_binance.private<span class="k">)</span><span class="s2">&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">FREQTRADE__EXCHANGE__SECRET</span><span class="o">=</span><span class="s2">"</span><span class="k">$(</span>cat<span class="w"> </span>./rsa_binance.private<span class="k">)</span><span class="s2">"</span>
 </code></pre></div>
 <p>They can however also be configured via configuration file. Since json doesn't support multi-line strings, you'll have to replace all newlines with <code>\n</code> to have a valid json file.</p>
 <div class="highlight"><pre><span></span><code><span class="c1">// ...</span>
-<span class="w"> </span><span class="nt">&quot;api_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&lt;someapikey&gt;&quot;</span><span class="p">,</span>
-<span class="w"> </span><span class="nt">&quot;secret&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;-----BEGIN PRIVATE KEY-----\nMIIEvQIBABACAFQA&lt;...&gt;s8KX8=\n-----END PRIVATE KEY-----&quot;</span>
+<span class="w"> </span><span class="nt">"api_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;someapikey&gt;"</span><span class="p">,</span>
+<span class="w"> </span><span class="nt">"secret"</span><span class="p">:</span><span class="w"> </span><span class="s2">"-----BEGIN PRIVATE KEY-----\nMIIEvQIBABACAFQA&lt;...&gt;s8KX8=\n-----END PRIVATE KEY-----"</span>
 <span class="c1">// ...</span>
 </code></pre></div>
 <h3 id="binance-futures">Binance Futures<a class="headerlink" href="#binance-futures" title="Permanent link">&para;</a></h3>
 <p>Binance has specific (unfortunately complex) <a href="https://www.binance.com/en/support/faq/4f462ebe6ff445d4a170be7d9e897272">Futures Trading Quantitative Rules</a> which need to be followed, and which prohibit a too low stake-amount (among others) for too many orders.
 Violating these rules will result in a trading restriction.</p>
 <p>When trading on Binance Futures market, orderbook must be used because there is no price ticker data for futures.</p>
-<div class="highlight"><pre><span></span><code>  &quot;entry_pricing&quot;: {
-      &quot;use_order_book&quot;: true,
-      &quot;order_book_top&quot;: 1,
-      &quot;check_depth_of_market&quot;: {
-          &quot;enabled&quot;: false,
-          &quot;bids_to_ask_delta&quot;: 1
+<div class="highlight"><pre><span></span><code>  "entry_pricing": {
+      "use_order_book": true,
+      "order_book_top": 1,
+      "check_depth_of_market": {
+          "enabled": false,
+          "bids_to_ask_delta": 1
       }
   },
-  &quot;exit_pricing&quot;: {
-      &quot;use_order_book&quot;: true,
-      &quot;order_book_top&quot;: 1
+  "exit_pricing": {
+      "use_order_book": true,
+      "order_book_top": 1
   },
 </code></pre></div>
 <h4 id="binance-isolated-futures-settings">Binance isolated futures settings<a class="headerlink" href="#binance-isolated-futures-settings" title="Permanent link">&para;</a></h4>
@@ -2957,10 +2957,10 @@ These settings will be checked on startup, and freqtrade will show an error if t
 To use BNFCR futures, you will have to have the following combination of settings:</p>
 <div class="highlight"><pre><span></span><code>{
     // ...
-    &quot;trading_mode&quot;: &quot;futures&quot;,
-    &quot;margin_mode&quot;: &quot;cross&quot;,
-    &quot;proxy_coin&quot;: &quot;BNFCR&quot;,
-    &quot;stake_currency&quot;: &quot;USDT&quot; // or &quot;USDC&quot;
+    "trading_mode": "futures",
+    "margin_mode": "cross",
+    "proxy_coin": "BNFCR",
+    "stake_currency": "USDT" // or "USDC"
     // ...
 }
 </code></pre></div>
@@ -3021,14 +3021,14 @@ So, in order to mitigate Kraken API "Rate limit exceeded" exception, this config
 </div>
 <h2 id="kraken-futures">Kraken Futures<a class="headerlink" href="#kraken-futures" title="Permanent link">&para;</a></h2>
 <p>Kraken Futures uses the exchange id <code>krakenfutures</code> and supports isolated futures mode.</p>
-<div class="highlight"><pre><span></span><code>&quot;exchange&quot;: {
-    &quot;name&quot;: &quot;krakenfutures&quot;,
-    &quot;api_key&quot;: &quot;your_exchange_api_key&quot;,
-    &quot;secret&quot;: &quot;your_exchange_secret&quot;
+<div class="highlight"><pre><span></span><code>"exchange": {
+    "name": "krakenfutures",
+    "api_key": "your_exchange_api_key",
+    "secret": "your_exchange_secret"
 },
-&quot;trading_mode&quot;: &quot;futures&quot;,
-&quot;margin_mode&quot;: &quot;isolated&quot;,
-&quot;stake_currency&quot;: &quot;USD&quot;
+"trading_mode": "futures",
+"margin_mode": "isolated",
+"stake_currency": "USD"
 </code></pre></div>
 <div class="admonition tip">
 <p class="admonition-title">Stoploss on Exchange</p>
@@ -3046,11 +3046,11 @@ Freqtrade derives the <code>USD</code> balance from Kraken margin fields, so kee
 </div>
 <h2 id="kucoin">Kucoin<a class="headerlink" href="#kucoin" title="Permanent link">&para;</a></h2>
 <p>Kucoin requires a passphrase for each api key, you will therefore need to add this key into the configuration so your exchange section looks as follows:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;kucoin&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;api_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_exchange_api_key&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;secret&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_exchange_secret&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;password&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_exchange_api_key_password&quot;</span><span class="p">,</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"exchange"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"kucoin"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"api_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"your_exchange_api_key"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"secret"</span><span class="p">:</span><span class="w"> </span><span class="s2">"your_exchange_secret"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"password"</span><span class="p">:</span><span class="w"> </span><span class="s2">"your_exchange_api_key_password"</span><span class="p">,</span>
 <span class="w">    </span><span class="c1">// ...</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -3074,11 +3074,11 @@ Kucoin accounts may use <code>KCS</code> for fees, and if a trade happens to be 
 <p>OKX supports <code>stoploss_on_exchange</code> with both stop-limit and stop-market orders on spot and futures markets. You can use either <code>"limit"</code> or <code>"market"</code> in the <code>order_types.stoploss</code> configuration setting to select the stoploss order type.</p>
 </div>
 <p>OKX requires a passphrase for each api key, you will therefore need to add this key into the configuration so your exchange section looks as follows:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;okx&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;api_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_exchange_api_key&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;secret&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_exchange_secret&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;password&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_exchange_api_key_password&quot;</span><span class="p">,</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"exchange"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"okx"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"api_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"your_exchange_api_key"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"secret"</span><span class="p">:</span><span class="w"> </span><span class="s2">"your_exchange_secret"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"password"</span><span class="p">:</span><span class="w"> </span><span class="s2">"your_exchange_api_key_password"</span><span class="p">,</span>
 <span class="w">    </span><span class="c1">// ...</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -3140,11 +3140,11 @@ Bybit uses live markets to simulate your trades (without market impact) - making
 <p>Demo mode is incompatible with dry-run.</p>
 <h2 id="bitget">Bitget<a class="headerlink" href="#bitget" title="Permanent link">&para;</a></h2>
 <p>Bitget requires a passphrase for each api key, you will therefore need to add this key into the configuration so your exchange section looks as follows:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;bitget&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;api_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_exchange_api_key&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;secret&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_exchange_secret&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;password&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_exchange_api_key_password&quot;</span><span class="p">,</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"exchange"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"bitget"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"api_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"your_exchange_api_key"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"secret"</span><span class="p">:</span><span class="w"> </span><span class="s2">"your_exchange_secret"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"password"</span><span class="p">:</span><span class="w"> </span><span class="s2">"your_exchange_api_key_password"</span><span class="p">,</span>
 <span class="w">    </span><span class="c1">// ...</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -3170,10 +3170,10 @@ Freqtrade will attempt to detect the account type on startup - changing the acco
 </div>
 <p>Hyperliquid is a Decentralized Exchange (DEX). Decentralized exchanges work a bit different compared to normal exchanges. Instead of authenticating private API calls using an API key, private API calls need to be signed with the private key of your wallet (We recommend using an api Wallet for this, generated either on Hyperliquid or in your wallet of choice).
 This needs to be configured like this:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;hyperliquid&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;walletAddress&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_eth_wallet_address&quot;</span><span class="p">,</span><span class="w">  </span><span class="c1">// This should NOT be your API Wallet Address!</span>
-<span class="w">    </span><span class="nt">&quot;privateKey&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_api_private_key&quot;</span><span class="p">,</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"exchange"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"hyperliquid"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"walletAddress"</span><span class="p">:</span><span class="w"> </span><span class="s2">"your_eth_wallet_address"</span><span class="p">,</span><span class="w">  </span><span class="c1">// This should NOT be your API Wallet Address!</span>
+<span class="w">    </span><span class="nt">"privateKey"</span><span class="p">:</span><span class="w"> </span><span class="s2">"your_api_private_key"</span><span class="p">,</span>
 <span class="w">    </span><span class="c1">// ...</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -3206,13 +3206,13 @@ Unfortunately, hyperliquid only offers 5000 historic candles, so backtesting wil
 <h3 id="hyperliquid-subaccount">Hyperliquid Subaccount<a class="headerlink" href="#hyperliquid-subaccount" title="Permanent link">&para;</a></h3>
 <p>Hyperliquid allows you to create subaccounts with sufficient previous trading volume.<br />
 To use subaccounts with Freqtrade, you will need to use the following configuration pattern:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;hyperliquid&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;walletAddress&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_master_wallet_address&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// Your master wallet address (not the API wallet or vault address - but not subaccount address).</span>
-<span class="w">    </span><span class="nt">&quot;privateKey&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_api_private_key&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// API wallet private key (see https://app.hyperliquid.xyz/API). You&#39;ll only need the private key.</span>
-<span class="w">    </span><span class="nt">&quot;ccxt_config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;options&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;subAccountAddress&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_subaccount_address&quot;</span><span class="w"> </span><span class="c1">// Required if you want to use a subaccount.</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"exchange"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"hyperliquid"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"walletAddress"</span><span class="p">:</span><span class="w"> </span><span class="s2">"your_master_wallet_address"</span><span class="p">,</span><span class="w"> </span><span class="c1">// Your master wallet address (not the API wallet or vault address - but not subaccount address).</span>
+<span class="w">    </span><span class="nt">"privateKey"</span><span class="p">:</span><span class="w"> </span><span class="s2">"your_api_private_key"</span><span class="p">,</span><span class="w"> </span><span class="c1">// API wallet private key (see https://app.hyperliquid.xyz/API). You'll only need the private key.</span>
+<span class="w">    </span><span class="nt">"ccxt_config"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"options"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">"subAccountAddress"</span><span class="p">:</span><span class="w"> </span><span class="s2">"your_subaccount_address"</span><span class="w"> </span><span class="c1">// Required if you want to use a subaccount.</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="c1">// ...</span>
@@ -3221,13 +3221,13 @@ To use subaccounts with Freqtrade, you will need to use the following configurat
 <p>Your balance and trades will now be used from your subaccount - and no longer from your main account.</p>
 <h3 id="hyperliquid-vault">Hyperliquid Vault<a class="headerlink" href="#hyperliquid-vault" title="Permanent link">&para;</a></h3>
 <p>Hyperliquid allows you to create vaults. To use vaults with Freqtrade, you will need to use the following configuration pattern:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;hyperliquid&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;walletAddress&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_vault_address&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// Your vault wallet address (Must also be added below in the ccxt_config.options.vaultAddress field)</span>
-<span class="w">    </span><span class="nt">&quot;privateKey&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_api_private_key&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// API wallet private key (see https://app.hyperliquid.xyz/API). You&#39;ll only need the private key.</span>
-<span class="w">    </span><span class="nt">&quot;ccxt_config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;options&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;vaultAddress&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_vault_address&quot;</span><span class="p">,</span><span class="w"> </span><span class="c1">// Optional, only if you want to use a vault ... (vault address must also be added to walletAdress)</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"exchange"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"hyperliquid"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"walletAddress"</span><span class="p">:</span><span class="w"> </span><span class="s2">"your_vault_address"</span><span class="p">,</span><span class="w"> </span><span class="c1">// Your vault wallet address (Must also be added below in the ccxt_config.options.vaultAddress field)</span>
+<span class="w">    </span><span class="nt">"privateKey"</span><span class="p">:</span><span class="w"> </span><span class="s2">"your_api_private_key"</span><span class="p">,</span><span class="w"> </span><span class="c1">// API wallet private key (see https://app.hyperliquid.xyz/API). You'll only need the private key.</span>
+<span class="w">    </span><span class="nt">"ccxt_config"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"options"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">"vaultAddress"</span><span class="p">:</span><span class="w"> </span><span class="s2">"your_vault_address"</span><span class="p">,</span><span class="w"> </span><span class="c1">// Optional, only if you want to use a vault ... (vault address must also be added to walletAdress)</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="c1">// ...</span>
@@ -3240,11 +3240,11 @@ To use subaccounts with Freqtrade, you will need to use the following configurat
 <p>Hyperliquid supports HIP-3 decentralized exchanges (DEXes), which are independent exchanges built on top of the Hyperliquid infrastructure.
 These DEXes operate similarly to the main Hyperliquid exchange but are community-created and managed.</p>
 <p>To trade on HIP-3 DEXes with Freqtrade, you need to add them to your configuration using the <code>hip3_dexes</code> parameter:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;hyperliquid&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;walletAddress&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_master_wallet_address&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;privateKey&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;your_api_private_key&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;hip3_dexes&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;dex_name_1&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;dex_name_2&quot;</span><span class="p">]</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"exchange"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"hyperliquid"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"walletAddress"</span><span class="p">:</span><span class="w"> </span><span class="s2">"your_master_wallet_address"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"privateKey"</span><span class="p">:</span><span class="w"> </span><span class="s2">"your_api_private_key"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"hip3_dexes"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"dex_name_1"</span><span class="p">,</span><span class="w"> </span><span class="s2">"dex_name_2"</span><span class="p">]</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>Replace <code>"dex_name_1"</code> and <code>"dex_name_2"</code> with the actual names of the HIP-3 DEXes you want to trade on (e.g. <code>vntl</code> and <code>xyz</code>).</p>
@@ -3265,13 +3265,13 @@ Different HIP-3 DEXes may also use different quote currencies - so make sure to 
 </div>
 <h2 id="bitvavo">Bitvavo<a class="headerlink" href="#bitvavo" title="Permanent link">&para;</a></h2>
 <p>If your account is required to use an operatorId, you can set it in the configuration file as follows:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;bitvavo&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;api_key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;secret&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;ccxt_config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;options&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                </span><span class="nt">&quot;operatorId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;123567&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"exchange"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"bitvavo"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"api_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"secret"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"ccxt_config"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">"options"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">"operatorId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"123567"</span>
 <span class="w">            </span><span class="p">}</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">   </span><span class="p">}</span>
@@ -3295,11 +3295,11 @@ By default, Freqtrade assumes that incomplete candle is fetched from the exchang
 <p>Advanced options can be configured using the <code>_ft_has_params</code> setting, which will override Defaults and exchange-specific behavior.</p>
 <p>Available options are listed in the exchange-class as <code>_ft_has_default</code>.</p>
 <p>For example, to test the order type <code>FOK</code> with Kraken, and modify candle limit to 200 (so you only get 200 candles per API call):</p>
-<div class="highlight"><pre><span></span><code><span class="nt">&quot;exchange&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;kraken&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;_ft_has_params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;order_time_in_force&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;GTC&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;FOK&quot;</span><span class="p">],</span>
-<span class="w">        </span><span class="nt">&quot;ohlcv_candle_limit&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">200</span>
+<div class="highlight"><pre><span></span><code><span class="nt">"exchange"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"kraken"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"_ft_has_params"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"order_time_in_force"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"GTC"</span><span class="p">,</span><span class="w"> </span><span class="s2">"FOK"</span><span class="p">],</span>
+<span class="w">        </span><span class="nt">"ohlcv_candle_limit"</span><span class="p">:</span><span class="w"> </span><span class="mi">200</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="c1">//...</span>
 <span class="p">}</span>
