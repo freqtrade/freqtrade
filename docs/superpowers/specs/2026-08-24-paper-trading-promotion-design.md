@@ -206,6 +206,24 @@ instead of hanging indefinitely. This function does not need write access to tha
 database — read-only intent should be clear from the code even though `init_db` itself
 doesn't expose a strict read-only mode.
 
+**`init_db` mutates GLOBAL class-level state on `Trade`, not a scoped per-call
+connection — a real risk this package has already been burned by once this session
+(the `Trade.use_db`/`bt_trades` test-isolation fix, PR #5).** `freqtrade.persistence
+.init_db(db_url)` sets `Trade.session` (a `scoped_session` on the `Trade`/`LocalTrade`
+class itself) as a side effect — it is not a factory returning an independent session
+object. Calling it inside `evaluate_paper_trading_health` therefore redirects `Trade`
+queries for the **entire process**, not just this function call. Concretely: this
+function must fully materialize its query results (`.all()`) and finish everything it
+needs from `Trade.session` before returning, and it must never be called concurrently
+with, or interleaved mid-flight with, any other code in the same process that depends on
+`Trade.session`/`Trade.query` pointing at a different database (a `WalkForwardRunner`/
+`Backtesting` run in the same process being the concrete example — those manage their
+own `Trade`-adjacent state internally). Document this constraint directly in the
+function's docstring, not just here — a future caller reading only the function
+signature has no other way to know. This is a genuine limitation of freqtrade's own
+persistence API, not a design flaw this module can architect around without
+reimplementing freqtrade's ORM setup from scratch, which is out of scope.
+
 **One normalized instant per call, not two independent clock reads (verified via
 lmchatbot cross-check):** capture `now = datetime.now(UTC)` exactly once at the top of
 this function, and derive `days_elapsed` from that same captured value — never call
