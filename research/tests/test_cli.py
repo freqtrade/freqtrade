@@ -143,3 +143,56 @@ def test_gate_command_returns_nonzero_exit_code_on_fail(mocker, capsys):
     captured = capsys.readouterr()
     assert exit_code == 1
     assert "FAIL" in captured.out
+
+
+def test_gate_command_prints_fee_sensitivity_table_when_present(mocker, capsys):
+    canned = GateResult(
+        strategy_id="StrategyTestV3",
+        passed=True,
+        deflated_sharpe=0.97,
+        permutation_p=0.01,
+        pbo=0.1,
+        mean_test_sharpe=1.2,
+        n_trials=12,
+        reasons=[],
+        fee_sensitivity={
+            1.0: {"mean_test_sharpe": 0.87, "deflated_sharpe": 0.91, "n_windows": 5},
+            1.5: {"mean_test_sharpe": 0.33, "deflated_sharpe": 0.52, "n_windows": 5},
+        },
+    )
+    mocker.patch("research.cli.run_promotion_gate", return_value=canned)
+    mocker.patch(
+        "research.cli.Configuration.from_files", return_value={"datadir": "user_data/data"}
+    )
+
+    exit_code = main(
+        [
+            "gate",
+            "--strategy",
+            "StrategyTestV3",
+            "--config",
+            "config.json",
+            "--pairs",
+            "BTC/USDT",
+            "--timeframe",
+            "1h",
+            "--start",
+            "2024-01-01",
+            "--end",
+            "2024-06-01",
+            "--train-days",
+            "60",
+            "--test-days",
+            "20",
+            "--param-grid",
+            '[{"buy_rsi": 30}]',
+            "--fee-sensitivity",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "fee sensitivity" in captured.out
+    assert "baseline" in captured.out
+    assert "1.50x fee" in captured.out
+    assert "slippage" not in captured.out.lower()

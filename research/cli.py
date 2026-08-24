@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from freqtrade.configuration import Configuration
+from research.cost_stress import DEFAULT_FEE_MULTIPLIERS
 from research.gate import run_promotion_gate
 
 
@@ -34,6 +35,11 @@ def main(argv: list[str] | None = None) -> int:
     gate.add_argument("--test-days", type=int, required=True)
     gate.add_argument("--param-grid", required=True, help="JSON list of param dicts")
     gate.add_argument("--db-path", default="user_data/research.sqlite")
+    gate.add_argument(
+        "--fee-sensitivity",
+        action="store_true",
+        help="Also run a fee-sensitivity stress test if the gate passes (informational)",
+    )
 
     args = parser.parse_args(argv)
 
@@ -54,6 +60,7 @@ def main(argv: list[str] | None = None) -> int:
             test_days=args.test_days,
             param_grid=json.loads(args.param_grid),
             db_path=args.db_path,
+            fee_sensitivity_multipliers=DEFAULT_FEE_MULTIPLIERS if args.fee_sensitivity else None,
         )
         verdict = "PASS" if result.passed else "FAIL"
         print(f"{result.strategy_id}: {verdict}")
@@ -64,6 +71,14 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  trials (ledger)   {result.n_trials}")
         for reason in result.reasons:
             print(f"  - {reason}")
+        if result.fee_sensitivity:
+            print("  fee sensitivity (informational, not part of PASS/FAIL):")
+            for mult, stats in result.fee_sensitivity.items():
+                label = f"{mult:.2f}x fee" + (" (baseline)" if mult == 1.0 else "")
+                print(
+                    f"    {label:<22} mean OOS sharpe {stats['mean_test_sharpe']:>6.2f}"
+                    f"   deflated_sharpe (n_trials=1) {stats['deflated_sharpe']:.3f}"
+                )
         return 0 if result.passed else 1
 
     return 1

@@ -85,3 +85,68 @@ def test_run_promotion_gate_returns_result_and_writes_ledger_row(mocker, tmp_pat
 
     session = get_session(get_engine(db_path))
     assert session.query(CandidateResult).filter_by(strategy_id="StrategyTestV3").count() == 1
+
+
+def test_run_promotion_gate_attaches_fee_sensitivity_when_it_passes(mocker, tmp_path):
+    conf = _conf()
+    _patch(mocker)
+    full_data = history.load_data(datadir=TESTDATADIR, timeframe="5m", pairs=["UNITTEST/BTC"])
+    min_date, max_date = get_timerange(full_data)
+    total_days = max(8, (max_date - min_date).days)
+    train_days = max(1, total_days // 8)
+    test_days = max(1, total_days // 16)
+
+    # Permissive thresholds guarantee a real, unmocked PASS on the small fixture dataset
+    # (any run with at least one trade clears them) without mocking the statistics --
+    # deterministic real-execution test, not a forced/mocked pass.
+    result = run_promotion_gate(
+        config=conf,
+        strategy_id="StrategyTestV3",
+        pairs=["UNITTEST/BTC"],
+        timeframe="5m",
+        datadir=TESTDATADIR,
+        start=min_date,
+        end=max_date,
+        train_days=train_days,
+        test_days=test_days,
+        param_grid=[{"buy_rsi": 25}, {"buy_rsi": 35}],
+        db_path=str(tmp_path / "research.sqlite"),
+        dsr_threshold=0.0,
+        fdr_q=1.0,
+        pbo_threshold=1.0,
+        fee_sensitivity_multipliers=(1.0, 1.5),
+    )
+
+    assert result.passed is True
+    assert result.fee_sensitivity is not None
+    assert set(result.fee_sensitivity) == {1.0, 1.5}
+
+
+def test_run_promotion_gate_skips_fee_sensitivity_when_it_fails(mocker, tmp_path):
+    conf = _conf()
+    _patch(mocker)
+    full_data = history.load_data(datadir=TESTDATADIR, timeframe="5m", pairs=["UNITTEST/BTC"])
+    min_date, max_date = get_timerange(full_data)
+    total_days = max(8, (max_date - min_date).days)
+    train_days = max(1, total_days // 8)
+    test_days = max(1, total_days // 16)
+
+    # Impossible dsr_threshold guarantees a real FAIL, regardless of the actual result.
+    result = run_promotion_gate(
+        config=conf,
+        strategy_id="StrategyTestV3",
+        pairs=["UNITTEST/BTC"],
+        timeframe="5m",
+        datadir=TESTDATADIR,
+        start=min_date,
+        end=max_date,
+        train_days=train_days,
+        test_days=test_days,
+        param_grid=[{"buy_rsi": 25}, {"buy_rsi": 35}],
+        db_path=str(tmp_path / "research.sqlite"),
+        dsr_threshold=1.1,
+        fee_sensitivity_multipliers=(1.0, 1.5),
+    )
+
+    assert result.passed is False
+    assert result.fee_sensitivity is None

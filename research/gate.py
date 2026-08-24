@@ -14,6 +14,7 @@ from pathlib import Path
 
 import numpy as np
 
+from research.cost_stress import fee_sensitivity
 from research.db import get_engine, get_session
 from research.ledger import family_of, family_trial_count, log_candidate_result
 from research.pbo import probability_of_backtest_overfitting
@@ -33,6 +34,7 @@ class GateResult:
     mean_test_sharpe: float
     n_trials: int
     reasons: list[str]
+    fee_sensitivity: dict[float, dict] | None = None
 
 
 def run_promotion_gate(
@@ -51,6 +53,7 @@ def run_promotion_gate(
     fdr_q: float = 0.05,
     pbo_threshold: float = 0.5,
     periods_per_year: int = 365,
+    fee_sensitivity_multipliers: tuple[float, ...] | None = None,
 ) -> GateResult:
     """Run walk-forward evaluation for `strategy_id` and decide whether it is
     statistically fit to promote, logging the outcome to the candidate ledger.
@@ -112,6 +115,18 @@ def run_promotion_gate(
         reasons.append(f"PBO {pbo_result['pbo']:.3f} above threshold {pbo_threshold}")
     passed = not reasons
 
+    fee_report = None
+    if passed and fee_sensitivity_multipliers is not None:
+        fee_report = fee_sensitivity(
+            config,
+            pairs,
+            timeframe,
+            datadir,
+            results,
+            multipliers=fee_sensitivity_multipliers,
+            periods_per_year=periods_per_year,
+        )
+
     log_candidate_result(
         session,
         strategy_id=strategy_id,
@@ -139,4 +154,5 @@ def run_promotion_gate(
         mean_test_sharpe=mean_test_sharpe,
         n_trials=n_trials,
         reasons=reasons,
+        fee_sensitivity=fee_report,
     )

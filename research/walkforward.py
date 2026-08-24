@@ -32,7 +32,13 @@ class WindowResult:
     """Outcome of running one `Window` through `WalkForwardRunner.run_window`:
     the train-period Sharpe of every param variant (`variant_returns`, keyed by
     `variant_key`, feeding `research.pbo`), the train-selected best params, and
-    the resulting out-of-sample (test-period) performance."""
+    the resulting out-of-sample (test-period) performance.
+
+    `evaluate_fixed_params` also returns a `WindowResult`, but a deliberately
+    partial one: no grid was searched, so `variant_returns` is always `{}` on
+    that path. `research.cost_stress` is the only intended consumer of that
+    partial form -- don't assume `variant_returns` reflects a real grid search
+    unless the `WindowResult` came from `run_window`."""
 
     window: Window
     variant_returns: dict[str, float]
@@ -82,10 +88,82 @@ class WalkForwardRunner:
         self.timeframe = timeframe
         self.datadir = datadir
 
+    def evaluate_fixed_params(
+        self, window: Window, params: dict, fee_override: float | None = None
+    ) -> WindowResult:
+        """Backtest a single, already-chosen `params` on `window` -- no grid
+        search. Used directly by `research.cost_stress.fee_sensitivity` to
+        re-evaluate an already-selected candidate at a different fee level,
+        and by `run_window` (below) for its own final test-phase step -- both
+        paths share this one implementation rather than drifting apart.
+
+        `fee_override`, when given, is used ONLY for this call's `Backtesting`
+        instance -- `self.config` is never mutated, so a stress-test fee can
+        never leak into other calls sharing this `WalkForwardRunner`.
+
+        Returns a `WindowResult` with `variant_returns={}` (no grid was
+        searched) and `train_sharpe` reflecting only `params`' own
+        train-period Sharpe (not a selection among alternatives).
+        """
+        cfg = (
+            {**deepcopy(self.config), "fee": fee_override}
+            if fee_override is not None
+            else self.config
+        )
+        backtesting = Backtesting(cfg)
+        backtesting._set_strategy(backtesting.strategylist[0])
+
+        timerange = TimeRange(
+            "date", "date", int(window.train_start.timestamp()), int(window.test_end.timestamp())
+        )
+        data = history.load_data(
+            datadir=self.datadir,
+            timeframe=self.timeframe,
+            pairs=self.pairs,
+            timerange=timerange,
+            startup_candles=backtesting.required_startup,
+        )
+
+        for name, value in params.items():
+            getattr(backtesting.strategy, name).value = value
+        processed = backtesting.strategy.advise_all_indicators(data)
+        processed = trim_dataframes(processed, timerange, backtesting.required_startup)
+
+        train_result = backtesting.backtest(
+            processed=deepcopy(processed),
+            start_date=window.train_start,
+            end_date=window.train_end,
+        )
+        train_trades = train_result["results"]
+        train_sharpe = calculate_sharpe(
+            train_trades, window.train_start, window.train_end, self.config["dry_run_wallet"]
+        )
+
+        test_result = backtesting.backtest(
+            processed=deepcopy(processed),
+            start_date=window.test_start,
+            end_date=window.test_end,
+        )
+        test_trades = test_result["results"]
+        test_returns = (test_trades["profit_abs"] / self.config["dry_run_wallet"]).tolist()
+        test_sharpe = calculate_sharpe(
+            test_trades, window.test_start, window.test_end, self.config["dry_run_wallet"]
+        )
+
+        return WindowResult(
+            window=window,
+            variant_returns={},
+            best_params=params,
+            train_sharpe=train_sharpe,
+            test_sharpe=test_sharpe,
+            test_n_trades=len(test_trades),
+            test_returns=test_returns,
+        )
+
     def run_window(self, window: Window, param_grid: list[dict]) -> WindowResult:
         """Backtest every variant in `param_grid` on `window`'s train period,
-        pick the highest-train-Sharpe variant, then backtest ONLY that variant
-        on the test period.
+        pick the highest-train-Sharpe variant, then evaluate ONLY that variant
+        on the test period via `evaluate_fixed_params`.
 
         This ordering is the load-bearing invariant: parameter selection is
         strictly train-only. Test-period data is never touched until after
@@ -120,7 +198,6 @@ class WalkForwardRunner:
         variant_returns: dict[str, float] = {}
         best_sharpe = -np.inf
         best_params: dict | None = None
-        best_processed: dict | None = None
 
         for params in param_grid:
             for name, value in params.items():
@@ -160,34 +237,29 @@ class WalkForwardRunner:
             )
 
             if sharpe > best_sharpe:
-                best_sharpe, best_params, best_processed = sharpe, params, processed
+                best_sharpe, best_params = sharpe, params
 
-        if best_params is None or best_processed is None:
+        if best_params is None:
             raise RuntimeError(
                 "no param variant produced a result"
             )  # unreachable: param_grid non-empty
-        for name, value in best_params.items():
-            getattr(backtesting.strategy, name).value = value
-        test_result = backtesting.backtest(
-            processed=deepcopy(best_processed),
-            start_date=window.test_start,
-            end_date=window.test_end,
-        )
-        test_trades = test_result["results"]
-        test_returns = (test_trades["profit_abs"] / self.config["dry_run_wallet"]).tolist()
-        test_sharpe = calculate_sharpe(
-            test_trades, window.test_start, window.test_end, self.config["dry_run_wallet"]
-        )
 
-        return WindowResult(
-            window=window,
-            variant_returns=variant_returns,
-            best_params=best_params,
-            train_sharpe=best_sharpe,
-            test_sharpe=test_sharpe,
-            test_n_trades=len(test_trades),
-            test_returns=test_returns,
-        )
+        # ponytail: this recomputes data + indicators for the winning variant a
+        # second time (evaluate_fixed_params does its own history.load_data +
+        # advise_all_indicators call) rather than reusing the grid loop's
+        # already-computed `processed` dataframe for that variant, AND
+        # evaluate_fixed_params also runs a train-period backtest whose result
+        # (train_sharpe) is discarded immediately below (overwritten with the
+        # grid search's own best_sharpe) -- so the actual duplicate cost here
+        # is data + indicators + one full (train-period) backtest, not just
+        # data + indicators. Trades a small, deterministic amount of duplicate
+        # work for one shared, single-tested code path between run_window and
+        # evaluate_fixed_params (see the fee-sensitivity design doc) --
+        # revisit only if this becomes a measured bottleneck.
+        result = self.evaluate_fixed_params(window, best_params)
+        result.variant_returns = variant_returns
+        result.train_sharpe = best_sharpe
+        return result
 
     def run(self, windows: list[Window], param_grid: list[dict]) -> list[WindowResult]:
         """Run `run_window` over every window in sequence and collect results."""
