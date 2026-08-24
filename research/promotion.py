@@ -137,7 +137,6 @@ def evaluate_paper_trading_health(
     promotion_id: int,
     starting_balance: float,
     dry_run_db_path: str | None = None,
-    periods_per_year: int = 365,
 ) -> dict:
     """Pure evaluation (no state mutation) of a PAPER_TRADING record's real dry-run
     trade history. Returns a verdict dict; call apply_health_evaluation with the result
