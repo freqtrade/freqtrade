@@ -12,6 +12,7 @@ from pathlib import Path
 from freqtrade.configuration import Configuration
 from research.cost_stress import DEFAULT_FEE_MULTIPLIERS
 from research.gate import run_promotion_gate
+from research.scoring import strategy_report
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -71,35 +72,7 @@ def main(argv: list[str] | None = None) -> int:
             fee_sensitivity_multipliers=DEFAULT_FEE_MULTIPLIERS if args.fee_sensitivity else None,
             include_regime_breakdown=args.regime_breakdown,
         )
-        verdict = "PASS" if result.passed else "FAIL"
-        print(f"{result.strategy_id}: {verdict}")
-        print(f"  deflated_sharpe   {result.deflated_sharpe:.3f}")
-        print(f"  permutation p     {result.permutation_p:.3f}")
-        print(f"  PBO               {result.pbo:.3f}")
-        print(f"  mean OOS sharpe   {result.mean_test_sharpe:.3f}")
-        print(f"  trials (ledger)   {result.n_trials}")
-        for reason in result.reasons:
-            print(f"  - {reason}")
-        if result.fee_sensitivity:
-            print("  fee sensitivity (informational, not part of PASS/FAIL):")
-            for mult, stats in result.fee_sensitivity.items():
-                label = f"{mult:.2f}x fee" + (" (baseline)" if mult == 1.0 else "")
-                print(
-                    f"    {label:<22} mean OOS sharpe {stats['mean_test_sharpe']:>6.2f}"
-                    f"   deflated_sharpe (n_trials=1) {stats['deflated_sharpe']:.3f}"
-                )
-        if result.regime_breakdown:
-            print(
-                f"  regime breakdown ({args.pairs.split(',')[0]}, informational, "
-                "not part of PASS/FAIL):"
-            )
-            for label, stats in result.regime_breakdown.items():
-                print(
-                    f"    {label:<15} {stats['n_windows']:>2} windows"
-                    f"   {stats['n_trades']:>3} trades"
-                    f"   mean sharpe {stats['mean_test_sharpe']:>6.2f}"
-                    f"   total return {stats['total_return']:>8.4f}"
-                )
+        print(strategy_report(result, pair=args.pairs.split(",")[0]))
         return 0 if result.passed else 1
 
     return 1
