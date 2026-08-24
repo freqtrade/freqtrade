@@ -1,13 +1,16 @@
 # research/tests/test_promotion.py
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
+from freqtrade.persistence import Trade, init_db
 from research.db import get_engine, get_session
 from research.models import CandidateResult
 from research.promotion import (
     PromotionState,
+    apply_health_evaluation,
     create_promotion_record,
+    evaluate_paper_trading_health,
     promote_to_live,
     reject,
     start_paper_trading,
@@ -164,3 +167,181 @@ def test_transitions_raise_from_live(tmp_path):
 
     with pytest.raises(ValueError):
         reject(session, record.id, "too late")
+
+
+@pytest.fixture(autouse=True)
+def _reset_trade_session_after_evaluation_tests():
+    """evaluate_paper_trading_health() calls freqtrade's own init_db(), which sets
+    Trade.session as GLOBAL class-level state (see the plan's Global Constraints for
+    why) -- reset it to a fresh in-memory DB after every test in this file so no later
+    test (in this file or elsewhere in the same pytest-xdist worker) can see
+    Trade.session still pointed at one of this file's throwaway dry-run databases."""
+    yield
+    init_db("sqlite://")
+
+
+def _insert_dry_run_trades(dry_run_db_path, strategy_id, started_at, profits_abs):
+    """Directly construct and insert closed Trade rows into a fresh dry-run-style
+    sqlite database -- one trade per entry in profits_abs, spaced evenly across the
+    period from started_at to now, matching how research/tests/test_regime.py and
+    test_scoring.py construct real rows directly rather than running a full backtest."""
+    init_db(f"sqlite:///{dry_run_db_path}")
+    now = datetime.now(UTC).replace(tzinfo=None)
+    started_naive = started_at.replace(tzinfo=None) if started_at.tzinfo else started_at
+    span = now - started_naive
+    step = span / max(1, len(profits_abs))
+    for i, profit in enumerate(profits_abs):
+        open_dt = started_naive + step * i
+        close_dt = open_dt + timedelta(minutes=30)
+        trade = Trade(
+            pair="BTC/USDT",
+            strategy=strategy_id,
+            exchange="binance",
+            is_open=False,
+            open_date=open_dt,
+            close_date=close_dt,
+            close_profit_abs=float(profit),
+            stake_amount=100.0,
+            amount=1.0,
+            open_rate=100.0,
+            close_rate=100.0 + float(profit) / 100.0,
+            fee_open=0.001,
+            fee_close=0.001,
+        )
+        Trade.session.add(trade)
+    Trade.session.flush()
+    Trade.session.commit()
+    init_db("sqlite://")  # release this function's own Trade.session redirect immediately
+
+
+def test_evaluate_paper_trading_health_not_enough_evidence_when_too_few_trades(tmp_path):
+    session = _session(tmp_path)
+    candidate = _candidate(session, oos_sharpe=2.0)
+    record = create_promotion_record(session, candidate.id)
+    started_at = datetime.now(UTC) - timedelta(days=14)
+    start_paper_trading(session, record.id, str(tmp_path / "dryrun_thin.sqlite"), started_at)
+    _insert_dry_run_trades(
+        tmp_path / "dryrun_thin.sqlite", "TestStrategy", started_at, [8, 6, 7]
+    )  # only 3 trades, MIN_PAPER_TRADES is 10
+
+    evaluation = evaluate_paper_trading_health(session, record.id, starting_balance=1000.0)
+
+    assert evaluation["enough_evidence"] is False
+    assert evaluation["eligible"] is False
+    assert evaluation["n_trades"] == 3
+
+    updated = apply_health_evaluation(session, record.id, evaluation)
+    assert updated.state == PromotionState.PAPER_TRADING.value
+
+
+def test_evaluate_paper_trading_health_eligible_when_degradation_ratio_clears_bar(tmp_path):
+    session = _session(tmp_path)
+    candidate = _candidate(session, oos_sharpe=2.0)
+    record = create_promotion_record(session, candidate.id)
+    started_at = datetime.now(UTC) - timedelta(days=14)
+    start_paper_trading(session, record.id, str(tmp_path / "dryrun_good.sqlite"), started_at)
+    _insert_dry_run_trades(
+        tmp_path / "dryrun_good.sqlite",
+        "TestStrategy",
+        started_at,
+        [8, 6, 7, 9, 5, 8, 6, 7, 9, 5],
+    )
+
+    evaluation = evaluate_paper_trading_health(session, record.id, starting_balance=1000.0)
+
+    assert evaluation["enough_evidence"] is True
+    assert evaluation["n_trades"] == 10
+    assert evaluation["paper_sharpe"] == pytest.approx(67.54628043053148)
+    assert evaluation["degradation_ratio"] == pytest.approx(1.0)
+    assert evaluation["eligible"] is True
+
+    updated = apply_health_evaluation(session, record.id, evaluation)
+    assert updated.state == PromotionState.LIVE_ELIGIBLE.value
+    assert updated.resolved_at is not None
+
+
+def test_evaluate_paper_trading_health_rejected_when_degradation_ratio_fails_bar(tmp_path):
+    session = _session(tmp_path)
+    candidate = _candidate(session, oos_sharpe=2.0)
+    record = create_promotion_record(session, candidate.id)
+    started_at = datetime.now(UTC) - timedelta(days=14)
+    start_paper_trading(session, record.id, str(tmp_path / "dryrun_bad.sqlite"), started_at)
+    _insert_dry_run_trades(
+        tmp_path / "dryrun_bad.sqlite",
+        "TestStrategy",
+        started_at,
+        [-3, 2, -4, 1, -2, 3, -5, 2, -3, 1],
+    )
+
+    evaluation = evaluate_paper_trading_health(session, record.id, starting_balance=1000.0)
+
+    assert evaluation["enough_evidence"] is True
+    assert evaluation["paper_sharpe"] == pytest.approx(-3.9705208944418664)
+    assert evaluation["degradation_ratio"] == pytest.approx(0.0)
+    assert evaluation["eligible"] is False
+
+    updated = apply_health_evaluation(session, record.id, evaluation)
+    assert updated.state == PromotionState.REJECTED.value
+    assert updated.resolution_reason is not None
+
+
+def test_evaluate_paper_trading_health_zero_trades_does_not_raise(tmp_path):
+    session = _session(tmp_path)
+    candidate = _candidate(session, oos_sharpe=2.0)
+    record = create_promotion_record(session, candidate.id)
+    started_at = datetime.now(UTC) - timedelta(days=1)
+    dry_run_path = tmp_path / "dryrun_empty.sqlite"
+    start_paper_trading(session, record.id, str(dry_run_path), started_at)
+    init_db(f"sqlite:///{dry_run_path}")  # create the (empty) schema, no trades inserted
+    init_db("sqlite://")
+
+    evaluation = evaluate_paper_trading_health(session, record.id, starting_balance=1000.0)
+
+    assert evaluation["n_trades"] == 0
+    assert evaluation["paper_sharpe"] == 0
+    assert evaluation["enough_evidence"] is False
+
+
+def test_evaluate_paper_trading_health_non_positive_oos_sharpe_is_zero_degradation(tmp_path):
+    session = _session(tmp_path)
+    candidate = _candidate(session, oos_sharpe=-0.5)
+    record = create_promotion_record(session, candidate.id)
+    started_at = datetime.now(UTC) - timedelta(days=14)
+    start_paper_trading(session, record.id, str(tmp_path / "dryrun_neg.sqlite"), started_at)
+    _insert_dry_run_trades(
+        tmp_path / "dryrun_neg.sqlite",
+        "TestStrategy",
+        started_at,
+        [8, 6, 7, 9, 5, 8, 6, 7, 9, 5],
+    )
+
+    evaluation = evaluate_paper_trading_health(session, record.id, starting_balance=1000.0)
+
+    assert evaluation["degradation_ratio"] == 0.0
+
+
+def test_evaluate_paper_trading_health_raises_when_not_in_paper_trading(tmp_path):
+    session = _session(tmp_path)
+    candidate = _candidate(session)
+    record = create_promotion_record(session, candidate.id)
+
+    with pytest.raises(ValueError, match="cannot evaluate health"):
+        evaluate_paper_trading_health(session, record.id, starting_balance=1000.0)
+
+
+def test_apply_health_evaluation_raises_when_not_in_paper_trading(tmp_path):
+    session = _session(tmp_path)
+    candidate = _candidate(session)
+    record = create_promotion_record(session, candidate.id)
+    canned_evaluation = {
+        "eligible": True,
+        "enough_evidence": True,
+        "days_elapsed": 30,
+        "n_trades": 20,
+        "paper_sharpe": 1.5,
+        "degradation_ratio": 0.9,
+        "reasons": [],
+    }
+
+    with pytest.raises(ValueError, match="cannot apply a health evaluation"):
+        apply_health_evaluation(session, record.id, canned_evaluation)
