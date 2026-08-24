@@ -181,6 +181,28 @@ and `Trade.close_date >= paper_trading_started_at`. This session is separate fro
 research ledger's own `session` argument — two independent database files, never the
 same connection.
 
+**Connection hygiene (verified via lmchatbot cross-check as a real, worth-specifying
+concern):** the dry-run database file may belong to a currently-running freqtrade bot
+process that could be writing to it concurrently. This function must not hold that
+connection open longer than the single query needs: open the engine/session, run the
+query, and close/dispose both in a `finally` block (or a context manager) before
+returning — never leave a lingering handle on a file another process owns. Use a bounded
+connection timeout (e.g. `create_engine(url, connect_args={"timeout": 30})`) rather than
+the driver default, so a transient lock from the bot's own write contends gracefully
+instead of hanging indefinitely. This function does not need write access to that
+database — read-only intent should be clear from the code even though `init_db` itself
+doesn't expose a strict read-only mode.
+
+**One normalized instant per call, not two independent clock reads (verified via
+lmchatbot cross-check):** capture `now = datetime.now(UTC)` exactly once at the top of
+this function, and derive `days_elapsed` from that same captured value — never call
+`datetime.now(UTC)` a second time later in the function body, which could let the SQL
+query's implicit "as of" moment drift from the `days_elapsed` arithmetic's own "as of"
+moment by however long the query took to run. Likewise, derive both the tz-aware value
+used for `days_elapsed` arithmetic and the naive-UTC value used in the SQL filter (see
+"Timezone-awareness resolution" below) from the same single normalized
+`paper_trading_started_at` read, not two separate normalizations.
+
 Computes:
 - `days_elapsed = (datetime.now(UTC) - promotion.paper_trading_started_at).days`
 - `n_trades = len(closed_trades)`
@@ -194,6 +216,17 @@ Computes:
   `research/scoring.py`'s `cost_sensitivity` (a baseline-ratio, clipped, fail-closed on
   a non-positive baseline), reusing an established pattern rather than inventing a new
   one for the same kind of question ("how much of a reference Sharpe survived?").
+
+  **Verified via lmchatbot cross-check: this is a coarse heuristic evidence gate, not a
+  statistically rigorous comparison, and the spec says so explicitly rather than implying
+  otherwise.** A `MIN_PAPER_TRADING_DAYS`/`MIN_PAPER_TRADES`-sized paper window is
+  typically far shorter (days to weeks) than the OOS window a candidate was originally
+  evaluated over (often months), so `paper_sharpe` carries materially more estimation
+  noise than `candidate.oos_sharpe` — a real asymmetry inherent to comparing a young
+  sample against a mature one, not a bug this module can fix by picking a different
+  threshold number. `evaluate_paper_trading_health`'s docstring must say this plainly:
+  the returned verdict is a first-pass filter for human judgment, not proof the strategy
+  is fine.
 
 Eligibility logic (not enough evidence vs. failed vs. passed — three distinct outcomes,
 not a single boolean threshold):
@@ -278,10 +311,20 @@ plain SQLAlchemy `DateTime` column — the same pattern `research/ledger.py`'s
 elsewhere in this package. Since SQLite round-tripping through SQLAlchemy's plain
 `DateTime` can silently drop tzinfo, `evaluate_paper_trading_health` normalizes
 defensively on read rather than assuming either behavior:
-`started_at = promotion.paper_trading_started_at; started_at = started_at.replace(tzinfo=UTC) if started_at.tzinfo is None else started_at`
+`started_at_aware = promotion.paper_trading_started_at; started_at_aware = started_at_aware.replace(tzinfo=UTC) if started_at_aware.tzinfo is None else started_at_aware`
 — correct whether or not the round-trip preserved awareness, with no reliance on an
 assumption neither this spec nor a quick source read can settle for SQLAlchemy's SQLite
 dialect in general.
+
+The `Trade` query's `Trade.close_date >= ...` filter compares against freqtrade's
+**raw, naive-UTC** `close_date` column directly (not the `close_date_utc` property,
+which isn't a queryable column) — so the bound value must itself be naive UTC:
+`started_at_naive = started_at_aware.replace(tzinfo=None)`, derived from the same
+`started_at_aware` computed above (see "One normalized instant per call" above — never
+re-derive this independently). Python-side arithmetic (`days_elapsed`, and reading each
+returned `Trade`'s own timestamp) uses the tz-aware `.close_date_utc`/`.open_date_utc`
+properties and the tz-aware `started_at_aware`, consistently on the aware side of the
+boundary; the SQL predicate is the one and only place the naive value is used.
 
 ## Error handling
 
