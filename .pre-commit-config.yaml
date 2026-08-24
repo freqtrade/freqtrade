@@ -26,7 +26,7 @@ repos:
           - types-tabulate==0.10.0.20260508
           - types-python-dateutil==2.9.0.20260807
           - scipy-stubs==1.17.1.5
-          - SQLAlchemy==2.0.51
+          - SQLAlchemy==2.0.52
         # stages: [push]
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
