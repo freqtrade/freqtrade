@@ -35,3 +35,21 @@ class CandidateResult(Base):
     pbo: Mapped[float] = mapped_column(Float)
     survived: Mapped[bool] = mapped_column(Boolean)
     evidence_json: Mapped[str] = mapped_column(String, default="{}")
+
+
+class PromotionRecord(Base):
+    """One row per promotion attempt for a specific passing CandidateResult -- tracks
+    the Paper-Trading -> Live-eligibility lifecycle. A candidate can have many
+    CandidateResult rows (re-runs, parameter sweeps); only specific passing runs ever
+    get a PromotionRecord, and most never do."""
+
+    __tablename__ = "promotion_records"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    candidate_result_id: Mapped[int] = mapped_column(Integer, index=True)
+    state: Mapped[str] = mapped_column(String(20))
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    paper_trading_started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    paper_trading_db_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    resolution_reason: Mapped[str | None] = mapped_column(String, nullable=True)
