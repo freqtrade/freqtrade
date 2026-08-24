@@ -19,7 +19,7 @@ from freqtrade.data.converter import ohlcv_to_dataframe, trades_list_to_df
 from freqtrade.enums import CandleType, MarginMode, SignalDirection, TradingMode
 from freqtrade.exchange import Exchange, timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.freqtradebot import FreqtradeBot
-from freqtrade.persistence import LocalTrade, Order, Trade, init_db
+from freqtrade.persistence import LocalTrade, Order, Trade, enable_database_use, init_db
 from freqtrade.persistence.custom_data import _CustomData
 from freqtrade.resolvers import ExchangeResolver
 from freqtrade.system import set_mp_start_method
@@ -46,6 +46,10 @@ from tests.conftest_trades_usdt import (
 )
 
 
+# pytester spawns isolated sub-runs; used by test_use_db_flag_leak.py to test fixture
+# behavior across a test boundary, which can't be observed within a single test body.
+pytest_plugins = ["pytester"]
+
 logging.getLogger("").setLevel(logging.INFO)
 
 
@@ -55,6 +59,25 @@ np.seterr(all="raise")
 CURRENT_TEST_STRATEGY = "StrategyTestV3"
 TRADE_SIDES = ("long", "short")
 EXMS = "freqtrade.exchange.exchange.Exchange"
+
+
+@pytest.fixture(autouse=True)
+def reset_use_db_flags():
+    """
+    Several tests toggle Trade.use_db (and PairLocks/CustomDataWrapper's use_db) with a
+    bare assignment instead of the exception-safe FtNoDBContext, and/or add to
+    LocalTrade.bt_trades & friends without a guaranteed matching Trade.reset_trades().
+    If the test raises before resetting either one, the state -- class attributes, not
+    per-test state -- stays dirty for every later test sharing this pytest-xdist worker
+    process: a disabled use_db flag silently routes queries to the shared
+    LocalTrade.trades list instead of each test's own per-test DB, and leftover
+    bt_trades bleed stale trades into unrelated tests. This runs unconditionally after
+    every test (pytest guarantees generator-fixture teardown runs even when the test
+    body raised) to guard against both leaks regardless of which test causes them.
+    """
+    yield
+    enable_database_use()
+    Trade.reset_trades()
 
 
 def pytest_addoption(parser):
