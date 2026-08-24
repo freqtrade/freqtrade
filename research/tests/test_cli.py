@@ -1,5 +1,58 @@
+from datetime import UTC
+
 from research.cli import main
 from research.gate import GateResult
+
+
+def test_gate_command_parses_start_and_end_as_utc_aware_datetimes(mocker, capsys):
+    """Regression test: freqtrade's Backtesting.backtest() internally compares
+    against tz-aware (UTC) pandas Timestamps. A naive datetime passed as
+    start_date/end_date crashes deep inside freqtrade with
+    "can't compare offset-naive and offset-aware datetimes" -- caught only when
+    running against real data, since research/tests' own fixtures always derive
+    start/end from an already tz-aware loaded dataframe."""
+    canned = GateResult(
+        strategy_id="StrategyTestV3",
+        passed=True,
+        deflated_sharpe=0.97,
+        permutation_p=0.01,
+        pbo=0.1,
+        mean_test_sharpe=1.2,
+        n_trials=12,
+        reasons=[],
+    )
+    mock_gate = mocker.patch("research.cli.run_promotion_gate", return_value=canned)
+    mocker.patch(
+        "research.cli.Configuration.from_files", return_value={"datadir": "user_data/data"}
+    )
+
+    main(
+        [
+            "gate",
+            "--strategy",
+            "StrategyTestV3",
+            "--config",
+            "config.json",
+            "--pairs",
+            "BTC/USDT",
+            "--timeframe",
+            "1h",
+            "--start",
+            "2024-01-01",
+            "--end",
+            "2024-06-01",
+            "--train-days",
+            "60",
+            "--test-days",
+            "20",
+            "--param-grid",
+            '[{"buy_rsi": 30}]',
+        ]
+    )
+
+    _, kwargs = mock_gate.call_args
+    assert kwargs["start"].utcoffset() == UTC.utcoffset(None)
+    assert kwargs["end"].utcoffset() == UTC.utcoffset(None)
 
 
 def test_gate_command_prints_verdict_and_returns_pass_exit_code(mocker, capsys):

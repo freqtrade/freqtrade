@@ -305,6 +305,10 @@ extend-ignore = [
   "S101",  # allow assert in tests
   ]
 
+"user_data/strategies/tests/**.py" = [
+  "S101",  # allow assert in tests
+  ]
+
 "freqtrade/templates/**.py" = [
   "RUF100",  # Allow unused noqa
 ]

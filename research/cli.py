@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import argparse
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 from freqtrade.configuration import Configuration
@@ -46,8 +46,10 @@ def main(argv: list[str] | None = None) -> int:
             pairs=args.pairs.split(","),
             timeframe=args.timeframe,
             datadir=Path(ft_config["datadir"]),
-            start=datetime.fromisoformat(args.start),
-            end=datetime.fromisoformat(args.end),
+            # freqtrade's Backtesting.backtest() compares against tz-aware (UTC) pandas
+            # Timestamps internally -- a naive datetime here crashes deep inside it.
+            start=datetime.fromisoformat(args.start).replace(tzinfo=UTC),
+            end=datetime.fromisoformat(args.end).replace(tzinfo=UTC),
             train_days=args.train_days,
             test_days=args.test_days,
             param_grid=json.loads(args.param_grid),
