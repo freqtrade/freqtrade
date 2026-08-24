@@ -22,7 +22,9 @@ def extract_config_json_schema():
         from freqtrade.config_schema import CONF_SCHEMA
 
     schema_filename = Path(__file__).parent / "schema.json"
-    with schema_filename.open("w") as f:
+    # newline="\n": force LF on write, or the default text-mode translation writes
+    # CRLF on Windows and this hook fails every commit by "modifying" the file.
+    with schema_filename.open("w", newline="\n") as f:
         rapidjson.dump(CONF_SCHEMA, f, indent=2)
 
 

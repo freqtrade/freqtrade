@@ -301,6 +301,9 @@ extend-ignore = [
   "DTZ005",  # Use timezone-aware datetime objects
   "DTZ", # Use timezone-aware datetime objects
   ]
+"research/tests/**.py" = [
+  "S101",  # allow assert in tests
+  ]
 
 "freqtrade/templates/**.py" = [
   "RUF100",  # Allow unused noqa
