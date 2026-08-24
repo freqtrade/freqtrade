@@ -40,6 +40,14 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Also run a fee-sensitivity stress test if the gate passes (informational)",
     )
+    gate.add_argument(
+        "--regime-breakdown",
+        action="store_true",
+        help=(
+            "Also compute a regime (Trend x Volatility) breakdown of walk-forward "
+            "results, regardless of pass/fail (informational)"
+        ),
+    )
 
     args = parser.parse_args(argv)
 
@@ -61,6 +69,7 @@ def main(argv: list[str] | None = None) -> int:
             param_grid=json.loads(args.param_grid),
             db_path=args.db_path,
             fee_sensitivity_multipliers=DEFAULT_FEE_MULTIPLIERS if args.fee_sensitivity else None,
+            include_regime_breakdown=args.regime_breakdown,
         )
         verdict = "PASS" if result.passed else "FAIL"
         print(f"{result.strategy_id}: {verdict}")
@@ -78,6 +87,18 @@ def main(argv: list[str] | None = None) -> int:
                 print(
                     f"    {label:<22} mean OOS sharpe {stats['mean_test_sharpe']:>6.2f}"
                     f"   deflated_sharpe (n_trials=1) {stats['deflated_sharpe']:.3f}"
+                )
+        if result.regime_breakdown:
+            print(
+                f"  regime breakdown ({args.pairs.split(',')[0]}, informational, "
+                "not part of PASS/FAIL):"
+            )
+            for label, stats in result.regime_breakdown.items():
+                print(
+                    f"    {label:<15} {stats['n_windows']:>2} windows"
+                    f"   {stats['n_trades']:>3} trades"
+                    f"   mean sharpe {stats['mean_test_sharpe']:>6.2f}"
+                    f"   total return {stats['total_return']:>8.4f}"
                 )
         return 0 if result.passed else 1
 

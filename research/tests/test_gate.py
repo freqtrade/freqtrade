@@ -150,3 +150,97 @@ def test_run_promotion_gate_skips_fee_sensitivity_when_it_fails(mocker, tmp_path
 
     assert result.passed is False
     assert result.fee_sensitivity is None
+
+
+def test_run_promotion_gate_attaches_regime_breakdown_when_requested_and_passes(mocker, tmp_path):
+    conf = _conf()
+    _patch(mocker)
+    full_data = history.load_data(datadir=TESTDATADIR, timeframe="5m", pairs=["UNITTEST/BTC"])
+    min_date, max_date = get_timerange(full_data)
+    total_days = max(8, (max_date - min_date).days)
+    train_days = max(1, total_days // 8)
+    test_days = max(1, total_days // 16)
+
+    # Permissive thresholds guarantee a real, unmocked PASS (see the fee-sensitivity
+    # pass test above for the same pattern).
+    result = run_promotion_gate(
+        config=conf,
+        strategy_id="StrategyTestV3",
+        pairs=["UNITTEST/BTC"],
+        timeframe="5m",
+        datadir=TESTDATADIR,
+        start=min_date,
+        end=max_date,
+        train_days=train_days,
+        test_days=test_days,
+        param_grid=[{"buy_rsi": 25}, {"buy_rsi": 35}],
+        db_path=str(tmp_path / "research.sqlite"),
+        dsr_threshold=0.0,
+        fdr_q=1.0,
+        pbo_threshold=1.0,
+        include_regime_breakdown=True,
+    )
+
+    assert result.passed is True
+    assert result.regime_breakdown is not None
+    assert len(result.regime_breakdown) > 0
+
+
+def test_run_promotion_gate_attaches_regime_breakdown_when_requested_and_fails(mocker, tmp_path):
+    conf = _conf()
+    _patch(mocker)
+    full_data = history.load_data(datadir=TESTDATADIR, timeframe="5m", pairs=["UNITTEST/BTC"])
+    min_date, max_date = get_timerange(full_data)
+    total_days = max(8, (max_date - min_date).days)
+    train_days = max(1, total_days // 8)
+    test_days = max(1, total_days // 16)
+
+    # Impossible dsr_threshold guarantees a real FAIL (see the fee-sensitivity skip test
+    # above for the same pattern). Regime breakdown must still be attached -- this is the
+    # test that actually proves the deliberate asymmetry with fee-sensitivity was
+    # implemented, not just described in the spec.
+    result = run_promotion_gate(
+        config=conf,
+        strategy_id="StrategyTestV3",
+        pairs=["UNITTEST/BTC"],
+        timeframe="5m",
+        datadir=TESTDATADIR,
+        start=min_date,
+        end=max_date,
+        train_days=train_days,
+        test_days=test_days,
+        param_grid=[{"buy_rsi": 25}, {"buy_rsi": 35}],
+        db_path=str(tmp_path / "research.sqlite"),
+        dsr_threshold=1.1,
+        include_regime_breakdown=True,
+    )
+
+    assert result.passed is False
+    assert result.regime_breakdown is not None
+    assert len(result.regime_breakdown) > 0
+
+
+def test_run_promotion_gate_omits_regime_breakdown_by_default(mocker, tmp_path):
+    conf = _conf()
+    _patch(mocker)
+    full_data = history.load_data(datadir=TESTDATADIR, timeframe="5m", pairs=["UNITTEST/BTC"])
+    min_date, max_date = get_timerange(full_data)
+    total_days = max(8, (max_date - min_date).days)
+    train_days = max(1, total_days // 8)
+    test_days = max(1, total_days // 16)
+
+    result = run_promotion_gate(
+        config=conf,
+        strategy_id="StrategyTestV3",
+        pairs=["UNITTEST/BTC"],
+        timeframe="5m",
+        datadir=TESTDATADIR,
+        start=min_date,
+        end=max_date,
+        train_days=train_days,
+        test_days=test_days,
+        param_grid=[{"buy_rsi": 25}, {"buy_rsi": 35}],
+        db_path=str(tmp_path / "research.sqlite"),
+    )
+
+    assert result.regime_breakdown is None

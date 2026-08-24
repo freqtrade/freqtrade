@@ -18,6 +18,7 @@ from research.cost_stress import fee_sensitivity
 from research.db import get_engine, get_session
 from research.ledger import family_of, family_trial_count, log_candidate_result
 from research.pbo import probability_of_backtest_overfitting
+from research.regime import classify_regimes, regime_report
 from research.statistics import benjamini_hochberg, deflated_sharpe_ratio, permutation_test
 from research.walkforward import WalkForwardRunner, generate_windows
 
@@ -35,6 +36,7 @@ class GateResult:
     n_trials: int
     reasons: list[str]
     fee_sensitivity: dict[float, dict] | None = None
+    regime_breakdown: dict[str, dict] | None = None
 
 
 def run_promotion_gate(
@@ -54,6 +56,7 @@ def run_promotion_gate(
     pbo_threshold: float = 0.5,
     periods_per_year: int = 365,
     fee_sensitivity_multipliers: tuple[float, ...] | None = None,
+    include_regime_breakdown: bool = False,
 ) -> GateResult:
     """Run walk-forward evaluation for `strategy_id` and decide whether it is
     statistically fit to promote, logging the outcome to the candidate ledger.
@@ -73,6 +76,9 @@ def run_promotion_gate(
     A strategy passes only if it clears all three checks: deflated Sharpe >=
     `dsr_threshold`, the permutation-test p-value survives Benjamini-Hochberg
     FDR control at `fdr_q`, and PBO <= `pbo_threshold`.
+
+    `include_regime_breakdown` classifies using only `pairs[0]` as the reference pair --
+    multi-pair blending is out of scope for this feature.
     """
     windows = generate_windows(start, end, train_days, test_days)
     if len(windows) < 4:
@@ -145,6 +151,11 @@ def run_promotion_gate(
     )
     session.commit()
 
+    regime_breakdown = None
+    if include_regime_breakdown:
+        labels = classify_regimes(pairs[0], timeframe, datadir, windows)
+        regime_breakdown = regime_report(results, labels)
+
     return GateResult(
         strategy_id=strategy_id,
         passed=passed,
@@ -155,4 +166,5 @@ def run_promotion_gate(
         n_trials=n_trials,
         reasons=reasons,
         fee_sensitivity=fee_report,
+        regime_breakdown=regime_breakdown,
     )
