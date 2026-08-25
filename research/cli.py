@@ -11,8 +11,10 @@ from pathlib import Path
 
 from freqtrade.configuration import Configuration
 from research.cost_stress import DEFAULT_FEE_MULTIPLIERS
+from research.db import get_engine, get_session
 from research.gate import run_promotion_gate
 from research.scoring import strategy_report
+from research.trader_mining.ingestion import ingest_hyperliquid_fills
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -58,6 +60,13 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
 
+    trader_import = sub.add_parser(
+        "trader-import", help="Import one wallet's fill history from Hyperliquid"
+    )
+    trader_import.add_argument("--trader", required=True, help="Wallet address")
+    trader_import.add_argument("--since", help="YYYY-MM-DD, earliest fill to fetch")
+    trader_import.add_argument("--db-path", default="user_data/research.sqlite")
+
     args = parser.parse_args(argv)
 
     if args.command == "gate":
@@ -83,6 +92,22 @@ def main(argv: list[str] | None = None) -> int:
         )
         print(strategy_report(result, pair=args.pairs.split(",")[0]))
         return 0 if result.passed else 1
+
+    elif args.command == "trader-import":
+        engine = get_engine(args.db_path)
+        session = get_session(engine)
+        since = datetime.fromisoformat(args.since).replace(tzinfo=UTC) if args.since else None
+        ingest_result = ingest_hyperliquid_fills(session, trader=args.trader, since=since)
+        print(f"n_fetched: {ingest_result.n_fetched}")
+        print(f"n_new: {ingest_result.n_new}")
+        print(f"history_completeness: {ingest_result.history_completeness}")
+        if ingest_result.history_completeness == "truncated_by_provider_limit":
+            print(
+                "WARNING: history_completeness=truncated_by_provider_limit -- "
+                "Hyperliquid's 10,000-fill ceiling was reached; earlier fills may exist "
+                "but are not retrievable via this endpoint."
+            )
+        return 0
 
     return 1
 

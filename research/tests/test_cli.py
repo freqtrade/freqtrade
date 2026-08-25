@@ -311,3 +311,56 @@ def test_gate_command_threads_parameter_stability_flag_and_prints_report_line(mo
     captured = capsys.readouterr()
     assert exit_code == 0
     assert "parameter stability  0.750" in captured.out
+
+
+def test_trader_import_command_forwards_args_and_prints_result(mocker, capsys):
+    from research.trader_mining.ingestion import IngestResult
+
+    mock_ingest = mocker.patch(
+        "research.cli.ingest_hyperliquid_fills",
+        return_value=IngestResult(n_fetched=5, n_new=3, history_completeness="complete"),
+    )
+    mocker.patch("research.cli.get_engine")
+    mocker.patch("research.cli.get_session")
+
+    exit_code = main(
+        [
+            "trader-import",
+            "--trader",
+            "0x0000000000000000000000000000000000000000",
+            "--since",
+            "2026-01-01",
+            "--db-path",
+            "user_data/research.sqlite",
+        ]
+    )
+
+    _, kwargs = mock_ingest.call_args
+    assert kwargs["trader"] == "0x0000000000000000000000000000000000000000"
+    assert kwargs["since"].year == 2026
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "n_fetched: 5" in captured.out
+    assert "n_new: 3" in captured.out
+    assert "complete" in captured.out
+
+
+def test_trader_import_command_warns_on_truncated_history(mocker, capsys):
+    from research.trader_mining.ingestion import IngestResult
+
+    mocker.patch(
+        "research.cli.ingest_hyperliquid_fills",
+        return_value=IngestResult(
+            n_fetched=10_000, n_new=10_000, history_completeness="truncated_by_provider_limit"
+        ),
+    )
+    mocker.patch("research.cli.get_engine")
+    mocker.patch("research.cli.get_session")
+
+    exit_code = main(["trader-import", "--trader", "0x0000000000000000000000000000000000000000"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0  # not a failure -- an honest, informational result
+    assert "truncated_by_provider_limit" in captured.out
+    assert "WARNING" in captured.out

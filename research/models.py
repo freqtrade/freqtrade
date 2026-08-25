@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Float, Index, Integer, String
+from sqlalchemy import BigInteger, Boolean, DateTime, Float, Index, Integer, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -82,3 +82,49 @@ class HealthCheck(Base):
     win_rate: Mapped[float] = mapped_column(Float)
     max_drawdown: Mapped[float] = mapped_column(Float)
     reasons_json: Mapped[str] = mapped_column(String, default="[]")
+
+
+class RawFill(Base):
+    """One row per raw fill exactly as a provider returned it -- payload_json preserves
+    the full original payload verbatim (research.trader_mining.provider's
+    trade["info"]), so normalization bugs in NormalizedFill can be investigated against
+    real captured data later, per the proposal's explicit requirement."""
+
+    __tablename__ = "raw_fills"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    source: Mapped[str] = mapped_column(String(40))
+    trader: Mapped[str] = mapped_column(String(120), index=True)
+    # BigInteger: real Hyperliquid tid values are 15-16 digits, beyond 32-bit range --
+    # only worked as plain Integer because SQLite's INTEGER affinity is dynamically
+    # sized; would silently break on a fixed-width backend.
+    tid: Mapped[int] = mapped_column(BigInteger, unique=True)
+    payload_json: Mapped[str] = mapped_column(String)
+    retrieved_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class NormalizedFill(Base):
+    """One row per fill, mapped to a stable internal shape independent of the upstream
+    provider. tid matches a RawFill.tid -- indexed, not a formal ForeignKey, matching
+    this file's existing PromotionRecord/HealthCheck convention of a plain indexed
+    column rather than a hard constraint."""
+
+    __tablename__ = "normalized_fills"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    trader: Mapped[str] = mapped_column(String(120), index=True)
+    # unique=True already creates its own index -- no separate index=True needed.
+    tid: Mapped[int] = mapped_column(BigInteger, unique=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime)
+    symbol: Mapped[str] = mapped_column(String(80))
+    side: Mapped[str] = mapped_column(String(10))
+    price: Mapped[float] = mapped_column(Float)
+    quantity: Mapped[float] = mapped_column(Float)
+    notional: Mapped[float] = mapped_column(Float)
+    position: Mapped[float] = mapped_column(Float)
+    closed_pnl: Mapped[float] = mapped_column(Float)
+    direction: Mapped[str] = mapped_column(String(40))
+    crossed: Mapped[bool] = mapped_column(Boolean)
+    fee: Mapped[float] = mapped_column(Float)
+    fee_currency: Mapped[str] = mapped_column(String(20))
+    order_id: Mapped[str] = mapped_column(String(60))
