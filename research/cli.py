@@ -18,6 +18,8 @@ from research.scoring import strategy_report
 from research.trader_mining.engine import reconstruct_and_persist_trades
 from research.trader_mining.ingestion import ingest_hyperliquid_fills, ingest_hyperliquid_ledger
 from research.trader_mining.metrics import compute_metrics, format_report
+from research.trader_mining.split_report import compute_split_report, format_split_report
+from research.trader_mining.splitting import PeriodBoundaries
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -83,6 +85,27 @@ def main(argv: list[str] | None = None) -> int:
     trader_report.add_argument("--trader", required=True, help="Wallet address")
     trader_report.add_argument("--symbol", help="Limit to one symbol (default: all)")
     trader_report.add_argument("--db-path", default="user_data/research.sqlite")
+    trader_report.add_argument(
+        "--train-end",
+        help=(
+            "YYYY-MM-DD, TRAIN/VALIDATION boundary (exclusive of VALIDATION). Requires "
+            "--validation-end and --test-end."
+        ),
+    )
+    trader_report.add_argument(
+        "--validation-end",
+        help=(
+            "YYYY-MM-DD, VALIDATION/TEST boundary (exclusive of TEST). Requires "
+            "--train-end and --test-end."
+        ),
+    )
+    trader_report.add_argument(
+        "--test-end",
+        help=(
+            "YYYY-MM-DD, TEST/FORWARD boundary (exclusive of FORWARD; FORWARD is "
+            "open-ended). Requires --train-end and --validation-end."
+        ),
+    )
 
     args = parser.parse_args(argv)
 
@@ -150,8 +173,25 @@ def main(argv: list[str] | None = None) -> int:
         if args.symbol:
             query = query.filter(ReconstructedTrade.symbol == args.symbol)
         trades = query.all()
-        metrics = compute_metrics(trades)
-        print(format_report(metrics, args.trader))
+
+        split_flags = (args.train_end, args.validation_end, args.test_end)
+        if any(split_flags) and not all(split_flags):
+            trader_report.error(
+                "--train-end, --validation-end, and --test-end must be given together "
+                "(all three or none)"
+            )
+
+        if all(split_flags):
+            boundaries = PeriodBoundaries(
+                train_end=datetime.fromisoformat(args.train_end).replace(tzinfo=UTC),
+                validation_end=datetime.fromisoformat(args.validation_end).replace(tzinfo=UTC),
+                test_end=datetime.fromisoformat(args.test_end).replace(tzinfo=UTC),
+            )
+            split_report = compute_split_report(trades, boundaries)
+            print(format_split_report(split_report, args.trader))
+        else:
+            metrics = compute_metrics(trades)
+            print(format_report(metrics, args.trader))
         return 0
 
     return 1

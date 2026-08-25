@@ -1,5 +1,7 @@
 from datetime import UTC
 
+import pytest
+
 from research.cli import main
 from research.gate import GateResult
 
@@ -494,3 +496,90 @@ def test_trader_analyze_command_prints_reconciled_gaps_when_present(mocker, caps
     assert exit_code == 0
     assert "reconciled_gaps" in captured.out
     assert "HYPE/USDC" in captured.out
+
+
+def test_trader_report_rejects_partial_split_flags(capsys):
+    with pytest.raises(SystemExit):
+        main(
+            [
+                "trader-report",
+                "--trader",
+                "0xAAA",
+                "--train-end",
+                "2025-01-01",
+                "--validation-end",
+                "2025-07-01",
+                # --test-end deliberately omitted
+            ]
+        )
+
+    assert "must be given together" in capsys.readouterr().err
+
+
+def test_trader_report_prints_split_report_when_all_three_flags_given(mocker, capsys):
+    from datetime import UTC, datetime
+
+    from research.models import ReconstructedTrade
+
+    trade = ReconstructedTrade(
+        trader="0xAAA",
+        symbol="BTC/USDC:USDC",
+        direction="long",
+        entry_timestamp=datetime(2024, 6, 1, tzinfo=UTC),
+        entry_price=100.0,
+        exit_timestamp=datetime(2024, 6, 1, tzinfo=UTC),
+        exit_price=100.0,
+        quantity=1.0,
+        gross_pnl=10.0,
+        fees=0.0,
+        net_pnl=10.0,
+        holding_time_seconds=3600.0,
+        n_fills=2,
+        is_truncated_start=False,
+        was_liquidated=False,
+    )
+    mock_query = mocker.MagicMock()
+    mock_query.filter.return_value = mock_query
+    mock_query.all.return_value = [trade]
+    mock_session = mocker.MagicMock()
+    mock_session.query.return_value = mock_query
+    mocker.patch("research.cli.get_engine")
+    mocker.patch("research.cli.get_session", return_value=mock_session)
+
+    exit_code = main(
+        [
+            "trader-report",
+            "--trader",
+            "0xAAA",
+            "--train-end",
+            "2025-01-01",
+            "--validation-end",
+            "2025-07-01",
+            "--test-end",
+            "2026-01-01",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "TRAIN" in captured.out and "VALIDATION" in captured.out
+    assert "whole-history" in captured.out.lower()
+
+
+def test_trader_report_unchanged_when_no_split_flags_given(mocker, capsys):
+    """Regression guard: today's plain trader-report output must be the same code path
+    (compute_metrics + format_report) when no split flags are passed."""
+    mock_query = mocker.MagicMock()
+    mock_query.filter.return_value = mock_query
+    mock_query.all.return_value = []
+    mock_session = mocker.MagicMock()
+    mock_session.query.return_value = mock_query
+    mocker.patch("research.cli.get_engine")
+    mocker.patch("research.cli.get_session", return_value=mock_session)
+
+    exit_code = main(["trader-report", "--trader", "0xAAA"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "Chronological Split Report" not in captured.out
+    assert "## Wallet Report: 0xAAA" in captured.out
