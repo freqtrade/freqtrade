@@ -303,6 +303,7 @@ extend-ignore = [
   ]
 "research/tests/**.py" = [
   "S101",  # allow assert in tests
+  "DTZ001",  # allow naive datetime in tests
   ]
 
 "user_data/strategies/tests/**.py" = [
