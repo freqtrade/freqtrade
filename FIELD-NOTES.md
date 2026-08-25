@@ -155,3 +155,49 @@ confirmed the exact same sequence passes with both fixtures in place. A combined
 -- a pre-existing, unrelated `pytest-retry` version-drift issue breaks *any* `pytester`
 sub-run here, confirmed identically on the already-merged `test_use_db_flag_leak.py`; CI is
 the first place that test runs end-to-end.
+
+---
+
+## Hyperliquid's `tid` is not always a real per-fill identifier -- "Spot Dust Conversion" fills use `tid=0` as a sentinel
+
+`research/trader_mining/ingestion.py:39-44`'s own comment already flagged this exact risk
+before it was confirmed real: `RawFill.tid`/`NormalizedFill.tid` are globally
+`unique=True` (`research/models.py:101`, `:117`), and `ingest_hyperliquid_fills`'s
+dedup check (`research/trader_mining/ingestion.py:45-46`,
+`session.query(RawFill.tid).filter(RawFill.trader == trader)`) is scoped per-trader, not
+global -- it relies on Hyperliquid's `tid` being genuinely unique across every wallet.
+
+That guarantee doesn't hold for `"direction": "Spot Dust Conversion"` fills: Hyperliquid
+periodically auto-converts small residual token balances into another asset, and these
+system-generated fills carry `tid=0` instead of a real per-fill sequence number --
+confirmed by reproducing the exact predicted failure live: importing a second real wallet
+(`0x493db0ed7514c975e9abcc110bd40c473b6763e3`) into a database that already held a
+`tid=0` dust-conversion fill from a different wallet
+(`0xfae95f601f3a25ace60d19dbb929f2a5c57e3571`) raised
+`sqlalchemy.exc.IntegrityError: UNIQUE constraint failed: normalized_fills.tid` on
+`trader-import`, uncaught, aborting the whole run for the second wallet. The exact same
+degenerate-identifier pattern this session already found and fixed once, one layer away,
+for `RawLedgerEvent.event_id`/Hyperliquid's `cStakingTransfer` events sharing one
+zero-hash `id` (see `research/trader_mining/ingestion.py`'s `_dedup_key` and
+`docs/superpowers/specs/2026-08-25-trader-mining-ledger-reconciliation-design.md`'s
+"Not incremental" section) -- Hyperliquid using a sentinel/placeholder identifier for
+system-generated events rather than a genuine unique one, not confined to one table.
+
+Not yet fixed here -- found live-validating trader-mining Release 3 (performance metrics)
+against real wallets, out of scope for that release (this is a Release 1/2 ingestion bug,
+not a metrics bug). Two concrete consequences follow directly from the ledger-table fix's
+own precedent: (1) a SECOND dust-conversion fill for the SAME wallet would be silently
+dropped by the existing per-trader dedup (once `tid=0` is in `existing_tids`, every
+subsequent same-wallet `tid=0` fill is skipped forever) -- plausibly part of what's been
+causing "unexplained" position gaps in real wallet validation, not yet confirmed as the
+specific cause of any one documented gap; (2) a second WALLET's dust-conversion fill
+crashes the whole `trader-import` run, as reproduced above. Upgrade path if/when this is
+prioritized: the same fix already applied to `RawLedgerEvent` -- a derived dedup key
+(trader, tid, timestamp, symbol, a hash of the raw payload) instead of trusting `tid`
+alone, since `tid=0` genuinely recurs across both wallets and time for this fill type.
+
+Verified 2026-08-25 while real-data-validating trader-mining Release 3: reproduced the
+cross-wallet `IntegrityError` live, confirmed `direction='Spot Dust Conversion'` on the
+colliding row, and confirmed the same session already fixed the identical pattern for
+`RawLedgerEvent` (`cStakingTransfer`'s zero-hash `id`) a few hours earlier in the same
+line of work.

@@ -13,9 +13,11 @@ from freqtrade.configuration import Configuration
 from research.cost_stress import DEFAULT_FEE_MULTIPLIERS
 from research.db import get_engine, get_session
 from research.gate import run_promotion_gate
+from research.models import ReconstructedTrade
 from research.scoring import strategy_report
 from research.trader_mining.engine import reconstruct_and_persist_trades
 from research.trader_mining.ingestion import ingest_hyperliquid_fills, ingest_hyperliquid_ledger
+from research.trader_mining.metrics import compute_metrics, format_report
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -75,6 +77,13 @@ def main(argv: list[str] | None = None) -> int:
     trader_analyze.add_argument("--symbol", help="Limit to one symbol (default: all)")
     trader_analyze.add_argument("--db-path", default="user_data/research.sqlite")
 
+    trader_report = sub.add_parser(
+        "trader-report", help="Print a performance report for a wallet's reconstructed trades"
+    )
+    trader_report.add_argument("--trader", required=True, help="Wallet address")
+    trader_report.add_argument("--symbol", help="Limit to one symbol (default: all)")
+    trader_report.add_argument("--db-path", default="user_data/research.sqlite")
+
     args = parser.parse_args(argv)
 
     if args.command == "gate":
@@ -132,6 +141,17 @@ def main(argv: list[str] | None = None) -> int:
             print(f"reconciled_gaps ({len(analyze_result.reconciled_gaps)}):")
             for gap in analyze_result.reconciled_gaps:
                 print(f"  {gap}")
+        return 0
+
+    elif args.command == "trader-report":
+        engine = get_engine(args.db_path)
+        session = get_session(engine)
+        query = session.query(ReconstructedTrade).filter(ReconstructedTrade.trader == args.trader)
+        if args.symbol:
+            query = query.filter(ReconstructedTrade.symbol == args.symbol)
+        trades = query.all()
+        metrics = compute_metrics(trades)
+        print(format_report(metrics, args.trader))
         return 0
 
     return 1
