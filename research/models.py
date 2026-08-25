@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Float, Integer, String
+from sqlalchemy import Boolean, DateTime, Float, Index, Integer, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -53,3 +53,32 @@ class PromotionRecord(Base):
     paper_trading_db_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     resolution_reason: Mapped[str | None] = mapped_column(String, nullable=True)
+
+
+class HealthCheck(Base):
+    """One row per live-health evaluation of a PromotionRecord already in LIVE state.
+    The record's CURRENT health state is simply the latest row for its
+    promotion_record_id, ordered by evaluated_at -- deliberately not a mutable field on
+    PromotionRecord, to avoid a second source of truth that could drift out of sync."""
+
+    __tablename__ = "health_checks"
+    __table_args__ = (
+        Index(
+            "ix_health_checks_promotion_id_evaluated_at",
+            "promotion_record_id",
+            "evaluated_at",
+            "id",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    promotion_record_id: Mapped[int] = mapped_column(Integer, index=True)
+    evaluated_at: Mapped[datetime] = mapped_column(DateTime)
+    state: Mapped[str] = mapped_column(String(20))
+    enough_evidence: Mapped[bool] = mapped_column(Boolean)
+    n_trades: Mapped[int] = mapped_column(Integer)
+    live_sharpe: Mapped[float] = mapped_column(Float)
+    degradation_ratio: Mapped[float] = mapped_column(Float)
+    win_rate: Mapped[float] = mapped_column(Float)
+    max_drawdown: Mapped[float] = mapped_column(Float)
+    reasons_json: Mapped[str] = mapped_column(String, default="[]")
