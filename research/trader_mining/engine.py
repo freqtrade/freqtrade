@@ -14,11 +14,13 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
+from functools import partial
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from research.models import NormalizedFill, ReconstructedTrade
+from research.trader_mining.ledger import reconciliation_deltas
 from research.trader_mining.symbols import base_asset_of
 
 
@@ -288,6 +290,7 @@ def reconstruct_trades(
 class ReconstructResult:
     n_trades: int
     symbols: list[str]
+    reconciled_gaps: list[str] = field(default_factory=list)
 
 
 def reconstruct_and_persist_trades(
@@ -322,6 +325,8 @@ def reconstruct_and_persist_trades(
         symbols_query = symbols_query.filter(NormalizedFill.symbol == symbol)
     symbols = sorted({s for (s,) in symbols_query.distinct().all()})
 
+    reconcile = partial(reconciliation_deltas, session, trader)
+    reconciled_gaps: list[str] = []
     total_trades = 0
     try:
         for sym in symbols:
@@ -339,7 +344,9 @@ def reconstruct_and_persist_trades(
                 ReconstructedTrade.trader == trader, ReconstructedTrade.symbol == sym
             ).delete()
 
-            new_trades = reconstruct_trades(trader, sym, fills)
+            new_trades = reconstruct_trades(
+                trader, sym, fills, reconcile=reconcile, reconciled_gaps=reconciled_gaps
+            )
             for t in new_trades:
                 session.add(t)
             total_trades += len(new_trades)
@@ -348,4 +355,6 @@ def reconstruct_and_persist_trades(
         raise
 
     session.commit()
-    return ReconstructResult(n_trades=total_trades, symbols=symbols)
+    return ReconstructResult(
+        n_trades=total_trades, symbols=symbols, reconciled_gaps=reconciled_gaps
+    )

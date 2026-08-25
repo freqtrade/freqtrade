@@ -15,7 +15,7 @@ from research.db import get_engine, get_session
 from research.gate import run_promotion_gate
 from research.scoring import strategy_report
 from research.trader_mining.engine import reconstruct_and_persist_trades
-from research.trader_mining.ingestion import ingest_hyperliquid_fills
+from research.trader_mining.ingestion import ingest_hyperliquid_fills, ingest_hyperliquid_ledger
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -115,6 +115,9 @@ def main(argv: list[str] | None = None) -> int:
                 "Hyperliquid's 10,000-fill ceiling was reached; earlier fills may exist "
                 "but are not retrievable via this endpoint."
             )
+        ledger_result = ingest_hyperliquid_ledger(session, trader=args.trader)
+        print(f"n_ledger_events_fetched: {ledger_result.n_fetched}")
+        print(f"n_ledger_events_new: {ledger_result.n_new}")
         return 0
 
     elif args.command == "trader-analyze":
@@ -125,6 +128,10 @@ def main(argv: list[str] | None = None) -> int:
         )
         print(f"n_trades: {analyze_result.n_trades}")
         print(f"symbols: {', '.join(analyze_result.symbols)}")
+        if analyze_result.reconciled_gaps:
+            print(f"reconciled_gaps ({len(analyze_result.reconciled_gaps)}):")
+            for gap in analyze_result.reconciled_gaps:
+                print(f"  {gap}")
         return 0
 
     return 1
