@@ -19,6 +19,7 @@ from freqtrade.data.converter import ohlcv_to_dataframe, trades_list_to_df
 from freqtrade.enums import CandleType, MarginMode, SignalDirection, TradingMode
 from freqtrade.exchange import Exchange, timeframe_to_minutes, timeframe_to_seconds
 from freqtrade.freqtradebot import FreqtradeBot
+from freqtrade.mixins import LoggingMixin
 from freqtrade.persistence import LocalTrade, Order, Trade, enable_database_use, init_db
 from freqtrade.persistence.custom_data import _CustomData
 from freqtrade.resolvers import ExchangeResolver
@@ -78,6 +79,28 @@ def reset_use_db_flags():
     yield
     enable_database_use()
     Trade.reset_trades()
+
+
+@pytest.fixture(autouse=True)
+def reset_logging_mixin_show_output():
+    """
+    freqtrade.optimize.backtesting.Backtesting unconditionally sets
+    LoggingMixin.show_output = False in both __init__ and reset_backtest() (a class
+    attribute, not per-instance state), and is only ever restored by the separate
+    Backtesting.cleanup() staticmethod -- which nothing that constructs a Backtesting
+    instance directly (research/walkforward.py, research/cost_stress.py, and any test
+    that does the same) ever calls; only the webserver's background-backtest endpoint
+    does. Same class of leak as reset_use_db_flags above, just a different global: any
+    test sharing this pytest-xdist worker process that runs after one that touches
+    Backtesting silently has every LoggingMixin.log_once() call become a no-op for the
+    rest of the worker's life. Confirmed as the real root cause of two CI failures that
+    looked unrelated (tests/exchange/test_exchange.py::test__async_kucoin_get_candle_history
+    and tests/plugins/test_pairlist.py::test_log_cached /
+    test_remove_logs_for_pairs_already_in_blacklist), both asserting a log_once-driven
+    message was captured/called and getting 0 instead.
+    """
+    yield
+    LoggingMixin.show_output = True
 
 
 def pytest_addoption(parser):

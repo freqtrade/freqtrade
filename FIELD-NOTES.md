@@ -100,3 +100,58 @@ reproducing the bug (`research/tests/test_pbo.py:60`
 variant fixture at `n_periods=17` that reported `pbo=1.0` before the fix and `pbo<0.3`
 after) and by re-running a real gate command with the exact `train_days=90,
 test_days=30` config that originally triggered it.
+
+---
+
+## `LoggingMixin.show_output` is GLOBAL class-level state too -- leaks past `research/`'s own tests
+
+Same class of bug as the `Trade.session`/`Trade.use_db` entries above, a third instance
+of it. `freqtrade/optimize/backtesting.py:144` (`LoggingMixin.show_output = False`, in
+`Backtesting.__init__`) and `:495` (same assignment, in `reset_backtest()`) unconditionally
+disable a class attribute -- not per-instance state -- shared by every `LoggingMixin`
+subclass and instance in the process. The only thing that ever restores it is the separate `cleanup()` staticmethod at
+`freqtrade/optimize/backtesting.py:284` (`def cleanup():`), which in *production* code is
+called from exactly one place: `freqtrade/rpc/api_server/api_backtest.py:275`
+(`ApiBG.bt["bt"].cleanup()`, the webserver's background-backtest endpoint) -- test-only
+call sites exist too (`tests/optimize/conftest.py`'s own directory-scoped
+`backtesting_cleanup` fixture among them), but they don't help anything outside their own
+directory, same gap this fixture closes. Nothing that constructs a `Backtesting` instance
+directly in production code -- including `research/walkforward.py:113` and `:181` (both
+`Backtesting(...)`) and `research/cost_stress.py:61` (`Backtesting`) -- ever calls it.
+**That's still true after this fix** -- the fixtures added here only patch pytest's own
+test isolation; a long-lived non-test process (a script, a notebook) that calls
+`research/walkforward.py`/`cost_stress.py` more than once still leaks `show_output=False`
+for the rest of its life. Tracked as a follow-up, not fixed here.
+
+The trap: any test in the same pytest-xdist worker process that runs *after* one that
+touches `Backtesting` silently has every `LoggingMixin.log_once()` call become a no-op for
+the rest of that worker's life, in any file, unrelated to whatever the leaking test was
+about. This surfaced as two CI failures that looked completely unconnected on an unrelated
+PR: `tests/exchange/test_exchange.py::test__async_kucoin_get_candle_history` and
+`tests/plugins/test_pairlist.py::test_log_cached` /
+`test_remove_logs_for_pairs_already_in_blacklist` -- both assert a `log_once`-driven
+message was captured/called and got `0` instead. Reproduces deterministically with plain
+sequential ordering, no `--random-order`/`-n auto` needed at all: run any `research/` test
+that touches `Backtesting` immediately before either pairlist test.
+
+The guard, mirroring `reset_use_db_flags` above (same pattern, different global): an
+autouse fixture at `tests/conftest.py`'s `reset_logging_mixin_show_output`, restoring
+`LoggingMixin.show_output = True` after every test. **This alone was not sufficient** --
+`tests/conftest.py`'s autouse fixtures only apply within their own directory subtree, and
+`research/tests/` is a *sibling* of `tests/`, not nested under it (the exact gap
+`research/tests/test_promotion.py` already had to work around once for the `Trade.session`
+entry above, with its own local fixture rather than relying on `tests/conftest.py`). The
+real fix needed the identical fixture duplicated into a new `research/tests/conftest.py`
+too, so `research/`'s own tests clean up after themselves regardless of which directory the
+next test in the worker happens to live in.
+
+Verified 2026-08-25 while debugging PR #14's unrelated CI failures: reproduced the leak
+deterministically with real sequential test ordering (no fixture, confirmed fail), then
+confirmed the exact same sequence passes with both fixtures in place. A combined
+`pytest research/ tests/plugins/test_pairlist.py tests/exchange/test_exchange.py
+--random-order` run found zero further collisions (1848 passed). The regression test
+(`tests/test_logging_mixin_show_output_leak.py`, same `pytester` sub-run technique as
+`tests/persistence/test_use_db_flag_leak.py`) could not be run locally in this environment
+-- a pre-existing, unrelated `pytest-retry` version-drift issue breaks *any* `pytester`
+sub-run here, confirmed identically on the already-merged `test_use_db_flag_leak.py`; CI is
+the first place that test runs end-to-end.
