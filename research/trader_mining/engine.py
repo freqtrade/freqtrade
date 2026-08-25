@@ -14,6 +14,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
 
+from sqlalchemy.orm import Session
+
 from research.models import NormalizedFill, ReconstructedTrade
 
 
@@ -161,3 +163,44 @@ def reconstruct_trades(
             trade = None
 
     return trades
+
+
+@dataclass
+class ReconstructResult:
+    n_trades: int
+    symbols: list[str]
+
+
+def reconstruct_and_persist_trades(
+    session: Session, trader: str, symbol: str | None = None
+) -> ReconstructResult:
+    """Recompute (trader, symbol)'s trades from scratch -- deletes existing
+    ReconstructedTrade rows for the scope and re-derives from every currently-stored
+    NormalizedFill, rather than incrementally patching. Simpler and more correct: a
+    later trader-import run backfilling older history could retroactively change
+    earlier trade boundaries, which incremental reconciliation can't handle cleanly.
+    """
+    symbols_query = session.query(NormalizedFill.symbol).filter(NormalizedFill.trader == trader)
+    if symbol is not None:
+        symbols_query = symbols_query.filter(NormalizedFill.symbol == symbol)
+    symbols = sorted({s for (s,) in symbols_query.distinct().all()})
+
+    total_trades = 0
+    for sym in symbols:
+        fills = (
+            session.query(NormalizedFill)
+            .filter(NormalizedFill.trader == trader, NormalizedFill.symbol == sym)
+            .order_by(NormalizedFill.timestamp, NormalizedFill.tid)
+            .all()
+        )
+        session.query(ReconstructedTrade).filter(
+            ReconstructedTrade.trader == trader, ReconstructedTrade.symbol == sym
+        ).delete()
+
+        new_trades = reconstruct_trades(trader, sym, fills)
+        for t in new_trades:
+            session.add(t)
+        total_trades += len(new_trades)
+
+    session.commit()
+    return ReconstructResult(n_trades=total_trades, symbols=symbols)

@@ -2,9 +2,11 @@
 from datetime import UTC, datetime, timedelta
 
 import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
 
-from research.models import NormalizedFill
-from research.trader_mining.engine import reconstruct_trades
+from research.models import Base, NormalizedFill, ReconstructedTrade
+from research.trader_mining.engine import reconstruct_and_persist_trades, reconstruct_trades
 
 
 TRADER = "0xAAA"
@@ -307,3 +309,123 @@ def test_long_fill_sequence_scaling_repeatedly_closes_exactly():
 
     assert len(trades) == 1
     assert trades[0].quantity == pytest.approx(2.0)
+
+
+def _memory_session() -> Session:
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    return Session(engine)
+
+
+def _add_normalized_fill(session, **kwargs):
+    defaults = {
+        "trader": TRADER,
+        "symbol": SYMBOL,
+        "side": "buy",
+        "price": 100.0,
+        "quantity": 5.0,
+        "notional": 500.0,
+        "position": 0.0,
+        "closed_pnl": 0.0,
+        "direction": "Open Long",
+        "crossed": True,
+        "fee": 0.1,
+        "fee_currency": "USDC",
+        "order_id": "1",
+    }
+    defaults.update(kwargs)
+    session.add(NormalizedFill(**defaults))
+
+
+def test_persists_reconstructed_trades_from_stored_fills():
+    session = _memory_session()
+    _add_normalized_fill(session, tid=1, side="buy", position=0.0, timestamp=T0)
+    _add_normalized_fill(
+        session,
+        tid=2,
+        side="sell",
+        position=5.0,
+        timestamp=T0 + timedelta(hours=1),
+        closed_pnl=50.0,
+        direction="Close Long",
+    )
+    session.commit()
+
+    result = reconstruct_and_persist_trades(session, TRADER)
+
+    assert result.n_trades == 1
+    assert result.symbols == [SYMBOL]
+    assert session.query(ReconstructedTrade).count() == 1
+
+
+def test_rerunning_after_new_fills_replaces_not_duplicates():
+    session = _memory_session()
+    _add_normalized_fill(session, tid=1, side="buy", position=0.0, timestamp=T0)
+    _add_normalized_fill(
+        session,
+        tid=2,
+        side="sell",
+        position=5.0,
+        timestamp=T0 + timedelta(hours=1),
+        closed_pnl=50.0,
+        direction="Close Long",
+    )
+    session.commit()
+    reconstruct_and_persist_trades(session, TRADER)
+
+    # a second, independent round-trip trade for the same trader/symbol
+    _add_normalized_fill(
+        session, tid=3, side="buy", position=0.0, timestamp=T0 + timedelta(hours=2)
+    )
+    _add_normalized_fill(
+        session,
+        tid=4,
+        side="sell",
+        position=5.0,
+        timestamp=T0 + timedelta(hours=3),
+        closed_pnl=20.0,
+        direction="Close Long",
+    )
+    session.commit()
+
+    result = reconstruct_and_persist_trades(session, TRADER)
+
+    assert result.n_trades == 2
+    assert session.query(ReconstructedTrade).count() == 2
+
+
+def test_scoping_to_one_symbol_leaves_other_symbols_untouched():
+    session = _memory_session()
+    _add_normalized_fill(
+        session, tid=1, symbol="BTC/USDC:USDC", side="buy", position=0.0, timestamp=T0
+    )
+    _add_normalized_fill(
+        session,
+        tid=2,
+        symbol="BTC/USDC:USDC",
+        side="sell",
+        position=5.0,
+        timestamp=T0 + timedelta(hours=1),
+        closed_pnl=50.0,
+        direction="Close Long",
+    )
+    _add_normalized_fill(
+        session, tid=3, symbol="ETH/USDC:USDC", side="buy", position=0.0, timestamp=T0
+    )
+    _add_normalized_fill(
+        session,
+        tid=4,
+        symbol="ETH/USDC:USDC",
+        side="sell",
+        position=5.0,
+        timestamp=T0 + timedelta(hours=1),
+        closed_pnl=10.0,
+        direction="Close Long",
+    )
+    session.commit()
+
+    result = reconstruct_and_persist_trades(session, TRADER, symbol="BTC/USDC:USDC")
+
+    assert result.n_trades == 1
+    assert result.symbols == ["BTC/USDC:USDC"]
+    assert session.query(ReconstructedTrade).count() == 1
