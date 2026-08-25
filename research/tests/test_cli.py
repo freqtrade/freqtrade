@@ -397,3 +397,48 @@ def test_trader_analyze_command_forwards_args_and_prints_result(mocker, capsys):
     assert "n_trades: 7" in captured.out
     assert "BTC/USDC:USDC" in captured.out
     assert "ETH/USDC:USDC" in captured.out
+
+
+def test_trader_report_command_prints_formatted_report(mocker, capsys):
+    from research.trader_mining.metrics import WalletMetrics
+
+    canned = WalletMetrics(
+        trade_count=2,
+        total_volume=300.0,
+        gross_pnl=71.0,
+        fees=1.0,
+        net_pnl=70.0,
+        win_rate=0.5,
+        avg_win=100.0,
+        avg_loss=-30.0,
+        profit_factor=100.0 / 30.0,
+        expectancy=35.0,
+        payoff_ratio=100.0 / 30.0,
+        median_trade_return=0.15,
+        avg_holding_period_seconds=3600.0,
+        median_holding_period_seconds=3600.0,
+        long_count=2,
+        short_count=0,
+        long_pct=1.0,
+        symbol_concentration=1.0,
+        max_drawdown=30.0,
+        max_losing_streak=1,
+        pnl_concentration_top_5=1.0,
+        trade_consistency_score=1.2,
+        return_to_drawdown_ratio=70.0 / 30.0,
+    )
+    mock_query = mocker.MagicMock()
+    mock_query.filter.return_value = mock_query
+    mock_query.all.return_value = []  # irrelevant -- compute_metrics is mocked below
+    mock_session = mocker.MagicMock()
+    mock_session.query.return_value = mock_query
+    mocker.patch("research.cli.get_engine")
+    mocker.patch("research.cli.get_session", return_value=mock_session)
+    mocker.patch("research.cli.compute_metrics", return_value=canned)
+
+    exit_code = main(["trader-report", "--trader", "0x0000000000000000000000000000000000000000"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "0x0000000000000000000000000000000000000000" in captured.out
+    assert "70.00" in captured.out
