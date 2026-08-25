@@ -22,6 +22,31 @@ from research.trader_mining.split_report import compute_split_report, format_spl
 from research.trader_mining.splitting import PeriodBoundaries
 
 
+def _parse_period_boundaries(
+    trader_report: argparse.ArgumentParser,
+    train_end: str,
+    validation_end: str,
+    test_end: str,
+) -> PeriodBoundaries:
+    """Parse the three trader-report split-boundary flags into a PeriodBoundaries,
+    exiting cleanly via argparse's own error path (rather than an uncaught traceback) on
+    an unparsable date or a non-strictly-increasing set of boundaries.
+
+    No .replace(tzinfo=UTC) here: PeriodBoundaries.__post_init__'s own _to_naive_utc
+    already converts a tz-aware value to UTC correctly (and treats a naive value as
+    already-UTC) -- .replace() would instead overwrite any explicit non-UTC offset,
+    silently shifting the boundary.
+    """
+    try:
+        return PeriodBoundaries(
+            train_end=datetime.fromisoformat(train_end),
+            validation_end=datetime.fromisoformat(validation_end),
+            test_end=datetime.fromisoformat(test_end),
+        )
+    except ValueError as exc:
+        trader_report.error(str(exc))
+
+
 def main(argv: list[str] | None = None) -> int:
     """Parse CLI args and dispatch to the requested subcommand. Currently only
     `gate` is implemented: it loads the freqtrade config, runs
@@ -174,6 +199,12 @@ def main(argv: list[str] | None = None) -> int:
                 "(all three or none)"
             )
 
+        boundaries: PeriodBoundaries | None = None
+        if all(split_flags):
+            boundaries = _parse_period_boundaries(
+                trader_report, args.train_end, args.validation_end, args.test_end
+            )
+
         engine = get_engine(args.db_path)
         session = get_session(engine)
         query = session.query(ReconstructedTrade).filter(ReconstructedTrade.trader == args.trader)
@@ -181,12 +212,7 @@ def main(argv: list[str] | None = None) -> int:
             query = query.filter(ReconstructedTrade.symbol == args.symbol)
         trades = query.all()
 
-        if all(split_flags):
-            boundaries = PeriodBoundaries(
-                train_end=datetime.fromisoformat(args.train_end).replace(tzinfo=UTC),
-                validation_end=datetime.fromisoformat(args.validation_end).replace(tzinfo=UTC),
-                test_end=datetime.fromisoformat(args.test_end).replace(tzinfo=UTC),
-            )
+        if boundaries is not None:
             split_report = compute_split_report(trades, boundaries)
             print(format_split_report(split_report, args.trader))
         else:

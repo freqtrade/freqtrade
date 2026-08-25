@@ -569,6 +569,88 @@ def test_trader_report_prints_split_report_when_all_three_flags_given(mocker, ca
     assert "whole-history" in captured.out.lower()
 
 
+def test_trader_report_converts_non_utc_offset_boundary_instead_of_discarding_it(mocker, capsys):
+    """Regression guard for the .replace(tzinfo=UTC) bug: a --train-end with an explicit
+    non-UTC offset must be converted to UTC (shifting the wall-clock date across midnight
+    here), not have its offset silently discarded by overwriting tzinfo with UTC in place."""
+    mock_query = mocker.MagicMock()
+    mock_query.filter.return_value = mock_query
+    mock_query.all.return_value = []
+    mock_session = mocker.MagicMock()
+    mock_session.query.return_value = mock_query
+    mocker.patch("research.cli.get_engine")
+    mocker.patch("research.cli.get_session", return_value=mock_session)
+
+    # 2025-01-01T02:00:00+05:00 is 2024-12-31T21:00:00 UTC -- a naive .replace(tzinfo=UTC)
+    # would instead discard the +05:00 offset and land on 2025-01-01.
+    exit_code = main(
+        [
+            "trader-report",
+            "--trader",
+            "0xAAA",
+            "--train-end",
+            "2025-01-01T02:00:00+05:00",
+            "--validation-end",
+            "2025-07-01",
+            "--test-end",
+            "2026-01-01",
+        ]
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "TRAIN < 2024-12-31" in captured.out
+    assert "TRAIN < 2025-01-01" not in captured.out
+
+
+def test_trader_report_rejects_malformed_date_with_clean_argparse_error(mocker, capsys):
+    """A malformed date must exit cleanly via argparse's error path (SystemExit + stderr
+    message), not propagate a raw ValueError traceback from datetime.fromisoformat."""
+    mocker.patch("research.cli.get_engine")
+    mocker.patch("research.cli.get_session")
+
+    with pytest.raises(SystemExit):
+        main(
+            [
+                "trader-report",
+                "--trader",
+                "0xAAA",
+                "--train-end",
+                "notadate",
+                "--validation-end",
+                "2025-07-01",
+                "--test-end",
+                "2026-01-01",
+            ]
+        )
+
+    assert "Invalid isoformat string" in capsys.readouterr().err
+
+
+def test_trader_report_rejects_non_increasing_boundaries_with_clean_argparse_error(mocker, capsys):
+    """Non-strictly-increasing boundaries must exit cleanly via argparse's error path, not
+    propagate a raw ValueError traceback from PeriodBoundaries.__post_init__."""
+    mocker.patch("research.cli.get_engine")
+    mocker.patch("research.cli.get_session")
+
+    with pytest.raises(SystemExit):
+        main(
+            [
+                "trader-report",
+                "--trader",
+                "0xAAA",
+                "--train-end",
+                "2026-01-01",
+                "--validation-end",
+                "2025-01-01",
+                "--test-end",
+                "2027-01-01",
+            ]
+        )
+
+    assert "train_end < validation_end < test_end" in capsys.readouterr().err
+
+
 def test_trader_report_unchanged_when_no_split_flags_given(mocker, capsys):
     """Regression guard: today's plain trader-report output must be the same code path
     (compute_metrics + format_report) when no split flags are passed."""

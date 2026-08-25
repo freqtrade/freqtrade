@@ -83,8 +83,8 @@ def format_split_report(report: SplitReport, trader: str) -> str:
         "",
     ]
     for summary in report.periods:
-        start = summary.start.date() if summary.start else "(start of history)"
-        end = summary.end.date() if summary.end else "(ongoing)"
+        start = summary.start.date() if summary.start is not None else "(start of history)"
+        end = summary.end.date() if summary.end is not None else "(ongoing)"
         lines.append(f"## {summary.period} [{start} - {end}), n={summary.n_trades}")
         lines.append("")
         lines.append(format_report(summary.metrics, trader))
