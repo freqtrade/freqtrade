@@ -211,10 +211,17 @@ position-transition logic this release is actually about).
    quantity-weighted average across the entry fills.
 3. Multiple exit fills (scale-out) after one entry -> `exit_price` is the correct
    quantity-weighted average.
-4. A reversal fill (`+5` position, one fill of size `8` on the opposite side) -> exactly
-   two `ReconstructedTrade`s: the closing leg (`quantity=5`, `closed_pnl` = the fill's full
-   `closed_pnl`) and the opening leg (`quantity=3`, `closed_pnl=0`), fee split
-   proportionally `5/8` and `3/8`, both counting the fill toward `n_fills`.
+4. A reversal fill (`+5` position, one fill of size `8` on the opposite side, landing at
+   `-3`), followed by a further fill that fully closes the resulting `-3` short -> exactly
+   two `ReconstructedTrade`s: the closing leg from the reversal (`quantity=5`, `closed_pnl`
+   = the reversal fill's full `closed_pnl`) and the opening leg (`quantity=3`,
+   `closed_pnl=0` from the reversal fill, plus whatever `closed_pnl` the follow-up closing
+   fill reports), fee on the reversal fill split proportionally `5/8` and `3/8`, both
+   trades' `n_fills` reflecting every fill that actually contributed to them (the reversal
+   fill counts toward both). A single reversal fill with nothing closing the new leg
+   afterward correctly produces only ONE `ReconstructedTrade` (the closing leg) -- the
+   newly-opened leg stays an in-progress, unclosed position and is not emitted, per "Error
+   handling" above; covered as its own explicit test case, not left implicit.
 5. A non-zero `position` on the very first fill, immediately followed by an exit-like fill
    that closes it with no further entry-like fills observed -> `is_truncated_start=True`,
    and `entry_price`/`entry_timestamp` fall back to that first fill's own values exactly
