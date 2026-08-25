@@ -27,6 +27,7 @@ class FtHas(TypedDict, total=False):
     ohlcv_has_history: bool
     ohlcv_partial_candle: bool
     ohlcv_require_since: bool
+    ohlcv_skip_empty_candles: bool
     ohlcv_volume_currency: str
     ohlcv_candle_limit_per_timeframe: dict[str, int]
     always_require_api_keys: bool

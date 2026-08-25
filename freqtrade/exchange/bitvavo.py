@@ -21,4 +21,5 @@ class Bitvavo(Exchange):
 
     _ft_has: FtHas = {
         "ohlcv_candle_limit": 1440,
+        "ohlcv_skip_empty_candles": True,
     }

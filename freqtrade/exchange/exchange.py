@@ -140,6 +140,7 @@ class Exchange:
         "ohlcv_has_history": True,  # Some exchanges (Kraken) don't provide history via ohlcv
         "ohlcv_partial_candle": True,
         "ohlcv_require_since": False,
+        "ohlcv_skip_empty_candles": False,  # Some exchanges omit empty candles
         "download_data_parallel_quick": True,
         "always_require_api_keys": False,  # purge API keys for Dry-run. Must default to false.
         # Check https://github.com/ccxt/ccxt/issues/10767 for removal of ohlcv_volume_currency
@@ -265,6 +266,7 @@ class Exchange:
 
         # Assign this directly for easy access
         self._ohlcv_partial_candle = self._ft_has["ohlcv_partial_candle"]
+        self._ohlcv_skip_empty = self._ft_has["ohlcv_skip_empty_candles"]
 
         # Initialize ccxt objects
         ccxt_config = self._ccxt_config
@@ -2847,7 +2849,15 @@ class Exchange:
         # keeping last candle time as last refreshed time of the pair
         if ticks and cache:
             idx = -2 if drop_incomplete and len(ticks) > 1 else -1
-            self._pairs_last_refresh_time[(pair, timeframe, c_type)] = ticks[idx][0]
+            last_refresh = ticks[idx][0]
+            if self._ohlcv_skip_empty:
+                # Exchanges omitting empty candles return stale ticks for inactive pairs -
+                # clamp to the last elapsed candle, otherwise it's re-fetched every iteration.
+                last_refresh = max(
+                    last_refresh,
+                    dt_ts(timeframe_to_prev_date(timeframe)) - timeframe_to_msecs(timeframe),
+                )
+            self._pairs_last_refresh_time[(pair, timeframe, c_type)] = last_refresh
         has_cache = cache and (pair, timeframe, c_type) in self._klines
         # in case of existing cache, fill_missing happens after concatenation
         ohlcv_df = ohlcv_to_dataframe(

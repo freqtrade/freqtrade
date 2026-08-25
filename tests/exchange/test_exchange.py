@@ -3033,6 +3033,35 @@ def test_refresh_latest_ohlcv_cache(mocker, default_conf, candle_type, time_mach
     assert res[pair2].at[0, "open"]
 
 
+@pytest.mark.parametrize("skip_empty", [True, False])
+def test_refresh_latest_ohlcv_stale_candles(
+    mocker, default_conf_usdt, time_machine, skip_empty
+) -> None:
+    # Exchange that omits empty candles: the response ends long before "now".
+    # With ohlcv_skip_empty_candles the pair must be marked refreshed up to the last
+    # closed candle, so no re-fetch happens within the same candle interval.
+    now = datetime(2024, 1, 15, 12, 5, 0, tzinfo=UTC)
+    time_machine.move_to(now)
+    ohlcv = generate_test_data_raw("5m", 3, "2024-01-15 11:20")
+    expected_last_closed = dt_ts(timeframe_to_prev_date("5m")) - timeframe_to_msecs("5m")
+
+    exchange = get_patched_exchange(mocker, default_conf_usdt)
+    exchange._set_startup_candle_count(default_conf_usdt)
+    exchange._ohlcv_skip_empty = skip_empty
+    exchange._api_async.fetch_ohlcv = AsyncMock(return_value=ohlcv)
+    pair = ("BTC/USDT", "5m", CandleType.SPOT)
+
+    exchange.refresh_latest_ohlcv([pair])
+    exchange.refresh_latest_ohlcv([pair])
+
+    expected_calls = 1 if skip_empty else 2
+    assert exchange._api_async.fetch_ohlcv.call_count == expected_calls
+    if skip_empty:
+        assert exchange._pairs_last_refresh_time[pair] == expected_last_closed
+    else:
+        assert exchange._pairs_last_refresh_time[pair] == ohlcv[-2][0]
+
+
 def test_refresh_ohlcv_with_cache(mocker, default_conf, time_machine) -> None:
     start = datetime(2021, 8, 1, 0, 0, 0, 0, tzinfo=UTC)
     ohlcv = generate_test_data_raw("1h", 100, start.strftime("%Y-%m-%d"))

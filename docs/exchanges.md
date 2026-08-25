@@ -523,6 +523,8 @@ If your account is required to use an operatorId, you can set it in the configur
 
 Bitvavo expects the `operatorId` to be an integer.
 
+Bitvavo does not return candles for intervals without trades. To avoid re-requesting the same data on every loop iteration for inactive pairs, freqtrade treats such pairs as refreshed up to the last closed candle. Updates for pairs without recent trades can therefore be delayed by up to one candle.
+
 ## All exchanges
 
 Should you experience constant errors with Nonce (like `InvalidNonce`), it is best to regenerate the API keys. Resetting Nonce is difficult and it's usually easier to regenerate the API keys.
