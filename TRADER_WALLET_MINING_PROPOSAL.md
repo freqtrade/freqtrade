@@ -100,6 +100,73 @@ existing configurable-minimums idea) plus a reserved confirmation set, not a mec
 formula substituted for real methodology. This needs its own design pass before Phase 6 is
 implemented, not just before it's trusted.
 
+## Phased release plan (2026-08-25)
+
+The proposal below is written as ten conceptual phases; this section regroups them into
+seven **shippable releases**, each one a working increment someone could actually use, in
+dependency order. Consolidates the review notes above with the proposal's own §-numbering
+so a future planning session starts here rather than re-deriving it. Only Release 1 is ready
+to brainstorm/spec/plan next -- everything after it is provisional until the one before it
+has shipped and taught us something.
+
+**Release 1 -- Hyperliquid ingestion (read-only, single wallet).** Proposal §1-2, simplified
+per the review notes' 4-file module count (`provider.py`/`storage.py`/`engine.py`/`cli.py`,
+not the original 9). Thin `ccxt.async_support.hyperliquid` wrapper +
+raw/normalized fill persistence (`research/db.py` conventions) + a `python -m research.cli
+trader-import` command. Deliverable: pull one real wallet's fill history into local storage,
+reproducibly and idempotently, with the 10k-fill ceiling surfaced as an explicit
+`history_completeness` result rather than silently truncated. No reconstruction, no
+analysis yet -- this release is "can we reliably get the data," full stop.
+
+**Release 2 -- Trade reconstruction.** Proposal §3. Groups raw fills into logical trades
+following Hyperliquid's own `startPosition`/`closedPnl` position transitions (no hard-coded
+FIFO), handling partial entries/exits and reversals. Deliverable: `trader-analyze` turns
+Release 1's raw fills into `ReconstructedTrade` records. Heavily unit-tested against
+hand-built fill sequences, per the proposal's own testing section.
+
+**Release 3 -- Performance metrics + report.** Proposal §4 (trade-level stats only, no
+CAGR) and §15 (report format, simplified to console/Markdown per the review notes, not a
+separate `reports.py`). Deliverable: `trader-report WALLET` produces a readable,
+risk-adjusted (not raw-P&L-ranked) summary for one wallet.
+
+**Release 4 -- Time-aware evaluation framework.** Proposal §6, the proposal's own
+"most important research requirement." TRAIN/VALIDATION/TEST/FORWARD chronological
+splitting with configurable boundaries, applied to a single wallet's reconstructed trades.
+This has to exist *before* Release 5 touches multiple wallets, or every later release
+inherits an unvalidated foundation. Deliverable: Release 3's metrics reported per period,
+not just in aggregate -- makes "does this wallet's edge hold up over time" answerable for
+the first time.
+
+**Release 5 -- Multi-wallet candidates + selection-bias guardrails.** Proposal §5
+(explicit wallet-list input, configurable minimums) merged with the deeper gap flagged
+above: wallet selection across N candidates is its own multiple-comparisons problem, not
+solved by a mechanical Bonferroni/DSR substitution. This release's design (the frozen
+cohort + pre-registered inclusion protocol + reserved confirmation set) needs its own
+brainstorming pass when it's reached, not a rubber-stamp of the proposal's original text --
+flagged explicitly so it isn't accidentally implemented as an afterthought inside a later
+release. Deliverable: `trader compare WALLET_A WALLET_B ...` with the guardrails built in
+from day one.
+
+**Release 6 -- Behavioral analysis (descriptive).** Proposal §7. Market selection, holding
+period distribution, position behavior, direction, entry-timing correlation with
+volatility/breakouts/drawdowns. Descriptive only, per the proposal's own instruction not to
+automatically turn correlations into trading rules. Only worth building once Release 5 has
+produced two or more real candidate wallets to describe -- a single-wallet behavior report
+has nothing to compare against.
+
+**Release 7 -- Hypothesis generation + backtester integration.** Proposal §8-9, the
+proposal's own closing vision. Human-readable hypothesis reports from Release 6's behavioral
+findings, each one independently expressed as a real Freqtrade strategy and run through the
+*existing* `research/gate.py` walk-forward infrastructure from
+`CRYPTO_STRATEGY_DISCOVERY_PROPOSAL.md` -- the original trader's own performance is never
+used as the backtest result, per proposal §9's explicit requirement. This is where the two
+sibling proposals in this repo converge into one pipeline.
+
+**Deliberately not a release yet:** proposal §5's automated wallet discovery, and every
+provider beyond Hyperliquid (§"Future Providers": Bitquery, Dune, Alchemy/GoldRush,
+Nansen/Arkham) -- both explicitly out of scope in the proposal's own "Initial Scope"
+section, and nothing above changes that.
+
 ## Phase 1 — Hyperliquid Research Adapter
 
 Start with Hyperliquid because its public API exposes wallet-specific fills and closed P&L
