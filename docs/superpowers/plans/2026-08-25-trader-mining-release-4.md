@@ -944,13 +944,19 @@ git commit -m "feat(research): trader-report --train-end/--validation-end/--test
 
 - [ ] **Step 1: Real-data run**
 
-Against a scratch DB (not the repo's `user_data/research.sqlite`), pick a wallet already
-ingested/reconstructed from an earlier release, then:
+Against `user_data/trader_mining_scratch.sqlite` -- a fixed, explicitly-named path, never
+the default `user_data/research.sqlite` (which already holds real `gate` promotion/health
+state) -- pick a wallet already ingested/reconstructed from an earlier release, then:
 
 ```bash
-python -m research.cli trader-report --trader <WALLET> --db-path <SCRATCH_DB> \
+python -m research.cli trader-report --trader <WALLET> \
+  --db-path user_data/trader_mining_scratch.sqlite \
   --train-end 2025-01-01 --validation-end 2025-07-01 --test-end 2026-01-01
 ```
+
+(Already covered by `.gitignore`'s existing `*.sqlite`/`user_data/*` patterns -- no new
+ignore rule needed. Named, not `<SCRATCH_DB>`, specifically so nobody has to invent a path
+under time pressure and risk defaulting to the real one.)
 
 Confirm: no crash; each period's sample count plus `n_straddling` reconciles against the
 wallet's known total trade count; no `None` printed as the string `"None"`; boundary dates
