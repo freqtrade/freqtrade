@@ -429,3 +429,47 @@ def test_scoping_to_one_symbol_leaves_other_symbols_untouched():
     assert result.n_trades == 1
     assert result.symbols == ["BTC/USDC:USDC"]
     assert session.query(ReconstructedTrade).count() == 1
+
+
+def test_same_timestamp_ties_ordered_by_position_magnitude_not_tid():
+    """Regression test for a real bug found validating against a real active wallet's
+    fill history (Hyperliquid mainnet, via trader-import): tid is NOT a monotonic
+    sequence number. A batch of same-millisecond fills sorted by tid came out in
+    EXACTLY REVERSED chronological order (confirmed against the real fills' position
+    arithmetic). Reproduced here with tid values deliberately DESCENDING in true
+    execution order, so a naive (timestamp, tid) sort processes them backwards.
+    (timestamp, abs(position)) recovers the true order."""
+    session = _memory_session()
+    ts = T0
+    # True order: pos 0 -> 3 (entry qty3) -> 8 (entry qty5) -> 0 (exit qty8, closes).
+    _add_normalized_fill(
+        session, tid=300, side="buy", price=100.0, quantity=3.0, position=0.0, timestamp=ts
+    )
+    _add_normalized_fill(
+        session, tid=200, side="buy", price=110.0, quantity=5.0, position=3.0, timestamp=ts
+    )
+    _add_normalized_fill(
+        session,
+        tid=100,
+        side="sell",
+        price=120.0,
+        quantity=8.0,
+        position=8.0,
+        timestamp=ts,
+        closed_pnl=40.0,
+        direction="Close Long",
+    )
+    session.commit()
+
+    result = reconstruct_and_persist_trades(session, TRADER)
+
+    assert result.n_trades == 1
+    trade = session.query(ReconstructedTrade).one()
+    assert trade.is_truncated_start is False
+    # (100*3 + 110*5) / 8 = 106.25 -- under the old tid-sorted bug this would instead
+    # produce a spurious truncated-start trade with entry_price wrongly falling back to
+    # 120.0 (the sell fill's own price), and the two real entry fills left as an
+    # unclosed, unemitted trade.
+    assert trade.entry_price == pytest.approx(106.25)
+    assert trade.exit_price == pytest.approx(120.0)
+    assert trade.gross_pnl == pytest.approx(40.0)

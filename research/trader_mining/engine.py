@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from research.models import NormalizedFill, ReconstructedTrade
@@ -94,7 +95,10 @@ class _TradeState:
 def reconstruct_trades(
     trader: str, symbol: str, fills: list[NormalizedFill]
 ) -> list[ReconstructedTrade]:
-    """fills must already be sorted by (timestamp, tid) -- not re-sorted here."""
+    """fills must already be sorted by true execution order -- not re-sorted here. The
+    caller (reconstruct_and_persist_trades) sorts by (timestamp, abs(position), tid),
+    NOT (timestamp, tid) -- tid is not a monotonic sequence number, confirmed against a
+    real active wallet's fill history (see that function's own docstring)."""
     if not fills:
         return []
 
@@ -179,6 +183,24 @@ def reconstruct_and_persist_trades(
     NormalizedFill, rather than incrementally patching. Simpler and more correct: a
     later trader-import run backfilling older history could retroactively change
     earlier trade boundaries, which incremental reconciliation can't handle cleanly.
+
+    Fills are ordered by (timestamp, abs(position)), NOT (timestamp, tid) -- found to be
+    a real bug, not a theoretical one, while validating against a real active wallet's
+    fill history: Hyperliquid's tid is not a monotonic sequence number, and a batch of
+    same-millisecond fills sorted by tid came out in EXACTLY REVERSED chronological
+    order (verified against the position arithmetic: fill N's startPosition + its own
+    signed quantity landed within rounding of fill N+1's startPosition, in the abs
+    (position)-ascending order, not the tid-ascending order). abs(position) recovers
+    true execution order correctly for same-direction accumulation ties (the only case
+    observed), including short accumulation (magnitude still grows away from zero).
+
+    ponytail: known residual risk, not fixed here -- a REVERSAL fill landing in the same
+    tied-timestamp group as other fills could sort incorrectly, since abs(position) isn't
+    monotonic across a sign change. Narrower and rarer than the tid bug this replaces
+    (needs same-millisecond fills AND a reversal within that exact group), not observed
+    in the real wallet data validated so far. Upgrade path if this bites: resolve ties by
+    the actual position-delta chain (which fill's end_position matches another's
+    start_position) rather than a single sort key.
     """
     symbols_query = session.query(NormalizedFill.symbol).filter(NormalizedFill.trader == trader)
     if symbol is not None:
@@ -190,7 +212,9 @@ def reconstruct_and_persist_trades(
         fills = (
             session.query(NormalizedFill)
             .filter(NormalizedFill.trader == trader, NormalizedFill.symbol == sym)
-            .order_by(NormalizedFill.timestamp, NormalizedFill.tid)
+            .order_by(
+                NormalizedFill.timestamp, func.abs(NormalizedFill.position), NormalizedFill.tid
+            )
             .all()
         )
         session.query(ReconstructedTrade).filter(
