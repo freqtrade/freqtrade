@@ -86,3 +86,21 @@ async def fetch_hyperliquid_fills(trader: str, since: datetime | None = None) ->
             since_ms = page[-1]["timestamp"]
     finally:
         await exchange.close()
+
+
+async def fetch_hyperliquid_ledger(trader: str) -> list[dict]:
+    """Fetch trader's full non-funding ledger (deposits, withdrawals, transfers,
+    airdrops, staking, etc.) via ccxt's unified fetch_ledger. No pagination loop here,
+    unlike fetch_hyperliquid_fills -- ccxt's Hyperliquid fetch_ledger has no documented
+    page-size ceiling analogous to fetch_my_trades' 2000/10000, and no real wallet
+    ingested during this feature's design exceeded 100 ledger entries. ponytail:
+    unconfirmed at scale -- if a very active wallet's ledger silently gets truncated by
+    ccxt/the API, this would under-fetch with no warning (unlike history_completeness
+    above). Upgrade path if this bites: add the same "did we get a full page"
+    completeness check fetch_hyperliquid_fills already has.
+    """
+    exchange = ccxt_async.hyperliquid()
+    try:
+        return await exchange.fetch_ledger(code=None, params={"user": trader})
+    finally:
+        await exchange.close()
