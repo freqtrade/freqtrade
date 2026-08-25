@@ -118,6 +118,7 @@ def test_format_split_report_never_auto_rejects_on_expectancy_degradation():
     lowered = text.lower()
     assert "reject" not in lowered
     assert "fail" not in lowered
+    assert "threshold" not in lowered
     assert "diagnostic" in lowered
 
 
@@ -128,3 +129,29 @@ def test_format_split_report_handles_empty_periods_without_crashing_or_printing_
 
     assert "None" not in text
     assert "n/a" in text
+
+
+def test_format_split_report_handles_zero_train_expectancy_without_division_by_zero():
+    """A legitimate TRAIN period with n>0 trades summing to net_pnl=0 has expectancy=0.
+    This should NOT be reported as 'insufficient data'. The expectancy change should be
+    reported in points (not percentage, which is undefined when dividing by zero)."""
+    trades = [
+        _trade(50.0, datetime(2024, 6, 1, tzinfo=UTC)),
+        _trade(-50.0, datetime(2024, 8, 1, tzinfo=UTC)),  # TRAIN: net_pnl=0, expectancy=0
+        _trade(10.0, datetime(2025, 3, 1, tzinfo=UTC)),  # VALIDATION: expectancy>0
+    ]
+
+    report = compute_split_report(trades, BOUNDARIES)
+    text = format_split_report(report, "0xAAA")
+
+    lowered = text.lower()
+    # Should NOT say insufficient data
+    assert "insufficient data" not in lowered
+    # Should mention that TRAIN expectancy was zero
+    assert "train expectancy was zero" in lowered
+    # Should report in points, not percentage
+    assert "points" in lowered
+    # Should not use forbidden words
+    assert "reject" not in lowered
+    assert "fail" not in lowered
+    assert "threshold" not in lowered

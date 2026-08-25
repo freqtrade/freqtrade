@@ -3,10 +3,10 @@ research.trader_mining.metrics.compute_metrics once per TRAIN/VALIDATION/TEST/FO
 bucket (unmodified) and formats the result alongside a distinctly labeled whole-history
 reference section. See docs/superpowers/specs/2026-08-25-trader-mining-release-4-design.md.
 
-TRAIN-to-VALIDATION expectancy change is reported as a diagnostic only -- the proposal's own
-review-notes correction is explicit that an arbitrary percentage cutoff is unstable at
-realistic sample sizes. There is no threshold, no pass/fail verdict, anywhere in this
-module.
+TRAIN-to-VALIDATION expectancy change is reported as a diagnostic only for model-selection
+awareness. The proposal's own review-notes correction is explicit that an arbitrary
+percentage cutoff is unstable at realistic sample sizes. This module contains no automatic
+decision logic.
 """
 
 from __future__ import annotations
@@ -92,12 +92,20 @@ def format_split_report(report: SplitReport, trader: str) -> str:
 
     train_expectancy = report.periods[0].metrics.expectancy
     validation_expectancy = report.periods[1].metrics.expectancy
-    if train_expectancy and validation_expectancy is not None:
-        delta_pct = (validation_expectancy - train_expectancy) / abs(train_expectancy) * 100
-        lines.append(
-            f"Diagnostic: TRAIN->VALIDATION expectancy changed by {delta_pct:.1f}% "
-            "(reported for awareness only -- no threshold, no automatic verdict)"
-        )
+    if train_expectancy is not None and validation_expectancy is not None:
+        if train_expectancy != 0.0:
+            delta_pct = (validation_expectancy - train_expectancy) / abs(train_expectancy) * 100
+            lines.append(
+                f"Diagnostic: TRAIN->VALIDATION expectancy changed by {delta_pct:.1f}% "
+                "(reported for awareness only; not used to accept or discard the wallet)"
+            )
+        else:
+            delta = validation_expectancy - train_expectancy
+            lines.append(
+                f"Diagnostic: TRAIN->VALIDATION expectancy changed by {delta:.4f} points "
+                "(TRAIN expectancy was zero; percentage change is undefined; "
+                "reported for awareness only; not used to accept or discard the wallet)"
+            )
     else:
         lines.append(
             "Diagnostic: TRAIN->VALIDATION expectancy change: n/a (insufficient data in "
