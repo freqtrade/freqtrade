@@ -1,4 +1,5 @@
 
+
 def bot_loop_start(self, current_time: datetime, **kwargs) -> None:
     """
     Called at the start of the bot iteration (one loop).
@@ -11,7 +12,6 @@ def bot_loop_start(self, current_time: datetime, **kwargs) -> None:
     :param current_time: datetime object, containing the current datetime
     :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
     """
-    pass
 
 def custom_entry_price(
     self,
@@ -362,7 +362,7 @@ def adjust_trade_position(
     current_entry_profit: float,
     current_exit_profit: float,
     **kwargs,
-) -> float | None | tuple[float | None, str | None]:
+) -> float | tuple[float | None, str | None] | None:
     """
     Custom trade adjustment logic, returning the stake amount that a trade should be
     increased or decreased.
@@ -416,7 +416,6 @@ def leverage(
     """
     return 1.0
 
-
 def order_filled(
     self, pair: str, trade: Trade, order: Order, current_time: datetime, **kwargs
 ) -> None:
@@ -429,7 +428,6 @@ def order_filled(
     :param current_time: datetime object, containing the current datetime
     :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
     """
-    pass
 
 def plot_annotations(
     self, pair: str, start_date: datetime, end_date: datetime, dataframe: DataFrame, **kwargs

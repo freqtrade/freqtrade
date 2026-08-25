@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta, timezone
 from pandas import DataFrame
-from typing import Dict, Optional, Union, Tuple
+from typing import Optional, Union
 
 from freqtrade.strategy import (
     IStrategy,
@@ -54,6 +54,7 @@ class {{ strategy }}(IStrategy):
     You should keep:
     - timeframe, minimal_roi, stoploss, trailing_*
     """
+
     # Strategy interface version - allow new iterations of the strategy interface.
     # Check the documentation or the Sample strategy to get the latest version.
     INTERFACE_VERSION = 3
@@ -66,11 +67,7 @@ class {{ strategy }}(IStrategy):
 
     # Minimal ROI designed for the strategy.
     # This attribute will be overridden if the config file contains "minimal_roi".
-    minimal_roi = {
-        "60": 0.01,
-        "30": 0.02,
-        "0": 0.04
-    }
+    minimal_roi = {"60": 0.01, "30": 0.02, "0": 0.04}
 
     # Optimal stoploss designed for the strategy.
     # This attribute will be overridden if the config file contains "stoploss".
@@ -98,7 +95,7 @@ class {{ strategy }}(IStrategy):
     sell_rsi = IntParameter(60, 90, default=70, space="sell")
 
     {{- attributes | indent(4) }}
-    {{- plot_config | indent(4) }}
+    {{- plot_config.rstrip('\n') | indent(4) }}
 
     def informative_pairs(self):
         """
@@ -124,7 +121,7 @@ class {{ strategy }}(IStrategy):
         :param metadata: Additional information, like the currently traded pair
         :return: a Dataframe with all mandatory indicators for the strategies
         """
-        {{- indicators | indent(8) }}
+        {{- indicators.rstrip('\n') | indent(8) }}
 
         return dataframe
 
@@ -137,11 +134,12 @@ class {{ strategy }}(IStrategy):
         """
         dataframe.loc[
             (
-                {{ buy_trend | indent(16) }}
-                (dataframe["volume"] > 0)  # Make sure Volume is not 0
+                {{ buy_trend.rstrip('\n') | indent(16) }}
+                & (dataframe["volume"] > 0)  # Make sure Volume is not 0
             ),
-            "enter_long"] = 1
-        # Uncomment to use shorts (Only used in futures/margin mode. Check the documentation for more info)
+            "enter_long",
+        ] = 1
+        # Uncomment to use shorts (futures/margin mode only, see docs)
         """
         dataframe.loc[
             (
@@ -162,11 +160,12 @@ class {{ strategy }}(IStrategy):
         """
         dataframe.loc[
             (
-                {{ sell_trend | indent(16) }}
-                (dataframe["volume"] > 0)  # Make sure Volume is not 0
+                {{ sell_trend.rstrip('\n') | indent(16) }}
+                & (dataframe["volume"] > 0)  # Make sure Volume is not 0
             ),
-            "exit_long"] = 1
-        # Uncomment to use shorts (Only used in futures/margin mode. Check the documentation for more info)
+            "exit_long",
+        ] = 1
+        # Uncomment to use shorts (futures/margin mode only, see docs)
         """
         dataframe.loc[
             (

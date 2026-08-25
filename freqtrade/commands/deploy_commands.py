@@ -77,7 +77,10 @@ def deploy_new_strategy(strategy_name: str, strategy_path: Path, subtemplate: st
     )
 
     logger.info(f"Writing strategy to `{strategy_path}`.")
-    strategy_path.write_text(strategy_text)
+    # Jinja2 strips a template's own trailing newline by default (keep_trailing_newline
+    # defaults to False) -- ensure the written file still ends in exactly one, since it's
+    # a source file, not markup, and ruff's W292 flags a missing final newline.
+    strategy_path.write_text(strategy_text.rstrip("\n") + "\n")
 
 
 def start_new_strategy(args: dict[str, Any]) -> None:

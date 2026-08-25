@@ -125,6 +125,18 @@ jobs:
           Write-Host "Repository is clean, no changes detected."
         }
 
+    - name: Run Ruff
+      # Kept before Backtesting/Hyperopt: those steps scaffold real .py files (via
+      # `freqtrade new-strategy`) into user_data/strategies/ that Ruff would otherwise
+      # lint by accident once they exist -- Ruff should validate the checkout as it
+      # actually is, not a workspace already mutated by a later step.
+      run: |
+        ruff check --output-format=github
+
+    - name: Run Ruff format check
+      run: |
+        ruff format --check
+
     - name: Backtesting (multi)
       run: |
         freqtrade create-userdir --userdir user_data
@@ -133,20 +145,14 @@ jobs:
         freqtrade new-strategy -s AwesomeStrategyMin --template minimal
         freqtrade new-strategy -s AwesomeStrategyAdv --template advanced
         freqtrade backtesting --datadir tests/testdata --strategy-list AwesomeStrategy AwesomeStrategyMin AwesomeStrategyAdv -i 5m
+        # Don't leak these scaffolded strategies into the workspace for later steps.
+        rm -f user_data/strategies/AwesomeStrategy.py user_data/strategies/AwesomeStrategyMin.py user_data/strategies/AwesomeStrategyAdv.py
 
     - name: Hyperopt
       run: |
         cp tests/testdata/config.tests.json config.json
         freqtrade create-userdir --userdir user_data
         freqtrade hyperopt --datadir tests/testdata -e 6 --strategy SampleStrategy --hyperopt-loss SharpeHyperOptLossDaily --print-all
-
-    - name: Run Ruff
-      run: |
-        ruff check --output-format=github
-
-    - name: Run Ruff format check
-      run: |
-        ruff format --check
 
     - name: Mypy
       if: ${{ matrix.os == 'ubuntu-24.04' || matrix.os == 'macos-15' }}

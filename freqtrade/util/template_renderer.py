@@ -9,6 +9,14 @@ def render_template(templatefile: str, arguments: dict) -> str:
     env = Environment(
         loader=PackageLoader("freqtrade", "templates"),
         autoescape=select_autoescape(["html", "xml"]),
+        # Every strategy_subtemplates/*.j2 fragment is rendered standalone here and then
+        # concatenated into base_strategy.py.j2 -- a fragment's own leading/trailing
+        # blank lines are the ONLY way to control spacing at those concatenation points
+        # (base_strategy.py.j2's `{{- ... }}` tags deliberately trim their own
+        # surrounding template-literal whitespace). Jinja2 strips a template's trailing
+        # newline by default (keep_trailing_newline=False), which silently broke that --
+        # keep it, so each fragment's rendered value matches its .j2 source exactly.
+        keep_trailing_newline=True,
     )
     template = env.get_template(templatefile)
     return template.render(**arguments)
