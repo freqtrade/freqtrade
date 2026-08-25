@@ -4,8 +4,8 @@ from unittest.mock import AsyncMock
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from research.models import Base, NormalizedFill, RawFill
-from research.trader_mining.ingestion import ingest_hyperliquid_fills
+from research.models import Base, NormalizedFill, RawFill, RawLedgerEvent
+from research.trader_mining.ingestion import ingest_hyperliquid_fills, ingest_hyperliquid_ledger
 from research.trader_mining.provider import FetchFillsResult
 
 
@@ -155,3 +155,56 @@ def test_history_completeness_passes_through(mocker):
     result = ingest_hyperliquid_fills(session, TRADER)
 
     assert result.history_completeness == "truncated_by_provider_limit"
+
+
+def _ledger_entry(event_id: str, ts_ms: int = 1_700_000_000_000) -> dict:
+    return {
+        "id": event_id,
+        "timestamp": ts_ms,
+        "type": "deposit",
+        "info": {"time": ts_ms, "hash": event_id, "delta": {"type": "deposit", "usdc": "100.0"}},
+    }
+
+
+def test_ledger_first_import_populates_table(mocker):
+    session = _memory_session()
+    mocker.patch(
+        "research.trader_mining.ingestion.fetch_hyperliquid_ledger",
+        new=AsyncMock(return_value=[_ledger_entry("0xa"), _ledger_entry("0xb")]),
+    )
+
+    result = ingest_hyperliquid_ledger(session, TRADER)
+
+    assert result.n_fetched == 2
+    assert result.n_new == 2
+    assert session.query(RawLedgerEvent).count() == 2
+
+
+def test_ledger_rerun_is_idempotent_by_event_id(mocker):
+    session = _memory_session()
+    mocker.patch(
+        "research.trader_mining.ingestion.fetch_hyperliquid_ledger",
+        new=AsyncMock(return_value=[_ledger_entry("0xa")]),
+    )
+    ingest_hyperliquid_ledger(session, TRADER)
+
+    result = ingest_hyperliquid_ledger(session, TRADER)
+
+    assert result.n_new == 0
+    assert session.query(RawLedgerEvent).count() == 1
+
+
+def test_ledger_normalized_fields_mapped_correctly(mocker):
+    session = _memory_session()
+    mocker.patch(
+        "research.trader_mining.ingestion.fetch_hyperliquid_ledger",
+        new=AsyncMock(return_value=[_ledger_entry("0xa")]),
+    )
+
+    ingest_hyperliquid_ledger(session, TRADER)
+
+    row = session.query(RawLedgerEvent).one()
+    assert row.trader == TRADER
+    assert row.event_id == "0xa"
+    assert row.event_type == "deposit"
+    assert "100.0" in row.info_json

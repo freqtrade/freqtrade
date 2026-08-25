@@ -15,8 +15,8 @@ from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
-from research.models import NormalizedFill, RawFill
-from research.trader_mining.provider import fetch_hyperliquid_fills
+from research.models import NormalizedFill, RawFill, RawLedgerEvent
+from research.trader_mining.provider import fetch_hyperliquid_fills, fetch_hyperliquid_ledger
 
 
 @dataclass
@@ -88,3 +88,45 @@ def ingest_hyperliquid_fills(
         n_new=n_new,
         history_completeness=result.history_completeness,
     )
+
+
+@dataclass
+class LedgerIngestResult:
+    n_fetched: int
+    n_new: int
+
+
+def ingest_hyperliquid_ledger(session: Session, trader: str) -> LedgerIngestResult:
+    """Fetch trader's non-funding ledger (deposits, withdrawals, transfers, airdrops,
+    staking, etc.) and persist any not already stored, in one transaction -- idempotent
+    by event_id, matching ingest_hyperliquid_fills' idempotent-by-tid pattern."""
+    entries = asyncio.run(fetch_hyperliquid_ledger(trader))
+    retrieved_at = datetime.now(UTC)
+
+    existing_ids = {
+        eid
+        for (eid,) in session.query(RawLedgerEvent.event_id)
+        .filter(RawLedgerEvent.trader == trader)
+        .all()
+    }
+
+    n_new = 0
+    for entry in entries:
+        event_id = entry["id"]
+        if event_id in existing_ids:
+            continue
+        n_new += 1
+        existing_ids.add(event_id)
+        session.add(
+            RawLedgerEvent(
+                trader=trader,
+                event_id=event_id,
+                event_type=entry["type"],
+                timestamp=datetime.fromtimestamp(entry["timestamp"] / 1000, tz=UTC),
+                info_json=json.dumps(entry["info"]),
+                retrieved_at=retrieved_at,
+            )
+        )
+
+    session.commit()
+    return LedgerIngestResult(n_fetched=len(entries), n_new=n_new)
