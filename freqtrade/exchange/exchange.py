@@ -2900,19 +2900,25 @@ class Exchange:
         ticks: list[list],
         cache: bool,
         drop_incomplete: bool,
+        fetch_start_ms: int,
     ) -> DataFrame:
-        # Open date of the currently forming candle.
-        curr_candle_date = dt_ts(timeframe_to_prev_date(timeframe))
+        # Open date of the candle that was forming when the fetch started.
+        # Judged against the fetch time, not the processing time - a batch may finish
+        # processing after a candle boundary the fetch preceded, which must not
+        # reclassify the forming candle of the response as complete.
+        curr_candle_date = dt_ts(timeframe_to_prev_date(timeframe, dt_from_ts(fetch_start_ms)))
         # Only drop the last candle if it really is the currently forming one.
         # Exchanges omitting candles without trades can return a completed
         # candle as last element, which shouldn't be dropped.
         drop_incomplete = drop_incomplete and bool(ticks) and ticks[-1][0] >= curr_candle_date
         if cache:
             # Remember when this pair was last queried - even if the response was empty.
-            self._pairs_last_poll_time[(pair, timeframe, c_type)] = dt_ts()
+            self._pairs_last_poll_time[(pair, timeframe, c_type)] = fetch_start_ms
             # keeping last candle time as last refreshed time of the pair
             kept_ticks = ticks[:-1] if drop_incomplete else ticks
-            if kept_ticks and self._candle_is_final(ticks[-1][0], timeframe):
+            if kept_ticks and self._candle_is_final(
+                ticks[-1][0], timeframe, curr_candle_date, fetch_start_ms
+            ):
                 self._pairs_last_refresh_time[(pair, timeframe, c_type)] = kept_ticks[-1][0]
         has_cache = cache and (pair, timeframe, c_type) in self._klines
         # in case of existing cache, fill_missing happens after concatenation
@@ -2977,6 +2983,7 @@ class Exchange:
             async def gather_coroutines(coro):
                 return await asyncio.gather(*coro, return_exceptions=True)
 
+            fetch_start_ms = dt_ts()
             with self._loop_lock:
                 results = self.loop.run_until_complete(gather_coroutines(dl_jobs_batch))
 
@@ -2988,7 +2995,7 @@ class Exchange:
                 pair, timeframe, c_type, ticks, drop_hint = res
                 drop_incomplete_ = drop_hint if drop_incomplete is None else drop_incomplete
                 ohlcv_df = self._process_ohlcv_df(
-                    pair, timeframe, c_type, ticks, cache, drop_incomplete_
+                    pair, timeframe, c_type, ticks, cache, drop_incomplete_, fetch_start_ms
                 )
 
                 results_df[(pair, timeframe, c_type)] = ohlcv_df
@@ -3041,22 +3048,26 @@ class Exchange:
                 self._expiring_candle_cache[(c[1], lookback_period)][c] = val
         return candles
 
-    def _candle_is_final(self, last_candle_date: int, timeframe: str) -> bool:
+    def _candle_is_final(
+        self, last_candle_date: int, timeframe: str, curr_candle_date: int, fetch_start_ms: int
+    ) -> bool:
         """
         Whether the candles of a response can be considered final.
         The just-closed candle may still be updated by the exchange - it's only assumed to be final
         once a newer candle was issued, or once the grace period after its close is over.
+        Judged against the fetch start time - the response can't be fresher than the request.
         :param last_candle_date: Open date of the newest candle the exchange returned (in ms)
         :param timeframe: timeframe of the candles
+        :param curr_candle_date: Open date of the candle forming when the fetch started (in ms)
+        :param fetch_start_ms: Time the fetch of the response was initiated (in ms)
         """
-        curr_candle_date = dt_ts(timeframe_to_prev_date(timeframe))
         if last_candle_date != (curr_candle_date - timeframe_to_msecs(timeframe)):
             # The exchange either issued a newer candle already - or has no data for this pair
             # since well before the last candle closed.
             return True
         # The just-closed candle, with no newer candle issued yet.
         # Considered final once the grace period after its close is over.
-        return dt_ts() >= (curr_candle_date + self._ohlcv_late_candle_grace_ms)
+        return fetch_start_ms >= (curr_candle_date + self._ohlcv_late_candle_grace_ms)
 
     def _now_is_time_to_refresh(self, pair: str, timeframe: str, candle_type: CandleType) -> bool:
         pair_key: PairWithTimeframe = (pair, timeframe, candle_type)
