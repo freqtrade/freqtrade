@@ -10,6 +10,7 @@ guess) and why position tracking uses Decimal, not float.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
@@ -22,6 +23,9 @@ from research.trader_mining.symbols import base_asset_of
 
 
 _KNOWN_QUOTE_CURRENCIES = frozenset({"USDC", "USDT", "USDT0"})
+_POSITION_EPSILON = Decimal("1e-8")
+
+ReconcileFn = Callable[[str, datetime, datetime], Decimal]
 
 
 def _is_base_asset_fee(fill: NormalizedFill) -> bool:
@@ -69,25 +73,52 @@ def _end_position(running_position: Decimal, fill: NormalizedFill) -> Decimal:
     return running_position + position_delta
 
 
-def _check_position_continuity(
-    fill: NormalizedFill, end_position: Decimal, next_fill: NormalizedFill
-) -> None:
-    """A gap in ingested history (the 10,000-fill provider ceiling, an interrupted
-    trader-import run, or an external transfer never captured as a trade fill at all)
-    must not silently produce wrong trade boundaries -- if `fill`'s computed end
-    position doesn't match `next_fill`'s own reported starting position, that's a real
-    discontinuity, not something to paper over."""
+def _next_running_position(
+    fill: NormalizedFill,
+    end_position: Decimal,
+    next_fill: NormalizedFill,
+    reconcile: ReconcileFn | None,
+    reconciled_gaps: list[str] | None,
+) -> Decimal:
+    """Position to carry forward as running_position for the fill after `fill`.
+    Ordinarily just `end_position` (our own computation), confirmed against
+    next_fill's own reported position -- epsilon, not exact equality: `position`
+    values recorded on real fills (and in hand-built test fixtures that accumulate
+    float positions incrementally) can differ from our own Decimal-summed
+    end_position by float-repr noise even when there's no real gap.
+
+    If they don't match and `reconcile` is supplied, checks whether summing ledger
+    deltas for this symbol's base asset within (fill.timestamp, next_fill.timestamp)
+    explains the gap -- if so, trusts next_fill's own reported position going forward
+    (a non-trade ledger event, e.g. a transfer or airdrop, moved the balance in a way
+    our own fill-only computation has no way to represent). Otherwise raises, exactly
+    as before this feature existed -- a gap in ingested history (the 10,000-fill
+    provider ceiling, an interrupted trader-import run, or an external transfer never
+    captured as a trade fill) must not silently produce wrong trade boundaries."""
     next_position = Decimal(str(next_fill.position))
-    # epsilon, not exact equality: `position` values recorded on real fills (and in
-    # hand-built test fixtures that accumulate float positions incrementally) can differ
-    # from our own Decimal-summed end_position by float-repr noise even when there's no
-    # real gap.
-    if abs(next_position - end_position) > Decimal("1e-8"):
-        raise ValueError(
-            f"position gap: fill tid={fill.tid} ends at position {end_position} but "
-            f"next fill tid={next_fill.tid} starts at position {next_position} -- "
-            "likely missing fills between them (ingestion gap or provider truncation)"
-        )
+    discrepancy = next_position - end_position
+    if abs(discrepancy) <= _POSITION_EPSILON:
+        return end_position
+
+    if reconcile is not None:
+        asset = base_asset_of(fill.symbol)
+        if asset is not None:
+            ledger_delta = reconcile(asset, fill.timestamp, next_fill.timestamp)
+            if abs((end_position + ledger_delta) - next_position) <= _POSITION_EPSILON:
+                if reconciled_gaps is not None:
+                    reconciled_gaps.append(
+                        f"{fill.symbol}: reconciled a {discrepancy} position gap "
+                        f"between fill tid={fill.tid} and tid={next_fill.tid} via "
+                        f"ingested ledger events ({ledger_delta} {asset})"
+                    )
+                return next_position
+
+    ledger_note = "" if reconcile is None else ", and the ingested ledger does not explain it"
+    raise ValueError(
+        f"position gap: fill tid={fill.tid} ends at position {end_position} but next "
+        f"fill tid={next_fill.tid} starts at position {next_position} -- likely missing "
+        f"fills between them (ingestion gap or provider truncation){ledger_note}"
+    )
 
 
 @dataclass
@@ -163,12 +194,20 @@ class _TradeState:
 
 
 def reconstruct_trades(
-    trader: str, symbol: str, fills: list[NormalizedFill]
+    trader: str,
+    symbol: str,
+    fills: list[NormalizedFill],
+    reconcile: ReconcileFn | None = None,
+    reconciled_gaps: list[str] | None = None,
 ) -> list[ReconstructedTrade]:
     """fills must already be sorted by true execution order -- not re-sorted here. The
     caller (reconstruct_and_persist_trades) sorts by (timestamp, abs(position), tid),
     NOT (timestamp, tid) -- tid is not a monotonic sequence number, confirmed against a
-    real active wallet's fill history (see that function's own docstring)."""
+    real active wallet's fill history (see that function's own docstring).
+
+    `reconcile`/`reconciled_gaps` are optional (default None) -- omitting them keeps
+    today's hard-fail-only behavior on a position gap unchanged. See
+    _next_running_position for what they do when supplied."""
     if not fills:
         return []
 
@@ -192,8 +231,11 @@ def reconstruct_trades(
         qty = Decimal(str(fill.quantity))
         end_position = _end_position(running_position, fill)
 
+        next_running_position = end_position
         if i + 1 < len(fills):
-            _check_position_continuity(fill, end_position, fills[i + 1])
+            next_running_position = _next_running_position(
+                fill, end_position, fills[i + 1], reconcile, reconciled_gaps
+            )
 
         if trade is None:
             trade = _TradeState(
@@ -224,7 +266,7 @@ def reconstruct_trades(
                 direction="long" if end_position > 0 else "short",
             )
             trade.add_entry(fill, open_qty, fee - close_fee)
-            running_position = end_position
+            running_position = next_running_position
             continue
 
         fee = _fee_in_quote_currency(fill, Decimal(str(fill.fee)))
@@ -233,7 +275,7 @@ def reconstruct_trades(
         else:
             trade.add_exit(fill, qty, Decimal(str(fill.closed_pnl)), fee)
 
-        running_position = end_position
+        running_position = next_running_position
 
         if running_position == 0:
             trades.append(trade.finalize(trader, symbol))

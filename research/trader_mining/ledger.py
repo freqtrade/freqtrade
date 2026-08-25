@@ -12,7 +12,10 @@ data.
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from decimal import Decimal
+
+from sqlalchemy.orm import Session
 
 from research.models import RawLedgerEvent
 
@@ -41,3 +44,26 @@ def signed_token_delta(entry: RawLedgerEvent, trader: str) -> tuple[str, Decimal
         sign = -1 if delta.get("isDeposit") else 1
         return (delta["token"], sign * Decimal(delta["amount"]))
     return None
+
+
+def reconciliation_deltas(
+    session: Session, trader: str, asset: str, window_start: datetime, window_end: datetime
+) -> Decimal:
+    """Sum signed_token_delta for `asset`, over ledger events strictly between
+    window_start and window_end -- the two fills whose position mismatch triggered a
+    reconciliation check in research.trader_mining.engine."""
+    events = (
+        session.query(RawLedgerEvent)
+        .filter(
+            RawLedgerEvent.trader == trader,
+            RawLedgerEvent.timestamp > window_start,
+            RawLedgerEvent.timestamp < window_end,
+        )
+        .all()
+    )
+    total = Decimal(0)
+    for event in events:
+        parsed = signed_token_delta(event, trader)
+        if parsed is not None and parsed[0] == asset:
+            total += parsed[1]
+    return total

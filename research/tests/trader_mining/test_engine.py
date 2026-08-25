@@ -1,5 +1,6 @@
 # research/tests/trader_mining/test_engine.py
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 
 import pytest
 from sqlalchemy import create_engine
@@ -486,6 +487,67 @@ def test_quote_currency_fee_on_a_non_usdc_quoted_pair_does_not_affect_position()
     assert trades[0].quantity == pytest.approx(10.0)
     # both fees are USDT0 (the quote currency) -- summed as-is, no price conversion
     assert trades[0].fees == pytest.approx(0.6)
+
+
+def test_reconciled_gap_does_not_raise_and_continues_reconstruction():
+    """The exact scenario that motivated this feature (shape matches the real wallet):
+    a truncated-start position of 70000.0 is topped up by 8008.0 to 78008.0, then a
+    spotTransfer moves 62264.0 HYPE OUT of the wallet, leaving 15744.0 -- which the
+    next fill fully closes. A real spot position can never go negative, so the
+    transfer must come out of an existing large holding, not exceed it (an earlier,
+    unrealistic draft of this test had the transfer exceed the whole position)."""
+    fills = [
+        _fill(1, "buy", 100.0, 8008.0, position=70000.0, ts=T0, symbol="HYPE/USDC"),
+        _fill(
+            2,
+            "sell",
+            110.0,
+            15744.0,
+            position=15744.0,  # 78008.0 - 62264.0, the reconciled real gap shape
+            ts=T0 + timedelta(hours=1),
+            closed_pnl=1000.0,
+            direction="Close Long",
+            symbol="HYPE/USDC",
+        ),
+    ]
+
+    def fake_reconcile(asset, window_start, window_end):
+        assert asset == "HYPE"
+        return Decimal("-62264.0")
+
+    reconciled_gaps: list[str] = []
+    trades = reconstruct_trades(
+        TRADER, "HYPE/USDC", fills, reconcile=fake_reconcile, reconciled_gaps=reconciled_gaps
+    )
+
+    assert len(trades) == 1
+    assert len(reconciled_gaps) == 1
+    assert "HYPE/USDC" in reconciled_gaps[0]
+
+
+def test_unreconciled_gap_still_raises_even_with_reconcile_supplied():
+    """reconcile is consulted but doesn't explain the gap -- must still hard-fail, never
+    silently proceed."""
+    fills = [
+        _fill(1, "buy", 100.0, 10.0, position=0.0, ts=T0, symbol="HYPE/USDC"),
+        _fill(
+            2,
+            "sell",
+            110.0,
+            10.0,
+            position=999.0,  # nothing explains this
+            ts=T0 + timedelta(hours=1),
+            closed_pnl=100.0,
+            direction="Close Long",
+            symbol="HYPE/USDC",
+        ),
+    ]
+
+    def fake_reconcile(asset, window_start, window_end):
+        return Decimal(0)  # ledger has nothing for this window
+
+    with pytest.raises(ValueError, match="position gap"):
+        reconstruct_trades(TRADER, "HYPE/USDC", fills, reconcile=fake_reconcile)
 
 
 def test_position_gap_between_fills_raises():

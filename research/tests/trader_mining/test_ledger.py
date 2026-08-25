@@ -10,15 +10,20 @@ TRADER = "0x9794bbbc222b6b93c1417d01aa1ff06d42e5333b"
 OTHER = "0xead210997055781f27eeab816cc548673bf6e500"
 
 
-def _event(event_type: str, delta: dict) -> RawLedgerEvent:
+def _event(
+    event_type: str,
+    delta: dict,
+    event_id: str = "0xtest",
+    timestamp: datetime = datetime(2024, 11, 29, tzinfo=UTC),
+) -> RawLedgerEvent:
     """`delta` is the real payload's info["delta"] sub-dict -- real captured ledger
     entries always nest the actual event fields one level down under "delta", e.g.
     {"time": ..., "hash": ..., "delta": {"type": "deposit", "usdc": "288888.0"}}."""
     return RawLedgerEvent(
         trader=TRADER,
-        event_id="0xtest",
+        event_id=event_id,
         event_type=event_type,
-        timestamp=datetime(2024, 11, 29, tzinfo=UTC),
+        timestamp=timestamp,
         info_json=json.dumps({"delta": delta}),
         retrieved_at=datetime.now(UTC),
     )
@@ -113,3 +118,84 @@ def test_send_uses_same_direction_rule_as_spot_transfer():
 def test_unrecognized_event_type_returns_none():
     entry = _event("somethingNew", {"type": "somethingNew"})
     assert signed_token_delta(entry, TRADER) is None
+
+
+def _memory_session():
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import Session
+
+    from research.models import Base
+
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    return Session(engine)
+
+
+def test_reconciliation_deltas_sums_matching_asset_in_window():
+    from research.trader_mining.ledger import reconciliation_deltas
+
+    session = _memory_session()
+    session.add(
+        _event(
+            "spotTransfer",
+            {
+                "type": "spotTransfer",
+                "token": "HYPE",
+                "amount": "62264.0",
+                "user": TRADER,
+                "destination": OTHER,
+            },
+            event_id="0xa",
+            timestamp=datetime(2024, 11, 29, 10, 2, 32, tzinfo=UTC),
+        )
+    )
+    session.add(
+        _event(
+            "deposit",
+            {"type": "deposit", "usdc": "100.0"},  # different asset -- must not count
+            event_id="0xb",
+            timestamp=datetime(2024, 11, 29, 10, 2, 33, tzinfo=UTC),
+        )
+    )
+    session.commit()
+
+    total = reconciliation_deltas(
+        session,
+        TRADER,
+        "HYPE",
+        datetime(2024, 11, 29, 9, 53, 54, tzinfo=UTC),
+        datetime(2024, 11, 29, 10, 7, 13, tzinfo=UTC),
+    )
+
+    assert total == Decimal("-62264.0")
+
+
+def test_reconciliation_deltas_ignores_events_outside_window():
+    from research.trader_mining.ledger import reconciliation_deltas
+
+    session = _memory_session()
+    session.add(
+        _event(
+            "spotTransfer",
+            {
+                "type": "spotTransfer",
+                "token": "HYPE",
+                "amount": "62264.0",
+                "user": TRADER,
+                "destination": OTHER,
+            },
+            event_id="0xa",
+            timestamp=datetime(2024, 11, 29, 10, 2, 32, tzinfo=UTC),
+        )
+    )
+    session.commit()
+
+    total = reconciliation_deltas(
+        session,
+        TRADER,
+        "HYPE",
+        datetime(2025, 1, 1, tzinfo=UTC),
+        datetime(2025, 1, 2, tzinfo=UTC),
+    )
+
+    assert total == Decimal(0)
