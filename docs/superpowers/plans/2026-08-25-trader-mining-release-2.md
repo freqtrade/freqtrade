@@ -23,7 +23,11 @@ own tests).
 
 - `reconstruct_trades(trader: str, symbol: str, fills: list[NormalizedFill]) ->
   list[ReconstructedTrade]` -- pure function. `fills` must already be sorted by
-  `(timestamp, tid)` by the caller; not re-sorted internally.
+  `(timestamp, tid)` by the caller; not re-sorted internally. **Superseded post-
+  implementation** -- see the spec's "Post-implementation correction" section: the
+  actual caller sorts by `(timestamp, abs(position), tid)`, not `(timestamp, tid)`.
+  This plan is a historical execution record, kept as-is; the spec and
+  `engine.py`'s own docstrings are the current source of truth.
 - All position/price/quantity/pnl/fee values are converted to `Decimal(str(x))` at the
   point of use -- never raw float arithmetic. This matters specifically because the
   zero-crossing check (`running_position == Decimal("0")`) is exact-equality-sensitive.

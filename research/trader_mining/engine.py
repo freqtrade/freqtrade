@@ -118,10 +118,24 @@ def reconstruct_trades(
             direction="long" if running_position > 0 else "short",
         )
 
-    for fill in fills:
+    for i, fill in enumerate(fills):
         qty = Decimal(str(fill.quantity))
         signed_qty = qty if fill.side == "buy" else -qty
         end_position = running_position + signed_qty
+
+        if i + 1 < len(fills):
+            next_position = Decimal(str(fills[i + 1].position))
+            # epsilon, not exact equality: `position` values recorded on real fills (and
+            # in hand-built test fixtures that accumulate float positions incrementally)
+            # can differ from our own Decimal-summed end_position by float-repr noise
+            # even when there's no real gap.
+            if abs(next_position - end_position) > Decimal("1e-8"):
+                raise ValueError(
+                    f"position gap: fill tid={fill.tid} ends at position {end_position} "
+                    f"but next fill tid={fills[i + 1].tid} starts at position "
+                    f"{next_position} -- likely missing fills between them (ingestion "
+                    "gap or provider truncation)"
+                )
 
         if trade is None:
             trade = _TradeState(
@@ -208,23 +222,29 @@ def reconstruct_and_persist_trades(
     symbols = sorted({s for (s,) in symbols_query.distinct().all()})
 
     total_trades = 0
-    for sym in symbols:
-        fills = (
-            session.query(NormalizedFill)
-            .filter(NormalizedFill.trader == trader, NormalizedFill.symbol == sym)
-            .order_by(
-                NormalizedFill.timestamp, func.abs(NormalizedFill.position), NormalizedFill.tid
+    try:
+        for sym in symbols:
+            fills = (
+                session.query(NormalizedFill)
+                .filter(NormalizedFill.trader == trader, NormalizedFill.symbol == sym)
+                .order_by(
+                    NormalizedFill.timestamp,
+                    func.abs(NormalizedFill.position),
+                    NormalizedFill.tid,
+                )
+                .all()
             )
-            .all()
-        )
-        session.query(ReconstructedTrade).filter(
-            ReconstructedTrade.trader == trader, ReconstructedTrade.symbol == sym
-        ).delete()
+            session.query(ReconstructedTrade).filter(
+                ReconstructedTrade.trader == trader, ReconstructedTrade.symbol == sym
+            ).delete()
 
-        new_trades = reconstruct_trades(trader, sym, fills)
-        for t in new_trades:
-            session.add(t)
-        total_trades += len(new_trades)
+            new_trades = reconstruct_trades(trader, sym, fills)
+            for t in new_trades:
+                session.add(t)
+            total_trades += len(new_trades)
+    except Exception:
+        session.rollback()
+        raise
 
     session.commit()
     return ReconstructResult(n_trades=total_trades, symbols=symbols)

@@ -311,6 +311,76 @@ def test_long_fill_sequence_scaling_repeatedly_closes_exactly():
     assert trades[0].quantity == pytest.approx(2.0)
 
 
+def test_failure_on_one_symbol_rolls_back_and_leaves_other_symbols_untouched():
+    """If reconstruction blows up partway through a multi-symbol trader (e.g. a
+    position-gap ValueError on the second symbol), the session must not be left with a
+    dangling delete()/add() for the symbol that already succeeded -- and a caller who
+    catches the exception and keeps using the session shouldn't inherit a poisoned
+    transaction."""
+    session = _memory_session()
+    _add_normalized_fill(
+        session, tid=1, symbol="BTC/USDC:USDC", side="buy", position=0.0, timestamp=T0
+    )
+    _add_normalized_fill(
+        session,
+        tid=2,
+        symbol="BTC/USDC:USDC",
+        side="sell",
+        position=5.0,
+        timestamp=T0 + timedelta(hours=1),
+        closed_pnl=50.0,
+        direction="Close Long",
+    )
+    # ETH fills have a position gap: fill 3 ends at 5.0, fill 4 claims it started at 9.0
+    _add_normalized_fill(
+        session, tid=3, symbol="ETH/USDC:USDC", side="buy", position=0.0, timestamp=T0
+    )
+    _add_normalized_fill(
+        session,
+        tid=4,
+        symbol="ETH/USDC:USDC",
+        side="sell",
+        position=9.0,
+        timestamp=T0 + timedelta(hours=1),
+        closed_pnl=10.0,
+        direction="Close Long",
+    )
+    session.commit()
+
+    with pytest.raises(ValueError, match="position gap"):
+        reconstruct_and_persist_trades(session, TRADER)
+
+    # nothing was committed -- not even the BTC symbol that reconstructed successfully
+    # before ETH blew up -- and the session is still usable afterwards.
+    assert session.query(ReconstructedTrade).count() == 0
+    assert session.query(NormalizedFill).count() == 4
+
+
+def test_position_gap_between_fills_raises():
+    """A gap in ingested history (e.g. the 10,000-fill provider ceiling, or an
+    interrupted trader-import run) must not silently produce wrong trade boundaries --
+    if one fill's ending position doesn't match the next fill's own reported starting
+    position, that's a real discontinuity, not something to paper over."""
+    fills = [
+        _fill(1, "buy", 100.0, 5.0, position=0.0, ts=T0),
+        # after fill 1: position should be 5.0, but this fill claims it started at 9.0
+        # -- a gap of missing fills in between.
+        _fill(
+            2,
+            "sell",
+            110.0,
+            5.0,
+            position=9.0,
+            ts=T0 + timedelta(hours=1),
+            closed_pnl=50.0,
+            direction="Close Long",
+        ),
+    ]
+
+    with pytest.raises(ValueError, match="position gap"):
+        reconstruct_trades(TRADER, SYMBOL, fills)
+
+
 def _memory_session() -> Session:
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)
