@@ -128,3 +128,30 @@ class NormalizedFill(Base):
     fee: Mapped[float] = mapped_column(Float)
     fee_currency: Mapped[str] = mapped_column(String(20))
     order_id: Mapped[str] = mapped_column(String(60))
+
+
+class ReconstructedTrade(Base):
+    """One row per logical trade, grouped from NormalizedFill rows by
+    research.trader_mining.engine.reconstruct_trades -- zero-to-zero position spans, not
+    an imposed lot-accounting convention. Recomputed from scratch on every
+    reconstruct_and_persist_trades run, not incrementally patched."""
+
+    __tablename__ = "reconstructed_trades"
+    __table_args__ = (Index("ix_reconstructed_trades_trader_symbol", "trader", "symbol"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    trader: Mapped[str] = mapped_column(String(120))
+    symbol: Mapped[str] = mapped_column(String(80))
+    direction: Mapped[str] = mapped_column(String(10))
+    entry_timestamp: Mapped[datetime] = mapped_column(DateTime)
+    entry_price: Mapped[float] = mapped_column(Float)
+    exit_timestamp: Mapped[datetime] = mapped_column(DateTime)
+    exit_price: Mapped[float] = mapped_column(Float)
+    quantity: Mapped[float] = mapped_column(Float)
+    gross_pnl: Mapped[float] = mapped_column(Float)
+    fees: Mapped[float] = mapped_column(Float)
+    net_pnl: Mapped[float] = mapped_column(Float)
+    holding_time_seconds: Mapped[float] = mapped_column(Float)
+    n_fills: Mapped[int] = mapped_column(Integer)
+    is_truncated_start: Mapped[bool] = mapped_column(Boolean)
+    was_liquidated: Mapped[bool] = mapped_column(Boolean)
