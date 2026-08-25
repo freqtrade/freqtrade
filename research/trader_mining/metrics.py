@@ -15,6 +15,7 @@ Release 4's job (the TRAIN/VALIDATION/TEST/FORWARD framework), not this module's
 
 from __future__ import annotations
 
+import statistics
 from dataclasses import dataclass
 
 from research.models import ReconstructedTrade
@@ -95,6 +96,43 @@ def compute_metrics(trades: list[ReconstructedTrade]) -> WalletMetrics:
         avg_win / abs(avg_loss) if (avg_win is not None and avg_loss is not None) else None
     )
 
+    returns = [t.net_pnl / (t.entry_price * t.quantity) for t in trades]
+    median_trade_return = statistics.median(returns)
+
+    holding_periods = [t.holding_time_seconds for t in trades]
+    avg_holding_period_seconds = sum(holding_periods) / n
+    median_holding_period_seconds = statistics.median(holding_periods)
+
+    long_count = sum(1 for t in trades if t.direction == "long")
+    short_count = n - long_count
+    long_pct = long_count / n
+
+    symbol_counts: dict[str, int] = {}
+    for t in trades:
+        symbol_counts[t.symbol] = symbol_counts.get(t.symbol, 0) + 1
+    symbol_concentration = max(symbol_counts.values()) / n
+
+    # Sequence-dependent metrics: ordered by exit_timestamp, walked once together --
+    # both need the same chronological cumulative-P&L walk.
+    ordered_by_exit = sorted(trades, key=lambda t: t.exit_timestamp)
+    cumulative = 0.0
+    peak = 0.0
+    drawdown = 0.0
+    losing_streak = 0
+    longest_losing_streak = 0
+    for t in ordered_by_exit:
+        cumulative += t.net_pnl
+        peak = max(peak, cumulative)
+        drawdown = max(drawdown, peak - cumulative)
+        if t.net_pnl < 0:
+            losing_streak += 1
+            longest_losing_streak = max(longest_losing_streak, losing_streak)
+        else:
+            losing_streak = 0
+
+    winners_sorted = sorted((t.net_pnl for t in trades if t.net_pnl > 0), reverse=True)
+    pnl_concentration_top_5 = sum(winners_sorted[:5]) / net_pnl if net_pnl != 0 else None
+
     return WalletMetrics(
         trade_count=n,
         total_volume=total_volume,
@@ -107,16 +145,16 @@ def compute_metrics(trades: list[ReconstructedTrade]) -> WalletMetrics:
         profit_factor=profit_factor,
         expectancy=expectancy,
         payoff_ratio=payoff_ratio,
-        median_trade_return=None,
-        avg_holding_period_seconds=None,
-        median_holding_period_seconds=None,
-        long_count=0,
-        short_count=0,
-        long_pct=None,
-        symbol_concentration=None,
-        max_drawdown=0.0,
-        max_losing_streak=0,
-        pnl_concentration_top_5=None,
+        median_trade_return=median_trade_return,
+        avg_holding_period_seconds=avg_holding_period_seconds,
+        median_holding_period_seconds=median_holding_period_seconds,
+        long_count=long_count,
+        short_count=short_count,
+        long_pct=long_pct,
+        symbol_concentration=symbol_concentration,
+        max_drawdown=drawdown,
+        max_losing_streak=longest_losing_streak,
+        pnl_concentration_top_5=pnl_concentration_top_5,
         trade_consistency_score=None,
         return_to_drawdown_ratio=None,
     )

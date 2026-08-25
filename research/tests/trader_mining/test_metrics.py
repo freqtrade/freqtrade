@@ -1,5 +1,6 @@
 # research/tests/trader_mining/test_metrics.py
-from datetime import UTC, datetime
+import statistics
+from datetime import UTC, datetime, timedelta
 
 from research.models import ReconstructedTrade
 from research.trader_mining.metrics import compute_metrics
@@ -106,3 +107,78 @@ def test_breakeven_trade_counts_toward_trades_but_is_not_a_win_or_loss():
     assert m.win_rate == 1 / 3  # only the +10 trade counts as a win
     assert m.avg_win == 10.0
     assert m.avg_loss == -10.0
+
+
+def test_distribution_metrics():
+    trades = [
+        _trade(net_pnl=10.0, entry_price=100.0, quantity=1.0, direction="long", symbol="A"),
+        _trade(net_pnl=20.0, entry_price=100.0, quantity=1.0, direction="short", symbol="A"),
+        _trade(net_pnl=-5.0, entry_price=100.0, quantity=1.0, direction="long", symbol="B"),
+        _trade(
+            net_pnl=15.0,
+            entry_price=100.0,
+            quantity=1.0,
+            direction="long",
+            symbol="A",
+            holding_seconds=7200.0,
+        ),
+    ]
+    # per-trade returns (net_pnl / (entry_price*quantity)): 0.10, 0.20, -0.05, 0.15
+    # median of [0.10, 0.20, -0.05, 0.15] sorted: [-0.05, 0.10, 0.15, 0.20] -> (0.10+0.15)/2
+
+    m = compute_metrics(trades)
+
+    assert m.median_trade_return == statistics.median([0.10, 0.20, -0.05, 0.15])
+    assert m.avg_holding_period_seconds == (3600.0 * 3 + 7200.0) / 4
+    assert m.median_holding_period_seconds == statistics.median([3600.0, 3600.0, 3600.0, 7200.0])
+    assert m.long_count == 3
+    assert m.short_count == 1
+    assert m.long_pct == 0.75
+    assert m.symbol_concentration == 0.75  # "A" appears in 3 of 4 trades
+
+
+def test_max_drawdown_and_losing_streak_ordered_by_exit_timestamp():
+    t0 = datetime(2026, 1, 1, tzinfo=UTC)
+    trades = [
+        _trade(net_pnl=100.0, exit_ts=t0),  # cumulative 100, peak 100
+        _trade(net_pnl=-30.0, exit_ts=t0 + timedelta(hours=1)),  # cumulative 70, dd 30
+        _trade(net_pnl=-20.0, exit_ts=t0 + timedelta(hours=2)),  # cumulative 50, dd 50
+        _trade(net_pnl=60.0, exit_ts=t0 + timedelta(hours=3)),  # cumulative 110, new peak
+    ]
+
+    m = compute_metrics(trades)
+
+    assert m.max_drawdown == 50.0  # peak 100 down to a low of 50
+    assert m.max_losing_streak == 2  # the two consecutive losses
+
+
+def test_single_losing_trade_produces_nonzero_drawdown():
+    """max_drawdown needs no 0/1-trade special case -- a lone losing trade is itself a
+    real drawdown from the implicit starting peak of 0.0."""
+    m = compute_metrics([_trade(net_pnl=-40.0)])
+
+    assert m.max_drawdown == 40.0
+
+
+def test_single_winning_trade_has_zero_drawdown():
+    m = compute_metrics([_trade(net_pnl=40.0)])
+
+    assert m.max_drawdown == 0.0
+
+
+def test_pnl_concentration_top_5_sums_largest_winners_over_total_net_pnl():
+    trades = [_trade(net_pnl=v) for v in [50.0, 40.0, 30.0, 20.0, 10.0, 5.0, -20.0]]
+    # total_net_pnl = 50+40+30+20+10+5-20 = 135
+    # top 5 winners: 50+40+30+20+10 = 150
+
+    m = compute_metrics(trades)
+
+    assert m.pnl_concentration_top_5 == 150.0 / 135.0
+
+
+def test_pnl_concentration_top_5_is_none_when_total_net_pnl_is_zero():
+    trades = [_trade(net_pnl=50.0), _trade(net_pnl=-50.0)]
+
+    m = compute_metrics(trades)
+
+    assert m.pnl_concentration_top_5 is None
