@@ -56,3 +56,47 @@ independent code reviews (one traced the claim against `freqtrade/persistence/mo
 actual source, one against a live 78/78-passing full test-suite run) and the same
 failure pattern this repo already fixed once for a different pair of `Trade`-class
 globals in PR #5.
+
+---
+
+## `research/pbo.py`'s PBO silently fails closed to 1.0 on a prime window count
+
+CSCV (the Probability of Backtest Overfitting method) only ever needs an EVEN number of
+blocks -- so it can split them into two equal-sized HALVES, in-sample and
+out-of-sample -- not blocks that evenly divide the underlying period count. The
+original `choose_n_splits` required both: `research/pbo.py:16`
+(`s = min(max_splits, n_periods)`) is what it looks like after the fix; before the fix
+it searched for an even number that also evenly divided `n_periods`, falling back to a
+hardcoded 2 when none existed. For a PRIME `n_periods` (no even divisor exists at
+all -- and critically, this includes the common case of 17 walk-forward windows, which
+`train_days=90, test_days=30` over roughly a 20-month discovery window produces), that
+fallback of 2 doesn't divide 17 evenly either, so the caller's own guard clause used to
+silently return the fail-closed `research/pbo.py:47`
+(`return {"pbo": 1.0, "n_splits": 0, "n_combinations": 0, "logits": []}`) — a maximally
+pessimistic PBO regardless of what the real data showed.
+
+The trap: this isn't a rare edge case. Any `train_days`/`test_days` choice whose walk-
+forward window count comes out prime (or has no even divisor) silently corrupts PBO for
+that entire gate run, and the caller has no way to tell the difference between "this
+really is fully overfit" and "the window count broke CSCV's block math" -- both report
+the identical `pbo: 1.0`. Three real gate runs in one session (`EmaTrendFollow`,
+`BandtasticMeanReversion`, `MacdMomentum`, all using a 17-window setup) all reported the
+fake 1.0. `choose_n_splits(17)` now returns 16 rather than falling back -- confirmed at
+`research/tests/test_pbo.py:26` (`assert s % 2 == 0`). Re-running the same
+`EmaTrendFollow` config after the fix gave a real PBO of 0.299 (passes the 0.5
+threshold); deflated Sharpe and the permutation test, not PBO, were the actual reasons
+none of the three strategies passed.
+
+The fix: `np.array_split` (used a few lines later to build the actual CSCV blocks)
+already handles a remainder by giving the first few blocks one extra column --
+`research/pbo.py:49` (`blocks = np.array_split(returns_matrix, s, axis=1)`) never
+needed an exact divisor in the first place. Only evenness and `s >= 2` matter; the
+caller's guard is now `research/pbo.py:46` (`if s < 2 or s % 2 != 0:`), no longer
+`n_periods % s != 0`.
+
+Verified 2026-08-24 during momentum-strategy gate testing: confirmed by directly
+reproducing the bug (`research/tests/test_pbo.py:60`
+(`test_low_when_one_variant_dominates_every_period_and_n_periods_is_prime`), a dominant-
+variant fixture at `n_periods=17` that reported `pbo=1.0` before the fix and `pbo<0.3`
+after) and by re-running a real gate command with the exact `train_days=90,
+test_days=30` config that originally triggered it.
