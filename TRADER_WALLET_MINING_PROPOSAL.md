@@ -109,14 +109,16 @@ so a future planning session starts here rather than re-deriving it. Only Releas
 to brainstorm/spec/plan next -- everything after it is provisional until the one before it
 has shipped and taught us something.
 
-**Release 1 -- Hyperliquid ingestion (read-only, single wallet).** Proposal §1-2, simplified
-per the review notes' 4-file module count (`provider.py`/`storage.py`/`engine.py`/`cli.py`,
-not the original 9). Thin `ccxt.async_support.hyperliquid` wrapper +
-raw/normalized fill persistence (`research/db.py` conventions) + a `python -m research.cli
-trader-import` command. Deliverable: pull one real wallet's fill history into local storage,
-reproducibly and idempotently, with the 10k-fill ceiling surfaced as an explicit
-`history_completeness` result rather than silently truncated. No reconstruction, no
-analysis yet -- this release is "can we reliably get the data," full stop.
+**Release 1 -- Hyperliquid ingestion (read-only, single wallet).** Proposal §1-2. Three
+files, not the review notes' four -- `engine.py` does reconstruction (Release 2) and has
+nothing to do until raw fills exist, so it doesn't belong in Release 1's scope:
+`provider.py` (thin `ccxt.async_support.hyperliquid` wrapper), `storage.py`
+(raw/normalized fill persistence, `research/db.py` conventions), `cli.py` (a
+`python -m research.cli trader-import` command). Deliverable: pull one real wallet's fill
+history into local storage, reproducibly and idempotently, with the 10k-fill ceiling
+surfaced as an explicit `history_completeness` result rather than silently truncated. No
+reconstruction, no analysis yet -- this release is "can we reliably get the data," full
+stop.
 
 **Release 2 -- Trade reconstruction.** Proposal §3. Groups raw fills into logical trades
 following Hyperliquid's own `startPosition`/`closedPnl` position transitions (no hard-coded
