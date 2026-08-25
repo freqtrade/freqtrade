@@ -137,6 +137,7 @@ def test_raw_ledger_event_round_trips():
         RawLedgerEvent(
             trader="0xAAA",
             event_id="0xdeadbeef",
+            dedup_key="0xAAA:0xdeadbeef:1732875752000:spotTransfer:abc123",
             event_type="spotTransfer",
             timestamp=datetime(2024, 11, 29, 10, 2, 32, tzinfo=UTC),
             info_json='{"type": "spotTransfer", "token": "HYPE", "amount": "62264.0"}',

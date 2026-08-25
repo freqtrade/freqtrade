@@ -9,6 +9,7 @@ fills" requirement.
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -96,16 +97,33 @@ class LedgerIngestResult:
     n_new: int
 
 
+def _dedup_key(
+    trader: str, event_id: str, timestamp_ms: int, event_type: str, info_json: str
+) -> str:
+    """event_id alone isn't a reliable dedup key -- Hyperliquid's cStakingTransfer
+    events don't get a real transaction hash; ccxt's `id` is an identical
+    zero-sentinel for EVERY such event (confirmed against real data: one wallet had 7
+    cStakingTransfer events, all sharing one id -- found via code review, which also
+    caught that a global unique constraint on event_id alone crashed a second wallet's
+    import). Folding in timestamp/type/a hash of the raw payload disambiguates genuinely
+    different events that happen to share a degenerate event_id, while a true re-fetch
+    of the exact same event (identical inputs) still produces the same key, preserving
+    idempotency."""
+    payload_hash = hashlib.sha256(info_json.encode()).hexdigest()[:16]
+    return f"{trader}:{event_id}:{timestamp_ms}:{event_type}:{payload_hash}"
+
+
 def ingest_hyperliquid_ledger(session: Session, trader: str) -> LedgerIngestResult:
     """Fetch trader's non-funding ledger (deposits, withdrawals, transfers, airdrops,
     staking, etc.) and persist any not already stored, in one transaction -- idempotent
-    by event_id, matching ingest_hyperliquid_fills' idempotent-by-tid pattern."""
+    by dedup_key (see _dedup_key), matching ingest_hyperliquid_fills' idempotent-by-tid
+    pattern in spirit, though tid alone is reliable and event_id alone is not."""
     entries = asyncio.run(fetch_hyperliquid_ledger(trader))
     retrieved_at = datetime.now(UTC)
 
-    existing_ids = {
-        eid
-        for (eid,) in session.query(RawLedgerEvent.event_id)
+    existing_keys = {
+        key
+        for (key,) in session.query(RawLedgerEvent.dedup_key)
         .filter(RawLedgerEvent.trader == trader)
         .all()
     }
@@ -113,17 +131,20 @@ def ingest_hyperliquid_ledger(session: Session, trader: str) -> LedgerIngestResu
     n_new = 0
     for entry in entries:
         event_id = entry["id"]
-        if event_id in existing_ids:
+        info_json = json.dumps(entry["info"])
+        key = _dedup_key(trader, event_id, entry["timestamp"], entry["type"], info_json)
+        if key in existing_keys:
             continue
         n_new += 1
-        existing_ids.add(event_id)
+        existing_keys.add(key)
         session.add(
             RawLedgerEvent(
                 trader=trader,
                 event_id=event_id,
+                dedup_key=key,
                 event_type=entry["type"],
                 timestamp=datetime.fromtimestamp(entry["timestamp"] / 1000, tz=UTC),
-                info_json=json.dumps(entry["info"]),
+                info_json=info_json,
                 retrieved_at=retrieved_at,
             )
         )

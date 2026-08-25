@@ -22,6 +22,9 @@ def _event(
     return RawLedgerEvent(
         trader=TRADER,
         event_id=event_id,
+        # good enough for test purposes -- doesn't need to match
+        # ingestion._dedup_key's real hashing, just needs to be unique per distinct row.
+        dedup_key=f"{TRADER}:{event_id}:{timestamp.isoformat()}",
         event_type=event_type,
         timestamp=timestamp,
         info_json=json.dumps({"delta": delta}),
@@ -199,3 +202,39 @@ def test_reconciliation_deltas_ignores_events_outside_window():
     )
 
     assert total == Decimal(0)
+
+
+def test_reconciliation_deltas_includes_event_exactly_at_window_boundary():
+    """A ledger event sharing an exact timestamp with one of the two fills bounding the
+    gap must not be silently excluded -- strict > / < bounds would drop it, contradicting
+    this feature's own "never silently drop" philosophy (found in code review)."""
+    from research.trader_mining.ledger import reconciliation_deltas
+
+    session = _memory_session()
+    boundary_ts = datetime(2024, 11, 29, 10, 2, 32, tzinfo=UTC)
+    session.add(
+        _event(
+            "spotTransfer",
+            {
+                "type": "spotTransfer",
+                "token": "HYPE",
+                "amount": "62264.0",
+                "user": TRADER,
+                "destination": OTHER,
+            },
+            event_id="0xa",
+            timestamp=boundary_ts,
+        )
+    )
+    session.commit()
+
+    # window_end == the event's own timestamp exactly
+    total = reconciliation_deltas(
+        session,
+        TRADER,
+        "HYPE",
+        datetime(2024, 11, 29, 9, 53, 54, tzinfo=UTC),
+        boundary_ts,
+    )
+
+    assert total == Decimal("-62264.0")

@@ -137,13 +137,26 @@ class RawLedgerEvent(Base):
     types (deposit/spotTransfer/spotGenesis/cStakingTransfer/send all shape their real
     delta differently -- see docs/superpowers/specs/2026-08-25-trader-mining-ledger-
     reconciliation-design.md's event type survey) and info["delta"] is the only field
-    actually used at reconciliation time."""
+    actually used at reconciliation time.
+
+    event_id is NOT the dedup key -- Hyperliquid's cStakingTransfer events don't get a
+    real transaction hash; ccxt's `id` (and info["hash"]) is an identical zero-sentinel
+    for EVERY such event (confirmed against real data via code review: one wallet had 7
+    cStakingTransfer events, all sharing one id). Trusting event_id alone as a unique key
+    silently dropped 6 of those 7 real events on ingest, and being globally unique made a
+    SECOND wallet's cStakingTransfer event crash the whole trader-import run with an
+    IntegrityError. dedup_key -- derived from (trader, event_id, timestamp, event_type,
+    a hash of info_json) via research.trader_mining.ingestion._dedup_key -- is what
+    actually gets deduped on; it disambiguates same-event_id-but-different-content
+    events since their timestamp/payload differ, while still correctly deduping a true
+    re-fetch of the exact same event (identical inputs -> identical dedup_key)."""
 
     __tablename__ = "raw_ledger_events"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     trader: Mapped[str] = mapped_column(String(120), index=True)
-    event_id: Mapped[str] = mapped_column(String(80), unique=True)
+    event_id: Mapped[str] = mapped_column(String(80))
+    dedup_key: Mapped[str] = mapped_column(String(64), unique=True)
     event_type: Mapped[str] = mapped_column(String(40))
     timestamp: Mapped[datetime] = mapped_column(DateTime)
     info_json: Mapped[str] = mapped_column(String)

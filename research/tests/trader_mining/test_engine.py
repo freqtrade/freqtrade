@@ -775,6 +775,7 @@ def test_reconstruct_and_persist_trades_reports_reconciled_gaps():
         RawLedgerEvent(
             trader=TRADER,
             event_id="0xdeadbeef",
+            dedup_key="0xdeadbeef",
             event_type="spotTransfer",
             timestamp=T0 + timedelta(minutes=30),
             info_json=json.dumps(

@@ -49,15 +49,18 @@ def signed_token_delta(entry: RawLedgerEvent, trader: str) -> tuple[str, Decimal
 def reconciliation_deltas(
     session: Session, trader: str, asset: str, window_start: datetime, window_end: datetime
 ) -> Decimal:
-    """Sum signed_token_delta for `asset`, over ledger events strictly between
-    window_start and window_end -- the two fills whose position mismatch triggered a
-    reconciliation check in research.trader_mining.engine."""
+    """Sum signed_token_delta for `asset`, over ledger events between window_start and
+    window_end (inclusive of both bounds -- the two fills whose position mismatch
+    triggered a reconciliation check in research.trader_mining.engine). Inclusive, not
+    strict: a ledger event sharing an exact timestamp with one of those two fills must
+    not be silently excluded, which would contradict this feature's own "never silently
+    drop" philosophy (found in code review)."""
     events = (
         session.query(RawLedgerEvent)
         .filter(
             RawLedgerEvent.trader == trader,
-            RawLedgerEvent.timestamp > window_start,
-            RawLedgerEvent.timestamp < window_end,
+            RawLedgerEvent.timestamp >= window_start,
+            RawLedgerEvent.timestamp <= window_end,
         )
         .all()
     )

@@ -45,7 +45,7 @@ stays a pure function reading only already-fetched data, no I/O. Confirmed via
 `AskUserQuestion` with the user before writing this spec -- the alternative (fetch live, only
 on a gap) was explicitly rejected because it breaks that property.
 
-**Not full ledger semantics.** Six event types are normalized (deposit, withdraw,
+**Not full ledger semantics.** Seven event types are normalized (deposit, withdraw,
 accountClassTransfer, spotTransfer, spotGenesis, cStakingTransfer, send) -- the ones observed
 in real ingested data (see "Event type survey" below). `deposit`/`withdraw`/
 `accountClassTransfer` are USDC-only (they move collateral between the exchange and the
@@ -54,7 +54,12 @@ spot-token position gap -- normalized for completeness and future USDC-ledger us
 reconciliation check filters to the gap's own base asset, so they're inert for today's use
 case. An unrecognized event type normalizes to "no token delta" (not an error) -- if it later
 turns out to explain a gap, that gap still hard-fails, loud and diagnosable, rather than
-silently passing.
+silently passing. One such type actually observed in this wallet's real ledger and correctly
+falling through inert: `internalTransfer`, which ccxt unifies to the same top-level
+`type: "transfer"` as `accountClassTransfer` but with a different `info["delta"]["type"]` --
+`signed_token_delta`'s `delta.get("type") == "accountClassTransfer"` check correctly excludes
+it, so behavior is safe, but the survey below (captured before this was noticed in code
+review) isn't a complete enumeration of every event type this wallet's ledger contains.
 
 **Not a new field on `ReconstructedTrade`.** A reconciled gap is an ingestion/reconstruction-
 time fact, not a fact about the trade itself. Recorded via a log line
@@ -62,9 +67,15 @@ time fact, not a fact about the trade itself. Recorded via a log line
 human-readable descriptions) -- confirmed sufficient for a research tool; no new table, no new
 column, per YAGNI. `research/cli.py`'s `trader-analyze` prints them if present.
 
-**Not incremental.** `RawLedgerEvent` ingestion is idempotent-by-`id` (the ledger entry's own
-hash), exactly matching `RawFill.tid`'s existing dedup pattern -- re-running `trader-import` is
-always safe.
+**Not incremental.** `RawLedgerEvent` ingestion is idempotent -- re-running `trader-import` is
+always safe. Originally deduped by the ledger entry's own `id` (the hash), matching
+`RawFill.tid`'s pattern directly; corrected in code review after finding that Hyperliquid's
+`cStakingTransfer` events don't get a real hash at all -- every such event for a given wallet
+shares one identical zero-sentinel `id`, so trusting it alone silently dropped real events
+within one wallet and crashed ingestion across wallets (a global `unique=True` on a value
+that isn't actually unique). Deduped by a derived `dedup_key` instead (trader, event_id,
+timestamp, event_type, and a hash of the raw payload) -- see
+`research/trader_mining/ingestion.py`'s `_dedup_key`.
 
 ## Event type survey (real data, this wallet)
 
@@ -140,15 +151,24 @@ class RawLedgerEvent(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     trader: Mapped[str] = mapped_column(String(120), index=True)
-    event_id: Mapped[str] = mapped_column(String(80), unique=True)  # ledger entry's own "id"
+    event_id: Mapped[str] = mapped_column(String(80))  # ledger entry's own "id" -- NOT unique
+    dedup_key: Mapped[str] = mapped_column(String(64), unique=True)
     event_type: Mapped[str] = mapped_column(String(40))
     timestamp: Mapped[datetime] = mapped_column(DateTime)
     info_json: Mapped[str] = mapped_column(String)
     retrieved_at: Mapped[datetime] = mapped_column(DateTime)
 ```
 
-`event_id` (the ledger entry's own hash, e.g. `"0x3412e8f4..."`) is the dedup key, mirroring
-`RawFill.tid` -- confirmed unique per real captured data (it's a transaction hash).
+**Corrected in code review, not as originally designed above.** `event_id` (the ledger
+entry's own hash) was originally assumed to be the dedup key, mirroring `RawFill.tid` --
+*not* confirmed unique per real captured data, unlike that comment claimed: Hyperliquid's
+`cStakingTransfer` events don't get a real hash at all, and every such event for a wallet
+shares one identical zero-sentinel `id`. A `unique=True` on `event_id` alone silently
+dropped real events within one wallet (the in-run dedup set treated them as already-seen)
+and crashed ingestion across wallets (the constraint was global, not trader-scoped).
+`dedup_key` -- derived from `(trader, event_id, timestamp, event_type, hash(info_json))` --
+is the real dedup key now; `event_id` is kept only as an informational reference to the raw
+field.
 
 ## Reconciliation algorithm
 
@@ -178,15 +198,16 @@ the new reconciliation code both call it.
 
 ## Testing plan
 
-- `test_ledger.py`: one test per event type in the survey table (all 6, using the real
+- `test_ledger.py`: one test per event type in the survey table (all 7, using the real
   captured payload shapes above as fixtures -- not invented shapes), covering both directions
   where direction is ambiguous (`spotTransfer`/`send`/`cStakingTransfer`/
   `accountClassTransfer`); an unrecognized type returns `None`, not an error.
 - `test_engine.py`: extend with a `reconcile` callable in the two already-existing gap-guard
   tests' style -- one case where the injected sum exactly explains the gap (guard doesn't
   fire, reconstruction proceeds), one where it's short of explaining it (guard still fires).
-- `test_ingestion.py`: idempotent re-ingest by `event_id`, matching the existing
-  `ingest_hyperliquid_fills` test pattern.
+- `test_ingestion.py`: idempotent re-ingest by `dedup_key` (not `event_id` alone -- see the
+  "Not incremental" section above for why), plus a regression test seeding two same-`id`,
+  different-content entries (the real `cStakingTransfer` shape) to lock in that fix.
 - **Real-data validation**: re-run `trader-import` + `trader-analyze` against
   `0x9794bbbc222b6b93c1417d01aa1ff06d42e5333b` (HYPE/USDC) after implementation -- this is the
   exact wallet/gap that motivated this spec, so it's the acceptance test, not just a nice-to-
@@ -216,12 +237,16 @@ the new reconciliation code both call it.
   `sell` fills (`tid=122559018328580` -> `tid=959272307568895`, 2024-11-30 03:41:51 ->
   03:42:00), where `reconciliation_deltas` returns zero -- confirmed directly against the
   stored `RawLedgerEvent` rows: there are none at all in that window, not merely ones that
-  fail to explain it. Two most likely explanations, neither confirmed: (a) a real
-  Hyperliquid ledger event type not among the 6 modeled here (a dust-settlement or similar
-  mechanism this design's real-data survey didn't happen to observe), or (b) the "pagination
-  at scale unconfirmed" risk above actually manifesting (this same wallet's ledger fetch
-  returned 6 items ccxt itself treated as duplicates on a single fresh fetch -- unexplained,
-  possibly related). Not investigated further here -- flagged for the user to decide whether
-  to pursue as its own follow-up; reconstruction correctly refuses to guess rather than
+  fail to explain it. One candidate explanation is now ruled out: this same wallet's ledger
+  fetch originally returned 6 items that looked like ccxt-side duplicates on a fresh fetch,
+  which this spec originally flagged as "unexplained, possibly related" -- code review
+  diagnosed the real, deterministic cause (Hyperliquid's `cStakingTransfer` events sharing
+  one zero-sentinel hash, see the "Not incremental" section and `RawLedgerEvent` schema
+  above) and it's now fixed; re-running the acceptance test after the fix reproduces this
+  exact same third gap unchanged, confirming it's unrelated. Remaining candidate: a real
+  Hyperliquid ledger event type not among the 7 modeled here (a dust-settlement or similar
+  mechanism this design's real-data survey didn't happen to observe). Not investigated
+  further here -- flagged for the user to decide whether to pursue as its own follow-up;
+  reconstruction correctly refuses to guess rather than
   silently drop 0.00008% of the position, which is the right failure mode even though it's
   not yet a clean pass end-to-end on this wallet's full history.
