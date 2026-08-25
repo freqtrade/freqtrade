@@ -2907,18 +2907,25 @@ class Exchange:
         # processing after a candle boundary the fetch preceded, which must not
         # reclassify the forming candle of the response as complete.
         curr_candle_date = dt_ts(timeframe_to_prev_date(timeframe, dt_from_ts(fetch_start_ms)))
-        # Only drop the last candle if it really is the currently forming one.
+        # Whether the newest completed candle of the response can be relied upon.
+        candles_final = bool(ticks) and self._candle_is_final(
+            ticks[-1][0], timeframe, curr_candle_date, fetch_start_ms
+        )
+        # Drop the last candle if it is the currently forming one, or if it is the just-closed
+        # candle the exchange may still update - consumers must never see an incomplete candle.
         # Exchanges omitting candles without trades can return a completed
         # candle as last element, which shouldn't be dropped.
-        drop_incomplete = drop_incomplete and bool(ticks) and ticks[-1][0] >= curr_candle_date
+        drop_incomplete = (
+            drop_incomplete
+            and bool(ticks)
+            and (ticks[-1][0] >= curr_candle_date or not candles_final)
+        )
         if cache:
             # Remember when this pair was last queried - even if the response was empty.
             self._pairs_last_poll_time[(pair, timeframe, c_type)] = fetch_start_ms
             # keeping last candle time as last refreshed time of the pair
             kept_ticks = ticks[:-1] if drop_incomplete else ticks
-            if kept_ticks and self._candle_is_final(
-                ticks[-1][0], timeframe, curr_candle_date, fetch_start_ms
-            ):
+            if kept_ticks and candles_final:
                 self._pairs_last_refresh_time[(pair, timeframe, c_type)] = kept_ticks[-1][0]
         has_cache = cache and (pair, timeframe, c_type) in self._klines
         # in case of existing cache, fill_missing happens after concatenation
@@ -3095,7 +3102,10 @@ class Exchange:
             # pair. Re-check with the next candle instead of on every iteration.
             return False
         # Only the just-closed candle is missing - it may be published with a slight delay.
-        return dt_ts() < (now + self._ohlcv_late_candle_grace_ms)
+        # Keep polling until the last poll time is past the grace period.
+        return self._pairs_last_poll_time.get(pair_key, 0) < (
+            now + self._ohlcv_late_candle_grace_ms
+        )
 
     @retrier_async
     async def _async_get_candle_history(
