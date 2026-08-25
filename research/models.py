@@ -130,6 +130,26 @@ class NormalizedFill(Base):
     order_id: Mapped[str] = mapped_column(String(60))
 
 
+class RawLedgerEvent(Base):
+    """One row per ccxt fetch_ledger entry, near-verbatim -- info_json preserves the
+    raw payload (matches RawFill's existing precedent), since real captured data shows
+    ccxt's own unified top-level fields (amount/currency) are unreliable across event
+    types (deposit/spotTransfer/spotGenesis/cStakingTransfer/send all shape their real
+    delta differently -- see docs/superpowers/specs/2026-08-25-trader-mining-ledger-
+    reconciliation-design.md's event type survey) and info["delta"] is the only field
+    actually used at reconciliation time."""
+
+    __tablename__ = "raw_ledger_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    trader: Mapped[str] = mapped_column(String(120), index=True)
+    event_id: Mapped[str] = mapped_column(String(80), unique=True)
+    event_type: Mapped[str] = mapped_column(String(40))
+    timestamp: Mapped[datetime] = mapped_column(DateTime)
+    info_json: Mapped[str] = mapped_column(String)
+    retrieved_at: Mapped[datetime] = mapped_column(DateTime)
+
+
 class ReconstructedTrade(Base):
     """One row per logical trade, grouped from NormalizedFill rows by
     research.trader_mining.engine.reconstruct_trades -- zero-to-zero position spans, not

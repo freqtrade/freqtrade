@@ -18,6 +18,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from research.models import NormalizedFill, ReconstructedTrade
+from research.trader_mining.symbols import base_asset_of
 
 
 _KNOWN_QUOTE_CURRENCIES = frozenset({"USDC", "USDT", "USDT0"})
@@ -40,7 +41,7 @@ def _is_base_asset_fee(fill: NormalizedFill) -> bool:
     for those, fall back to "not a known quote currency"; confirmed against real data
     (fee_currency='SKHYX' on symbol '@705').
     """
-    base = fill.symbol.split("/")[0] if "/" in fill.symbol else None
+    base = base_asset_of(fill.symbol)
     if base is not None:
         return fill.fee_currency == base
     return fill.fee_currency not in _KNOWN_QUOTE_CURRENCIES

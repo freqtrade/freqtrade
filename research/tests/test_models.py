@@ -5,7 +5,7 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from research.models import Base, NormalizedFill, RawFill, ReconstructedTrade
+from research.models import Base, NormalizedFill, RawFill, RawLedgerEvent, ReconstructedTrade
 
 
 def _memory_session() -> Session:
@@ -129,3 +129,23 @@ def test_reconstructed_trade_round_trips():
     assert row.n_fills == 3
     assert row.is_truncated_start is False
     assert row.was_liquidated is False
+
+
+def test_raw_ledger_event_round_trips():
+    session = _memory_session()
+    session.add(
+        RawLedgerEvent(
+            trader="0xAAA",
+            event_id="0xdeadbeef",
+            event_type="spotTransfer",
+            timestamp=datetime(2024, 11, 29, 10, 2, 32, tzinfo=UTC),
+            info_json='{"type": "spotTransfer", "token": "HYPE", "amount": "62264.0"}',
+            retrieved_at=datetime.now(UTC),
+        )
+    )
+    session.commit()
+
+    row = session.query(RawLedgerEvent).one()
+    assert row.event_id == "0xdeadbeef"
+    assert row.event_type == "spotTransfer"
+    assert "62264.0" in row.info_json
