@@ -106,8 +106,10 @@ def reconstruct_and_persist_trades(
 ```
 
 `reconstruct_trades` -- the core algorithm, operating on one (trader, symbol)'s fills,
-**already sorted by `(timestamp, tid)`** (tid as the tiebreaker for same-millisecond fills,
-matching Release 1's own established convention -- the caller's responsibility, not
+**already sorted by `(timestamp, abs(position), tid)`** (see "Post-implementation
+correction" below -- `tid` alone is not a monotonic sequence number, found validating
+against real data; `abs(position)` is the real tiebreaker, `tid` demoted to a
+third-level, only-for-full-determinism one) -- the caller's responsibility, not
 re-sorted internally, since `reconstruct_and_persist_trades` already queries in that order).
 
 All position/price/quantity/pnl/fee arithmetic uses `Decimal(str(value))` conversions from
@@ -164,7 +166,7 @@ check (`running_position == Decimal("0")`) is exact-equality-sensitive.
 
 `reconstruct_and_persist_trades` -- queries distinct symbols for `trader` (or just the one
 given `symbol`) from `NormalizedFill`, for each symbol queries all its fills ordered by
-`(timestamp, tid)`, calls `reconstruct_trades`, deletes existing `ReconstructedTrade` rows
+`(timestamp, abs(position), tid)`, calls `reconstruct_trades`, deletes existing `ReconstructedTrade` rows
 for `(trader, symbol)`, inserts the freshly computed ones, commits once at the end (one
 transaction covering the full delete+reinsert, so a partial failure doesn't leave stale and
 fresh trades mixed).
@@ -178,7 +180,7 @@ subcommands). Prints `n_trades` and the list of symbols processed.
 1. `python -m research.cli trader-analyze --trader 0x...` -> `cli.main()`
 2. `engine.reconstruct_and_persist_trades(session, trader, symbol=None)`
 3. Query distinct symbols for `trader` from `NormalizedFill`
-4. Per symbol: query fills ordered `(timestamp, tid)` -> `engine.reconstruct_trades(...)`
+4. Per symbol: query fills ordered `(timestamp, abs(position), tid)` -> `engine.reconstruct_trades(...)`
 5. Delete existing `ReconstructedTrade` rows for `(trader, symbol)`, insert new ones
 6. `ReconstructResult` returned to the CLI, printed
 
@@ -265,10 +267,39 @@ argument forwarding and printed output).
   confirmed as a real risk (not theoretical) for a long fill history.
 - Liquidations: **processed as regular fills** through the same state machine (confirmed
   they carry the same fill shape), just flagged via `was_liquidated`, not modeled specially.
-- Real active-wallet test fixture: attempted to source one via `trader-import` against a
-  live, non-settlement wallet for a more representative test fixture (per this
-  sub-project's own stated goal) -- no reliable real address was found within reasonable
-  effort (Hyperliquid exposes no public leaderboard/discovery endpoint). Proceeding with
-  comprehensive hand-built fixtures only, the proposal's own primary-required testing
-  approach regardless; a real fixture can be added later if a specific wallet address
-  becomes available.
+- Real active-wallet test fixture: initially deferred -- no reliable real address was found
+  within reasonable effort at design time (Hyperliquid exposes no public
+  leaderboard/discovery endpoint; a Nansen API exists that could serve this purpose, but
+  requires a paid API key not currently available -- noted for `TRADER_WALLET_MINING_PROPOSAL.md`'s
+  own "Future Providers" section, which already anticipated Nansen/Arkham as
+  discovery/labeling sources). Resolved during implementation once the user supplied a real
+  address from Hyperliquid's own leaderboard web UI (full address, not the UI's truncated
+  display form) -- see "Post-implementation correction" below for what that real data caught.
+
+## Post-implementation correction (found validating against real data)
+
+`research/tests/fixtures/hyperliquid_active_wallet_spot_fills_raw.json` -- 9 real fills from
+a real active Hyperliquid wallet (HYPE/USDC spot accumulation, all same-direction, never
+closes to zero -- doesn't exercise the trade-boundary logic directly, but its raw shape
+caught something the hand-built fixtures couldn't: **`tid` is not a monotonic sequence
+number.** Three fills sharing one exact millisecond timestamp, when sorted by `(timestamp,
+tid)` as this spec originally specified, came out in **exactly reversed** chronological
+order -- confirmed by checking that each fill's own `startPosition` plus its signed quantity
+matches the *next* fill's `startPosition` only when ordered by `abs(position)` ascending, not
+by `tid` ascending.
+
+**Corrected constraint, superseding the original "(timestamp, tid)" ordering stated
+earlier in this document:** `reconstruct_and_persist_trades` orders fills by `(timestamp,
+abs(position), tid)` -- `abs(position)` as the real tiebreaker (recovers true execution
+order for same-direction accumulation, the only case observed in real data and the general
+case for monotonic position-building in either direction), `tid` demoted to a
+third-level, only-for-full-determinism tiebreaker. A residual risk remains, documented
+in code as a `ponytail:` comment rather than silently assumed away: a reversal fill landing
+inside the same tied-timestamp group as other fills isn't necessarily ordered correctly by
+`abs(position)` either, since it isn't monotonic across a sign change. Narrower and rarer
+than the bug this replaces; not observed in the real wallet data validated so far.
+
+This is exactly the kind of finding the proposal's own emphasis on real-data validation (and
+this session's explicit push to source one) was for -- the hand-built fixtures, however
+thorough, encoded the same incorrect assumption the implementer made, so they could not have
+caught it themselves.
