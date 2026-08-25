@@ -169,6 +169,16 @@ provider beyond Hyperliquid (§"Future Providers": Bitquery, Dune, Alchemy/GoldR
 Nansen/Arkham) -- both explicitly out of scope in the proposal's own "Initial Scope"
 section, and nothing above changes that.
 
+**Known issue carried forward, not yet fixed:** Hyperliquid uses `tid=0` as a sentinel for
+`"Spot Dust Conversion"` fills rather than a genuine unique identifier -- found live-
+validating Release 3, reproduced as a real cross-wallet `IntegrityError` in
+`research/trader_mining/ingestion.py` (full detail, real repro, and the upgrade path
+already proven for the same pattern in the ledger table: FIELD-NOTES.md, "Hyperliquid's
+`tid` is not always a real per-fill identifier" entry). Low-impact today (one wallet at a
+time, mostly), but Release 5 imports many wallets into the same database by design --
+fix this before or alongside Release 5, not after, or the collision goes from "a coincidence
+in a validation scratch db" to "a real failure mode on the first multi-wallet run."
+
 ## Phase 1 — Hyperliquid Research Adapter
 
 Start with Hyperliquid because its public API exposes wallet-specific fills and closed P&L
