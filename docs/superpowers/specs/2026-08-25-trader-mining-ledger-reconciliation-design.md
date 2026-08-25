@@ -206,3 +206,22 @@ the new reconciliation code both call it.
   position gap is structurally impossible under this design (by definition, those events
   don't move token balances) -- correctly excluded, not a bug, but worth stating explicitly
   since the table above normalizes them anyway.
+- **A second, smaller, still-unexplained gap found during real-data validation.** Running
+  the finished feature against `0x9794bbbc222b6b93c1417d01aa1ff06d42e5333b`'s full HYPE/USDC
+  history (the acceptance test for this plan) confirmed the mechanism works and generalizes:
+  it correctly reconciled the original 62264.0 HYPE gap this feature was built for, *and* a
+  second, independent -1.0 HYPE gap elsewhere in the same history, both via real ingested
+  ledger events. But reconstruction still hard-fails later in that same wallet's history on a
+  third, much smaller (2.1 HYPE, ~0.00008% of the ~2.68M HYPE position) gap between two
+  `sell` fills (`tid=122559018328580` -> `tid=959272307568895`, 2024-11-30 03:41:51 ->
+  03:42:00), where `reconciliation_deltas` returns zero -- confirmed directly against the
+  stored `RawLedgerEvent` rows: there are none at all in that window, not merely ones that
+  fail to explain it. Two most likely explanations, neither confirmed: (a) a real
+  Hyperliquid ledger event type not among the 6 modeled here (a dust-settlement or similar
+  mechanism this design's real-data survey didn't happen to observe), or (b) the "pagination
+  at scale unconfirmed" risk above actually manifesting (this same wallet's ledger fetch
+  returned 6 items ccxt itself treated as duplicates on a single fresh fetch -- unexplained,
+  possibly related). Not investigated further here -- flagged for the user to decide whether
+  to pursue as its own follow-up; reconstruction correctly refuses to guess rather than
+  silently drop 0.00008% of the position, which is the right failure mode even though it's
+  not yet a clean pass end-to-end on this wallet's full history.
