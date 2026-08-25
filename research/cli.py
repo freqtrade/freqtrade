@@ -167,19 +167,19 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     elif args.command == "trader-report":
-        engine = get_engine(args.db_path)
-        session = get_session(engine)
-        query = session.query(ReconstructedTrade).filter(ReconstructedTrade.trader == args.trader)
-        if args.symbol:
-            query = query.filter(ReconstructedTrade.symbol == args.symbol)
-        trades = query.all()
-
         split_flags = (args.train_end, args.validation_end, args.test_end)
         if any(split_flags) and not all(split_flags):
             trader_report.error(
                 "--train-end, --validation-end, and --test-end must be given together "
                 "(all three or none)"
             )
+
+        engine = get_engine(args.db_path)
+        session = get_session(engine)
+        query = session.query(ReconstructedTrade).filter(ReconstructedTrade.trader == args.trader)
+        if args.symbol:
+            query = query.filter(ReconstructedTrade.symbol == args.symbol)
+        trades = query.all()
 
         if all(split_flags):
             boundaries = PeriodBoundaries(

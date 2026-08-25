@@ -498,7 +498,10 @@ def test_trader_analyze_command_prints_reconciled_gaps_when_present(mocker, caps
     assert "HYPE/USDC" in captured.out
 
 
-def test_trader_report_rejects_partial_split_flags(capsys):
+def test_trader_report_rejects_partial_split_flags(mocker, capsys):
+    mocker.patch("research.cli.get_engine")
+    mocker.patch("research.cli.get_session")
+
     with pytest.raises(SystemExit):
         main(
             [
