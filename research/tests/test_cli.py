@@ -364,3 +364,36 @@ def test_trader_import_command_warns_on_truncated_history(mocker, capsys):
     assert exit_code == 0  # not a failure -- an honest, informational result
     assert "truncated_by_provider_limit" in captured.out
     assert "WARNING" in captured.out
+
+
+def test_trader_analyze_command_forwards_args_and_prints_result(mocker, capsys):
+    from research.trader_mining.engine import ReconstructResult
+
+    mock_reconstruct = mocker.patch(
+        "research.cli.reconstruct_and_persist_trades",
+        return_value=ReconstructResult(n_trades=7, symbols=["BTC/USDC:USDC", "ETH/USDC:USDC"]),
+    )
+    mocker.patch("research.cli.get_engine")
+    mocker.patch("research.cli.get_session")
+
+    exit_code = main(
+        [
+            "trader-analyze",
+            "--trader",
+            "0x0000000000000000000000000000000000000000",
+            "--symbol",
+            "BTC/USDC:USDC",
+            "--db-path",
+            "user_data/research.sqlite",
+        ]
+    )
+
+    _, kwargs = mock_reconstruct.call_args
+    assert kwargs["trader"] == "0x0000000000000000000000000000000000000000"
+    assert kwargs["symbol"] == "BTC/USDC:USDC"
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "n_trades: 7" in captured.out
+    assert "BTC/USDC:USDC" in captured.out
+    assert "ETH/USDC:USDC" in captured.out
