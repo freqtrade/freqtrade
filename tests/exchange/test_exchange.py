@@ -3177,6 +3177,52 @@ def test_refresh_latest_ohlcv_late_candle(mocker, default_conf, time_machine) ->
     assert exchange.klines(pair).iloc[-1]["date"] == start + timedelta(minutes=490)
 
 
+def test_refresh_latest_ohlcv_candle_rollover(mocker, default_conf, time_machine) -> None:
+    """
+    A response fetched right before a candle closed may only be processed after the close
+    (e.g. due to slower pairs in the same batch). The forming candle it contains is a partial
+    snapshot and must be evaluated against the fetch time - not the processing time.
+    A response containing a newer candle proves the one before it closed - that one stays final.
+    """
+    start = datetime(2026, 8, 1, 0, 0, 0, 0, tzinfo=UTC)
+    ohlcv = generate_test_data_raw("5m", 101, start.strftime("%Y-%m-%d"))
+    # Open date of the candle forming at fetch time - the last candle of the stale response.
+    forming_candle = start + timedelta(minutes=495)
+    curr_candle = start + timedelta(minutes=500)
+    pair = ("IOTA/EUR", "5m", CandleType.SPOT)
+    # Pair for which the exchange issued the new candle already.
+    pair_new = ("XRP/EUR", "5m", CandleType.SPOT)
+
+    time_machine.move_to(curr_candle - timedelta(seconds=1), tick=False)
+    exchange = get_patched_exchange(mocker, default_conf)
+    exchange._set_startup_candle_count(default_conf)
+    mocker.patch(f"{EXMS}.ohlcv_candle_limit", return_value=100)
+
+    async def fetch_ohlcv(pair_, *args, **kwargs):
+        # Processing of the response is delayed past the candle close.
+        time_machine.move_to(curr_candle + timedelta(seconds=2), tick=False)
+        return ohlcv[1:] if pair_ == pair_new[0] else ohlcv[:-1]
+
+    exchange._api_async.fetch_ohlcv = fetch_ohlcv
+    exchange.refresh_latest_ohlcv([pair, pair_new])
+
+    # The partial snapshot of the then-forming candle must be dropped, not kept as complete.
+    assert exchange.klines(pair).iloc[-1]["date"] == forming_candle - timedelta(minutes=5)
+    assert exchange._pairs_last_refresh_time[pair] == dt_ts(forming_candle - timedelta(minutes=5))
+
+    # The newer candle proves the previous one closed - it must be kept, and is final.
+    assert exchange.klines(pair_new).iloc[-1]["date"] == forming_candle
+    assert exchange._pairs_last_refresh_time[pair_new] == dt_ts(forming_candle)
+
+    # The next iteration re-polls the stale pair and picks up the now-complete candle,
+    # while the pair with the final candle is served from cache.
+    exchange._api_async.fetch_ohlcv = AsyncMock(return_value=ohlcv[:-1])
+    time_machine.move_to(curr_candle + timedelta(seconds=5), tick=False)
+    exchange.refresh_latest_ohlcv([pair, pair_new])
+    assert exchange._api_async.fetch_ohlcv.call_count == 1
+    assert exchange.klines(pair).iloc[-1]["date"] == forming_candle
+
+
 def test_refresh_latest_ohlcv_provisional_candle(mocker, default_conf, time_machine) -> None:
     """
     The exchange did not issue a new candle yet - the just-closed candle may still be updated
