@@ -5,7 +5,7 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from research.models import Base, NormalizedFill, RawFill
+from research.models import Base, NormalizedFill, RawFill, ReconstructedTrade
 
 
 def _memory_session() -> Session:
@@ -93,3 +93,39 @@ def test_normalized_fill_round_trips():
     assert row.price == 331.21
     assert row.direction == "Settlement"
     assert row.crossed is False
+
+
+def test_reconstructed_trade_round_trips():
+    session = _memory_session()
+    session.add(
+        ReconstructedTrade(
+            trader="0xAAA",
+            symbol="BTC/USDC:USDC",
+            direction="long",
+            entry_timestamp=datetime(2026, 1, 1, tzinfo=UTC),
+            entry_price=100.0,
+            exit_timestamp=datetime(2026, 1, 2, tzinfo=UTC),
+            exit_price=110.0,
+            quantity=5.0,
+            gross_pnl=50.0,
+            fees=1.0,
+            net_pnl=49.0,
+            holding_time_seconds=86400.0,
+            n_fills=3,
+            is_truncated_start=False,
+            was_liquidated=False,
+        )
+    )
+    session.commit()
+
+    row = session.query(ReconstructedTrade).one()
+    assert row.trader == "0xAAA"
+    assert row.symbol == "BTC/USDC:USDC"
+    assert row.direction == "long"
+    assert row.entry_price == 100.0
+    assert row.exit_price == 110.0
+    assert row.quantity == 5.0
+    assert row.net_pnl == 49.0
+    assert row.n_fills == 3
+    assert row.is_truncated_start is False
+    assert row.was_liquidated is False

@@ -14,6 +14,7 @@ from research.cost_stress import DEFAULT_FEE_MULTIPLIERS
 from research.db import get_engine, get_session
 from research.gate import run_promotion_gate
 from research.scoring import strategy_report
+from research.trader_mining.engine import reconstruct_and_persist_trades
 from research.trader_mining.ingestion import ingest_hyperliquid_fills
 
 
@@ -67,6 +68,13 @@ def main(argv: list[str] | None = None) -> int:
     trader_import.add_argument("--since", help="YYYY-MM-DD, earliest fill to fetch")
     trader_import.add_argument("--db-path", default="user_data/research.sqlite")
 
+    trader_analyze = sub.add_parser(
+        "trader-analyze", help="Reconstruct trades from a wallet's ingested fills"
+    )
+    trader_analyze.add_argument("--trader", required=True, help="Wallet address")
+    trader_analyze.add_argument("--symbol", help="Limit to one symbol (default: all)")
+    trader_analyze.add_argument("--db-path", default="user_data/research.sqlite")
+
     args = parser.parse_args(argv)
 
     if args.command == "gate":
@@ -107,6 +115,16 @@ def main(argv: list[str] | None = None) -> int:
                 "Hyperliquid's 10,000-fill ceiling was reached; earlier fills may exist "
                 "but are not retrievable via this endpoint."
             )
+        return 0
+
+    elif args.command == "trader-analyze":
+        engine = get_engine(args.db_path)
+        session = get_session(engine)
+        analyze_result = reconstruct_and_persist_trades(
+            session, trader=args.trader, symbol=args.symbol
+        )
+        print(f"n_trades: {analyze_result.n_trades}")
+        print(f"symbols: {', '.join(analyze_result.symbols)}")
         return 0
 
     return 1
