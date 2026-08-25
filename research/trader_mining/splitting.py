@@ -23,6 +23,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
+from research.models import ReconstructedTrade
+
 
 PERIODS: tuple[str, str, str, str] = ("TRAIN", "VALIDATION", "TEST", "FORWARD")
 
@@ -54,3 +56,54 @@ class PeriodBoundaries:
                 f"train_end={self.train_end}, validation_end={self.validation_end}, "
                 f"test_end={self.test_end}"
             )
+
+
+def _period_of(ts: datetime, boundaries: PeriodBoundaries) -> str:
+    ts = _to_naive_utc(ts)
+    if ts < boundaries.train_end:
+        return "TRAIN"
+    if ts < boundaries.validation_end:
+        return "VALIDATION"
+    if ts < boundaries.test_end:
+        return "TEST"
+    return "FORWARD"
+
+
+def assign_period(trade: ReconstructedTrade, boundaries: PeriodBoundaries) -> str:
+    """A trade's period is decided by its entry_timestamp alone -- never exit_timestamp,
+    which would let the (only-knowable-at-exit) outcome influence which research phase the
+    trade is scored in."""
+    return _period_of(trade.entry_timestamp, boundaries)
+
+
+def straddles_boundary(trade: ReconstructedTrade, boundaries: PeriodBoundaries) -> bool:
+    """True when a trade's entry and exit fall in different periods. Diagnostic only --
+    never changes assign_period's result or splits the trade itself."""
+    return _period_of(trade.entry_timestamp, boundaries) != _period_of(
+        trade.exit_timestamp, boundaries
+    )
+
+
+@dataclass(frozen=True)
+class SplitTrades:
+    train: list[ReconstructedTrade]
+    validation: list[ReconstructedTrade]
+    test: list[ReconstructedTrade]
+    forward: list[ReconstructedTrade]
+    n_straddling: int
+
+
+def split_trades(trades: list[ReconstructedTrade], boundaries: PeriodBoundaries) -> SplitTrades:
+    buckets: dict[str, list[ReconstructedTrade]] = {p: [] for p in PERIODS}
+    n_straddling = 0
+    for t in trades:
+        buckets[assign_period(t, boundaries)].append(t)
+        if straddles_boundary(t, boundaries):
+            n_straddling += 1
+    return SplitTrades(
+        train=buckets["TRAIN"],
+        validation=buckets["VALIDATION"],
+        test=buckets["TEST"],
+        forward=buckets["FORWARD"],
+        n_straddling=n_straddling,
+    )
