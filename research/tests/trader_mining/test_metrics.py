@@ -6,7 +6,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from research.models import ReconstructedTrade
-from research.trader_mining.metrics import compute_metrics
+from research.trader_mining.metrics import compute_metrics, format_report
 
 
 def _trade(
@@ -243,3 +243,47 @@ def test_return_to_drawdown_ratio_hand_computed():
 
     assert m.max_drawdown == 40.0
     assert m.return_to_drawdown_ratio == pytest.approx(60.0 / 40.0)
+
+
+def test_format_report_includes_trader_and_key_numbers():
+    trades = [_trade(net_pnl=100.0), _trade(net_pnl=-30.0)]
+    m = compute_metrics(trades)
+
+    report = format_report(m, "0xAAA")
+
+    assert "0xAAA" in report
+    assert "2" in report  # trade count appears somewhere
+    assert "70.0" in report or "70.00" in report  # net_pnl = 70
+
+
+def test_format_report_prints_na_for_undefined_metrics_not_zero():
+    m = compute_metrics([])  # zero trades -- everything Optional is None
+
+    report = format_report(m, "0xAAA")
+
+    assert "n/a" in report
+    assert "None" not in report  # never leak Python's None repr into the report
+
+
+def test_format_report_labels_trade_consistency_score_honestly():
+    """The report text itself, not just docstrings, must never present this AS Sharpe
+    or risk-adjusted -- but an explicit "NOT Sharpe" caveat is exactly what the spec
+    asks for, so the word appearing inside that disclaimer is correct, not a violation.
+    Someone reading only the printed report needs the caveat too."""
+    m = compute_metrics([_trade(net_pnl=10.0), _trade(net_pnl=20.0), _trade(net_pnl=-5.0)])
+
+    report = format_report(m, "0xAAA")
+
+    assert "sharpe ratio:" not in report.lower()  # never presented AS a Sharpe ratio
+    assert "not sharpe" in report.lower()  # the honest disclaimer IS present
+    assert "consistency" in report.lower()
+
+
+def test_format_report_labels_drawdown_and_ratio_honestly():
+    m = compute_metrics([_trade(net_pnl=10.0), _trade(net_pnl=-5.0)])
+
+    report = format_report(m, "0xAAA")
+
+    assert "calmar ratio:" not in report.lower()  # never presented AS Calmar
+    assert "not calmar" in report.lower()  # the honest disclaimer IS present
+    assert "mark-to-market" in report.lower() or "closed-trade" in report.lower()

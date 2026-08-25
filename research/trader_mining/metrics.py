@@ -169,3 +169,49 @@ def compute_metrics(trades: list[ReconstructedTrade]) -> WalletMetrics:
         trade_consistency_score=trade_consistency_score,
         return_to_drawdown_ratio=return_to_drawdown_ratio,
     )
+
+
+def _fmt(value: float | None, spec: str = "{:.4f}") -> str:
+    return "n/a" if value is None else spec.format(value)
+
+
+def format_report(metrics: WalletMetrics, trader: str) -> str:
+    """Plain console/Markdown text, per the proposal review notes' explicit
+    simplification (no separate reports.py module, no templating engine)."""
+    lines = [
+        f"## Wallet Report: {trader}",
+        "",
+        f"- Trades: {metrics.trade_count}",
+        f"- Total volume: {_fmt(metrics.total_volume, '{:.2f}')}",
+        f"- Gross P&L: {_fmt(metrics.gross_pnl, '{:.2f}')}",
+        f"- Fees: {_fmt(metrics.fees, '{:.2f}')}",
+        f"- Net P&L: {_fmt(metrics.net_pnl, '{:.2f}')}",
+        f"- Win rate: {_fmt(metrics.win_rate, '{:.1%}')}",
+        f"- Avg win: {_fmt(metrics.avg_win, '{:.2f}')}",
+        f"- Avg loss: {_fmt(metrics.avg_loss, '{:.2f}')}",
+        f"- Profit factor: {_fmt(metrics.profit_factor)}",
+        f"- Expectancy: {_fmt(metrics.expectancy, '{:.2f}')}",
+        f"- Payoff ratio: {_fmt(metrics.payoff_ratio)}",
+        f"- Median trade return: {_fmt(metrics.median_trade_return, '{:.2%}')}",
+        f"- Avg holding period: {_fmt(metrics.avg_holding_period_seconds, '{:.0f}')}s",
+        f"- Median holding period: {_fmt(metrics.median_holding_period_seconds, '{:.0f}')}s",
+        f"- Long/short: {metrics.long_count}/{metrics.short_count}",
+        f"- Symbol concentration: {_fmt(metrics.symbol_concentration, '{:.1%}')}",
+        f"- Max losing streak: {metrics.max_losing_streak}",
+        f"- P&L concentration (top 5 winners): {_fmt(metrics.pnl_concentration_top_5, '{:.1%}')}",
+        (
+            f"- Closed-trade P&L drawdown: {_fmt(metrics.max_drawdown, '{:.2f}')} "
+            "(absolute $, NOT mark-to-market portfolio drawdown -- overlapping/open "
+            "positions aren't captured)"
+        ),
+        (
+            f"- Return/drawdown ratio: {_fmt(metrics.return_to_drawdown_ratio)} "
+            "(not annualized -- not Calmar)"
+        ),
+        (
+            f"- Trade consistency score: {_fmt(metrics.trade_consistency_score)} "
+            "(NOT Sharpe/risk-adjusted -- sqrt(N)*mean(r)/stdev(r) over "
+            "return-on-notional; not a real significance test)"
+        ),
+    ]
+    return "\n".join(lines)
