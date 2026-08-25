@@ -76,6 +76,11 @@ def test_parse_timerange_minutes():
     assert TimeRange("date", "date", 1274486400, 1438214400) == timerange
     assert timerange.timerange_str == "20100522-20150730"
 
+    # Start and stop may be identical
+    timerange = TimeRange.parse_timerange("20240101T1200-20240101T1200")
+    assert TimeRange("date", "date", 1704110400, 1704110400) == timerange
+    assert timerange.startts == timerange.stopts
+
     with pytest.raises(
         OperationalException, match=r"Start date is after stop date for timerange.*"
     ):
@@ -152,6 +157,15 @@ def test_parse_timerange_mixed_formats(timerange, expected, expected_str):
         "20100532T1030-",
         "20100522 1030-",
         "20100522T10:30-",
+        "20150201T1030 ",
+        " 20150201",
+        "20150201\n",
+        "12345678901",
+        "123456789012",
+        "٢٠١٥٠١٠١",
+        "２０１５۰۱۰۱",  # noqa: RUF001
+        "٢٠١٥0101-",  # noqa: RUF001
+        "١٢٣١٠٠٦٥٠٥-",
     ],
 )
 def test_parse_timerange_invalid(timerange):

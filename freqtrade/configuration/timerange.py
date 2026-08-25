@@ -165,7 +165,7 @@ class TimeRange:
         if not text:
             return 0
         for rex, fmt in _TIMERANGE_FORMATS:
-            if not re.fullmatch(rex, text):
+            if not re.fullmatch(rex, text, flags=re.ASCII):
                 continue
             if fmt is None:
                 # Epoch - in seconds (10 digits) or milliseconds (13 digits)
