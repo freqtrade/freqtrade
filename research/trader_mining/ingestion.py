@@ -9,14 +9,15 @@ fills" requirement.
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
-from research.models import NormalizedFill, RawFill
-from research.trader_mining.provider import fetch_hyperliquid_fills
+from research.models import NormalizedFill, RawFill, RawLedgerEvent
+from research.trader_mining.provider import fetch_hyperliquid_fills, fetch_hyperliquid_ledger
 
 
 @dataclass
@@ -88,3 +89,65 @@ def ingest_hyperliquid_fills(
         n_new=n_new,
         history_completeness=result.history_completeness,
     )
+
+
+@dataclass
+class LedgerIngestResult:
+    n_fetched: int
+    n_new: int
+
+
+def _dedup_key(
+    trader: str, event_id: str, timestamp_ms: int, event_type: str, info_json: str
+) -> str:
+    """event_id alone isn't a reliable dedup key -- Hyperliquid's cStakingTransfer
+    events don't get a real transaction hash; ccxt's `id` is an identical
+    zero-sentinel for EVERY such event (confirmed against real data: one wallet had 7
+    cStakingTransfer events, all sharing one id -- found via code review, which also
+    caught that a global unique constraint on event_id alone crashed a second wallet's
+    import). Folding in timestamp/type/a hash of the raw payload disambiguates genuinely
+    different events that happen to share a degenerate event_id, while a true re-fetch
+    of the exact same event (identical inputs) still produces the same key, preserving
+    idempotency."""
+    payload_hash = hashlib.sha256(info_json.encode()).hexdigest()[:16]
+    return f"{trader}:{event_id}:{timestamp_ms}:{event_type}:{payload_hash}"
+
+
+def ingest_hyperliquid_ledger(session: Session, trader: str) -> LedgerIngestResult:
+    """Fetch trader's non-funding ledger (deposits, withdrawals, transfers, airdrops,
+    staking, etc.) and persist any not already stored, in one transaction -- idempotent
+    by dedup_key (see _dedup_key), matching ingest_hyperliquid_fills' idempotent-by-tid
+    pattern in spirit, though tid alone is reliable and event_id alone is not."""
+    entries = asyncio.run(fetch_hyperliquid_ledger(trader))
+    retrieved_at = datetime.now(UTC)
+
+    existing_keys = {
+        key
+        for (key,) in session.query(RawLedgerEvent.dedup_key)
+        .filter(RawLedgerEvent.trader == trader)
+        .all()
+    }
+
+    n_new = 0
+    for entry in entries:
+        event_id = entry["id"]
+        info_json = json.dumps(entry["info"])
+        key = _dedup_key(trader, event_id, entry["timestamp"], entry["type"], info_json)
+        if key in existing_keys:
+            continue
+        n_new += 1
+        existing_keys.add(key)
+        session.add(
+            RawLedgerEvent(
+                trader=trader,
+                event_id=event_id,
+                dedup_key=key,
+                event_type=entry["type"],
+                timestamp=datetime.fromtimestamp(entry["timestamp"] / 1000, tz=UTC),
+                info_json=info_json,
+                retrieved_at=retrieved_at,
+            )
+        )
+
+    session.commit()
+    return LedgerIngestResult(n_fetched=len(entries), n_new=n_new)

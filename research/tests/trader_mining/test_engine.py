@@ -1,5 +1,6 @@
 # research/tests/trader_mining/test_engine.py
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 
 import pytest
 from sqlalchemy import create_engine
@@ -488,6 +489,67 @@ def test_quote_currency_fee_on_a_non_usdc_quoted_pair_does_not_affect_position()
     assert trades[0].fees == pytest.approx(0.6)
 
 
+def test_reconciled_gap_does_not_raise_and_continues_reconstruction():
+    """The exact scenario that motivated this feature (shape matches the real wallet):
+    a truncated-start position of 70000.0 is topped up by 8008.0 to 78008.0, then a
+    spotTransfer moves 62264.0 HYPE OUT of the wallet, leaving 15744.0 -- which the
+    next fill fully closes. A real spot position can never go negative, so the
+    transfer must come out of an existing large holding, not exceed it (an earlier,
+    unrealistic draft of this test had the transfer exceed the whole position)."""
+    fills = [
+        _fill(1, "buy", 100.0, 8008.0, position=70000.0, ts=T0, symbol="HYPE/USDC"),
+        _fill(
+            2,
+            "sell",
+            110.0,
+            15744.0,
+            position=15744.0,  # 78008.0 - 62264.0, the reconciled real gap shape
+            ts=T0 + timedelta(hours=1),
+            closed_pnl=1000.0,
+            direction="Close Long",
+            symbol="HYPE/USDC",
+        ),
+    ]
+
+    def fake_reconcile(asset, window_start, window_end):
+        assert asset == "HYPE"
+        return Decimal("-62264.0")
+
+    reconciled_gaps: list[str] = []
+    trades = reconstruct_trades(
+        TRADER, "HYPE/USDC", fills, reconcile=fake_reconcile, reconciled_gaps=reconciled_gaps
+    )
+
+    assert len(trades) == 1
+    assert len(reconciled_gaps) == 1
+    assert "HYPE/USDC" in reconciled_gaps[0]
+
+
+def test_unreconciled_gap_still_raises_even_with_reconcile_supplied():
+    """reconcile is consulted but doesn't explain the gap -- must still hard-fail, never
+    silently proceed."""
+    fills = [
+        _fill(1, "buy", 100.0, 10.0, position=0.0, ts=T0, symbol="HYPE/USDC"),
+        _fill(
+            2,
+            "sell",
+            110.0,
+            10.0,
+            position=999.0,  # nothing explains this
+            ts=T0 + timedelta(hours=1),
+            closed_pnl=100.0,
+            direction="Close Long",
+            symbol="HYPE/USDC",
+        ),
+    ]
+
+    def fake_reconcile(asset, window_start, window_end):
+        return Decimal(0)  # ledger has nothing for this window
+
+    with pytest.raises(ValueError, match="position gap"):
+        reconstruct_trades(TRADER, "HYPE/USDC", fills, reconcile=fake_reconcile)
+
+
 def test_position_gap_between_fills_raises():
     """A gap in ingested history (e.g. the 10,000-fill provider ceiling, or an
     interrupted trader-import run) must not silently produce wrong trade boundaries --
@@ -675,3 +737,65 @@ def test_same_timestamp_ties_ordered_by_position_magnitude_not_tid():
     assert trade.entry_price == pytest.approx(106.25)
     assert trade.exit_price == pytest.approx(120.0)
     assert trade.gross_pnl == pytest.approx(40.0)
+
+
+def test_reconstruct_and_persist_trades_reports_reconciled_gaps():
+    """The acceptance scenario for the ledger-reconciliation feature: HYPE fills
+    mirroring the real gap (large existing holding, a transfer within it, still
+    positive throughout -- see the reconstruct_trades-level test above for why),
+    plus the ledger event that explains it."""
+    import json
+
+    from research.models import RawLedgerEvent
+
+    session = _memory_session()
+    _add_normalized_fill(
+        session,
+        tid=1,
+        symbol="HYPE/USDC",
+        side="buy",
+        price=100.0,
+        quantity=8008.0,
+        position=70000.0,
+        timestamp=T0,
+    )
+    _add_normalized_fill(
+        session,
+        tid=2,
+        symbol="HYPE/USDC",
+        side="sell",
+        price=110.0,
+        quantity=15744.0,
+        position=15744.0,
+        timestamp=T0 + timedelta(hours=1),
+        closed_pnl=1000.0,
+        direction="Close Long",
+    )
+    session.add(
+        RawLedgerEvent(
+            trader=TRADER,
+            event_id="0xdeadbeef",
+            dedup_key="0xdeadbeef",
+            event_type="spotTransfer",
+            timestamp=T0 + timedelta(minutes=30),
+            info_json=json.dumps(
+                {
+                    "delta": {
+                        "type": "spotTransfer",
+                        "token": "HYPE",
+                        "amount": "62264.0",
+                        "user": TRADER,
+                        "destination": "0xother",
+                    }
+                }
+            ),
+            retrieved_at=datetime.now(UTC),
+        )
+    )
+    session.commit()
+
+    result = reconstruct_and_persist_trades(session, TRADER)
+
+    assert result.n_trades == 1
+    assert len(result.reconciled_gaps) == 1
+    assert "HYPE/USDC" in result.reconciled_gaps[0]

@@ -4,8 +4,8 @@ from unittest.mock import AsyncMock
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from research.models import Base, NormalizedFill, RawFill
-from research.trader_mining.ingestion import ingest_hyperliquid_fills
+from research.models import Base, NormalizedFill, RawFill, RawLedgerEvent
+from research.trader_mining.ingestion import ingest_hyperliquid_fills, ingest_hyperliquid_ledger
 from research.trader_mining.provider import FetchFillsResult
 
 
@@ -155,3 +155,136 @@ def test_history_completeness_passes_through(mocker):
     result = ingest_hyperliquid_fills(session, TRADER)
 
     assert result.history_completeness == "truncated_by_provider_limit"
+
+
+def _ledger_entry(event_id: str, ts_ms: int = 1_700_000_000_000) -> dict:
+    return {
+        "id": event_id,
+        "timestamp": ts_ms,
+        "type": "deposit",
+        "info": {"time": ts_ms, "hash": event_id, "delta": {"type": "deposit", "usdc": "100.0"}},
+    }
+
+
+def test_ledger_first_import_populates_table(mocker):
+    session = _memory_session()
+    mocker.patch(
+        "research.trader_mining.ingestion.fetch_hyperliquid_ledger",
+        new=AsyncMock(return_value=[_ledger_entry("0xa"), _ledger_entry("0xb")]),
+    )
+
+    result = ingest_hyperliquid_ledger(session, TRADER)
+
+    assert result.n_fetched == 2
+    assert result.n_new == 2
+    assert session.query(RawLedgerEvent).count() == 2
+
+
+def test_ledger_rerun_is_idempotent_by_event_id(mocker):
+    session = _memory_session()
+    mocker.patch(
+        "research.trader_mining.ingestion.fetch_hyperliquid_ledger",
+        new=AsyncMock(return_value=[_ledger_entry("0xa")]),
+    )
+    ingest_hyperliquid_ledger(session, TRADER)
+
+    result = ingest_hyperliquid_ledger(session, TRADER)
+
+    assert result.n_new == 0
+    assert session.query(RawLedgerEvent).count() == 1
+
+
+_ZERO_HASH = "0x0000000000000000000000000000000000000000000000000000000000000000"
+
+
+def _c_staking_entry(ts_ms: int, amount: str) -> dict:
+    """Real Hyperliquid shape: cStakingTransfer events don't get a real transaction
+    hash -- ccxt's `id` (and info["hash"]) is this same zero-sentinel for EVERY such
+    event, confirmed live against a real wallet with 7 of these, all sharing this
+    identical id. A dedup key that trusts `id` alone silently drops all but the first
+    real event and, worse, collides across different traders (event_id was globally
+    unique)."""
+    return {
+        "id": _ZERO_HASH,
+        "timestamp": ts_ms,
+        "type": "cStakingTransfer",
+        "info": {
+            "time": ts_ms,
+            "hash": _ZERO_HASH,
+            "delta": {
+                "type": "cStakingTransfer",
+                "token": "HYPE",
+                "amount": amount,
+                "isDeposit": False,
+            },
+        },
+    }
+
+
+def test_ledger_same_id_different_content_events_are_not_deduped_away(mocker):
+    session = _memory_session()
+    mocker.patch(
+        "research.trader_mining.ingestion.fetch_hyperliquid_ledger",
+        new=AsyncMock(
+            return_value=[
+                _c_staking_entry(1_700_000_000_000, "500000.0"),
+                _c_staking_entry(1_700_001_000_000, "12345.0"),
+            ]
+        ),
+    )
+
+    result = ingest_hyperliquid_ledger(session, TRADER)
+
+    assert result.n_fetched == 2
+    assert result.n_new == 2
+    assert session.query(RawLedgerEvent).count() == 2
+
+
+def test_ledger_rerun_with_shared_id_events_stays_idempotent(mocker):
+    session = _memory_session()
+    entries = [
+        _c_staking_entry(1_700_000_000_000, "500000.0"),
+        _c_staking_entry(1_700_001_000_000, "12345.0"),
+    ]
+    mocker.patch(
+        "research.trader_mining.ingestion.fetch_hyperliquid_ledger",
+        new=AsyncMock(return_value=entries),
+    )
+    ingest_hyperliquid_ledger(session, TRADER)
+
+    result = ingest_hyperliquid_ledger(session, TRADER)
+
+    assert result.n_new == 0
+    assert session.query(RawLedgerEvent).count() == 2
+
+
+def test_ledger_shared_id_across_two_traders_does_not_crash(mocker):
+    session = _memory_session()
+    entry = _c_staking_entry(1_700_000_000_000, "500000.0")
+    mocker.patch(
+        "research.trader_mining.ingestion.fetch_hyperliquid_ledger",
+        new=AsyncMock(return_value=[entry]),
+    )
+
+    ingest_hyperliquid_ledger(session, TRADER)
+    other_trader = "0x1111111111111111111111111111111111111111"
+    result = ingest_hyperliquid_ledger(session, other_trader)
+
+    assert result.n_new == 1
+    assert session.query(RawLedgerEvent).count() == 2
+
+
+def test_ledger_normalized_fields_mapped_correctly(mocker):
+    session = _memory_session()
+    mocker.patch(
+        "research.trader_mining.ingestion.fetch_hyperliquid_ledger",
+        new=AsyncMock(return_value=[_ledger_entry("0xa")]),
+    )
+
+    ingest_hyperliquid_ledger(session, TRADER)
+
+    row = session.query(RawLedgerEvent).one()
+    assert row.trader == TRADER
+    assert row.event_id == "0xa"
+    assert row.event_type == "deposit"
+    assert "100.0" in row.info_json

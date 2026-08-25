@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from research.trader_mining.provider import fetch_hyperliquid_fills
+from research.trader_mining.provider import fetch_hyperliquid_fills, fetch_hyperliquid_ledger
 
 
 FIXTURE_PATH = Path(__file__).resolve().parents[1] / "fixtures" / "hyperliquid_user_fills_raw.json"
@@ -211,3 +211,29 @@ async def test_live_hyperliquid_schema_still_matches_expectations():
         assert isinstance(trade["timestamp"], int)
         assert isinstance(trade["price"], (int, float))
         assert isinstance(trade["amount"], (int, float))
+
+
+async def test_fetch_ledger_forwards_trader_as_user_param(mocker):
+    mock_fetch = mocker.patch(
+        "research.trader_mining.provider.ccxt_async.hyperliquid.fetch_ledger",
+        new=AsyncMock(return_value=[]),
+    )
+    mocker.patch("research.trader_mining.provider.ccxt_async.hyperliquid.close", new=AsyncMock())
+
+    await fetch_hyperliquid_ledger(TRADER)
+
+    _, kwargs = mock_fetch.call_args
+    assert kwargs["params"]["user"] == TRADER
+
+
+async def test_fetch_ledger_returns_entries_unchanged(mocker):
+    entries = [{"id": "0xabc", "type": "deposit", "timestamp": 1_700_000_000_000, "info": {}}]
+    mocker.patch(
+        "research.trader_mining.provider.ccxt_async.hyperliquid.fetch_ledger",
+        new=AsyncMock(return_value=entries),
+    )
+    mocker.patch("research.trader_mining.provider.ccxt_async.hyperliquid.close", new=AsyncMock())
+
+    result = await fetch_hyperliquid_ledger(TRADER)
+
+    assert result == entries

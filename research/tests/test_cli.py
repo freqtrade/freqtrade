@@ -314,11 +314,15 @@ def test_gate_command_threads_parameter_stability_flag_and_prints_report_line(mo
 
 
 def test_trader_import_command_forwards_args_and_prints_result(mocker, capsys):
-    from research.trader_mining.ingestion import IngestResult
+    from research.trader_mining.ingestion import IngestResult, LedgerIngestResult
 
     mock_ingest = mocker.patch(
         "research.cli.ingest_hyperliquid_fills",
         return_value=IngestResult(n_fetched=5, n_new=3, history_completeness="complete"),
+    )
+    mocker.patch(
+        "research.cli.ingest_hyperliquid_ledger",
+        return_value=LedgerIngestResult(n_fetched=0, n_new=0),
     )
     mocker.patch("research.cli.get_engine")
     mocker.patch("research.cli.get_session")
@@ -347,13 +351,17 @@ def test_trader_import_command_forwards_args_and_prints_result(mocker, capsys):
 
 
 def test_trader_import_command_warns_on_truncated_history(mocker, capsys):
-    from research.trader_mining.ingestion import IngestResult
+    from research.trader_mining.ingestion import IngestResult, LedgerIngestResult
 
     mocker.patch(
         "research.cli.ingest_hyperliquid_fills",
         return_value=IngestResult(
             n_fetched=10_000, n_new=10_000, history_completeness="truncated_by_provider_limit"
         ),
+    )
+    mocker.patch(
+        "research.cli.ingest_hyperliquid_ledger",
+        return_value=LedgerIngestResult(n_fetched=0, n_new=0),
     )
     mocker.patch("research.cli.get_engine")
     mocker.patch("research.cli.get_session")
@@ -442,3 +450,47 @@ def test_trader_report_command_prints_formatted_report(mocker, capsys):
     assert exit_code == 0
     assert "0x0000000000000000000000000000000000000000" in captured.out
     assert "70.00" in captured.out
+
+
+def test_trader_import_command_also_ingests_ledger(mocker, capsys):
+    from research.trader_mining.ingestion import IngestResult, LedgerIngestResult
+
+    mocker.patch(
+        "research.cli.ingest_hyperliquid_fills",
+        return_value=IngestResult(n_fetched=5, n_new=3, history_completeness="complete"),
+    )
+    mock_ledger = mocker.patch(
+        "research.cli.ingest_hyperliquid_ledger",
+        return_value=LedgerIngestResult(n_fetched=2, n_new=2),
+    )
+    mocker.patch("research.cli.get_engine")
+    mocker.patch("research.cli.get_session")
+
+    exit_code = main(["trader-import", "--trader", "0x0000000000000000000000000000000000000000"])
+
+    assert mock_ledger.called
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "n_ledger_events_new: 2" in captured.out
+
+
+def test_trader_analyze_command_prints_reconciled_gaps_when_present(mocker, capsys):
+    from research.trader_mining.engine import ReconstructResult
+
+    mocker.patch(
+        "research.cli.reconstruct_and_persist_trades",
+        return_value=ReconstructResult(
+            n_trades=1,
+            symbols=["HYPE/USDC"],
+            reconciled_gaps=["HYPE/USDC: reconciled a -62264.0 position gap ..."],
+        ),
+    )
+    mocker.patch("research.cli.get_engine")
+    mocker.patch("research.cli.get_session")
+
+    exit_code = main(["trader-analyze", "--trader", "0x0000000000000000000000000000000000000000"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "reconciled_gaps" in captured.out
+    assert "HYPE/USDC" in captured.out
