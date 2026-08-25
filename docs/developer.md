@@ -385,9 +385,10 @@ Another way is to run this command multiple times in a row and observe if the vo
 Some exchanges omit candles for intervals without trades instead of returning zero-volume candles.
 For such exchanges, the response of an inactive pair contains no candle for the currently forming
 interval - freqtrade detects this and re-queries these pairs at candle cadence.
-A candle that just closed is re-queried for `ohlcv_late_candle_grace_secs` seconds (defaults to 15)
-in case the exchange publishes it with a slight delay. Raise this value for exchanges that are
-known to publish candles later than this.
+As long as the exchange did not issue a newer candle, a candle that just closed may still be
+published late or updated. It is therefore only treated as final once `ohlcv_late_candle_grace_secs`
+seconds (defaults to 15) passed since it closed - until then it is withheld, so strategies never see an incomplete candle.
+Raise this value for exchanges that are known to publish or update candles later than this.
 
 ### Update binance cached leverage tiers
 
