@@ -15,6 +15,7 @@ Release 4's job (the TRAIN/VALIDATION/TEST/FORWARD framework), not this module's
 
 from __future__ import annotations
 
+import math
 import statistics
 from dataclasses import dataclass
 
@@ -133,6 +134,16 @@ def compute_metrics(trades: list[ReconstructedTrade]) -> WalletMetrics:
     winners_sorted = sorted((t.net_pnl for t in trades if t.net_pnl > 0), reverse=True)
     pnl_concentration_top_5 = sum(winners_sorted[:5]) / net_pnl if net_pnl != 0 else None
 
+    if n < 2:
+        trade_consistency_score = None
+    else:
+        stdev_r = statistics.stdev(returns)
+        trade_consistency_score = (
+            None if stdev_r == 0 else math.sqrt(n) * statistics.mean(returns) / stdev_r
+        )
+
+    return_to_drawdown_ratio = net_pnl / drawdown if drawdown > 0 else None
+
     return WalletMetrics(
         trade_count=n,
         total_volume=total_volume,
@@ -155,6 +166,6 @@ def compute_metrics(trades: list[ReconstructedTrade]) -> WalletMetrics:
         max_drawdown=drawdown,
         max_losing_streak=longest_losing_streak,
         pnl_concentration_top_5=pnl_concentration_top_5,
-        trade_consistency_score=None,
-        return_to_drawdown_ratio=None,
+        trade_consistency_score=trade_consistency_score,
+        return_to_drawdown_ratio=return_to_drawdown_ratio,
     )

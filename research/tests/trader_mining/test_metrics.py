@@ -1,6 +1,9 @@
 # research/tests/trader_mining/test_metrics.py
+import math
 import statistics
 from datetime import UTC, datetime, timedelta
+
+import pytest
 
 from research.models import ReconstructedTrade
 from research.trader_mining.metrics import compute_metrics
@@ -182,3 +185,61 @@ def test_pnl_concentration_top_5_is_none_when_total_net_pnl_is_zero():
     m = compute_metrics(trades)
 
     assert m.pnl_concentration_top_5 is None
+
+
+def test_trade_consistency_score_is_none_for_zero_or_one_trade():
+    assert compute_metrics([]).trade_consistency_score is None
+    assert compute_metrics([_trade(net_pnl=10.0)]).trade_consistency_score is None
+
+
+def test_trade_consistency_score_is_none_when_all_returns_identical():
+    """Zero-variance guard -- every trade has the exact same return-on-notional. A real,
+    if unusual, case (e.g. a market maker collecting an identical spread every trade), not
+    just a theoretical one. Must not raise ZeroDivisionError/StatisticsError."""
+    trades = [
+        _trade(net_pnl=10.0, entry_price=100.0, quantity=1.0),
+        _trade(net_pnl=10.0, entry_price=100.0, quantity=1.0),
+        _trade(net_pnl=10.0, entry_price=100.0, quantity=1.0),
+    ]
+
+    m = compute_metrics(trades)
+
+    assert m.trade_consistency_score is None
+
+
+def test_trade_consistency_score_hand_computed():
+    # returns (net_pnl / (entry_price*quantity)): 0.10, 0.20, -0.05
+    trades = [
+        _trade(net_pnl=10.0, entry_price=100.0, quantity=1.0),
+        _trade(net_pnl=20.0, entry_price=100.0, quantity=1.0),
+        _trade(net_pnl=-5.0, entry_price=100.0, quantity=1.0),
+    ]
+    returns = [0.10, 0.20, -0.05]
+    expected_mean = statistics.mean(returns)
+    expected_stdev = statistics.stdev(returns)  # sample stdev, N-1 denominator
+    expected = math.sqrt(3) * expected_mean / expected_stdev
+
+    m = compute_metrics(trades)
+
+    assert m.trade_consistency_score == pytest.approx(expected)
+
+
+def test_return_to_drawdown_ratio_is_none_when_no_drawdown():
+    m = compute_metrics([_trade(net_pnl=10.0)])  # single winner -- max_drawdown is 0.0
+
+    assert m.max_drawdown == 0.0
+    assert m.return_to_drawdown_ratio is None
+
+
+def test_return_to_drawdown_ratio_hand_computed():
+    t0 = datetime(2026, 1, 1, tzinfo=UTC)
+    trades = [
+        _trade(net_pnl=100.0, exit_ts=t0),
+        _trade(net_pnl=-40.0, exit_ts=t0 + timedelta(hours=1)),
+    ]
+    # net_pnl total = 60.0, max_drawdown = 40.0 (peak 100 down to a low of 60)
+
+    m = compute_metrics(trades)
+
+    assert m.max_drawdown == 40.0
+    assert m.return_to_drawdown_ratio == pytest.approx(60.0 / 40.0)
