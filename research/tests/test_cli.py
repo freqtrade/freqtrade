@@ -261,3 +261,53 @@ def test_gate_command_prints_regime_breakdown_table_when_present(mocker, capsys)
     assert "regime breakdown" in captured.out
     assert "Bull/High" in captured.out
     assert "Bear/Low" in captured.out
+
+
+def test_gate_command_threads_parameter_stability_flag_and_prints_report_line(mocker, capsys):
+    canned = GateResult(
+        strategy_id="StrategyTestV3",
+        passed=True,
+        deflated_sharpe=0.97,
+        permutation_p=0.01,
+        pbo=0.1,
+        mean_test_sharpe=1.2,
+        n_trials=12,
+        reasons=[],
+        parameter_stability=0.75,
+    )
+    mock_gate = mocker.patch("research.cli.run_promotion_gate", return_value=canned)
+    mocker.patch(
+        "research.cli.Configuration.from_files", return_value={"datadir": "user_data/data"}
+    )
+
+    exit_code = main(
+        [
+            "gate",
+            "--strategy",
+            "StrategyTestV3",
+            "--config",
+            "config.json",
+            "--pairs",
+            "BTC/USDT",
+            "--timeframe",
+            "1h",
+            "--start",
+            "2024-01-01",
+            "--end",
+            "2024-06-01",
+            "--train-days",
+            "60",
+            "--test-days",
+            "20",
+            "--param-grid",
+            '[{"buy_rsi": 30}]',
+            "--parameter-stability",
+        ]
+    )
+
+    _, kwargs = mock_gate.call_args
+    assert kwargs["include_parameter_stability"] is True
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "parameter stability  0.750" in captured.out

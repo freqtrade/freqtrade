@@ -24,6 +24,7 @@ WEIGHTS = {
     "pbo_inverse": 0.25,
     "cost_sensitivity": 0.10,
     "regime_consistency": 0.05,
+    "parameter_stability": 0.05,
 }
 
 
@@ -44,6 +45,10 @@ def robustness_score(result: GateResult) -> float:
     "regime_consistency", only when result.regime_breakdown is present: the fraction of
     regime buckets with a positive mean_test_sharpe -- does the edge show up broadly, or
     only in one favorable regime.
+
+    "parameter_stability", only when result.parameter_stability is not None: used directly
+    -- already a probability in [0, 1] by construction (research.parameter_stability), no
+    transform needed.
 
     Known limitation, deliberate: scores from GateResults with different optional
     components present are NOT directly comparable, since renormalization shifts the
@@ -76,6 +81,9 @@ def robustness_score(result: GateResult) -> float:
         )
         components["regime_consistency"] = n_positive / n_total
 
+    if result.parameter_stability is not None:
+        components["parameter_stability"] = result.parameter_stability
+
     weighted_sum = sum(WEIGHTS[k] * v for k, v in components.items())
     weight_total = sum(WEIGHTS[k] for k in components)
     return weighted_sum / weight_total
@@ -102,6 +110,8 @@ def strategy_report(result: GateResult, pair: str | None = None) -> str:
         f"  mean OOS sharpe   {result.mean_test_sharpe:.3f}",
         f"  trials (ledger)   {result.n_trials}",
     ]
+    if result.parameter_stability is not None:
+        lines.append(f"  parameter stability  {result.parameter_stability:.3f}")
     for reason in result.reasons:
         lines.append(f"  - {reason}")
 

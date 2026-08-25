@@ -17,6 +17,7 @@ import numpy as np
 from research.cost_stress import fee_sensitivity
 from research.db import get_engine, get_session
 from research.ledger import family_of, family_trial_count, log_candidate_result
+from research.parameter_stability import parameter_stability
 from research.pbo import probability_of_backtest_overfitting
 from research.regime import classify_regimes, regime_report
 from research.statistics import benjamini_hochberg, deflated_sharpe_ratio, permutation_test
@@ -37,6 +38,7 @@ class GateResult:
     reasons: list[str]
     fee_sensitivity: dict[float, dict] | None = None
     regime_breakdown: dict[str, dict] | None = None
+    parameter_stability: float | None = None
 
 
 def run_promotion_gate(
@@ -57,6 +59,7 @@ def run_promotion_gate(
     periods_per_year: int = 365,
     fee_sensitivity_multipliers: tuple[float, ...] | None = None,
     include_regime_breakdown: bool = False,
+    include_parameter_stability: bool = False,
 ) -> GateResult:
     """Run walk-forward evaluation for `strategy_id` and decide whether it is
     statistically fit to promote, logging the outcome to the candidate ledger.
@@ -156,6 +159,10 @@ def run_promotion_gate(
         labels = classify_regimes(pairs[0], timeframe, datadir, windows)
         regime_breakdown = regime_report(results, labels)
 
+    stability = None
+    if include_parameter_stability:
+        stability = parameter_stability(variant_matrix)
+
     return GateResult(
         strategy_id=strategy_id,
         passed=passed,
@@ -167,4 +174,5 @@ def run_promotion_gate(
         reasons=reasons,
         fee_sensitivity=fee_report,
         regime_breakdown=regime_breakdown,
+        parameter_stability=stability,
     )

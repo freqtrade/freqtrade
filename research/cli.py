@@ -49,6 +49,14 @@ def main(argv: list[str] | None = None) -> int:
             "results, regardless of pass/fail (informational)"
         ),
     )
+    gate.add_argument(
+        "--parameter-stability",
+        action="store_true",
+        help=(
+            "Also compute the fraction of grid variants profitable in-sample across "
+            "the walk-forward run, regardless of pass/fail (informational)"
+        ),
+    )
 
     args = parser.parse_args(argv)
 
@@ -71,6 +79,7 @@ def main(argv: list[str] | None = None) -> int:
             db_path=args.db_path,
             fee_sensitivity_multipliers=DEFAULT_FEE_MULTIPLIERS if args.fee_sensitivity else None,
             include_regime_breakdown=args.regime_breakdown,
+            include_parameter_stability=args.parameter_stability,
         )
         print(strategy_report(result, pair=args.pairs.split(",")[0]))
         return 0 if result.passed else 1

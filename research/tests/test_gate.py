@@ -244,3 +244,98 @@ def test_run_promotion_gate_omits_regime_breakdown_by_default(mocker, tmp_path):
     )
 
     assert result.regime_breakdown is None
+
+
+def test_run_promotion_gate_attaches_parameter_stability_when_requested_and_passes(
+    mocker, tmp_path
+):
+    conf = _conf()
+    _patch(mocker)
+    full_data = history.load_data(datadir=TESTDATADIR, timeframe="5m", pairs=["UNITTEST/BTC"])
+    min_date, max_date = get_timerange(full_data)
+    total_days = max(8, (max_date - min_date).days)
+    train_days = max(1, total_days // 8)
+    test_days = max(1, total_days // 16)
+
+    # Permissive thresholds guarantee a real, unmocked PASS (see the fee-sensitivity pass
+    # test above for the same pattern).
+    result = run_promotion_gate(
+        config=conf,
+        strategy_id="StrategyTestV3",
+        pairs=["UNITTEST/BTC"],
+        timeframe="5m",
+        datadir=TESTDATADIR,
+        start=min_date,
+        end=max_date,
+        train_days=train_days,
+        test_days=test_days,
+        param_grid=[{"buy_rsi": 25}, {"buy_rsi": 35}],
+        db_path=str(tmp_path / "research.sqlite"),
+        dsr_threshold=0.0,
+        fdr_q=1.0,
+        pbo_threshold=1.0,
+        include_parameter_stability=True,
+    )
+
+    assert result.passed is True
+    assert result.parameter_stability is not None
+    assert 0.0 <= result.parameter_stability <= 1.0
+
+
+def test_run_promotion_gate_attaches_parameter_stability_when_requested_and_fails(mocker, tmp_path):
+    conf = _conf()
+    _patch(mocker)
+    full_data = history.load_data(datadir=TESTDATADIR, timeframe="5m", pairs=["UNITTEST/BTC"])
+    min_date, max_date = get_timerange(full_data)
+    total_days = max(8, (max_date - min_date).days)
+    train_days = max(1, total_days // 8)
+    test_days = max(1, total_days // 16)
+
+    # Impossible dsr_threshold guarantees a real FAIL. Parameter stability must still be
+    # attached -- this is the test that actually proves the pass/fail-independence was
+    # implemented, not just described in the spec.
+    result = run_promotion_gate(
+        config=conf,
+        strategy_id="StrategyTestV3",
+        pairs=["UNITTEST/BTC"],
+        timeframe="5m",
+        datadir=TESTDATADIR,
+        start=min_date,
+        end=max_date,
+        train_days=train_days,
+        test_days=test_days,
+        param_grid=[{"buy_rsi": 25}, {"buy_rsi": 35}],
+        db_path=str(tmp_path / "research.sqlite"),
+        dsr_threshold=1.1,
+        include_parameter_stability=True,
+    )
+
+    assert result.passed is False
+    assert result.parameter_stability is not None
+    assert 0.0 <= result.parameter_stability <= 1.0
+
+
+def test_run_promotion_gate_omits_parameter_stability_by_default(mocker, tmp_path):
+    conf = _conf()
+    _patch(mocker)
+    full_data = history.load_data(datadir=TESTDATADIR, timeframe="5m", pairs=["UNITTEST/BTC"])
+    min_date, max_date = get_timerange(full_data)
+    total_days = max(8, (max_date - min_date).days)
+    train_days = max(1, total_days // 8)
+    test_days = max(1, total_days // 16)
+
+    result = run_promotion_gate(
+        config=conf,
+        strategy_id="StrategyTestV3",
+        pairs=["UNITTEST/BTC"],
+        timeframe="5m",
+        datadir=TESTDATADIR,
+        start=min_date,
+        end=max_date,
+        train_days=train_days,
+        test_days=test_days,
+        param_grid=[{"buy_rsi": 25}, {"buy_rsi": 35}],
+        db_path=str(tmp_path / "research.sqlite"),
+    )
+
+    assert result.parameter_stability is None

@@ -179,6 +179,70 @@ def test_robustness_score_renormalization_makes_scores_incomparable_across_optio
     assert robustness_score(without_regime) != pytest.approx(robustness_score(with_regime))
 
 
+def test_robustness_score_includes_parameter_stability_when_present():
+    result = _core_result(parameter_stability=0.75)
+
+    score = robustness_score(result)
+
+    weighted_sum = (
+        WEIGHTS["deflated_sharpe"] * 0.90
+        + WEIGHTS["significance"] * (1.0 - 0.02)
+        + WEIGHTS["pbo_inverse"] * (1.0 - 0.15)
+        + WEIGHTS["parameter_stability"] * 0.75
+    )
+    weight_total = (
+        WEIGHTS["deflated_sharpe"]
+        + WEIGHTS["significance"]
+        + WEIGHTS["pbo_inverse"]
+        + WEIGHTS["parameter_stability"]
+    )
+    assert score == pytest.approx(weighted_sum / weight_total)
+
+
+def test_robustness_score_with_all_four_optional_components():
+    result = _core_result(
+        parameter_stability=0.75,
+        fee_sensitivity={
+            1.0: {"mean_test_sharpe": 0.8, "deflated_sharpe": 0.90, "n_windows": 5},
+            1.5: {"mean_test_sharpe": 0.4, "deflated_sharpe": 0.60, "n_windows": 5},
+        },
+        regime_breakdown={
+            "Bull/High": {
+                "n_windows": 2,
+                "n_trades": 10,
+                "mean_test_sharpe": 0.5,
+                "total_return": 0.01,
+            },
+            "Bear/Low": {
+                "n_windows": 1,
+                "n_trades": 4,
+                "mean_test_sharpe": 0.1,
+                "total_return": 0.002,
+            },
+        },
+    )
+
+    score = robustness_score(result)
+
+    assert 0.0 <= score <= 1.0
+
+
+def test_strategy_report_includes_parameter_stability_line_when_present():
+    result = _core_result(parameter_stability=0.75)
+
+    report = strategy_report(result)
+
+    assert "parameter stability  0.750" in report
+
+
+def test_strategy_report_omits_parameter_stability_line_when_absent():
+    result = _core_result()
+
+    report = strategy_report(result)
+
+    assert "parameter stability" not in report
+
+
 def test_strategy_report_pass_case_shows_verdict_core_stats_and_score():
     result = _core_result(passed=True, deflated_sharpe=0.97, permutation_p=0.01, pbo=0.1)
 
