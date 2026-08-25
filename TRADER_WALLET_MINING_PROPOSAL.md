@@ -21,6 +21,85 @@ The goal is to answer:
 The system must treat every discovered trader as a research subject, not as proof that a
 strategy works.
 
+## Review notes (lmchatbot cross-check, 2026-08-25)
+
+Reviewed by Gemini, cross-verified by ChatGPT (several of Gemini's draft claims were
+factually corrected in the verify pass -- corrections below reflect the surviving,
+fact-checked findings, not the raw draft). Not yet re-brainstormed against these notes;
+recorded here so a future planning session starts from them instead of re-discovering them.
+
+**Already decided independently, confirmed sound:** the Hyperliquid provider should be a
+thin wrapper around `ccxt.async_support.hyperliquid` (its `fetch_my_trades` already accepts
+a `params.user`/`params.address` override reading Hyperliquid's public, unauthenticated
+`userFills`/`userFillsByTime` info endpoint for *any* wallet) rather than a hand-rolled REST
+client; the CLI should be its own `python -m research.cli` subcommand, matching every
+existing `research/` feature, not a new `freqtrade trader ...` subcommand on freqtrade's own
+core CLI parser.
+
+**Scope for Phase 1 -- smaller than the architecture section below implies.** Both reviewers
+converged on the same simplification: four files, not nine --
+`trader_mining/{provider,storage,engine,cli}.py`. Defer `discovery.py` (explicit
+wallet-list input only, no scanning), `behavior.py`/`hypotheses.py` (basic descriptive stats
+to JSON/CSV are enough before auto-generated English hypotheses), and `reports.py` (plain
+console/Markdown output) until the single-wallet pipeline is proven -- the
+`TraderDataProvider` Protocol abstraction itself should wait for a second provider to
+actually exist, not be built speculatively against Bitquery/Dune now.
+
+**Hyperliquid ingestion specifics to get right from Task 1** (fact-checked, not the
+draft's original framing):
+
+- **10,000-fill hard ceiling per wallet**, not a vague "90-180 day archival" issue --
+  `userFillsByTime` exposes at most the 10,000 most recent fills, full stop. A wallet whose
+  requested date range can't actually be recovered must produce an explicit
+  `history_completeness = truncated_by_provider_limit` result, not a guessed
+  `is_history_truncated` heuristic based on whether the oldest returned fill "looks right."
+- **Rate limit is weighted** (1,200 requests/minute per IP, but a large fill-count response
+  costs more than a plain request) -- a naive N-requests-per-second limiter under-throttles;
+  budget by response size, not request count alone.
+- **Fill identity is `tid`**, not `(hash, oid)` -- `oid` identifies an *order* (one order can
+  produce many fills), and `hash` can be `0` for TWAP fills. Dedupe and paginate against
+  `tid`.
+- **Funding is a separate endpoint** (`userFunding`), not something to filter out of the fill
+  stream as a "synthetic fill." Model funding P&L separately from execution P&L rather than
+  treating it as fill-stream noise.
+- **Do not hard-code FIFO** for trade reconstruction (Phase 3). Hyperliquid's own fills carry
+  `startPosition`, `side`, `dir`, and `closedPnl` -- reconstruction should follow the
+  exchange's own net-position transitions and realized P&L, with any lot-accounting
+  convention (FIFO or otherwise) applied only where a logical-trade decomposition is
+  genuinely needed and documented as a researcher-imposed convention, not the trader's
+  actual economic decomposition.
+- **Liquidation/ADL classification needs verification against the real fill schema during
+  Task 1**, not an assumed field value (the draft guessed a `dir == "Liquidated"` encoding
+  that wasn't independently confirmed) -- preserve the raw `dir`/`side`/`crossed`/`closedPnl`
+  fields and classify from documented behavior, not a guess.
+- **Order-book depth/liquidity modeling is out of scope for Phase 1** -- track maker/taker
+  volume from the fill data's `crossed` field; defer historical L2 reconstruction unless a
+  later phase actually demonstrates execution capacity is a material confounder.
+
+**Phase 4/6 metric and threshold corrections:**
+
+- **Drop CAGR** as a reconstructed-wallet metric -- there's no clean equity-curve denominator
+  without accounting for deposits/withdrawals/funding/collateral changes a fills-only
+  reconstruction can't see. Report trade-level P&L/volume statistics instead of an
+  equity-curve-style headline number.
+- **No hard "discard if expectancy degrades >50% from TRAIN to VALIDATION" rule.** Expectancy
+  is noisy and can cross zero; an arbitrary percentage cutoff is unstable at realistic sample
+  sizes. Report degradation as a diagnostic, not an automatic rejection threshold.
+
+**Phase 5/6 -- the deeper, unresolved gap: wallet selection is its own multiple-comparisons
+problem, separate from parameter selection.** Ranking N candidate wallets by TRAIN
+performance and keeping the top few is a selection process over N trials, exactly the kind
+of thing `research/pbo.py`/`research/statistics.py` already exist to guard against for
+*parameters* -- but "apply Bonferroni or a Deflated-Sharpe-style correction across the wallet
+count" is an oversimplified fix, not a complete one (DSR was derived for strategy/parameter
+selection specifically; substituting "wallet" for "strategy" isn't automatically valid). The
+right first move is a frozen candidate cohort with a documented, pre-registered
+non-performance inclusion protocol (minimum trade count, minimum history length, active
+across multiple regimes -- decided *before* looking at TRAIN performance, matching Phase 5's
+existing configurable-minimums idea) plus a reserved confirmation set, not a mechanical
+formula substituted for real methodology. This needs its own design pass before Phase 6 is
+implemented, not just before it's trusted.
+
 ## Phase 1 — Hyperliquid Research Adapter
 
 Start with Hyperliquid because its public API exposes wallet-specific fills and closed P&L
