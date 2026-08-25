@@ -20,6 +20,75 @@ from sqlalchemy.orm import Session
 from research.models import NormalizedFill, ReconstructedTrade
 
 
+_KNOWN_QUOTE_CURRENCIES = frozenset({"USDC", "USDT", "USDT0"})
+
+
+def _is_base_asset_fee(fill: NormalizedFill) -> bool:
+    """True if this fill's fee was charged in-kind, in the traded symbol's own base
+    asset, rather than in the pair's quote/settlement currency. Hyperliquid spot fees
+    are deducted from whichever asset the fill actually delivers to the trader -- in
+    practice the base asset on a buy, the quote asset on a sell (confirmed against real
+    wallet data: a HYPE/USDC buy fill's own reported post-fill position nets out its
+    HYPE-denominated fee exactly).
+
+    Determined by comparing fee_currency to the base asset parsed from `symbol` (the
+    part before "/") when parseable -- this is what catches HYPE/USDT paying its fee in
+    USDT0 (the pair's own quote currency, not USDC and not the base asset) as NOT an
+    in-kind fee; a naive "fee_currency != USDC" check would have gotten that wrong,
+    since Hyperliquid has non-USDC-quoted spot pairs. ponytail: a handful of very new
+    spot markets surface as an unparsable raw internal index (e.g. "@705", no "/") --
+    for those, fall back to "not a known quote currency"; confirmed against real data
+    (fee_currency='SKHYX' on symbol '@705').
+    """
+    base = fill.symbol.split("/")[0] if "/" in fill.symbol else None
+    if base is not None:
+        return fill.fee_currency == base
+    return fill.fee_currency not in _KNOWN_QUOTE_CURRENCIES
+
+
+def _fee_in_quote_currency(fill: NormalizedFill, fee: Decimal) -> Decimal:
+    """Convert an in-kind (base-asset-denominated) fee to the quote currency using the
+    fill's own execution price (already expressed as quote-per-base for this fill) --
+    otherwise summing fee amounts across mixed currencies (e.g. HYPE and USDC) into one
+    `fees`/`net_pnl` figure would be nonsensical unit-mixing. A quote-currency fee is
+    already in the right units and passes through unchanged."""
+    if _is_base_asset_fee(fill):
+        return fee * Decimal(str(fill.price))
+    return fee
+
+
+def _end_position(running_position: Decimal, fill: NormalizedFill) -> Decimal:
+    """Position after applying `fill` to `running_position` -- an in-kind
+    (base-asset-denominated) fee reduces the actual position change; see
+    _is_base_asset_fee. A quote-currency fee never touches position."""
+    qty = Decimal(str(fill.quantity))
+    position_delta = qty if fill.side == "buy" else -qty
+    if _is_base_asset_fee(fill):
+        position_delta -= Decimal(str(fill.fee))
+    return running_position + position_delta
+
+
+def _check_position_continuity(
+    fill: NormalizedFill, end_position: Decimal, next_fill: NormalizedFill
+) -> None:
+    """A gap in ingested history (the 10,000-fill provider ceiling, an interrupted
+    trader-import run, or an external transfer never captured as a trade fill at all)
+    must not silently produce wrong trade boundaries -- if `fill`'s computed end
+    position doesn't match `next_fill`'s own reported starting position, that's a real
+    discontinuity, not something to paper over."""
+    next_position = Decimal(str(next_fill.position))
+    # epsilon, not exact equality: `position` values recorded on real fills (and in
+    # hand-built test fixtures that accumulate float positions incrementally) can differ
+    # from our own Decimal-summed end_position by float-repr noise even when there's no
+    # real gap.
+    if abs(next_position - end_position) > Decimal("1e-8"):
+        raise ValueError(
+            f"position gap: fill tid={fill.tid} ends at position {end_position} but "
+            f"next fill tid={next_fill.tid} starts at position {next_position} -- "
+            "likely missing fills between them (ingestion gap or provider truncation)"
+        )
+
+
 @dataclass
 class _TradeState:
     is_truncated_start: bool
@@ -120,22 +189,10 @@ def reconstruct_trades(
 
     for i, fill in enumerate(fills):
         qty = Decimal(str(fill.quantity))
-        signed_qty = qty if fill.side == "buy" else -qty
-        end_position = running_position + signed_qty
+        end_position = _end_position(running_position, fill)
 
         if i + 1 < len(fills):
-            next_position = Decimal(str(fills[i + 1].position))
-            # epsilon, not exact equality: `position` values recorded on real fills (and
-            # in hand-built test fixtures that accumulate float positions incrementally)
-            # can differ from our own Decimal-summed end_position by float-repr noise
-            # even when there's no real gap.
-            if abs(next_position - end_position) > Decimal("1e-8"):
-                raise ValueError(
-                    f"position gap: fill tid={fill.tid} ends at position {end_position} "
-                    f"but next fill tid={fills[i + 1].tid} starts at position "
-                    f"{next_position} -- likely missing fills between them (ingestion "
-                    "gap or provider truncation)"
-                )
+            _check_position_continuity(fill, end_position, fills[i + 1])
 
         if trade is None:
             trade = _TradeState(
@@ -154,7 +211,7 @@ def reconstruct_trades(
         if is_reversal:
             close_qty = abs(running_position)
             open_qty = qty - close_qty
-            fee = Decimal(str(fill.fee))
+            fee = _fee_in_quote_currency(fill, Decimal(str(fill.fee)))
             close_fee = fee * (close_qty / qty)
             trade.add_exit(fill, close_qty, Decimal(str(fill.closed_pnl)), close_fee)
             trades.append(trade.finalize(trader, symbol))
@@ -169,10 +226,11 @@ def reconstruct_trades(
             running_position = end_position
             continue
 
+        fee = _fee_in_quote_currency(fill, Decimal(str(fill.fee)))
         if abs(end_position) > abs(running_position):
-            trade.add_entry(fill, qty, Decimal(str(fill.fee)))
+            trade.add_entry(fill, qty, fee)
         else:
-            trade.add_exit(fill, qty, Decimal(str(fill.closed_pnl)), Decimal(str(fill.fee)))
+            trade.add_exit(fill, qty, Decimal(str(fill.closed_pnl)), fee)
 
         running_position = end_position
 

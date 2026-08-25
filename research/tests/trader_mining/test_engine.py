@@ -14,12 +14,24 @@ SYMBOL = "BTC/USDC:USDC"
 T0 = datetime(2026, 1, 1, tzinfo=UTC)
 
 
-def _fill(tid, side, price, qty, position, ts=T0, closed_pnl=0.0, fee=0.1, direction="Open Long"):
+def _fill(
+    tid,
+    side,
+    price,
+    qty,
+    position,
+    ts=T0,
+    closed_pnl=0.0,
+    fee=0.1,
+    direction="Open Long",
+    symbol=SYMBOL,
+    fee_currency="USDC",
+):
     return NormalizedFill(
         trader=TRADER,
         tid=tid,
         timestamp=ts,
-        symbol=SYMBOL,
+        symbol=symbol,
         side=side,
         price=price,
         quantity=qty,
@@ -29,7 +41,7 @@ def _fill(tid, side, price, qty, position, ts=T0, closed_pnl=0.0, fee=0.1, direc
         direction=direction,
         crossed=True,
         fee=fee,
-        fee_currency="USDC",
+        fee_currency=fee_currency,
         order_id=str(tid),
     )
 
@@ -354,6 +366,126 @@ def test_failure_on_one_symbol_rolls_back_and_leaves_other_symbols_untouched():
     # before ETH blew up -- and the session is still usable afterwards.
     assert session.query(ReconstructedTrade).count() == 0
     assert session.query(NormalizedFill).count() == 4
+
+
+def test_base_asset_fee_in_kind_nets_out_of_position_not_flagged_as_gap():
+    """Regression test for a real bug found live-validating trader-analyze against real
+    leaderboard wallets: on Hyperliquid spot markets, a fill's fee can be charged in-kind
+    in the base asset being received (e.g. buying HYPE/USDC with the fee taken in HYPE),
+    not in the quote currency. Hyperliquid's own reported position nets this out --
+    confirmed against real data: buying qty=66.66 HYPE with fee=0.026664 HYPE left the
+    position up by exactly 66.66 - 0.026664 = 66.633336, not the full 66.66. Before this
+    fix, the position-gap guard (added for the earlier code review) raised a false
+    positive on every such fill."""
+    fills = [
+        _fill(
+            1,
+            "buy",
+            100.0,
+            10.0,
+            position=0.0,
+            ts=T0,
+            fee=0.05,
+            fee_currency="HYPE",
+            symbol="HYPE/USDC",
+        ),
+        _fill(
+            2,
+            "sell",
+            110.0,
+            9.95,  # can only sell what was actually received net of the in-kind fee
+            position=9.95,
+            ts=T0 + timedelta(hours=1),
+            fee=0.1,
+            fee_currency="USDC",
+            closed_pnl=99.5,
+            direction="Close Long",
+            symbol="HYPE/USDC",
+        ),
+    ]
+
+    trades = reconstruct_trades(TRADER, "HYPE/USDC", fills)
+
+    assert len(trades) == 1
+    assert trades[0].quantity == pytest.approx(9.95)
+
+
+def test_base_asset_fee_converted_to_quote_currency_before_subtracting_from_pnl():
+    """The in-kind HYPE fee must be converted to USDC (via the fill's own execution
+    price) before being subtracted from PnL -- summing raw fee units regardless of
+    currency would mix HYPE-denominated and USDC-denominated numbers into one figure."""
+    fills = [
+        _fill(
+            1,
+            "buy",
+            100.0,
+            10.0,
+            position=0.0,
+            ts=T0,
+            fee=0.05,
+            fee_currency="HYPE",
+            symbol="HYPE/USDC",
+        ),
+        _fill(
+            2,
+            "sell",
+            110.0,
+            9.95,
+            position=9.95,
+            ts=T0 + timedelta(hours=1),
+            fee=0.0,
+            fee_currency="USDC",
+            closed_pnl=99.5,
+            direction="Close Long",
+            symbol="HYPE/USDC",
+        ),
+    ]
+
+    trades = reconstruct_trades(TRADER, "HYPE/USDC", fills)
+
+    # 0.05 HYPE * 100.0 USDC/HYPE (this fill's own price) = 5.0 USDC -- not raw 0.05.
+    assert trades[0].fees == pytest.approx(5.0)
+    assert trades[0].net_pnl == pytest.approx(99.5 - 5.0)
+
+
+def test_quote_currency_fee_on_a_non_usdc_quoted_pair_does_not_affect_position():
+    """A fee denominated in the pair's OWN quote currency (not USDC, not the base asset
+    -- e.g. HYPE/USDT paying fees in USDT0) must NOT be treated as an in-kind base-asset
+    fee. Real data check that killed a naive 'fee_currency != USDC' heuristic: Hyperliquid
+    has non-USDC-quoted spot pairs, so 'not USDC' does not imply 'is the base asset'."""
+    fills = [
+        _fill(
+            1,
+            "buy",
+            100.0,
+            10.0,
+            position=0.0,
+            ts=T0,
+            fee=0.5,
+            fee_currency="USDT0",  # HYPE/USDT's quote currency, not HYPE
+            symbol="HYPE/USDT",
+        ),
+        _fill(
+            2,
+            "sell",
+            110.0,
+            10.0,  # full qty received -- the fee did NOT come out of the base asset
+            position=10.0,
+            ts=T0 + timedelta(hours=1),
+            fee=0.1,
+            fee_currency="USDT0",
+            closed_pnl=100.0,
+            direction="Close Long",
+            symbol="HYPE/USDT",
+        ),
+    ]
+
+    trades = reconstruct_trades(TRADER, "HYPE/USDT", fills)
+
+    assert len(trades) == 1
+    assert trades[0].quantity == pytest.approx(10.0)
+    # both fees are USDT0 (the quote currency) -- summed as-is, no price conversion
+    assert trades[0].fees == pytest.approx(0.6)
 
 
 def test_position_gap_between_fills_raises():
