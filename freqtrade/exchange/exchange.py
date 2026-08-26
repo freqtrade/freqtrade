@@ -2925,8 +2925,14 @@ class Exchange:
             self._pairs_last_poll_time[(pair, timeframe, c_type)] = fetch_start_ms
             # keeping last candle time as last refreshed time of the pair
             kept_ticks = ticks[:-1] if drop_incomplete else ticks
-            if kept_ticks and candles_final:
+            if kept_ticks:
+                # The newest candle we hold - a provisional last candle was dropped above.
                 self._pairs_last_refresh_time[(pair, timeframe, c_type)] = kept_ticks[-1][0]
+            elif ticks:
+                # The response held nothing but a dropped candle - remember the candle before
+                # it, so the pair is re-checked at candle cadence instead of on every iteration.
+                last_refresh = ticks[-1][0] - timeframe_to_msecs(timeframe)
+                self._pairs_last_refresh_time[(pair, timeframe, c_type)] = last_refresh
         has_cache = cache and (pair, timeframe, c_type) in self._klines
         # in case of existing cache, fill_missing happens after concatenation
         ohlcv_df = ohlcv_to_dataframe(
@@ -3095,13 +3101,8 @@ class Exchange:
             return True
 
         # The pair was queried within the current candle, but the exchange did not return the
-        # last completed candle. Either it wasn't published yet - or the exchange omits candles
-        # without trades, in which case there is nothing to wait for.
-        if (plr + interval_in_msec) < now:
-            # More than just the last candle is missing - the exchange has no data for this
-            # pair. Re-check with the next candle instead of on every iteration.
-            return False
-        # Only the just-closed candle is missing - it may be published with a slight delay.
+        # last completed candle. It may still be published with a slight delay - or the exchange
+        # omits candles without trades, in which case there is nothing to wait for.
         # Keep polling until the last poll time is past the grace period.
         return self._pairs_last_poll_time.get(pair_key, 0) < (
             now + self._ohlcv_late_candle_grace_ms
