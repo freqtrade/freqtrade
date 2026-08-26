@@ -3101,38 +3101,58 @@ def test_refresh_latest_ohlcv_cache(mocker, default_conf, candle_type, time_mach
     assert res[pair2].at[0, "open"]
 
 
-@pytest.mark.parametrize("quiet_since_min,expected_calls", [(90, 3), (6, 6)])
-def test_refresh_latest_ohlcv_no_empty_candles(
-    mocker, default_conf, time_machine, quiet_since_min, expected_calls
-) -> None:
+def test_refresh_latest_ohlcv_no_empty_candles(mocker, default_conf, time_machine, caplog) -> None:
     """
-    Exchanges omitting candles without trades never return a candle for the currently
-    forming interval of an inactive pair. Such pairs must be re-queried at candle
-    cadence after the grace period - not on every iteration.
+    Exchanges omitting candles without trades may not return a candle for the currently
+    forming interval of an inactive pair. Such pairs are re-queried until the grace period
+    of the just-closed candle is over - not on every iteration throughout the candle.
+    A response that yields no candle to cache must not make the pair look uncached,
+    which would evict and re-download it.
     """
     start = datetime(2026, 8, 1, 0, 0, 0, 0, tzinfo=UTC)
     ohlcv = generate_test_data_raw("5m", 100, start.strftime("%Y-%m-%d"))
     last_candle = start + timedelta(minutes=495)
+    curr_candle = start + timedelta(minutes=500)
     pair = ("IOTA/EUR", "5m", CandleType.SPOT)
 
-    time_machine.move_to(last_candle + timedelta(seconds=30), tick=False)
+    # The very first refresh of this pair lands within the grace period of the just-closed
+    # candle - which the exchange did not follow up with a new one.
+    time_machine.move_to(curr_candle + timedelta(seconds=3), tick=False)
     exchange = get_patched_exchange(mocker, default_conf)
     exchange._set_startup_candle_count(default_conf)
     mocker.patch(f"{EXMS}.ohlcv_candle_limit", return_value=100)
     exchange._api_async.fetch_ohlcv = AsyncMock(return_value=ohlcv)
     exchange.refresh_latest_ohlcv([pair])
+    # The provisional candle is withheld - the ones below it are cached nonetheless.
+    assert exchange._pairs_last_refresh_time[pair] == dt_ts(last_candle - timedelta(minutes=5))
 
     # Pair went quiet - the response won't change from here on.
-    time_machine.move_to(last_candle + timedelta(minutes=quiet_since_min), tick=False)
     exchange._api_async.fetch_ohlcv.reset_mock()
     # 10 minutes worth of bot iterations at 5s throttle
     for _ in range(120):
         time_machine.shift(timedelta(seconds=5))
         exchange.refresh_latest_ohlcv([pair])
 
-    assert exchange._api_async.fetch_ohlcv.call_count == expected_calls
+    # Once per candle the pair is polled through the grace period, then served from cache.
+    assert exchange._api_async.fetch_ohlcv.call_count == 8
     # The last candle the exchange did return must be part of the dataframe.
     assert exchange.klines(pair).iloc[-1]["date"] == last_candle
+
+    # A newly listed pair only has the currently forming candle - nothing is kept from that
+    # response, but it must not be re-queried until the next candle either.
+    new_candle = start + timedelta(minutes=515)
+    pair_new = ("XRP/EUR", "5m", CandleType.SPOT)
+    time_machine.move_to(new_candle, tick=False)
+    exchange._api_async.fetch_ohlcv = AsyncMock(
+        return_value=[[dt_ts(new_candle), 1.0, 2.0, 0.5, 1.5, 100.0]]
+    )
+    for _ in range(12):
+        time_machine.shift(timedelta(seconds=5))
+        exchange.refresh_latest_ohlcv([pair_new])
+    assert exchange._api_async.fetch_ohlcv.call_count == 1
+
+    # Neither pair may ever have had its cache evicted.
+    assert "Time jump detected" not in caplog.text
 
 
 def test_refresh_latest_ohlcv_late_candle(mocker, default_conf, time_machine) -> None:
