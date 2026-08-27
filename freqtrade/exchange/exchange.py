@@ -142,6 +142,9 @@ class Exchange:
         "ohlcv_require_since": False,
         # Seconds after the candle close time to assume a candle is actually closed
         "ohlcv_late_candle_grace_secs": 15,
+        # Maximum seconds a pair with missing candles may go unqueried. Keeps pairs on long
+        # timeframes from being skipped for a whole candle when the exchange lags behind.
+        "ohlcv_max_poll_interval_secs": 30 * 60,
         "download_data_parallel_quick": True,
         "always_require_api_keys": False,  # purge API keys for Dry-run. Must default to false.
         # Check https://github.com/ccxt/ccxt/issues/10767 for removal of ohlcv_volume_currency
@@ -270,6 +273,7 @@ class Exchange:
         # Assign this directly for easy access
         self._ohlcv_partial_candle = self._ft_has["ohlcv_partial_candle"]
         self._ohlcv_late_candle_grace_ms = self._ft_has["ohlcv_late_candle_grace_secs"] * 1000
+        self._ohlcv_max_poll_interval_ms = self._ft_has["ohlcv_max_poll_interval_secs"] * 1000
 
         # Initialize ccxt objects
         ccxt_config = self._ccxt_config
@@ -3096,7 +3100,8 @@ class Exchange:
             # The last completed candle is already cached.
             return False
 
-        if self._pairs_last_poll_time.get(pair_key, 0) < now:
+        last_poll = self._pairs_last_poll_time.get(pair_key, 0)
+        if last_poll < now:
             # Pair was not queried since the current candle opened.
             return True
 
@@ -3104,9 +3109,13 @@ class Exchange:
         # last completed candle. It may still be published with a slight delay - or the exchange
         # omits candles without trades, in which case there is nothing to wait for.
         # Keep polling until the last poll time is past the grace period.
-        return self._pairs_last_poll_time.get(pair_key, 0) < (
-            now + self._ohlcv_late_candle_grace_ms
-        )
+        if last_poll < (now + self._ohlcv_late_candle_grace_ms):
+            return True
+
+        # Beyond the grace period there's nothing more to expect within this candle.
+        # Never stay silent for longer than this, or an exchange lagging behind on a long timeframe
+        # would only be checked again once the next candle opens.
+        return dt_ts() >= (last_poll + self._ohlcv_max_poll_interval_ms)
 
     @retrier_async
     async def _async_get_candle_history(
