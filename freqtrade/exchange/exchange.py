@@ -3065,6 +3065,14 @@ class Exchange:
                 self._expiring_candle_cache[(c[1], lookback_period)][c] = val
         return candles
 
+    def _ohlcv_candle_grace_ms(self, timeframe: str) -> int:
+        """
+        Grace period after a candle close before the candle is assumed final.
+        Clamped to half a candle - a grace period at or above the timeframe would otherwise
+        withhold every candle for a full timeframe and force re-polling on every iteration.
+        """
+        return min(self._ohlcv_late_candle_grace_ms, timeframe_to_msecs(timeframe) // 2)
+
     def _candle_is_final(
         self, last_candle_date: int, timeframe: str, curr_candle_date: int, fetch_start_ms: int
     ) -> bool:
@@ -3084,7 +3092,7 @@ class Exchange:
             return True
         # The just-closed candle, with no newer candle issued yet.
         # Considered final once the grace period after its close is over.
-        return fetch_start_ms >= (curr_candle_date + self._ohlcv_late_candle_grace_ms)
+        return fetch_start_ms >= (curr_candle_date + self._ohlcv_candle_grace_ms(timeframe))
 
     def _now_is_time_to_refresh(self, pair: str, timeframe: str, candle_type: CandleType) -> bool:
         pair_key: PairWithTimeframe = (pair, timeframe, candle_type)
@@ -3109,7 +3117,7 @@ class Exchange:
         # last completed candle. It may still be published with a slight delay - or the exchange
         # omits candles without trades, in which case there is nothing to wait for.
         # Keep polling until the last poll time is past the grace period.
-        if last_poll < (now + self._ohlcv_late_candle_grace_ms):
+        if last_poll < (now + self._ohlcv_candle_grace_ms(timeframe)):
             return True
 
         # Beyond the grace period there's nothing more to expect within this candle.

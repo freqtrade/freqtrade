@@ -2638,6 +2638,31 @@ def test___now_is_time_to_refresh_no_new_candle(default_conf, mocker, exchange_n
     time_machine.move_to(last_poll + max_poll, tick=False)
     assert exchange._now_is_time_to_refresh(pair, "1d", candle_type) is True
 
+    # A grace period at or above the timeframe is capped at half a candle - so it can neither
+    # withhold candles for a full candle nor keep polling at throttle cadence all candle long.
+    exchange._ohlcv_late_candle_grace_ms = 90_000
+    assert exchange._ohlcv_candle_grace_ms("1m") == 30_000
+    assert exchange._ohlcv_candle_grace_ms("5m") == 90_000
+
+    pair_key_1m = (pair, "1m", candle_type)
+    curr_candle = dt_ts(start_dt)
+    last_candle = dt_ts(start_dt - timedelta(minutes=1))
+    # The just-closed candle becomes final after half a candle - not a full candle late.
+    fetch_start = dt_ts(start_dt + timedelta(seconds=29))
+    assert exchange._candle_is_final(last_candle, "1m", curr_candle, fetch_start) is False
+    fetch_start = dt_ts(start_dt + timedelta(seconds=30))
+    assert exchange._candle_is_final(last_candle, "1m", curr_candle, fetch_start) is True
+
+    # Polling for a pair with missing candles also stops after half a candle.
+    exchange._pairs_last_refresh_time[pair_key_1m] = dt_ts(start_dt - timedelta(hours=2))
+    time_machine.move_to(start_dt + timedelta(seconds=29), tick=False)
+    exchange._pairs_last_poll_time[pair_key_1m] = dt_ts()
+    assert exchange._now_is_time_to_refresh(pair, "1m", candle_type) is True
+
+    time_machine.move_to(start_dt + timedelta(seconds=31), tick=False)
+    exchange._pairs_last_poll_time[pair_key_1m] = dt_ts()
+    assert exchange._now_is_time_to_refresh(pair, "1m", candle_type) is False
+
 
 @pytest.mark.parametrize("candle_type", ["mark", "spot", "futures"])
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
