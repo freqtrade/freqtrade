@@ -2992,13 +2992,9 @@ class Exchange:
         since_ms: int | None = None,
     ) -> OHLCVResponse:
         """
-                Asynchronously get candle history data using fetch_ohlcv
-        <<<<<<< HEAD
-                :param candle_type: '', mark, index, premiumIndex, or funding_rate
-        =======
-                :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
-        >>>>>>> 888a13be1 (feat: update candle_type docstring)
-                returns tuple: (pair, timeframe, ohlcv_list)
+        Asynchronously get candle history data using fetch_ohlcv
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
+        returns tuple: (pair, timeframe, ohlcv_list)
         """
         try:
             # Fetch OHLCV asynchronously
