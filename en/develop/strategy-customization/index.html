@@ -3696,7 +3696,8 @@ and do not have access to data from other informative pairs. However, all inform
 <span class="sd">    * {column} - name of dataframe column.</span>
 <span class="sd">    * {timeframe} - timeframe of informative dataframe.</span>
 <span class="sd">    :param ffill: ffill dataframe after merging informative pair.</span>
-<span class="sd">    :param candle_type: '', spot, futures, mark, index, premiumIndex, or funding_rate.</span>
+<span class="sd">    :param candle_type: Candle type to use (spot, futures, funding_rate, ...)</span>
+<span class="sd">        None or '' (the default) resolves to the trading mode's candle type.</span>
 <span class="sd">        Attention: Availability for non-spot/futures candle-types across exchanges may vary.</span>
 <span class="sd">        funding_rate candles only contain the "funding_rate" column (open for historic reasons)</span>
 <span class="sd">        All other columns will be missing from this dataframe.</span>
