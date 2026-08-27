@@ -2611,9 +2611,32 @@ def test___now_is_time_to_refresh_no_new_candle(default_conf, mocker, exchange_n
     exchange._pairs_last_refresh_time[pair_key] = dt_ts(start_dt - timedelta(hours=2))
     assert exchange._now_is_time_to_refresh(pair, "5m", candle_type) is False
 
+    # The maximum poll interval never applies on short timeframes - the next candle is due first.
+    time_machine.move_to(start_dt + timedelta(minutes=4), tick=False)
+    assert exchange._now_is_time_to_refresh(pair, "5m", candle_type) is False
+
     # ... but do query once the next candle opened.
     time_machine.move_to(start_dt + timedelta(minutes=5), tick=False)
     assert exchange._now_is_time_to_refresh(pair, "5m", candle_type) is True
+
+    # On long timeframes, waiting for the next candle would leave an exchange that lags behind
+    # unnoticed for hours - re-check every `ohlcv_max_poll_interval_secs` instead.
+    candle_open = datetime(2023, 12, 1, tzinfo=UTC)
+    pair_key_1d = (pair, "1d", candle_type)
+    exchange._pairs_last_refresh_time[pair_key_1d] = dt_ts(candle_open - timedelta(days=3))
+    last_poll = candle_open + timedelta(seconds=30)
+    exchange._pairs_last_poll_time[pair_key_1d] = dt_ts(last_poll)
+    max_poll = timedelta(milliseconds=exchange._ohlcv_max_poll_interval_ms)
+
+    # Past the grace period, but within the maximum poll interval - nothing more to expect.
+    time_machine.move_to(last_poll + timedelta(milliseconds=1), tick=False)
+    assert exchange._now_is_time_to_refresh(pair, "1d", candle_type) is False
+    time_machine.move_to(last_poll + max_poll - timedelta(milliseconds=1), tick=False)
+    assert exchange._now_is_time_to_refresh(pair, "1d", candle_type) is False
+
+    # ... once it elapsed, query again without waiting for the next candle.
+    time_machine.move_to(last_poll + max_poll, tick=False)
+    assert exchange._now_is_time_to_refresh(pair, "1d", candle_type) is True
 
 
 @pytest.mark.parametrize("candle_type", ["mark", "spot", "futures"])
