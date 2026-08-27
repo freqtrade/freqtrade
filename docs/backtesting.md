@@ -527,7 +527,8 @@ To save time, by default backtest will reuse a cached result from within the las
 
 !!! Warning
     Caching is automatically disabled for open-ended timeranges (`--timerange 20210101-`), as freqtrade cannot ensure reliably that the underlying data didn't change. It can also use cached results where it shouldn't if the original backtest had missing data at the end, which was fixed by downloading more data.
-    In this instance, please use `--cache none` once to force a fresh backtest.
+    In this instance, please use `--cache none` once to force a fresh backtest.  
+    Caching will also silently skip changes to modules strategies import. In such a case, please use `--cache none` once to force a fresh backtest.
 
 ### Further backtest-result analysis
 
