@@ -22,6 +22,7 @@ class TestExchangeOnlineSetup(TypedDict):
     futures_pair: str | None
     candle_count_futures: int | None
     hasQuoteVolumeFutures: bool | None
+    open_interest_history_days: int | None
     leverage_tiers_public: bool
     leverage_in_spot_market: bool
     trades_lookback_hours: int
@@ -48,6 +49,8 @@ EXCHANGES: dict[str, TestExchangeOnlineSetup] = {
         "futures_pair": "BTC/USDT:USDT",
         "candle_count_futures": 499,
         "hasQuoteVolumeFutures": True,
+        # Binance rejects "startTime" older than 30 days for open interest history.
+        "open_interest_history_days": 30,
         "leverage_tiers_public": False,
         "leverage_in_spot_market": False,
         "trades_lookback_hours": 4,
@@ -353,6 +356,8 @@ EXCHANGES: dict[str, TestExchangeOnlineSetup] = {
         "futures_pair": "BTC/USDT:USDT",
         "candle_count_futures": 1999,
         "hasQuoteVolumeFutures": True,
+        # gate rejects a "from" older than 180 days ("from time exceeds 180-day limit").
+        "open_interest_history_days": 179,
         "leverage_tiers_public": True,
         "leverage_in_spot_market": True,
         "sample_order": [
@@ -471,6 +476,8 @@ EXCHANGES: dict[str, TestExchangeOnlineSetup] = {
         "futures": True,
         "futures_pair": "BTC/USDT:USDT",
         "hasQuoteVolumeFutures": False,
+        # okx raises "Illegal time range" beyond 30 days of open interest history.
+        "open_interest_history_days": 30,
         "leverage_tiers_public": True,
         "leverage_in_spot_market": True,
         "private_methods": ["fetch_accounts"],
@@ -484,6 +491,9 @@ EXCHANGES: dict[str, TestExchangeOnlineSetup] = {
         "candle_count": 1000,
         "futures_pair": "BTC/USDT:USDT",
         "futures": True,
+        # Bybit serves well over 2 years of open interest history - capped here to keep the
+        # runtime of this test in check, 200 candles per call add up quickly.
+        "open_interest_history_days": 180,
         "orderbook_max_entries": 50,
         "leverage_tiers_public": True,
         "leverage_in_spot_market": True,
