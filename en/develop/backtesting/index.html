@@ -2962,7 +2962,8 @@ It contains key metrics about the performance of your strategy on backtesting da
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>Caching is automatically disabled for open-ended timeranges (<code>--timerange 20210101-</code>), as freqtrade cannot ensure reliably that the underlying data didn't change. It can also use cached results where it shouldn't if the original backtest had missing data at the end, which was fixed by downloading more data.
-In this instance, please use <code>--cache none</code> once to force a fresh backtest.</p>
+In this instance, please use <code>--cache none</code> once to force a fresh backtest.<br />
+Caching will also silently skip changes to modules strategies import. In such a case, please use <code>--cache none</code> once to force a fresh backtest.</p>
 </div>
 <h3 id="further-backtest-result-analysis">Further backtest-result analysis<a class="headerlink" href="#further-backtest-result-analysis" title="Permanent link">&para;</a></h3>
 <p>To further analyze your backtest results, freqtrade will export the trades to file by default.
