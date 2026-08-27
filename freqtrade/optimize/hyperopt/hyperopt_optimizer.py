@@ -313,7 +313,7 @@ class HyperOptimizer:
             self.backtesting.strategy.max_open_trades = updated_max_open_trades
 
         with self.data_pickle_file.open("rb") as f:
-            processed = load(f, mmap_mode="r")
+            processed = load(f)  # Intentionally not using mmap mode (fd exhaustion)
         if self.analyze_per_epoch:
             # Data is not yet analyzed, rerun populate_indicators.
             processed = self.advise_and_trim(processed)
