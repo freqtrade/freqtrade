@@ -41,7 +41,7 @@ def get_candle_columns(candle_type: CandleType | str | None) -> list[str]:
     """
     Columns persisted on disk for this candle type - always starting with "date".
     Accepts plain strings and None (DataProvider and informative pairs use "" for spot).
-    :param candle_type: Any of the enum CandleType, its string value, or None
+    :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
     :return: List of column names
     """
     if not candle_type:
@@ -53,7 +53,7 @@ def get_candle_dtypes(candle_type: CandleType | str | None) -> dict[str, str]:
     """
     astype() mapping for the value columns of this candle type.
     Some exchanges return ints for values TA-LIB expects to be floats.
-    :param candle_type: Any of the enum CandleType, its string value, or None
+    :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
     :return: Mapping of column name to dtype, excluding "date"
     """
     return {col: "float" for col in get_candle_columns(candle_type)[1:]}
@@ -63,7 +63,7 @@ def get_candle_agg_dict(candle_type: CandleType | str | None) -> dict[str, str]:
     """
     groupby("date") aggregation used to eliminate duplicate candles.
     Single-value candle types have nothing to aggregate, so they take the first value.
-    :param candle_type: Any of the enum CandleType, its string value, or None
+    :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
     :return: Mapping of column name to aggregation function
     """
     columns = get_candle_columns(candle_type)
@@ -76,7 +76,7 @@ def candle_type_is_ohlcv(candle_type: CandleType | str | None) -> bool:
     """
     Whether this candle type uses the standard OHLCV column layout.
     Single-value types (e.g. funding rates) cannot be resampled or filled up like candles.
-    :param candle_type: Any of the enum CandleType, its string value, or None
+    :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
     :return: True if the candle type stores regular OHLCV columns
     """
     return get_candle_columns(candle_type) is OHLCV_COLUMNS

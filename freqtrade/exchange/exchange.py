@@ -514,7 +514,7 @@ class Exchange:
         Uses ohlcv_candle_limit_per_timeframe if the exchange has different limits
         per timeframe (e.g. bittrex), otherwise falls back to ohlcv_candle_limit
         :param timeframe: Timeframe to check
-        :param candle_type: Candle-type
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
         :param since_ms: Starting timestamp
         :return: Candle limit as integer
         """
@@ -2605,7 +2605,7 @@ class Exchange:
         :param pair: Pair to download
         :param timeframe: Timeframe to get data for
         :param since_ms: Timestamp in milliseconds to get history from
-        :param candle_type: '', mark, index, premiumIndex, or funding_rate
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
         :param is_new_pair: used by binance subclass to allow "fast" new pair downloading
         :param until_ms: Timestamp in milliseconds to get history up to
         :return: Dataframe with candle (OHLCV) data
@@ -2646,7 +2646,7 @@ class Exchange:
     ) -> OHLCVResponse:
         """
         Download historic ohlcv
-        :param candle_type: Any of the enum CandleType (must match trading mode!)
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
         """
 
         one_call = timeframe_to_msecs(timeframe) * self.ohlcv_candle_limit(
@@ -2992,9 +2992,13 @@ class Exchange:
         since_ms: int | None = None,
     ) -> OHLCVResponse:
         """
-        Asynchronously get candle history data using fetch_ohlcv
-        :param candle_type: '', mark, index, premiumIndex, or funding_rate
-        returns tuple: (pair, timeframe, ohlcv_list)
+                Asynchronously get candle history data using fetch_ohlcv
+        <<<<<<< HEAD
+                :param candle_type: '', mark, index, premiumIndex, or funding_rate
+        =======
+                :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
+        >>>>>>> 888a13be1 (feat: update candle_type docstring)
+                returns tuple: (pair, timeframe, ohlcv_list)
         """
         try:
             # Fetch OHLCV asynchronously

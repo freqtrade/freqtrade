@@ -68,7 +68,7 @@ def load_pair_history(
     :param startup_candles: Additional candles to load at the start of the period
     :param data_handler: Initialized data-handler to use.
                          Will be initialized from data_format if not set
-    :param candle_type: Any of the enum CandleType (must match trading mode!)
+    :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
     :return: DataFrame with ohlcv data, or empty DataFrame
     """
     data_handler = get_datahandler(datadir, data_format, data_handler)
@@ -108,7 +108,7 @@ def load_data(
     :param startup_candles: Additional candles to load at the start of the period
     :param fail_without_data: Raise OperationalException if no data is found.
     :param data_format: Data format which should be used. Defaults to json
-    :param candle_type: Any of the enum CandleType (must match trading mode!)
+    :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
     :return: dict(<pair>:<Dataframe>)
     """
     result: dict[str, DataFrame] = {}
@@ -162,7 +162,7 @@ def refresh_data(
     :param exchange: Exchange object
     :param data_format: dataformat to use
     :param timerange: Limit data to be loaded to this timerange
-    :param candle_type: Any of the enum CandleType (must match trading mode!)
+    :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
     """
     data_handler = get_datahandler(datadir, data_format)
     for pair in pairs:
@@ -255,7 +255,7 @@ def _download_pair_history(
     :param pair: pair to download
     :param timeframe: Timeframe (e.g "5m")
     :param timerange: range of time to download
-    :param candle_type: Any of the enum CandleType (must match trading mode!)
+    :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
     :param erase: Erase existing data
     :param pair_candles: Optional with "1 call" pair candles.
     :return: bool with success state

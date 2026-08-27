@@ -65,7 +65,7 @@ class Bitget(Exchange):
         * 1000 candles for up-to-date data
         * 200 candles for historic data (prior to a certain date)
         :param timeframe: Timeframe to check
-        :param candle_type: Candle-type
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
         :param since_ms: Starting timestamp
         :return: Candle limit as integer
         """

@@ -167,7 +167,7 @@ class Binance(Exchange):
         """
         Overwrite to introduce "fast new pair" functionality by detecting the pair's listing date
         Does not work for other exchanges, which don't return the earliest data when called with "0"
-        :param candle_type: Any of the enum CandleType (must match trading mode!)
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
         """
         if is_new_pair and candle_type in (CandleType.SPOT, CandleType.FUTURES, CandleType.MARK):
             with self._loop_lock:

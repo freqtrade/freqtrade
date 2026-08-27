@@ -30,7 +30,7 @@ def add_candle_aliases(dataframe: DataFrame, candle_type: CandleType | str | Non
     column available for compatibility reasons.
     Other candle-types will not need this, as they'll be introduced with correct columns.
     :param dataframe: Dataframe to add the alias to - modified in place
-    :param candle_type: Any of the enum CandleType (must match trading mode!)
+    :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
     :return: The same dataframe, for convenient chaining
     """
     if candle_type == CandleType.FUNDING_RATE and "funding_rate" in dataframe.columns:
@@ -56,7 +56,7 @@ def ohlcv_to_dataframe(
     :param fill_missing: fill up missing candles with 0 candles
                          (see ohlcv_fill_up_missing_data for details)
     :param drop_incomplete: Drop the last candle of the dataframe, assuming it's incomplete
-    :param candle_type: Any of the enum CandleType (must match trading mode!)
+    :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
     :return: DataFrame
     """
     logger.debug(f"Converting candle (OHLCV) data to dataframe for pair {pair}.")
@@ -104,7 +104,7 @@ def clean_ohlcv_dataframe(
     :param fill_missing: fill up missing candles with 0 candles
                          (see ohlcv_fill_up_missing_data for details)
     :param drop_incomplete: Drop the last candle of the dataframe, assuming it's incomplete
-    :param candle_type: Any of the enum CandleType
+    :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
     :return: DataFrame
     """
     # group by index and aggregate results to eliminate duplicate ticks

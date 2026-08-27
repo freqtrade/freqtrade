@@ -83,7 +83,7 @@ class IDataHandler(ABC):
         :param pair: Pair - used to generate filename
         :param timeframe: Timeframe - used to generate filename
         :param data: Dataframe containing OHLCV data
-        :param candle_type: Any of the enum CandleType (must match trading mode!)
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
         :return: None
         """
 
@@ -94,7 +94,7 @@ class IDataHandler(ABC):
         Returns the min and max timestamp for the given pair and timeframe.
         :param pair: Pair to get min/max for
         :param timeframe: Timeframe to get min/max for
-        :param candle_type: Any of the enum CandleType (must match trading mode!)
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
         :return: (min, max, len)
         """
         df = self._ohlcv_load(pair, timeframe, None, candle_type)
@@ -119,7 +119,7 @@ class IDataHandler(ABC):
         :param timerange: Limit data to be loaded to this timerange.
                         Optionally implemented by subclasses to avoid loading
                         all data where possible.
-        :param candle_type: Any of the enum CandleType (must match trading mode!)
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
         :return: DataFrame with ohlcv data, or empty DataFrame
         """
 
@@ -127,7 +127,7 @@ class IDataHandler(ABC):
     def _empty_ohlcv_df(cls, candle_type: CandleType) -> DataFrame:
         """
         Empty dataframe carrying the canonical columns for this candle type.
-        :param candle_type: Any of the enum CandleType (must match trading mode!)
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
         :return: Empty DataFrame
         """
         return DataFrame(columns=get_candle_columns(candle_type))
@@ -142,7 +142,7 @@ class IDataHandler(ABC):
         rewritten in the current layout the next time they are stored.
         :param df: Dataframe as read from disk
         :param pair: Pair the data is for - used for logging
-        :param candle_type: Any of the enum CandleType
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
         :return: DataFrame with the canonical columns for this candle type
         :raises ValueError: if the layout cannot be interpreted
         """
@@ -165,7 +165,7 @@ class IDataHandler(ABC):
         Width-based variant of _normalize_columns, for stores that don't persist column names.
         :param df: Dataframe as read from disk
         :param pair: Pair the data is for - used for logging
-        :param candle_type: Any of the enum CandleType
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
         :return: DataFrame with the canonical columns for this candle type
         :raises ValueError: if the width matches neither the current nor the legacy layout
         """
@@ -187,7 +187,7 @@ class IDataHandler(ABC):
         Remove data for this pair
         :param pair: Delete data for this pair.
         :param timeframe: Timeframe (e.g. "5m")
-        :param candle_type: Any of the enum CandleType (must match trading mode!)
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
         :return: True when deleted, false if file did not exist.
         """
         filename = self._pair_data_filename(self._datadir, pair, timeframe, candle_type)
@@ -205,7 +205,7 @@ class IDataHandler(ABC):
         :param pair: Pair
         :param timeframe: Timeframe this ohlcv data is for
         :param data: Data to append.
-        :param candle_type: Any of the enum CandleType (must match trading mode!)
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
         """
 
     @classmethod
@@ -423,7 +423,7 @@ class IDataHandler(ABC):
         :param drop_incomplete: Drop last candle assuming it may be incomplete.
         :param startup_candles: Additional candles to load at the start of the period
         :param warn_no_data: Log a warning message when no data is found
-        :param candle_type: Any of the enum CandleType (must match trading mode!)
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
         :return: DataFrame with ohlcv data, or empty DataFrame
         """
         # Fix startup period
