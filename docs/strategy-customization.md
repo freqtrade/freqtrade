@@ -624,7 +624,9 @@ When hyperopting, use of the hyperoptable parameter `.value` attribute is not su
             None or '' (the default) resolves to the trading mode's candle type.
             Attention: Availability for non-spot/futures candle-types across exchanges may vary.
             funding_rate candles only contain the "funding_rate" column (open for historic reasons)
-            All other columns will be missing from this dataframe.
+            open_interest candles only contain the "open_interest_amount" and
+            "open_interest_value" columns.
+            All other columns will be missing from these dataframes.
         :param cache: Cache populated indicators in dry/live mode while the latest informative candle
                     remains unchanged. Entries expire after two effective informative timeframes
                     without an update. Disable for methods that use external state, have side effects,
@@ -1016,6 +1018,37 @@ Use `ffill=False` to keep the timestamps without funding empty (absolutely neces
     Funding rates used to be treated as regular candles, with the rate in `open` and `high`, `low`, `close` and `volume` all set to 0.
     `open` is still available as an alias of `funding_rate`, but the unused columns are gone.
     Please switch to `funding_rate` - the `open` alias is deprecated and will be removed in a future version.
+
+### Open Interest
+
+Historic open interest is available for futures markets on exchanges that support it, and has to be downloaded explicitly
+(see [open interest data](data-download.md#open-interest-data)).
+The dataframe contains a `date`, an `open_interest_amount` (base currency) and an `open_interest_value` (quote currency) column:
+
+``` python
+open_interest = self.dp.get_pair_dataframe(
+    pair=metadata['pair'], timeframe='1h', candle_type="open_interest"
+)
+dataframe['open_interest'] = open_interest['open_interest_amount']
+```
+
+The same works via the [informative decorator](#informative-pairs-decorator-informative), which merges the data onto your dataframe for you:
+
+``` python
+@informative('1h', candle_type='open_interest')
+def populate_indicators_oi_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    dataframe['oi_change'] = dataframe['open_interest_amount'].pct_change()
+    return dataframe
+```
+
+!!! Warning "Check which column carries data"
+    Exchanges report open interest in the base currency, the quote currency, or both.
+    Bybit for example leaves `open_interest_value` as `NaN` on linear markets.
+    Both columns are always present - an all-`NaN` column means the exchange doesn't report that side, not that the download failed.
+
+!!! Note "Exchange support is checked on startup"
+    Not every exchange provides open interest history.
+    If your strategy requests a candle type the exchange cannot serve - via `@informative` or via [`informative_pairs()`](#get-data-for-non-tradeable-pairs) - the bot refuses to start, rather than running your strategy against a permanently empty dataframe.
 
 ### Send Notification
 
