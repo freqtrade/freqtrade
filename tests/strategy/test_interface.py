@@ -33,87 +33,118 @@ _STRATEGY = StrategyTestV3(config={})
 _STRATEGY.dp = DataProvider({}, None, None)
 
 
-def test_returns_latest_signal(ohlcv_history):
-    ohlcv_history.loc[1, "date"] = dt_now_no_micro()
-    # Take a copy to correctly modify the call
-    mocked_history = ohlcv_history.copy()
-    mocked_history["enter_long"] = 0
-    mocked_history["exit_long"] = 0
-    mocked_history["enter_short"] = 0
-    mocked_history["exit_short"] = 0
-    # Set tags in lines that don't matter to test nan in the sell line
-    mocked_history.loc[0, "enter_tag"] = "wrong_line"
-    mocked_history.loc[0, "exit_tag"] = "wrong_line"
-    mocked_history.loc[1, "exit_long"] = 1
+@pytest.mark.parametrize("disable_dataframe_checks", [False, True])
+def test_returns_latest_signal(ohlcv_history, disable_dataframe_checks):
+    _STRATEGY.disable_dataframe_checks = disable_dataframe_checks
+    # disable_dataframe_checks=False (default): the latest candle is the last row by position.
+    if disable_dataframe_checks:
+        last_idx = 1
+    else:
+        last_idx = ohlcv_history.index[-1]
 
-    assert _STRATEGY.get_entry_signal("ETH/BTC", "5m", mocked_history) == (None, None)
-    assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history) == (False, True, None)
-    assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history, True) == (False, False, None)
-    mocked_history.loc[1, "exit_long"] = 0
-    mocked_history.loc[1, "enter_long"] = 1
+    try:
+        ohlcv_history.loc[last_idx, "date"] = dt_now_no_micro()
+        # Take a copy to correctly modify the call
+        mocked_history = ohlcv_history.copy()
+        mocked_history["enter_long"] = 0
+        mocked_history["exit_long"] = 0
+        mocked_history["enter_short"] = 0
+        mocked_history["exit_short"] = 0
+        # Set tags in lines that don't matter to test nan in the sell line
+        mocked_history.loc[0, "enter_tag"] = "wrong_line"
+        mocked_history.loc[0, "exit_tag"] = "wrong_line"
+        mocked_history.loc[last_idx, "exit_long"] = 1
 
-    assert _STRATEGY.get_entry_signal("ETH/BTC", "5m", mocked_history) == (
-        SignalDirection.LONG,
-        None,
-    )
-    assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history) == (True, False, None)
-    assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history, True) == (False, False, None)
-    mocked_history.loc[1, "exit_long"] = 0
-    mocked_history.loc[1, "enter_long"] = 0
+        assert _STRATEGY.get_entry_signal("ETH/BTC", "5m", mocked_history) == (None, None)
+        assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history) == (False, True, None)
+        assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history, True) == (
+            False,
+            False,
+            None,
+        )
+        mocked_history.loc[last_idx, "exit_long"] = 0
+        mocked_history.loc[last_idx, "enter_long"] = 1
 
-    assert _STRATEGY.get_entry_signal("ETH/BTC", "5m", mocked_history) == (None, None)
-    assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history) == (False, False, None)
-    assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history, True) == (False, False, None)
-    mocked_history.loc[1, "exit_long"] = 0
-    mocked_history.loc[1, "enter_long"] = 1
-    mocked_history.loc[1, "enter_tag"] = "buy_signal_01"
+        assert _STRATEGY.get_entry_signal("ETH/BTC", "5m", mocked_history) == (
+            SignalDirection.LONG,
+            None,
+        )
+        assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history) == (True, False, None)
+        assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history, True) == (
+            False,
+            False,
+            None,
+        )
+        mocked_history.loc[last_idx, "exit_long"] = 0
+        mocked_history.loc[last_idx, "enter_long"] = 0
 
-    assert _STRATEGY.get_entry_signal("ETH/BTC", "5m", mocked_history) == (
-        SignalDirection.LONG,
-        "buy_signal_01",
-    )
-    assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history) == (True, False, None)
-    assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history, True) == (False, False, None)
+        assert _STRATEGY.get_entry_signal("ETH/BTC", "5m", mocked_history) == (None, None)
+        assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history) == (False, False, None)
+        assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history, True) == (
+            False,
+            False,
+            None,
+        )
+        mocked_history.loc[last_idx, "exit_long"] = 0
+        mocked_history.loc[last_idx, "enter_long"] = 1
+        mocked_history.loc[last_idx, "enter_tag"] = "buy_signal_01"
 
-    mocked_history.loc[1, "exit_long"] = 0
-    mocked_history.loc[1, "enter_long"] = 0
-    mocked_history.loc[1, "enter_short"] = 1
-    mocked_history.loc[1, "exit_short"] = 0
-    mocked_history.loc[1, "enter_tag"] = "sell_signal_01"
+        assert _STRATEGY.get_entry_signal("ETH/BTC", "5m", mocked_history) == (
+            SignalDirection.LONG,
+            "buy_signal_01",
+        )
+        assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history) == (True, False, None)
+        assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history, True) == (
+            False,
+            False,
+            None,
+        )
 
-    # Don't provide short signal while in spot mode
-    assert _STRATEGY.get_entry_signal("ETH/BTC", "5m", mocked_history) == (None, None)
+        mocked_history.loc[last_idx, "exit_long"] = 0
+        mocked_history.loc[last_idx, "enter_long"] = 0
+        mocked_history.loc[last_idx, "enter_short"] = 1
+        mocked_history.loc[last_idx, "exit_short"] = 0
+        mocked_history.loc[last_idx, "enter_tag"] = "sell_signal_01"
 
-    _STRATEGY.config["trading_mode"] = "futures"
-    # Short signal gets ignored as can_short is not set.
-    assert _STRATEGY.get_entry_signal("ETH/BTC", "5m", mocked_history) == (None, None)
+        # Don't provide short signal while in spot mode
+        assert _STRATEGY.get_entry_signal("ETH/BTC", "5m", mocked_history) == (None, None)
 
-    _STRATEGY.can_short = True
+        _STRATEGY.config["trading_mode"] = "futures"
+        # Short signal gets ignored as can_short is not set.
+        assert _STRATEGY.get_entry_signal("ETH/BTC", "5m", mocked_history) == (None, None)
 
-    assert _STRATEGY.get_entry_signal("ETH/BTC", "5m", mocked_history) == (
-        SignalDirection.SHORT,
-        "sell_signal_01",
-    )
-    assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history) == (False, False, None)
-    assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history, True) == (True, False, None)
+        _STRATEGY.can_short = True
 
-    mocked_history.loc[1, "enter_short"] = 0
-    mocked_history.loc[1, "exit_short"] = 1
-    mocked_history.loc[1, "exit_tag"] = "sell_signal_02"
-    assert _STRATEGY.get_entry_signal("ETH/BTC", "5m", mocked_history) == (None, None)
-    assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history) == (
-        False,
-        False,
-        "sell_signal_02",
-    )
-    assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history, True) == (
-        False,
-        True,
-        "sell_signal_02",
-    )
+        assert _STRATEGY.get_entry_signal("ETH/BTC", "5m", mocked_history) == (
+            SignalDirection.SHORT,
+            "sell_signal_01",
+        )
+        assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history) == (False, False, None)
+        assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history, True) == (
+            True,
+            False,
+            None,
+        )
 
-    _STRATEGY.can_short = False
-    _STRATEGY.config["trading_mode"] = "spot"
+        mocked_history.loc[last_idx, "enter_short"] = 0
+        mocked_history.loc[last_idx, "exit_short"] = 1
+        mocked_history.loc[last_idx, "exit_tag"] = "sell_signal_02"
+        assert _STRATEGY.get_entry_signal("ETH/BTC", "5m", mocked_history) == (None, None)
+        assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history) == (
+            False,
+            False,
+            "sell_signal_02",
+        )
+        assert _STRATEGY.get_exit_signal("ETH/BTC", "5m", mocked_history, True) == (
+            False,
+            True,
+            "sell_signal_02",
+        )
+
+        _STRATEGY.can_short = False
+        _STRATEGY.config["trading_mode"] = "spot"
+    finally:
+        _STRATEGY.disable_dataframe_checks = False
 
 
 def test_analyze_pair_empty(mocker, caplog, ohlcv_history):
@@ -158,44 +189,62 @@ def test_get_signal_exception_valueerror(mocker, caplog, ohlcv_history):
     assert log_has_re(r"Strategy caused the following exception: ValueError\('xyz'\).*", caplog)
 
 
-def test_get_signal_old_dataframe(default_conf, mocker, caplog, ohlcv_history):
-    # default_conf defines a 5m interval. we check interval * 2 + 5m
-    # this is necessary as the last candle is removed (partial candles) by default
-    ohlcv_history.loc[1, "date"] = dt_now_no_micro() - timedelta(minutes=16)
-    # Take a copy to correctly modify the call
-    mocked_history = ohlcv_history.copy()
-    mocked_history["exit_long"] = 0
-    mocked_history["enter_long"] = 0
-    mocked_history.loc[1, "enter_long"] = 1
+@pytest.mark.parametrize("disable_dataframe_checks", [False, True])
+def test_get_signal_old_dataframe(
+    default_conf, mocker, caplog, ohlcv_history, disable_dataframe_checks
+):
+    _STRATEGY.disable_dataframe_checks = disable_dataframe_checks
+    # disable_dataframe_checks=False (default): the latest candle is the last row by position.
+    last_idx = 1 if disable_dataframe_checks else ohlcv_history.index[-1]
+    try:
+        # default_conf defines a 5m interval. we check interval * 2 + 5m
+        # this is necessary as the last candle is removed (partial candles) by default
+        ohlcv_history.loc[last_idx, "date"] = dt_now_no_micro() - timedelta(minutes=16)
+        # Take a copy to correctly modify the call
+        mocked_history = ohlcv_history.copy()
+        mocked_history["exit_long"] = 0
+        mocked_history["enter_long"] = 0
+        mocked_history.loc[last_idx, "enter_long"] = 1
 
-    caplog.set_level(logging.INFO)
-    mocker.patch("freqtrade.strategy.interface.StrategyResultValidator.assert_df")
+        caplog.set_level(logging.INFO)
+        mocker.patch("freqtrade.strategy.interface.StrategyResultValidator.assert_df")
 
-    assert (None, None) == _STRATEGY.get_latest_candle(
-        "xyz", default_conf["timeframe"], mocked_history
-    )
-    assert log_has("Outdated history for pair xyz. Last tick is 16 minutes old", caplog)
+        assert (None, None) == _STRATEGY.get_latest_candle(
+            "xyz", default_conf["timeframe"], mocked_history
+        )
+        assert log_has("Outdated history for pair xyz. Last tick is 16 minutes old", caplog)
+    finally:
+        _STRATEGY.disable_dataframe_checks = False
 
 
-def test_get_signal_no_sell_column(default_conf, mocker, caplog, ohlcv_history):
-    # default_conf defines a 5m interval. we check interval * 2 + 5m
-    # this is necessary as the last candle is removed (partial candles) by default
-    ohlcv_history.loc[1, "date"] = dt_now_no_micro()
-    # Take a copy to correctly modify the call
-    mocked_history = ohlcv_history.copy()
-    # Intentionally don't set sell column
-    # mocked_history['sell'] = 0
-    mocked_history["enter_long"] = 0
-    mocked_history.loc[1, "enter_long"] = 1
+@pytest.mark.parametrize("disable_dataframe_checks", [False, True])
+def test_get_signal_no_sell_column(
+    default_conf, mocker, caplog, ohlcv_history, disable_dataframe_checks
+):
+    _STRATEGY.disable_dataframe_checks = disable_dataframe_checks
+    # disable_dataframe_checks=False (default): the latest candle is the last row by position.
+    last_idx = 1 if disable_dataframe_checks else ohlcv_history.index[-1]
+    try:
+        # default_conf defines a 5m interval. we check interval * 2 + 5m
+        # this is necessary as the last candle is removed (partial candles) by default
+        ohlcv_history.loc[last_idx, "date"] = dt_now_no_micro()
+        # Take a copy to correctly modify the call
+        mocked_history = ohlcv_history.copy()
+        # Intentionally don't set sell column
+        # mocked_history['sell'] = 0
+        mocked_history["enter_long"] = 0
+        mocked_history.loc[last_idx, "enter_long"] = 1
 
-    caplog.set_level(logging.INFO)
-    mocker.patch(
-        "freqtrade.strategy.interface.StrategyResultValidator.assert_df",
-    )
+        caplog.set_level(logging.INFO)
+        mocker.patch(
+            "freqtrade.strategy.interface.StrategyResultValidator.assert_df",
+        )
 
-    assert (SignalDirection.LONG, None) == _STRATEGY.get_entry_signal(
-        "xyz", default_conf["timeframe"], mocked_history
-    )
+        assert (SignalDirection.LONG, None) == _STRATEGY.get_entry_signal(
+            "xyz", default_conf["timeframe"], mocked_history
+        )
+    finally:
+        _STRATEGY.disable_dataframe_checks = False
 
 
 def test_ignore_expired_candle(default_conf):
@@ -301,13 +350,17 @@ def test_freqai_not_initialized(default_conf) -> None:
 
 def test_advise_all_indicators_copy(mocker, default_conf, testdatadir) -> None:
     strategy = StrategyResolver.load_strategy(default_conf)
-    aimock = mocker.patch("freqtrade.strategy.interface.IStrategy.advise_indicators")
+    # Echo the (copied) dataframe back unmodified, so assert_df's length/close/date checks pass.
+    aimock = mocker.patch(
+        "freqtrade.strategy.interface.IStrategy.advise_indicators",
+        side_effect=lambda dataframe, metadata: dataframe,
+    )
     timerange = TimeRange.parse_timerange("1510694220-1510700340")
     data = load_data(testdatadir, "1m", ["UNITTEST/BTC"], timerange=timerange, fill_up_missing=True)
     strategy.advise_all_indicators(data)
     assert aimock.call_count == 1
     # Ensure that a copy of the dataframe is passed to advice_indicators
-    assert aimock.call_args_list[0][0][0] is not data
+    assert aimock.call_args.args[0] is not data["UNITTEST/BTC"]
 
 
 def test_min_roi_reached(default_conf, fee) -> None:
