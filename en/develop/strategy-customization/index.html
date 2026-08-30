@@ -970,6 +970,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#open-interest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open Interest
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#send-notification" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2948,6 +2959,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#open-interest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open Interest
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#send-notification" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3700,7 +3722,9 @@ and do not have access to data from other informative pairs. However, all inform
 <span class="sd">        None or '' (the default) resolves to the trading mode's candle type.</span>
 <span class="sd">        Attention: Availability for non-spot/futures candle-types across exchanges may vary.</span>
 <span class="sd">        funding_rate candles only contain the "funding_rate" column (open for historic reasons)</span>
-<span class="sd">        All other columns will be missing from this dataframe.</span>
+<span class="sd">        open_interest candles only contain the "open_interest_amount" and</span>
+<span class="sd">        "open_interest_value" columns.</span>
+<span class="sd">        All other columns will be missing from these dataframes.</span>
 <span class="sd">    :param cache: Cache populated indicators in dry/live mode while the latest informative candle</span>
 <span class="sd">                remains unchanged. Entries expire after two effective informative timeframes</span>
 <span class="sd">                without an update. Disable for methods that use external state, have side effects,</span>
@@ -4035,6 +4059,32 @@ They must therefore be merged onto your dataframe by date - assigning the column
 <p>Funding rates used to be treated as regular candles, with the rate in <code>open</code> and <code>high</code>, <code>low</code>, <code>close</code> and <code>volume</code> all set to 0.
 <code>open</code> is still available as an alias of <code>funding_rate</code>, but the unused columns are gone.
 Please switch to <code>funding_rate</code> - the <code>open</code> alias is deprecated and will be removed in a future version.</p>
+</div>
+<h3 id="open-interest">Open Interest<a class="headerlink" href="#open-interest" title="Permanent link">&para;</a></h3>
+<p>Historic open interest is available for futures markets on exchanges that support it, and has to be downloaded explicitly
+(see <a href="../data-download/#open-interest-data">open interest data</a>).
+The dataframe contains a <code>date</code>, an <code>open_interest_amount</code> (base currency) and an <code>open_interest_value</code> (quote currency) column:</p>
+<div class="highlight"><pre><span></span><code><span class="n">open_interest</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp</span><span class="o">.</span><span class="n">get_pair_dataframe</span><span class="p">(</span>
+    <span class="n">pair</span><span class="o">=</span><span class="n">metadata</span><span class="p">[</span><span class="s1">'pair'</span><span class="p">],</span> <span class="n">timeframe</span><span class="o">=</span><span class="s1">'1h'</span><span class="p">,</span> <span class="n">candle_type</span><span class="o">=</span><span class="s2">"open_interest"</span>
+<span class="p">)</span>
+<span class="n">dataframe</span><span class="p">[</span><span class="s1">'open_interest'</span><span class="p">]</span> <span class="o">=</span> <span class="n">open_interest</span><span class="p">[</span><span class="s1">'open_interest_amount'</span><span class="p">]</span>
+</code></pre></div>
+<p>The same works via the <a href="#informative-pairs-decorator-informative">informative decorator</a>, which merges the data onto your dataframe for you:</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@informative</span><span class="p">(</span><span class="s1">'1h'</span><span class="p">,</span> <span class="n">candle_type</span><span class="o">=</span><span class="s1">'open_interest'</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">populate_indicators_oi_1h</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s1">'oi_change'</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s1">'open_interest_amount'</span><span class="p">]</span><span class="o">.</span><span class="n">pct_change</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">dataframe</span>
+</code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Check which column carries data</p>
+<p>Exchanges report open interest in the base currency, the quote currency, or both.
+Bybit for example leaves <code>open_interest_value</code> as <code>NaN</code> on linear markets.
+Both columns are always present - an all-<code>NaN</code> column means the exchange doesn't report that side, not that the download failed.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Exchange support is checked on startup</p>
+<p>Not every exchange provides open interest history.
+If your strategy requests a candle type the exchange cannot serve - via <code>@informative</code> or via <a href="#get-data-for-non-tradeable-pairs"><code>informative_pairs()</code></a> - the bot refuses to start, rather than running your strategy against a permanently empty dataframe.</p>
 </div>
 <h3 id="send-notification">Send Notification<a class="headerlink" href="#send-notification" title="Permanent link">&para;</a></h3>
 <p>The dataprovider <code>.send_msg()</code> function allows you to send custom notifications from your strategy.

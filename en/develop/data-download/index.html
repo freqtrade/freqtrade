@@ -849,6 +849,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#open-interest-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open interest data
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#download-additional-data-before-the-current-timerange" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2110,6 +2121,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#open-interest-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open interest data
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#download-additional-data-before-the-current-timerange" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2348,7 +2370,7 @@ If you are updating existing data after inserting new pairs that you have no dat
 <span class="go">                               [--data-format-ohlcv {json,jsongz,feather,parquet}]</span>
 <span class="go">                               [--data-format-trades {json,jsongz,feather,parquet}]</span>
 <span class="go">                               [--trading-mode {spot,margin,futures}]</span>
-<span class="go">                               [--candle-types {spot,futures,mark,index,premiumIndex,funding_rate} [{spot,futures,mark,index,premiumIndex,funding_rate} ...]]</span>
+<span class="go">                               [--candle-types {spot,futures,mark,index,premiumIndex,funding_rate,open_interest} [{spot,futures,mark,index,premiumIndex,funding_rate,open_interest} ...]]</span>
 <span class="go">                               [--prepend]</span>
 
 <span class="go">options:</span>
@@ -2390,7 +2412,7 @@ If you are updating existing data after inserting new pairs that you have no dat
 <span class="go">                        `feather`).</span>
 <span class="go">  --trading-mode, --tradingmode {spot,margin,futures}</span>
 <span class="go">                        Select Trading mode</span>
-<span class="go">  --candle-types {spot,futures,mark,index,premiumIndex,funding_rate} [{spot,futures,mark,index,premiumIndex,funding_rate} ...]</span>
+<span class="go">  --candle-types {spot,futures,mark,index,premiumIndex,funding_rate,open_interest} [{spot,futures,mark,index,premiumIndex,funding_rate,open_interest} ...]</span>
 <span class="go">                        Select candle type to download. Defaults to the</span>
 <span class="go">                        necessary candles for the selected trading mode (e.g.</span>
 <span class="go">                        'spot' or ('futures', 'funding_rate' and 'mark') for</span>
@@ -2451,6 +2473,7 @@ To also download data for inactive (delisted) pairs, add <code>--include-inactiv
 <li>To use exchange, timeframe and list of pairs as defined in your configuration file, use the <code>-c/--config</code> option. With this, the script uses the whitelist defined in the config as the list of currency pairs to download data for and does not require the pairs.json file. You can combine <code>-c/--config</code> with most other options.</li>
 <li>When downloading futures data (<code>--trading-mode futures</code> or a configuration specifying futures mode), freqtrade will automatically download the necessary candle types (e.g. <code>mark</code> and <code>funding_rate</code> candles) unless specified otherwise via <code>--candle-types</code>.</li>
 <li>Funding rate data is stored with a <code>date</code> and a <code>funding_rate</code> column - unlike the other candle types, which use the regular OHLCV columns. Data downloaded with an older version is read transparently and rewritten in the current layout the next time it's stored, so no manual migration is needed.</li>
+<li>Open interest data is not downloaded by default - request it explicitly with <code>--candle-types open_interest</code>. It is stored with a <code>date</code>, an <code>open_interest_amount</code> and an <code>open_interest_value</code> column, and is only available for futures markets on exchanges that support it.</li>
 </ul>
 <details class="note">
 <summary>Permission denied errors</summary>
@@ -2461,6 +2484,48 @@ To also download data for inactive (delisted) pairs, add <code>--include-inactiv
 <div class="highlight"><pre><span></span><code>sudo chown -R $UID:$GID user_data
 </code></pre></div>
 </details>
+<h3 id="open-interest-data">Open interest data<a class="headerlink" href="#open-interest-data" title="Permanent link">&para;</a></h3>
+<p>Open interest - the total number of outstanding derivative contracts - is available for futures markets on exchanges that support it (e.g. Binance, Bybit, Gate, OKX).
+It is not part of the default download, as it's not needed to run a bot - so it has to be downloaded explicitly with <code>--candle-types open_interest</code>.</p>
+<div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>download-data<span class="w"> </span>--exchange<span class="w"> </span>binance<span class="w"> </span>--pairs<span class="w"> </span>BTC/USDT:USDT<span class="w"> </span>--timeframes<span class="w"> </span>1h<span class="w"> </span>--trading-mode<span class="w"> </span>futures<span class="w"> </span>--candle-types<span class="w"> </span>open_interest
+</code></pre></div>
+<p>Unlike funding rates - which are always downloaded at the exchange's funding rate timeframe - open interest is downloaded for the timeframes you pass via <code>--timeframes</code>.
+Which timeframes an exchange offers for open interest varies, and is usually a smaller set than for regular candles.</p>
+<p>The resulting dataframe has three columns:</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>date</code></td>
+<td>Candle start date</td>
+</tr>
+<tr>
+<td><code>open_interest_amount</code></td>
+<td>Open interest denominated in the base currency</td>
+</tr>
+<tr>
+<td><code>open_interest_value</code></td>
+<td>Open interest denominated in the quote currency</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">Not every exchange reports both columns</p>
+<p>Exchanges report open interest in the base currency, the quote currency, or both - and which one can depend on the market type.
+Bybit for example only reports <code>open_interest_amount</code> on linear markets, leaving <code>open_interest_value</code> as <code>NaN</code> for the whole dataframe.
+Check which of the two columns actually carries data for your exchange and pairs before relying on it in a strategy.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Limited history</p>
+<p>Exchanges keep far less open interest history than candle history - Binance for example only serves the last 30 days.
+Downloads reaching further back will silently return no data for the missing period.</p>
+</div>
+<p>Exchanges that don't provide open interest history reject the download with an explicit error, and a running bot whose strategy requests open interest on such an exchange refuses to start.</p>
 <h3 id="download-additional-data-before-the-current-timerange">Download additional data before the current timerange<a class="headerlink" href="#download-additional-data-before-the-current-timerange" title="Permanent link">&para;</a></h3>
 <p>Assuming you downloaded all data from 2022 (<code>--timerange 20220101-</code>) - but you'd now like to also backtest with earlier data.
 You can do so by using the <code>--prepend</code> flag, combined with <code>--timerange</code> - specifying an end-date.</p>
@@ -2574,7 +2639,7 @@ You can force the usage of this file via <code>--pairs-file pairs.json</code> - 
 <span class="go">                              [--erase] [--exchange EXCHANGE]</span>
 <span class="go">                              [-t TIMEFRAMES [TIMEFRAMES ...]]</span>
 <span class="go">                              [--trading-mode {spot,margin,futures}]</span>
-<span class="go">                              [--candle-types {spot,futures,mark,index,premiumIndex,funding_rate} [{spot,futures,mark,index,premiumIndex,funding_rate} ...]]</span>
+<span class="go">                              [--candle-types {spot,futures,mark,index,premiumIndex,funding_rate,open_interest} [{spot,futures,mark,index,premiumIndex,funding_rate,open_interest} ...]]</span>
 
 <span class="go">options:</span>
 <span class="go">  -h, --help            show this help message and exit</span>
@@ -2593,7 +2658,7 @@ You can force the usage of this file via <code>--pairs-file pairs.json</code> - 
 <span class="go">                        list. Default: `1m 5m`.</span>
 <span class="go">  --trading-mode, --tradingmode {spot,margin,futures}</span>
 <span class="go">                        Select Trading mode</span>
-<span class="go">  --candle-types {spot,futures,mark,index,premiumIndex,funding_rate} [{spot,futures,mark,index,premiumIndex,funding_rate} ...]</span>
+<span class="go">  --candle-types {spot,futures,mark,index,premiumIndex,funding_rate,open_interest} [{spot,futures,mark,index,premiumIndex,funding_rate,open_interest} ...]</span>
 <span class="go">                        Select candle type to convert. Defaults to all</span>
 <span class="go">                        available types.</span>
 
