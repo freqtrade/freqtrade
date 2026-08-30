@@ -11,7 +11,7 @@ usage: freqtrade download-data [-h] [-v] [--no-color] [--logfile FILE] [-V]
                                [--data-format-ohlcv {json,jsongz,feather,parquet}]
                                [--data-format-trades {json,jsongz,feather,parquet}]
                                [--trading-mode {spot,margin,futures}]
-                               [--candle-types {spot,futures,mark,index,premiumIndex,funding_rate} [{spot,futures,mark,index,premiumIndex,funding_rate} ...]]
+                               [--candle-types {spot,futures,mark,index,premiumIndex,funding_rate,open_interest} [{spot,futures,mark,index,premiumIndex,funding_rate,open_interest} ...]]
                                [--prepend]
 
 options:
@@ -53,7 +53,7 @@ options:
                         `feather`).
   --trading-mode, --tradingmode {spot,margin,futures}
                         Select Trading mode
-  --candle-types {spot,futures,mark,index,premiumIndex,funding_rate} [{spot,futures,mark,index,premiumIndex,funding_rate} ...]
+  --candle-types {spot,futures,mark,index,premiumIndex,funding_rate,open_interest} [{spot,futures,mark,index,premiumIndex,funding_rate,open_interest} ...]
                         Select candle type to download. Defaults to the
                         necessary candles for the selected trading mode (e.g.
                         'spot' or ('futures', 'funding_rate' and 'mark') for

@@ -4,7 +4,7 @@ from time import monotonic
 from typing import Any, NoReturn
 
 from cachetools import TLRUCache
-from pandas import DataFrame
+from pandas import DataFrame, isna
 
 from freqtrade.candle_columns import get_candle_columns
 from freqtrade.enums import CandleType
@@ -108,7 +108,9 @@ def informative(
         None or '' (the default) resolves to the trading mode's candle type.
         Attention: Availability for non-spot/futures candle-types across exchanges may vary.
            funding_rate candles only contain the "funding_rate" column (open for historic reasons)
-           All other columns will be missing from this dataframe.
+           open_interest candles only contain the "open_interest_amount" and
+           "open_interest_value" columns.
+           All other columns will be missing from these dataframes.
     :param cache: Cache populated indicators in dry/live mode while the latest informative candle
                   remains unchanged. Entries expire after two effective informative timeframes
                   without an update. Disable for methods that use external state, have side effects,
@@ -153,14 +155,19 @@ def _format_pair_name(config, pair: str, market: dict[str, Any] | None = None) -
     ).upper()
 
 
+# NaN never compares equal to itself, so a NaN anywhere in the fingerprint would make every
+# lookup a miss. Some candle types have legitimately empty columns - open interest is reported
+# in the base currency, the quote currency, or both, depending on exchange and market - so a
+# permanently NaN column must not silently disable the cache.
+_MISSING = object()
+
+
 def _informative_dataframe_fingerprint(
     dataframe: DataFrame, candle_type: CandleType | None
 ) -> tuple[Any, ...]:
     last_candle = dataframe.iloc[-1]
-    return (
-        len(dataframe),
-        *(last_candle[column] for column in get_candle_columns(candle_type)),
-    )
+    values = (last_candle[column] for column in get_candle_columns(candle_type))
+    return (len(dataframe), *(_MISSING if isna(value) else value for value in values))
 
 
 def _raise_reserved_column_name() -> NoReturn:

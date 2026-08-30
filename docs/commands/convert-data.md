@@ -7,7 +7,7 @@ usage: freqtrade convert-data [-h] [-v] [--no-color] [--logfile FILE] [-V]
                               [--erase] [--exchange EXCHANGE]
                               [-t TIMEFRAMES [TIMEFRAMES ...]]
                               [--trading-mode {spot,margin,futures}]
-                              [--candle-types {spot,futures,mark,index,premiumIndex,funding_rate} [{spot,futures,mark,index,premiumIndex,funding_rate} ...]]
+                              [--candle-types {spot,futures,mark,index,premiumIndex,funding_rate,open_interest} [{spot,futures,mark,index,premiumIndex,funding_rate,open_interest} ...]]
 
 options:
   -h, --help            show this help message and exit
@@ -26,7 +26,7 @@ options:
                         list. Default: `1m 5m`.
   --trading-mode, --tradingmode {spot,margin,futures}
                         Select Trading mode
-  --candle-types {spot,futures,mark,index,premiumIndex,funding_rate} [{spot,futures,mark,index,premiumIndex,funding_rate} ...]
+  --candle-types {spot,futures,mark,index,premiumIndex,funding_rate,open_interest} [{spot,futures,mark,index,premiumIndex,funding_rate,open_interest} ...]
                         Select candle type to convert. Defaults to all
                         available types.
 

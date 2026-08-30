@@ -12,6 +12,7 @@ from numpy import nan
 from pandas import DataFrame, to_datetime
 
 from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS
+from freqtrade.data.converter import ohlcv_to_dataframe
 from freqtrade.enums import CandleType, MarginMode, RunMode, TradingMode
 from freqtrade.exceptions import (
     ConfigurationError,
@@ -3186,6 +3187,96 @@ async def test__fetch_funding_rate_history(default_conf, mocker):
     exchange = get_patched_exchange(mocker, default_conf, api_mock)
     res = await exchange._fetch_funding_rate_history("XRP/USDT:USDT", "1h", limit=2)
     assert res == [[1630454400000, -0.000008], [1630458000000, -0.000004]]
+
+
+async def test__fetch_open_interest_history_missing_side(default_conf, mocker):
+
+    api_mock = MagicMock()
+    # kinda unrealistic, usually one column is None for all entries.
+    api_mock.fetch_open_interest_history = AsyncMock(
+        return_value=[
+            {
+                "timestamp": 1630454400000,
+                "openInterestAmount": 50114.633,
+                "openInterestValue": None,
+            },
+            {
+                "timestamp": 1630458000000,
+                "openInterestAmount": None,
+                "openInterestValue": 8502979793.293565,
+            },
+            {
+                "timestamp": 1630461600000,
+                "openInterestAmount": 50114.555,
+                "openInterestValue": 8502979793.12354,
+            },
+        ]
+    )
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    res = await exchange._fetch_open_interest_history("XRP/USDT:USDT", "1h", limit=2)
+    assert res == [
+        [1630454400000, 50114.633, None],
+        [1630458000000, None, 8502979793.293565],
+        [1630461600000, 50114.555, 8502979793.12354],
+    ]
+
+    # ... and reach the dataframe as NaN, without disturbing the dtype
+    df = ohlcv_to_dataframe(
+        res,
+        "1h",
+        "XRP/USDT:USDT",
+        fill_missing=False,
+        drop_incomplete=False,
+        candle_type=CandleType.OPEN_INTEREST,
+    )
+    assert list(df.columns) == ["date", "open_interest_amount", "open_interest_value"]
+    assert df["open_interest_amount"].dtype == "float64"
+    assert df["open_interest_value"].dtype == "float64"
+    assert df["open_interest_value"].isna().tolist() == [True, False, False]
+    assert df["open_interest_amount"].isna().tolist() == [False, True, False]
+
+
+def test_refresh_latest_ohlcv_open_interest(mocker, default_conf_usdt) -> None:
+    """Open interest goes through its own endpoint and keeps its own columns."""
+    ohlcv = generate_test_data_raw("1h", 24, "2025-01-02 12:00:00+00:00")
+    oi_data = [
+        {"timestamp": x[0], "openInterestAmount": x[1], "openInterestValue": x[4]} for x in ohlcv
+    ]
+
+    exchange = get_patched_exchange(mocker, default_conf_usdt)
+    exchange._api_async.fetch_ohlcv = AsyncMock(return_value=ohlcv)
+    exchange._api_async.fetch_open_interest_history = AsyncMock(return_value=oi_data)
+
+    pair_tf = ("XRP/USDT:USDT", "1h", CandleType.OPEN_INTEREST)
+    res = exchange.refresh_latest_ohlcv([pair_tf], cache=True)
+
+    assert exchange._api_async.fetch_ohlcv.call_count == 0
+    df = res[pair_tf]
+    assert list(df.columns) == ["date", "open_interest_amount", "open_interest_value"]
+    # Unlike funding rates, open interest gets no "open" alias - it is a new candle type
+    assert "open" not in df.columns
+    # The last record is the still-updating period and is dropped as incomplete
+    assert len(df) == len(ohlcv) - 1
+
+    # Second refresh goes through the concat/clean cache-merge path
+    second = exchange.refresh_latest_ohlcv([pair_tf], cache=True)[pair_tf]
+    assert list(second.columns) == list(df.columns)
+    assert len(second) == len(df)
+
+
+@pytest.mark.parametrize("exchange_name", [e for e in EXCHANGES if e not in ["okx"]])
+def test_ohlcv_candle_limit_open_interest(default_conf, mocker, exchange_name):
+    default_conf["trading_mode"] = "futures"
+    default_conf["margin_mode"] = "isolated"
+    exchange = get_patched_exchange(mocker, default_conf, exchange=exchange_name)
+    expected = exchange._ft_has.get("open_interest_candle_limit", None)
+    limit = exchange.ohlcv_candle_limit("1h", CandleType.OPEN_INTEREST)
+    if expected is None:
+        assert limit == exchange.ohlcv_candle_limit("1h", CandleType.FUTURES)
+    else:
+        assert limit == expected
+        # The lower limit must not leak into regular candle downloads
+        assert exchange.ohlcv_candle_limit("1h", CandleType.FUTURES) != limit
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
@@ -6966,6 +7057,7 @@ def test_verify_candle_type_support(default_conf, mocker):
             "fetchFundingRateHistory": True,
             "fetchIndexOHLCV": True,
             "fetchMarkOHLCV": True,
+            "fetchOpenInterestHistory": True,
             "fetchPremiumIndexOHLCV": False,
         }
     )
@@ -6975,6 +7067,7 @@ def test_verify_candle_type_support(default_conf, mocker):
     exchange.verify_candle_type_support("futures")
     exchange.verify_candle_type_support(CandleType.FUTURES)
     exchange.verify_candle_type_support(CandleType.FUNDING_RATE)
+    exchange.verify_candle_type_support(CandleType.OPEN_INTEREST)
     exchange.verify_candle_type_support(CandleType.SPOT)
     exchange.verify_candle_type_support(CandleType.MARK)
 
@@ -6991,11 +7084,13 @@ def test_verify_candle_type_support(default_conf, mocker):
             "fetchFundingRateHistory": False,
             "fetchIndexOHLCV": False,
             "fetchMarkOHLCV": False,
+            "fetchOpenInterestHistory": False,
             "fetchPremiumIndexOHLCV": True,
         }
     )
     for candle_type in [
         CandleType.FUNDING_RATE,
+        CandleType.OPEN_INTEREST,
         CandleType.INDEX,
         CandleType.MARK,
     ]:

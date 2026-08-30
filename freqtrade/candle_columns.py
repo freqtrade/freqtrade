@@ -3,7 +3,7 @@ Per-CandleType column schemas for stored candle data.
 
 Not every candle type is a candle. Funding rates for example carry exactly one value
 per timestamp, so storing them in the full OHLCV shape wastes four columns per row and
-gives them names that don't describe their content.
+gives them names that don't describe their content. Open interest carries two.
 
 This module is the single authority for "which columns does this candle type have".
 It is deliberately dependency-free (no pandas) so that `freqtrade.constants` can
@@ -15,6 +15,10 @@ from freqtrade.enums import CandleType
 
 OHLCV_COLUMNS = ["date", "open", "high", "low", "close", "volume"]
 _FUNDING_RATE_COLUMNS = ["date", "funding_rate"]
+# Open interest is reported in the base currency ("amount") and the quote currency ("value").
+# Which of the two an exchange fills depends on the exchange and the market - e.g. Bybit reports
+# only "amount" on linear markets - so either column can legitimately be all-NaN.
+_OPEN_INTEREST_COLUMNS = ["date", "open_interest_amount", "open_interest_value"]
 
 _OHLCV_AGG = {"open": "first", "high": "max", "low": "min", "close": "last", "volume": "max"}
 
@@ -22,18 +26,19 @@ _OHLCV_AGG = {"open": "first", "high": "max", "low": "min", "close": "last", "vo
 # Every entry must start with "date" - it is mandatory for all candle types.
 _CANDLE_TYPE_COLUMNS: dict[str, list[str]] = {
     CandleType.FUNDING_RATE: _FUNDING_RATE_COLUMNS,
+    CandleType.OPEN_INTEREST: _OPEN_INTEREST_COLUMNS,
 }
 
 # Funding rates used to be stored as OHLCV candles, with the rate in "open".
 # Old files are read through this mapping, and "open" is kept as an in-memory alias so
 # existing strategies keep working - it is not written back to disk.
-# This is the only alias there is: every other candle type stores the full OHLCV set.
+# This is the only alias there is - candle types added since are stored under their own names.
 FUNDING_RATE_LEGACY_RENAME = {"open": "funding_rate"}
 
 # Every column that can legitimately hold candle data. Used to keep such columns out of
 # dtype downcasting.
 ALL_CANDLE_VALUE_COLUMNS: frozenset[str] = frozenset(
-    {"open", "high", "low", "close", "volume", "funding_rate"}
+    {*OHLCV_COLUMNS[1:], *_FUNDING_RATE_COLUMNS[1:], *_OPEN_INTEREST_COLUMNS[1:]}
 )
 
 

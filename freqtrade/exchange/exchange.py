@@ -527,6 +527,8 @@ class Exchange:
         fallback_val = self._ft_has.get("ohlcv_candle_limit", ccxt_val)
         if candle_type == CandleType.FUNDING_RATE:
             fallback_val = self._ft_has.get("funding_fee_candle_limit", fallback_val)
+        elif candle_type == CandleType.OPEN_INTEREST:
+            fallback_val = self._ft_has.get("open_interest_candle_limit", fallback_val)
         return int(
             self._ft_has.get("ohlcv_candle_limit_per_timeframe", {}).get(
                 timeframe, str(fallback_val)
@@ -3012,20 +3014,26 @@ class Exchange:
                 timeframe, candle_type=candle_type, since_ms=since_ms
             )
 
-            if candle_type != CandleType.FUNDING_RATE:
-                if candle_type and candle_type not in (CandleType.SPOT, CandleType.FUTURES):
-                    self.verify_candle_type_support(candle_type)
-                    params.update({"price": str(candle_type)})
-                data = await self._api_async.fetch_ohlcv(
-                    pair, timeframe=timeframe, since=since_ms, limit=candle_limit, params=params
-                )
-            else:
-                # Funding rate
+            if candle_type == CandleType.FUNDING_RATE:
                 data = await self._fetch_funding_rate_history(
                     pair=pair,
                     timeframe=timeframe,
                     limit=candle_limit,
                     since_ms=since_ms,
+                )
+            elif candle_type == CandleType.OPEN_INTEREST:
+                data = await self._fetch_open_interest_history(
+                    pair=pair,
+                    timeframe=timeframe,
+                    limit=candle_limit,
+                    since_ms=since_ms,
+                )
+            else:
+                if candle_type and candle_type not in (CandleType.SPOT, CandleType.FUTURES):
+                    self.verify_candle_type_support(candle_type)
+                    params.update({"price": str(candle_type)})
+                data = await self._api_async.fetch_ohlcv(
+                    pair, timeframe=timeframe, since=since_ms, limit=candle_limit, params=params
                 )
             # Some exchanges sort OHLCV in ASC order and others in DESC.
             # Only sort if necessary to save computing time
@@ -3080,26 +3088,38 @@ class Exchange:
         data = [[x["timestamp"], x["fundingRate"]] for x in data]
         return data
 
+    async def _fetch_open_interest_history(
+        self,
+        pair: str,
+        timeframe: str,
+        limit: int,
+        since_ms: int | None = None,
+    ) -> list[list]:
+        """
+        Fetch open interest history - used to selectively override this by subclasses.
+        """
+        data = await self._api_async.fetch_open_interest_history(
+            pair, timeframe, since=since_ms, limit=limit
+        )
+        data_res = [[x["timestamp"], x["openInterestAmount"], x["openInterestValue"]] for x in data]
+        return data_res
+
     def check_candle_type_support(self, candle_type: CandleType) -> bool:
         """
         Check that the exchange supports the given candle type.
         :param candle_type: CandleType to verify
         :return: True if supported, False otherwise
         """
-        if candle_type == CandleType.FUNDING_RATE:
-            if not self.exchange_has("fetchFundingRateHistory"):
-                return False
-        elif candle_type not in (CandleType.SPOT, CandleType.FUTURES):
-            mapping = {
-                CandleType.MARK: "fetchMarkOHLCV",
-                CandleType.INDEX: "fetchIndexOHLCV",
-                CandleType.PREMIUMINDEX: "fetchPremiumIndexOHLCV",
-                CandleType.FUNDING_RATE: "fetchFundingRateHistory",
-            }
-            _method = mapping.get(candle_type, "fetchOHLCV")
-            if not self.exchange_has(_method):
-                return False
-        return True
+        if candle_type in (CandleType.SPOT, CandleType.FUTURES):
+            return True
+        mapping = {
+            CandleType.MARK: "fetchMarkOHLCV",
+            CandleType.INDEX: "fetchIndexOHLCV",
+            CandleType.PREMIUMINDEX: "fetchPremiumIndexOHLCV",
+            CandleType.FUNDING_RATE: "fetchFundingRateHistory",
+            CandleType.OPEN_INTEREST: "fetchOpenInterestHistory",
+        }
+        return self.exchange_has(mapping.get(candle_type, "fetchOHLCV"))
 
     def verify_candle_type_support(self, candle_type: CandleType) -> None:
         """
