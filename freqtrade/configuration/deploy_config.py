@@ -199,6 +199,9 @@ def ask_user_config() -> dict[str, Any]:
             "name": "api_server_password",
             "message": "Insert api-server password",
             "when": lambda x: x["api_server"],
+            "validate": lambda val: (
+                len(val) > 5 or "Please enter a password (minimum 6 characters)."
+            ),
         },
     ]
     answers = prompt(questions)
