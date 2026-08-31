@@ -45,7 +45,9 @@ options:
                         Assumes either `user_data/backtest_results/` or
                         `--export-directory` as base directory.
   --timerange TIMERANGE
-                        Specify what timerange of data to use.
+                        Limit action to a specific timerange. Format:
+                        (`yyyymmdd` or `yyyymmddThhmm` - e.g.
+                        `20240101-20240201T1200`).
   -i, --timeframe TIMEFRAME
                         Specify timeframe (`1m`, `5m`, `30m`, `1h`, `1d`).
   --no-trades           Skip using trades from backtesting file and DB.

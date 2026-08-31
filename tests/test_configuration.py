@@ -169,7 +169,7 @@ def test_load_config_max_open_trades_zero(default_conf, mocker, caplog) -> None:
 def test_load_config_combine_dicts(default_conf, mocker, caplog) -> None:
     conf1 = deepcopy(default_conf)
     conf2 = deepcopy(default_conf)
-    del conf1["exchange"]["key"]
+    del conf1["exchange"]["api_key"]
     del conf1["exchange"]["secret"]
     del conf2["exchange"]["name"]
     conf2["exchange"]["pair_whitelist"] += ["NANO/BTC"]
@@ -192,7 +192,7 @@ def test_load_config_combine_dicts(default_conf, mocker, caplog) -> None:
 
     exchange_conf = default_conf["exchange"]
     assert validated_conf["exchange"]["name"] == exchange_conf["name"]
-    assert validated_conf["exchange"]["key"] == exchange_conf["key"]
+    assert validated_conf["exchange"]["api_key"] == exchange_conf["api_key"]
     assert validated_conf["exchange"]["secret"] == exchange_conf["secret"]
     assert validated_conf["exchange"]["pair_whitelist"] != conf1["exchange"]["pair_whitelist"]
     assert validated_conf["exchange"]["pair_whitelist"] == conf2["exchange"]["pair_whitelist"]
@@ -203,7 +203,7 @@ def test_load_config_combine_dicts(default_conf, mocker, caplog) -> None:
 def test_from_config(default_conf, mocker, caplog) -> None:
     conf1 = deepcopy(default_conf)
     conf2 = deepcopy(default_conf)
-    del conf1["exchange"]["key"]
+    del conf1["exchange"]["api_key"]
     del conf1["exchange"]["secret"]
     del conf2["exchange"]["name"]
     conf2["exchange"]["pair_whitelist"] += ["NANO/BTC"]
@@ -218,7 +218,7 @@ def test_from_config(default_conf, mocker, caplog) -> None:
 
     exchange_conf = default_conf["exchange"]
     assert validated_conf["exchange"]["name"] == exchange_conf["name"]
-    assert validated_conf["exchange"]["key"] == exchange_conf["key"]
+    assert validated_conf["exchange"]["api_key"] == exchange_conf["api_key"]
     assert validated_conf["exchange"]["secret"] == exchange_conf["secret"]
     assert validated_conf["exchange"]["pair_whitelist"] != conf1["exchange"]["pair_whitelist"]
     assert validated_conf["exchange"]["pair_whitelist"] == conf2["exchange"]["pair_whitelist"]
@@ -1116,31 +1116,28 @@ def test_load_config_stoploss_exchange_limit_ratio(all_conf) -> None:
 
 
 @pytest.mark.parametrize(
-    "keys",
+    "base,key,expected",
     [
-        ("exchange", "key", ""),
-        ("exchange", "secret", ""),
-        ("exchange", "password", ""),
+        ("exchange", "secret", None),
+        ("exchange", "password", None),
     ],
 )
-def test_load_config_default_subkeys(all_conf, keys) -> None:
+def test_load_config_default_subkeys(all_conf, base, key, expected) -> None:
     """
     Test for parameters with default values in sub-paths
     so they can be omitted in the config and the default value
     should is added to the config.
     """
-    # Get first level key
-    key = keys[0]
     # get second level key
-    subkey = keys[1]
+    subkey = key
 
-    del all_conf[key][subkey]
+    del all_conf[base][subkey]
 
-    assert subkey not in all_conf[key]
+    assert subkey not in all_conf[base]
 
     validate_config_schema(all_conf)
-    assert subkey in all_conf[key]
-    assert all_conf[key][subkey] == keys[2]
+    assert subkey in all_conf[base]
+    assert all_conf[base][subkey] == expected
 
 
 def test_pairlist_resolving():
@@ -1593,19 +1590,19 @@ def test_setup_freqai_backtesting(mocker, default_conf) -> None:
 
 
 def test_sanitize_config(default_conf_usdt):
-    assert default_conf_usdt["exchange"]["key"] != "REDACTED"
+    assert default_conf_usdt["exchange"]["api_key"] != "REDACTED"
     res = sanitize_config(default_conf_usdt)
     # Didn't modify original dict
-    assert default_conf_usdt["exchange"]["key"] != "REDACTED"
+    assert default_conf_usdt["exchange"]["api_key"] != "REDACTED"
     assert "accountId" not in default_conf_usdt["exchange"]
 
-    assert res["exchange"]["key"] == "REDACTED"
+    assert res["exchange"]["api_key"] == "REDACTED"
     assert res["exchange"]["secret"] == "REDACTED"
     # Didn't add a non-existing key
     assert "accountId" not in res["exchange"]
 
     res = sanitize_config(default_conf_usdt, show_sensitive=True)
-    assert res["exchange"]["key"] == default_conf_usdt["exchange"]["key"]
+    assert res["exchange"]["api_key"] == default_conf_usdt["exchange"]["api_key"]
     assert res["exchange"]["secret"] == default_conf_usdt["exchange"]["secret"]
 
 
@@ -1613,11 +1610,11 @@ def test_remove_exchange_credentials(default_conf) -> None:
     conf = deepcopy(default_conf)
     remove_exchange_credentials(conf["exchange"], False)
 
-    assert conf["exchange"]["key"] != ""
-    assert conf["exchange"]["secret"] != ""
+    assert conf["exchange"]["api_key"] is not None
+    assert conf["exchange"]["secret"] is not None
 
     remove_exchange_credentials(conf["exchange"], True)
-    assert conf["exchange"]["key"] == ""
-    assert conf["exchange"]["secret"] == ""
-    assert conf["exchange"].get("password", "") == ""
-    assert conf["exchange"].get("uid", "") == ""
+    assert conf["exchange"]["api_key"] is None
+    assert conf["exchange"]["secret"] is None
+    assert conf["exchange"].get("password") is None
+    assert conf["exchange"].get("uid") is None

@@ -44,6 +44,8 @@ class Okx(Exchange):
         },
         "stoploss_blocks_assets": False,
         "ws_enabled": True,
+        # ccxt maps "total" to the currency's "eq" (equity), which includes unrealized PnL
+        "balance_includes_unrealized_pnl": True,
     }
 
     _supported_trading_mode_margin_pairs: list[tuple[TradingMode, MarginMode]] = [
@@ -71,7 +73,7 @@ class Okx(Exchange):
         * additional data:
             * 100 candles for additional candles
         :param timeframe: Timeframe to check
-        :param candle_type: Candle-type
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
         :param since_ms: Starting timestamp
         :return: Candle limit as integer
         """

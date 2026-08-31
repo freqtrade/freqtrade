@@ -6,8 +6,9 @@ from pathlib import Path
 from pandas import DataFrame
 from pyarrow import ArrowException, dataset
 
+from freqtrade.candle_columns import get_candle_columns, get_candle_dtypes
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS, DEFAULT_TRADES_COLUMNS
+from freqtrade.constants import DEFAULT_TRADES_COLUMNS
 from freqtrade.enums import CandleType, TradingMode
 from freqtrade.exchange import timeframe_to_seconds
 
@@ -24,8 +25,6 @@ class ArrowDataHandler(IDataHandler):
     Subclasses need to implement the format-specific read/write of a single
     DataFrame (_load_dataframe / _store_dataframe) and _get_file_extension.
     """
-
-    _columns = DEFAULT_DATAFRAME_COLUMNS
 
     @abstractmethod
     def _store_dataframe(self, data: DataFrame, filename: Path) -> None:
@@ -53,13 +52,15 @@ class ArrowDataHandler(IDataHandler):
         :param pair: Pair - used to generate filename
         :param timeframe: Timeframe - used to generate filename
         :param data: Dataframe containing OHLCV data
-        :param candle_type: Any of the enum CandleType (must match trading mode!)
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
         :return: None
         """
         filename = self._pair_data_filename(self._datadir, pair, timeframe, candle_type)
         self.create_dir_if_needed(filename)
 
-        self._store_dataframe(data.reset_index(drop=True).loc[:, self._columns], filename)
+        self._store_dataframe(
+            data.reset_index(drop=True).loc[:, get_candle_columns(candle_type)], filename
+        )
 
     def _ohlcv_load(
         self, pair: str, timeframe: str, timerange: TimeRange | None, candle_type: CandleType
@@ -73,7 +74,7 @@ class ArrowDataHandler(IDataHandler):
         :param timerange: Limit data to be loaded to this timerange.
                         Optionally implemented by subclasses to avoid loading
                         all data where possible.
-        :param candle_type: Any of the enum CandleType (must match trading mode!)
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
         :return: DataFrame with ohlcv data, or empty DataFrame
         """
         filename = self._pair_data_filename(self._datadir, pair, timeframe, candle_type=candle_type)
@@ -83,26 +84,23 @@ class ArrowDataHandler(IDataHandler):
                 self._datadir, pair, timeframe, candle_type=candle_type, no_timeframe_modify=True
             )
             if not filename.exists():
-                return DataFrame(columns=self._columns)
+                return self._empty_ohlcv_df(candle_type)
         try:
             pairdata = self._load_ohlcv_dataframe(filename, timeframe, timerange)
-            pairdata.columns = self._columns
-            pairdata = pairdata.astype(
-                dtype={
-                    "open": "float",
-                    "high": "float",
-                    "low": "float",
-                    "close": "float",
-                    "volume": "float",
-                }
-            )
+            if pairdata.empty:
+                return self._empty_ohlcv_df(candle_type)
+
+            pairdata = self._normalize_columns(pairdata, pair, candle_type)
+            pairdata = pairdata.astype(dtype=get_candle_dtypes(candle_type))
             pairdata["date"] = pairdata["date"].dt.as_unit("ms")
             return pairdata
         except Exception as e:
+            # Also covers files in an unreadable layout - one broken file must not abort
+            # loading of all other data.
             logger.exception(
                 f"Error loading data from {filename}. Exception: {e}. Returning empty dataframe."
             )
-            return DataFrame(columns=self._columns)
+            return self._empty_ohlcv_df(candle_type)
 
     def _build_arrow_ohlcv_filter(self, timerange: TimeRange | None, timeframe: str):
         """
@@ -172,7 +170,7 @@ class ArrowDataHandler(IDataHandler):
         :param pair: Pair
         :param timeframe: Timeframe this ohlcv data is for
         :param data: Data to append.
-        :param candle_type: Any of the enum CandleType (must match trading mode!)
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
         """
         raise NotImplementedError()
 

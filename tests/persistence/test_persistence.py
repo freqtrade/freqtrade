@@ -781,10 +781,6 @@ def test_update_invalid_order(limit_buy_order_usdt):
     [
         (False, 0.003, 60.18),
         (False, 0.0025, 60.15),
-        (False, 0.003, 60.18),
-        (False, 0.0025, 60.15),
-        (True, 0.003, 59.82),
-        (True, 0.0025, 59.85),
         (True, 0.003, 59.82),
         (True, 0.0025, 59.85),
     ],
@@ -2850,6 +2846,8 @@ def test_order_to_ccxt(limit_buy_order_open, limit_sell_order_usdt_open):
 
     order_resp = Order.order_by_id(limit_buy_order_open["id"])
     assert order_resp
+    assert Order.order_by_id(limit_buy_order_open["id"], "mocked") is order_resp
+    assert Order.order_by_id(limit_buy_order_open["id"], "ETH/USDT") is None
 
     raw_order = order_resp.to_ccxt_object()
     del raw_order["fee"]

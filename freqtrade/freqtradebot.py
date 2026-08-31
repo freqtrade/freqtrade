@@ -166,7 +166,7 @@ class FreqtradeBot(LoggingMixin):
                 # This would be more efficient if scheduled in utc time, and performed at each
                 # funding interval, specified by funding_fee_times on the exchange classes
                 # However, this reduces the precision - and might therefore lead to problems.
-                for time_slot in range(0, 24):
+                for time_slot in range(24):
                     for minutes in [1, 31]:
                         t = str(time(time_slot, minutes, 2))
                         self._schedule.every().day.at(t).do(update)
@@ -209,7 +209,7 @@ class FreqtradeBot(LoggingMixin):
         try:
             # Wrap db activities in shutdown to avoid problems if database is gone,
             # and raises further exceptions.
-            if self.config["cancel_open_orders_on_exit"]:
+            if self.config.get("cancel_open_orders_on_exit"):
                 self.cancel_all_open_orders()
 
             self.check_for_open_trades()
@@ -314,7 +314,7 @@ class FreqtradeBot(LoggingMixin):
         """
         Close all orders that were left open
         """
-        if self.config["cancel_open_orders_on_exit"]:
+        if self.config.get("cancel_open_orders_on_exit"):
             self.cancel_all_open_orders()
 
     def check_for_open_trades(self):
@@ -534,6 +534,15 @@ class FreqtradeBot(LoggingMixin):
                     # We knew this order, but didn't have it updated properly
                     order_obj = trade_order[0]
                 else:
+                    existing_order = Order.order_by_id(order["id"], trade.pair)
+                    if existing_order is not None and existing_order.ft_trade_id != trade.id:
+                        # Order belongs to a different trade
+                        logger.info(
+                            f"Order {order['id']} for {trade.pair} already belongs to "
+                            f"trade {existing_order.ft_trade_id} - skipping."
+                        )
+                        continue
+
                     logger.info(f"Found previously unknown order {order['id']} for {trade.pair}.")
 
                     order_obj = Order.parse_from_ccxt_object(order, trade.pair, order["side"])
@@ -602,9 +611,11 @@ class FreqtradeBot(LoggingMixin):
             Trade.commit()
 
         except ExchangeError:
+            Trade.rollback()
             logger.warning("Error finding onexchange order.")
         except Exception:
             # catching https://github.com/freqtrade/freqtrade/issues/9025
+            Trade.rollback()
             logger.warning("Error finding onexchange order", exc_info=True)
         return False
 

@@ -3,6 +3,8 @@ from logging.handlers import QueueHandler
 from multiprocessing import Queue, current_process
 from queue import Empty
 
+from freqtrade.loggers import get_existing_handlers
+
 
 logger = logging.getLogger(__name__)
 
@@ -14,13 +16,17 @@ def logging_mp_setup(log_queue: Queue, verbosity: int):
     log_queue MUST be passed to the child process via inheritance
         Which essentially means that the log_queue must be a global, created in the same
         file as Parallel is initialized.
+    This is called once per epoch - but the worker process itself is reused for the whole run.
     """
     current_proc = current_process().name
     if current_proc != "MainProcess":
-        h = QueueHandler(log_queue)
         root = logging.getLogger()
         root.setLevel(verbosity)
-        root.addHandler(h)
+        if (h := get_existing_handlers(QueueHandler)) is not None:
+            # Re-point the existing handler
+            h.queue = log_queue
+        else:
+            root.addHandler(QueueHandler(log_queue))
         # Disable freqtrade logging outside of the main process
         # This only leaves logging from the strategy (unless it's prefixed with "freqtrade.")
         # and eventually from other libraries.

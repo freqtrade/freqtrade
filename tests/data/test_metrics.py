@@ -56,6 +56,10 @@ def test_combine_dataframes_with_mean(testdatadir):
     assert "ETH/BTC" in df.columns
     assert "ADA/BTC" in df.columns
     assert "mean" in df.columns
+    assert (
+        pytest.approx(df.iloc[0]["mean"])
+        == (data["ETH/BTC"].at[0, "close"] + data["ADA/BTC"].at[0, "close"]) / 2
+    )
 
 
 def test_combined_dataframes_with_rel_mean(testdatadir):
@@ -76,6 +80,11 @@ def test_combined_dataframes_with_rel_mean(testdatadir):
     assert df.iloc[-1]["count"] == 2
     assert len(df) < len(data["BTC/USDT"])
     assert df["rel_mean"].between(-0.5, 0.5).all()
+    # mean must be the mean of the pair columns only - not including the "count" column.
+    assert (
+        pytest.approx(df.iloc[0]["mean"])
+        == (data["BTC/USDT"].at[0, "close"] + data["XRP/USDT"].at[0, "close"]) / 2
+    )
 
 
 def test_combine_dataframes_with_mean_no_data(testdatadir):
@@ -504,6 +513,8 @@ def test_calculate_p_value_zero_mean():
         (0.01000000, 0.01762792, 120, 4.6087),  # sub year BTC values
         (1000, 1010, 0, 0.0),  # zero days
         (-100, 100, 365, 0.0),  # negative starting balance
+        (1.49, 11.2, 1, 0.0),  # Overflow - huge gain over a single day
+        (1.0, 6.99, 1, 1.7146249823477656e308),  # just below the overflow threshold
     ],
 )
 def test_calculate_cagr(start, end, days, expected):

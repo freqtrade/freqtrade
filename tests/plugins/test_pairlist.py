@@ -1079,13 +1079,13 @@ def test_VolumePairList_range(
             freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
     elif volumefilter_result == "lookback_period_negative":
         with pytest.raises(
-            OperationalException, match=r"VolumeFilter requires lookback_period to be >= 0"
+            OperationalException, match=r"VolumePairList requires lookback_period to be >= 0"
         ):
             freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
     elif volumefilter_result == "lookback_exceeds_exchange_request_size":
         with pytest.raises(
             OperationalException,
-            match=r"VolumeFilter requires lookback_period to not exceed "
+            match=r"VolumePairList requires lookback_period to not exceed "
             r"exchange max request size \([0-9]+\)",
         ):
             freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
@@ -1150,16 +1150,36 @@ def test_PerformanceFilter_error(mocker, whitelist_conf, caplog) -> None:
     assert log_has("PerformanceFilter is not available in this mode.", caplog)
 
 
-def test_VolatilityFilter_error(mocker, whitelist_conf) -> None:
-    volatility_filter = {"method": "VolatilityFilter", "lookback_days": -1}
+def test_VolatilityFilter_error(mocker, whitelist_conf, caplog) -> None:
+    volatility_filter = {"method": "VolatilityFilter"}
     whitelist_conf["pairlists"] = [{"method": "StaticPairList"}, volatility_filter]
 
     mocker.patch(f"{EXMS}.exchange_has", MagicMock(return_value=True))
     exchange_mock = MagicMock()
     exchange_mock.ohlcv_candle_limit = MagicMock(return_value=1000)
 
+    # Missing lookback configuration is deprecated
+    PairListManager(exchange_mock, whitelist_conf, MagicMock())
+    assert log_has_re(
+        r"DEPRECATED: Using VolatilityFilter without lookback_days or lookback_period.*", caplog
+    )
+
+    # The fallback does not apply once a lookback_timeframe is given
+    volatility_filter = {"method": "VolatilityFilter", "lookback_timeframe": "1h"}
+    whitelist_conf["pairlists"] = [{"method": "StaticPairList"}, volatility_filter]
+
     with pytest.raises(
-        OperationalException, match=r"VolatilityFilter requires lookback_days to be >= 1*"
+        OperationalException,
+        match=r"VolatilityFilter requires lookback_period to be set when using lookback_timeframe",
+    ):
+        PairListManager(exchange_mock, whitelist_conf, MagicMock())
+
+    volatility_filter = {"method": "VolatilityFilter", "lookback_days": -1}
+    whitelist_conf["pairlists"] = [{"method": "StaticPairList"}, volatility_filter]
+
+    with pytest.raises(
+        OperationalException,
+        match=r"VolatilityFilter requires lookback_days to be >= 1",
     ):
         PairListManager(exchange_mock, whitelist_conf, MagicMock())
 
@@ -1167,11 +1187,49 @@ def test_VolatilityFilter_error(mocker, whitelist_conf) -> None:
     whitelist_conf["pairlists"] = [{"method": "StaticPairList"}, volatility_filter]
     with pytest.raises(
         OperationalException,
-        match=r"VolatilityFilter requires lookback_days to not exceed exchange max",
+        match=r"VolatilityFilter requires lookback_period to not exceed exchange max",
     ):
         PairListManager(exchange_mock, whitelist_conf, MagicMock())
 
-    volatility_filter = {"method": "VolatilityFilter", "sort_direction": "Random"}
+    volatility_filter = {"method": "VolatilityFilter", "lookback_period": 2000}
+    whitelist_conf["pairlists"] = [{"method": "StaticPairList"}, volatility_filter]
+    with pytest.raises(
+        OperationalException,
+        match=r"VolatilityFilter requires lookback_period to not exceed exchange max",
+    ):
+        PairListManager(exchange_mock, whitelist_conf, MagicMock())
+
+    volatility_filter = {"method": "VolatilityFilter", "lookback_period": -1}
+    whitelist_conf["pairlists"] = [{"method": "StaticPairList"}, volatility_filter]
+    with pytest.raises(
+        OperationalException, match=r"VolatilityFilter requires lookback_period to be >= 1"
+    ):
+        PairListManager(exchange_mock, whitelist_conf, MagicMock())
+
+    volatility_filter = {"method": "VolatilityFilter", "lookback_days": 10, "lookback_period": 10}
+    whitelist_conf["pairlists"] = [{"method": "StaticPairList"}, volatility_filter]
+    with pytest.raises(
+        OperationalException,
+        match=r"Ambiguous configuration: lookback_days and lookback_period both set in pairlist",
+    ):
+        PairListManager(exchange_mock, whitelist_conf, MagicMock())
+
+    # An explicit "lookback_days: 0" must not invalidate a configured lookback_period
+    volatility_filter = {
+        "method": "VolatilityFilter",
+        "lookback_days": 0,
+        "lookback_timeframe": "1h",
+        "lookback_period": 5,
+    }
+    whitelist_conf["pairlists"] = [{"method": "StaticPairList"}, volatility_filter]
+    handler = PairListManager(exchange_mock, whitelist_conf, MagicMock())._pairlist_handlers[1]
+    assert (handler._lookback_timeframe, handler._lookback_period) == ("1h", 5)
+
+    volatility_filter = {
+        "method": "VolatilityFilter",
+        "lookback_days": 10,
+        "sort_direction": "Random",
+    }
     whitelist_conf["pairlists"] = [{"method": "StaticPairList"}, volatility_filter]
     with pytest.raises(
         OperationalException,
@@ -1471,7 +1529,7 @@ def test__whitelist_for_active_markets(
     pairlist_handler = freqtrade.pairlists._pairlist_handlers[0]
     new_whitelist = pairlist_handler._whitelist_for_active_markets(whitelist)
 
-    assert set(new_whitelist) == set(["ETH/BTC", "TKN/BTC"])
+    assert set(new_whitelist) == {"ETH/BTC", "TKN/BTC"}
     assert log_message in caplog.text
 
 
@@ -1487,6 +1545,60 @@ def test__whitelist_for_active_markets_empty(mocker, whitelist_conf, pairlist, t
     pairlist_handler = freqtrade.pairlists._pairlist_handlers[0]
     with pytest.raises(OperationalException, match=r"Markets not loaded.*"):
         pairlist_handler._whitelist_for_active_markets(["ETH/BTC"])
+
+
+@pytest.mark.parametrize(
+    "pairlist_conf",
+    [
+        {"method": "VolumePairList", "number_assets": 10},
+        {"method": "PercentChangePairList", "number_assets": 10},
+        {"method": "VolatilityFilter"},
+        {"method": "RangeStabilityFilter"},
+    ],
+)
+def test_lookback_parameters_defaults(mocker, whitelist_conf, pairlist_conf):
+    # The lookback defaults must match what the handler resolves to without config
+    whitelist_conf["pairlists"] = [{"method": "StaticPairList"}, pairlist_conf]
+
+    mocker.patch(f"{EXMS}.exchange_has", MagicMock(return_value=True))
+    exchange = get_patched_exchange(mocker, whitelist_conf)
+    handler = PairListManager(exchange, whitelist_conf, MagicMock())._pairlist_handlers[1]
+    params = handler.available_parameters()
+
+    assert handler._lookback_timeframe == params["lookback_timeframe"]["default"]
+    assert handler._lookback_period == params["lookback_period"]["default"]
+    assert params["lookback_days"]["default"] is None
+
+
+@pytest.mark.parametrize(
+    "lookback_conf",
+    [
+        {},
+        {"lookback_days": 0},
+        {"lookback_period": 0},
+        {"lookback_days": 0, "lookback_period": 0},
+        {"lookback_timeframe": "1d"},
+    ],
+)
+def test_volumepairlist_no_range(mocker, whitelist_conf, lookback_conf, caplog):
+    # An explicit lookback of 0 must not enable the lookback range
+    whitelist_conf["pairlists"][0].update(lookback_conf)
+
+    mocker.patch(f"{EXMS}.exchange_has", MagicMock(return_value=True))
+    freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
+    pairlist_handler = freqtrade.pairlists._pairlist_handlers[0]
+    assert pairlist_handler._use_range is False
+    assert pairlist_handler.needstickers is True
+
+    # A lookback_timeframe without lookback_period has no effect - warn about it
+    warning = r"VolumePairList is configured with lookback_timeframe .* the lookback range"
+    assert log_has_re(warning, caplog) == ("lookback_timeframe" in lookback_conf)
+
+    whitelist_conf["pairlists"][0].update({"lookback_days": -1})
+    with pytest.raises(
+        OperationalException, match=r"VolumePairList requires lookback_days to be >= 0"
+    ):
+        get_patched_freqtradebot(mocker, whitelist_conf)
 
 
 def test_volumepairlist_invalid_sortvalue(mocker, whitelist_conf):
@@ -1646,10 +1758,10 @@ def test_OffsetFilter_error(mocker, whitelist_conf) -> None:
         PairListManager(MagicMock, whitelist_conf)
 
 
-def test_rangestabilityfilter_checks(mocker, default_conf, markets, tickers):
+def test_rangestabilityfilter_checks(mocker, default_conf, markets, tickers, caplog):
     default_conf["pairlists"] = [
         {"method": "VolumePairList", "number_assets": 10},
-        {"method": "RangeStabilityFilter", "lookback_days": 99999},
+        {"method": "RangeStabilityFilter"},
     ]
 
     mocker.patch.multiple(
@@ -1659,9 +1771,34 @@ def test_rangestabilityfilter_checks(mocker, default_conf, markets, tickers):
         get_tickers=tickers,
     )
 
+    # Missing lookback configuration is deprecated
+    get_patched_freqtradebot(mocker, default_conf)
+    assert log_has_re(
+        r"DEPRECATED: Using RangeStabilityFilter without lookback_days or lookback_period.*",
+        caplog,
+    )
+
+    # The fallback does not apply once a lookback_timeframe is given
+    default_conf["pairlists"] = [
+        {"method": "VolumePairList", "number_assets": 10},
+        {"method": "RangeStabilityFilter", "lookback_timeframe": "1h"},
+    ]
+
     with pytest.raises(
         OperationalException,
-        match=r"RangeStabilityFilter requires lookback_days to not exceed "
+        match=r"RangeStabilityFilter requires lookback_period to be set when using "
+        r"lookback_timeframe",
+    ):
+        get_patched_freqtradebot(mocker, default_conf)
+
+    default_conf["pairlists"] = [
+        {"method": "VolumePairList", "number_assets": 10},
+        {"method": "RangeStabilityFilter", "lookback_days": 99999},
+    ]
+
+    with pytest.raises(
+        OperationalException,
+        match=r"RangeStabilityFilter requires lookback_period to not exceed "
         r"exchange max request size \([0-9]+\)",
     ):
         get_patched_freqtradebot(mocker, default_conf)
@@ -1673,6 +1810,41 @@ def test_rangestabilityfilter_checks(mocker, default_conf, markets, tickers):
 
     with pytest.raises(
         OperationalException, match="RangeStabilityFilter requires lookback_days to be >= 1"
+    ):
+        get_patched_freqtradebot(mocker, default_conf)
+
+    default_conf["pairlists"] = [
+        {"method": "VolumePairList", "number_assets": 10},
+        {"method": "RangeStabilityFilter", "lookback_timeframe": "1h", "lookback_period": 99999},
+    ]
+
+    with pytest.raises(
+        OperationalException,
+        match=r"RangeStabilityFilter requires lookback_period to not exceed "
+        r"exchange max request size \([0-9]+\)",
+    ):
+        get_patched_freqtradebot(mocker, default_conf)
+
+    default_conf["pairlists"] = [
+        {"method": "VolumePairList", "number_assets": 10},
+        {"method": "RangeStabilityFilter", "lookback_days": 10, "lookback_period": 10},
+    ]
+
+    with pytest.raises(
+        OperationalException,
+        match=r"Ambiguous configuration: lookback_days and lookback_period both set in pairlist",
+    ):
+        get_patched_freqtradebot(mocker, default_conf)
+
+    default_conf["pairlists"] = [
+        {"method": "VolumePairList", "number_assets": 10},
+        {"method": "RangeStabilityFilter", "lookback_days": 10, "lookback_timeframe": "1h"},
+    ]
+
+    with pytest.raises(
+        OperationalException,
+        match=r"Ambiguous configuration: lookback_days implies a lookback_timeframe of 1d, "
+        r"but lookback_timeframe is set to 1h\..*",
     ):
         get_patched_freqtradebot(mocker, default_conf)
 
@@ -1747,6 +1919,51 @@ def test_rangestabilityfilter_caching(
     assert freqtrade.exchange.refresh_latest_ohlcv.call_count == previous_call_count
 
 
+@pytest.mark.parametrize(
+    "pairlistconfig",
+    [
+        {
+            "method": "RangeStabilityFilter",
+            "lookback_timeframe": "1h",
+            "lookback_period": 24,
+            "min_rate_of_change": 0,
+        },
+        {
+            "method": "VolatilityFilter",
+            "lookback_timeframe": "1h",
+            "lookback_period": 24,
+            "min_volatility": 0,
+        },
+    ],
+)
+def test_range_volatility_filter_lookback_timeframe(
+    mocker, markets, default_conf, tickers, pairlistconfig
+):
+    default_conf["pairlists"] = [
+        {"method": "VolumePairList", "number_assets": 10},
+        pairlistconfig,
+    ]
+    df = generate_test_data("1h", 30, "2022-01-13 12:00:00+00:00", random_seed=42)
+    ohlcv_data = {
+        (pair, "1h", CandleType.SPOT): df
+        for pair in ["ETH/BTC", "TKN/BTC", "LTC/BTC", "XRP/BTC", "HOT/BTC", "BLK/BTC"]
+    }
+    refresh_mock = MagicMock(return_value=ohlcv_data)
+    mocker.patch.multiple(
+        EXMS,
+        markets=PropertyMock(return_value=markets),
+        exchange_has=MagicMock(return_value=True),
+        get_tickers=tickers,
+        refresh_latest_ohlcv=refresh_mock,
+    )
+    freqtrade = get_patched_freqtradebot(mocker, default_conf)
+    freqtrade.pairlists.refresh_pairlist()
+    assert len(freqtrade.pairlists.whitelist) == 5
+    assert refresh_mock.call_count == 1
+    # Candles must be requested in the configured lookback timeframe
+    assert all(p[1] == "1h" for p in refresh_mock.call_args_list[0][0][0])
+
+
 def test_spreadfilter_invalid_data(mocker, default_conf, markets, tickers, caplog):
     default_conf["pairlists"] = [
         {"method": "VolumePairList", "number_assets": 10},
@@ -1786,20 +2003,26 @@ def test_spreadfilter_invalid_data(mocker, default_conf, markets, tickers, caplo
                 "min_price": 0.00000010,
                 "max_price": 1.0,
             },
-            "[{'PriceFilter': 'PriceFilter - Filtering pairs priced below "
-            "0.1% or below 0.00000010 or above 1.00000000.'}]",
+            (
+                "[{'PriceFilter': 'PriceFilter - Filtering pairs priced below "
+                "0.1% or below 0.00000010 or above 1.00000000.'}]"
+            ),
             None,
         ),
         (
             {"method": "PriceFilter", "low_price_ratio": 0.001, "min_price": 0.00000010},
-            "[{'PriceFilter': 'PriceFilter - Filtering pairs priced below 0.1% "
-            "or below 0.00000010.'}]",
+            (
+                "[{'PriceFilter': 'PriceFilter - Filtering pairs priced below 0.1% "
+                "or below 0.00000010.'}]"
+            ),
             None,
         ),
         (
             {"method": "PriceFilter", "low_price_ratio": 0.001, "max_price": 1.00010000},
-            "[{'PriceFilter': 'PriceFilter - Filtering pairs priced below 0.1% "
-            "or above 1.00010000.'}]",
+            (
+                "[{'PriceFilter': 'PriceFilter - Filtering pairs priced below 0.1% "
+                "or above 1.00010000.'}]"
+            ),
             None,
         ),
         (
@@ -1844,14 +2067,18 @@ def test_spreadfilter_invalid_data(mocker, default_conf, markets, tickers, caplo
         ),  # ConfigurationError expected
         (
             {"method": "DelistFilter", "max_days_from_now": 1},
-            "[{'DelistFilter': 'DelistFilter - Filtering pairs that will be delisted in the "
-            "next 1 days.'}]",
+            (
+                "[{'DelistFilter': 'DelistFilter - Filtering pairs that will be delisted in the "
+                "next 1 days.'}]"
+            ),
             None,
         ),  # ConfigurationError expected
         (
             {"method": "RangeStabilityFilter", "lookback_days": 10, "min_rate_of_change": 0.01},
-            "[{'RangeStabilityFilter': 'RangeStabilityFilter - Filtering pairs with rate "
-            "of change below 0.01 over the last days.'}]",
+            (
+                "[{'RangeStabilityFilter': 'RangeStabilityFilter - Filtering pairs with rate "
+                "of change below 0.01 over the last 10 x 1d candles.'}]"
+            ),
             None,
         ),
         (
@@ -1861,8 +2088,23 @@ def test_spreadfilter_invalid_data(mocker, default_conf, markets, tickers, caplo
                 "min_rate_of_change": 0.01,
                 "max_rate_of_change": 0.99,
             },
-            "[{'RangeStabilityFilter': 'RangeStabilityFilter - Filtering pairs with rate "
-            "of change below 0.01 and above 0.99 over the last days.'}]",
+            (
+                "[{'RangeStabilityFilter': 'RangeStabilityFilter - Filtering pairs with rate "
+                "of change below 0.01 and above 0.99 over the last 10 x 1d candles.'}]"
+            ),
+            None,
+        ),
+        (
+            {
+                "method": "RangeStabilityFilter",
+                "lookback_timeframe": "1h",
+                "lookback_period": 72,
+                "min_rate_of_change": 0.01,
+            },
+            (
+                "[{'RangeStabilityFilter': 'RangeStabilityFilter - Filtering pairs with rate "
+                "of change below 0.01 over the last 72 x 1h candles.'}]"
+            ),
             None,
         ),
         (

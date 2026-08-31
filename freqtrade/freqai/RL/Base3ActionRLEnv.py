@@ -90,15 +90,15 @@ class Base3ActionRLEnv(BaseEnvironment):
 
         self._position_history.append(self._position)
 
-        info = dict(
-            tick=self._current_tick,
-            action=action,
-            total_reward=self.total_reward,
-            total_profit=self._total_profit,
-            position=self._position.value,
-            trade_duration=self.get_trade_duration(),
-            current_profit_pct=self.get_unrealized_profit(),
-        )
+        info = {
+            "tick": self._current_tick,
+            "action": action,
+            "total_reward": self.total_reward,
+            "total_profit": self._total_profit,
+            "position": self._position.value,
+            "trade_duration": self.get_trade_duration(),
+            "current_profit_pct": self.get_unrealized_profit(),
+        }
 
         observation = self._get_observation()
 

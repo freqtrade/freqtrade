@@ -16,6 +16,7 @@ import rapidjson
 from joblib.externals import cloudpickle
 from numpy.typing import NDArray
 from pandas import DataFrame
+from pandas.api.types import is_numeric_dtype
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import Config
@@ -24,6 +25,7 @@ from freqtrade.enums import CandleType
 from freqtrade.exceptions import OperationalException
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
 from freqtrade.strategy.interface import IStrategy
+from freqtrade.util import dt_from_ts
 
 
 logger = logging.getLogger(__name__)
@@ -192,18 +194,60 @@ class FreqaiDataDrawer:
                     self.historic_predictions = cloudpickle.load(fp)
                 logger.warning("FreqAI successfully loaded the backup historical predictions file.")
 
-            for pair_df in self.historic_predictions.values():
-                if "date_pred" in pair_df.columns and pair_df["date_pred"].dtype.kind != "M":
-                    # Predictions written by older versions can carry an object dtype
-                    # date column - convert once at load so downstream merges work.
-                    pair_df["date_pred"] = pd.to_datetime(
-                        pair_df["date_pred"], utc=True
-                    ).dt.as_unit("ms")
+            for pair, pair_df in self.historic_predictions.items():
+                self.historic_predictions[pair] = self._repair_historic_predictions(pair, pair_df)
 
         else:
             logger.info("Could not find existing historic_predictions, starting from scratch")
 
         return exists
+
+    @staticmethod
+    def _ensure_date_pred_dtype(df: DataFrame) -> None:
+        """
+        Convert an object dtype date_pred column to datetime. Pandas refuses to merge on
+        object dtype dates, so predictions written by older versions must be converted.
+        :param df: DataFrame = frame carrying a date_pred column, converted in place
+        """
+        if df["date_pred"].dtype.kind != "M":
+            df["date_pred"] = pd.to_datetime(df["date_pred"], utc=True).dt.as_unit("ms")
+
+    def _repair_historic_predictions(self, pair: str, pair_df: DataFrame) -> DataFrame:
+        """
+        Repair a historic prediction frame restored from disk. Files written by older
+        versions can carry numeric columns as object dtype, dates as object dtype, or
+        duplicated candles - each of which breaks either the merge back into the strategy
+        dataframe or the API serialization further down the line.
+        :param pair: str = pair the predictions belong to, used for logging
+        :param pair_df: DataFrame = historic predictions as restored from disk
+        :return: DataFrame = the repaired predictions
+        """
+        object_cols = [col for col in pair_df.columns if pair_df[col].dtype == "object"]
+        if object_cols:
+            inferred = pair_df[object_cols].infer_objects()
+            numeric_cols = [col for col in object_cols if is_numeric_dtype(inferred[col])]
+            if numeric_cols:
+                logger.info(
+                    f"Converting {len(numeric_cols)} object dtype column(s) in the historic "
+                    f"predictions of {pair} back to numeric dtypes."
+                )
+                pair_df[numeric_cols] = inferred[numeric_cols]
+
+        if "date_pred" not in pair_df.columns:
+            return pair_df
+
+        self._ensure_date_pred_dtype(pair_df)
+        # Predictions written by versions that could duplicate a candle would fail every
+        # merge back into the strategy dataframe.
+        duplicates = pair_df["date_pred"].duplicated(keep="last")
+        if duplicates.any():
+            logger.warning(
+                f"Found {duplicates.sum()} duplicated candle(s) in the historic "
+                f"predictions of {pair} - keeping the most recent prediction each."
+            )
+            pair_df = pair_df[~duplicates].reset_index(drop=True)
+
+        return pair_df
 
     def save_historic_predictions_to_disk(self):
         """
@@ -306,7 +350,7 @@ class FreqaiDataDrawer:
         new_pred["date_pred"] = dataframe["date"].reset_index(drop=True)
         # set everything to nan except date_pred
         columns_to_nan = new_pred.columns.difference(["date_pred", "date"])
-        new_pred[columns_to_nan] = None
+        new_pred[columns_to_nan] = np.nan
 
         hist_preds = self.historic_predictions[pair].copy()
 
@@ -314,17 +358,18 @@ class FreqaiDataDrawer:
         new_pred["date_pred"] = pd.to_datetime(new_pred["date_pred"])
         hist_preds["date_pred"] = pd.to_datetime(hist_preds["date_pred"])
 
-        # find the closest common date between new_pred and historic predictions
+        # Find the closest common date between new_pred and historic predictions
         # and cut off the new_pred dataframe at that date
-        common_dates = pd.merge(new_pred, hist_preds, on="date_pred", how="inner")
-        if len(common_dates.index) > 0:
-            new_pred = new_pred.iloc[len(common_dates) :]
-        else:
-            logger.warning(
-                "No common dates found between new predictions and historic "
-                "predictions. You likely left your FreqAI instance offline "
-                f"for more than {len(dataframe.index)} candles."
-            )
+        last_hist_date = hist_preds["date_pred"].max()
+        if not new_pred.empty:
+            if pd.isna(last_hist_date) or last_hist_date < new_pred["date_pred"].iloc[0]:
+                logger.warning(
+                    "No common dates found between new predictions and historic "
+                    "predictions. You likely left your FreqAI instance offline "
+                    f"for more than {len(dataframe.index)} candles."
+                )
+            else:
+                new_pred = new_pred[new_pred["date_pred"] > last_hist_date]
 
         # Pandas warns that its keeping dtypes of non NaN columns...
         # yea we know and we already want that behavior. Ignoring.
@@ -357,16 +402,51 @@ class FreqaiDataDrawer:
         """
 
         len_df = len(strat_df)
-        index = self.historic_predictions[pair].index[-1:]
-        columns = self.historic_predictions[pair].columns
+        hist_preds = self.historic_predictions[pair]
+        columns = hist_preds.columns
+        last_date = hist_preds["date_pred"].iloc[-1] if not hist_preds.empty else pd.NaT
 
-        zeros_df = pd.DataFrame(np.zeros((1, len(columns))), index=index, columns=columns)
-        # A numeric 0 placeholder would degrade the date column to object dtype
-        # but we want to keep the date column as datetime type.
-        zeros_df["date_pred"] = pd.Series(pd.NaT, index=index, dtype="datetime64[ms, UTC]")
-        self.historic_predictions[pair] = pd.concat(
-            [self.historic_predictions[pair], zeros_df], ignore_index=True, axis=0
-        )
+        # Determine which candles are missing from the historic predictions. Usually that is
+        # exactly the current one, but the bot can skip candles (a pairlist pass taking longer
+        # than one candle, a pair returning to the whitelist, ...) and it can hand the same
+        # candle over twice.
+        if pd.isna(last_date):
+            new_dates = strat_df["date"].iloc[-1:]
+        elif last_date == strat_df["date"].iloc[-1]:
+            # Already recorded - the assignments below overwrite that row rather than
+            # appending a second one carrying the same date.
+            new_dates = strat_df["date"].iloc[:0]
+        else:
+            new_dates = strat_df.loc[strat_df["date"] > last_date, "date"]
+            if new_dates.empty:
+                # The strategy dataframe ends before the last stored prediction. Appending
+                # would duplicate a date, overwriting would move one backwards - so keep
+                # the predictions we already have for these candles.
+                logger.warning(
+                    f"Last candle for {pair} ({strat_df['date'].iloc[-1]}) predates the "
+                    f"last stored prediction ({last_date}) - keeping the stored predictions."
+                )
+                self.model_return_values[pair] = hist_preds.tail(len_df).reset_index(drop=True)
+                return
+
+        if not new_dates.empty:
+            # Skipped candles get a zeroed placeholder row each, keeping the historic
+            # predictions aligned with the strategy dataframe.
+            # The last row is filled with the prediction below.
+            if len(new_dates) > 1:
+                # Those zeros are indistinguishable from real predictions of 0 further down the line
+                logger.warning(
+                    f"FreqAI did not predict on {len(new_dates) - 1} candle(s) of {pair} "
+                    f"({new_dates.iloc[0]} - {new_dates.iloc[-2]}), filling them with zeros. "
+                    "The bot was either stopped, or a full iteration took longer than one candle."
+                )
+            zeros_df = pd.DataFrame(np.zeros((len(new_dates), len(columns))), columns=columns)
+            # A numeric 0 placeholder would degrade the date column to object dtype
+            # but we want to keep the date column as datetime type.
+            zeros_df["date_pred"] = new_dates.reset_index(drop=True)
+            self.historic_predictions[pair] = pd.concat(
+                [hist_preds, zeros_df], ignore_index=True, axis=0
+            )
         df = self.historic_predictions[pair]
 
         # model outputs and associated statistics
@@ -420,10 +500,9 @@ class FreqaiDataDrawer:
         """
         df = self.model_return_values[pair]
         to_keep = [col for col in dataframe.columns if not col.startswith("&")]
-        if df["date_pred"].dtype.kind != "M":
-            # Fallback - object dtype dates are normally converted when restoring from
-            # disk, but pandas refuses to merge on them, so guard here as well.
-            df["date_pred"] = pd.to_datetime(df["date_pred"], utc=True).dt.as_unit("ms")
+        # Fallback - dates are normally converted when restoring from disk, but guard
+        # here as well since the merge below depends on it.
+        self._ensure_date_pred_dtype(df)
         # Merge on the candle date (not on the index) to ensure alignment in case of bad
         # strategy handling like dropping candles or reindexing.
         dataframe_new = pd.merge(
@@ -500,7 +579,7 @@ class FreqaiDataDrawer:
                 )
                 num_delete = len(sorted_dict) - num_keep
                 deleted = 0
-                for k, v in sorted_dict.items():
+                for v in sorted_dict.values():
                     if deleted >= num_delete:
                         break
                     logger.info(f"Freqai purging old model file {v}")
@@ -526,8 +605,6 @@ class FreqaiDataDrawer:
 
         with (save_path / f"{dk.model_filename}_{METADATA}.json").open("w") as fp:
             rapidjson.dump(dk.data, fp, default=self.np_encoder, number_mode=METADATA_NUMBER_MODE)
-
-        return
 
     def save_data(self, model: Any, coin: str, dk: FreqaiDataKitchen) -> None:
         """
@@ -584,8 +661,6 @@ class FreqaiDataDrawer:
         self.meta_data_dictionary[coin][FEATURE_PIPELINE] = dk.feature_pipeline
         self.meta_data_dictionary[coin][LABEL_PIPELINE] = dk.label_pipeline
         self.save_drawer_to_disk()
-
-        return
 
     def load_metadata(self, dk: FreqaiDataKitchen) -> None:
         """
@@ -787,7 +862,7 @@ class FreqaiDataDrawer:
             all_pairs_end_dates.append(pair_historic_data.date_pred.max())
 
         global_metadata = self.load_global_metadata_from_disk()
-        start_date = datetime.fromtimestamp(int(global_metadata["start_dry_live_date"]))
+        start_date = dt_from_ts(int(global_metadata["start_dry_live_date"]))
         end_date = max(all_pairs_end_dates)
         # add 1 day to string timerange to ensure BT module will load all dataframe data
         end_date = end_date + timedelta(days=1)

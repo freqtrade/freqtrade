@@ -47,8 +47,8 @@ class HyperStrategyMixin:
         :param space: parameter space to filter for, or None for all spaces.
         :return:
         """
-        for space in [c for c in self._ft_hyper_params if space is None or c == space]:
-            for par in self._ft_hyper_params[space].values():
+        for space_ in [c for c in self._ft_hyper_params if space is None or c == space]:
+            for par in self._ft_hyper_params[space_].values():
                 yield par.name, par
 
     def ft_set_special_params_from_file(self) -> None:

@@ -7,7 +7,7 @@ from pathlib import Path
 import ccxt
 from pandas import DataFrame
 
-from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS
+from freqtrade.candle_columns import get_candle_columns
 from freqtrade.enums import TRADE_MODES, CandleType, MarginMode, PriceType, RunMode, TradingMode
 from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
 from freqtrade.exchange import Exchange
@@ -68,6 +68,8 @@ class Binance(Exchange):
             PriceType.MARK: "MARK_PRICE",
         },
         "ws_enabled": False,
+        # ccxt maps "total" to assets[].marginBalance (= walletBalance + unrealizedProfit)
+        "balance_includes_unrealized_pnl": True,
         "proxy_coin_mapping": {
             "BNFCR": "USDC",
             "BFUSD": "USDT",
@@ -165,7 +167,7 @@ class Binance(Exchange):
         """
         Overwrite to introduce "fast new pair" functionality by detecting the pair's listing date
         Does not work for other exchanges, which don't return the earliest data when called with "0"
-        :param candle_type: Any of the enum CandleType (must match trading mode!)
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
         """
         if is_new_pair and candle_type in (CandleType.SPOT, CandleType.FUTURES, CandleType.MARK):
             with self._loop_lock:
@@ -184,7 +186,7 @@ class Binance(Exchange):
                         f"No available candle-data for {pair} before "
                         f"{dt_from_ts(until_ms).isoformat()}"
                     )
-                    return DataFrame(columns=DEFAULT_DATAFRAME_COLUMNS)
+                    return DataFrame(columns=get_candle_columns(candle_type))
 
         if (
             not self._can_use_data_download_fast

@@ -985,8 +985,10 @@ def test_MaxDrawdown_calculation_mode_dispatch(
                 "trade_limit": 2,
                 "stop_duration": 60,
             },
-            "[{'StoplossGuard': 'StoplossGuard - Frequent Stoploss Guard, "
-            "2 stoplosses with profit < 0.00% within 60 minutes.'}]",
+            (
+                "[{'StoplossGuard': 'StoplossGuard - Frequent Stoploss Guard, "
+                "2 stoplosses with profit < 0.00% within 60 minutes.'}]"
+            ),
             None,
         ),
         (
@@ -996,14 +998,18 @@ def test_MaxDrawdown_calculation_mode_dispatch(
         ),
         (
             {"method": "LowProfitPairs", "lookback_period": 60, "stop_duration": 60},
-            "[{'LowProfitPairs': 'LowProfitPairs - Low Profit Protection, locks pairs with "
-            "profit < 0.0 within 60 minutes.'}]",
+            (
+                "[{'LowProfitPairs': 'LowProfitPairs - Low Profit Protection, locks pairs with "
+                "profit < 0.0 within 60 minutes.'}]"
+            ),
             None,
         ),
         (
             {"method": "MaxDrawdown", "lookback_period": 60, "stop_duration": 60},
-            "[{'MaxDrawdown': 'MaxDrawdown - Max drawdown protection, stop trading "
-            "if drawdown is > 0.0 within 60 minutes.'}]",
+            (
+                "[{'MaxDrawdown': 'MaxDrawdown - Max drawdown protection, stop trading "
+                "if drawdown is > 0.0 within 60 minutes.'}]"
+            ),
             None,
         ),
         (
@@ -1014,8 +1020,10 @@ def test_MaxDrawdown_calculation_mode_dispatch(
                 "required_profit": -0.05,
                 "stop_duration": 60,
             },
-            "[{'StoplossGuard': 'StoplossGuard - Frequent Stoploss Guard, "
-            "2 stoplosses with profit < -5.00% within 12 candles.'}]",
+            (
+                "[{'StoplossGuard': 'StoplossGuard - Frequent Stoploss Guard, "
+                "2 stoplosses with profit < -5.00% within 12 candles.'}]"
+            ),
             None,
         ),
         (
@@ -1025,14 +1033,18 @@ def test_MaxDrawdown_calculation_mode_dispatch(
         ),
         (
             {"method": "LowProfitPairs", "lookback_period_candles": 11, "stop_duration": 60},
-            "[{'LowProfitPairs': 'LowProfitPairs - Low Profit Protection, locks pairs with "
-            "profit < 0.0 within 11 candles.'}]",
+            (
+                "[{'LowProfitPairs': 'LowProfitPairs - Low Profit Protection, locks pairs with "
+                "profit < 0.0 within 11 candles.'}]"
+            ),
             None,
         ),
         (
             {"method": "MaxDrawdown", "lookback_period_candles": 20, "stop_duration": 60},
-            "[{'MaxDrawdown': 'MaxDrawdown - Max drawdown protection, stop trading "
-            "if drawdown is > 0.0 within 20 candles.'}]",
+            (
+                "[{'MaxDrawdown': 'MaxDrawdown - Max drawdown protection, stop trading "
+                "if drawdown is > 0.0 within 20 candles.'}]"
+            ),
             None,
         ),
         (
@@ -1051,20 +1063,26 @@ def test_MaxDrawdown_calculation_mode_dispatch(
                 "required_profit": -0.05,
                 "unlock_at": "01:00",
             },
-            "[{'StoplossGuard': 'StoplossGuard - Frequent Stoploss Guard, "
-            "2 stoplosses with profit < -5.00% within 12 candles.'}]",
+            (
+                "[{'StoplossGuard': 'StoplossGuard - Frequent Stoploss Guard, "
+                "2 stoplosses with profit < -5.00% within 12 candles.'}]"
+            ),
             None,
         ),
         (
             {"method": "LowProfitPairs", "lookback_period_candles": 11, "unlock_at": "03:00"},
-            "[{'LowProfitPairs': 'LowProfitPairs - Low Profit Protection, locks pairs with "
-            "profit < 0.0 within 11 candles.'}]",
+            (
+                "[{'LowProfitPairs': 'LowProfitPairs - Low Profit Protection, locks pairs with "
+                "profit < 0.0 within 11 candles.'}]"
+            ),
             None,
         ),
         (
             {"method": "MaxDrawdown", "lookback_period_candles": 20, "unlock_at": "04:00"},
-            "[{'MaxDrawdown': 'MaxDrawdown - Max drawdown protection, stop trading "
-            "if drawdown is > 0.0 within 20 candles.'}]",
+            (
+                "[{'MaxDrawdown': 'MaxDrawdown - Max drawdown protection, stop trading "
+                "if drawdown is > 0.0 within 20 candles.'}]"
+            ),
             None,
         ),
     ],

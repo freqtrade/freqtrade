@@ -13,9 +13,15 @@ from pathlib import Path
 from pandas import DataFrame, to_datetime
 
 from freqtrade import misc
+from freqtrade.candle_columns import (
+    FUNDING_RATE_LEGACY_RENAME,
+    OHLCV_COLUMNS,
+    get_candle_columns,
+)
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import DEFAULT_TRADES_COLUMNS, ListPairsWithTimeframes
 from freqtrade.data.converter import (
+    add_candle_aliases,
     clean_ohlcv_dataframe,
     trades_convert_types,
     trades_df_remove_duplicates,
@@ -30,8 +36,8 @@ logger = logging.getLogger(__name__)
 
 
 class IDataHandler(ABC):
-    _OHLCV_REGEX = r"^([\w-]+)\-(\d+[a-zA-Z]{1,2})\-?([a-zA-Z_]*)?(?=\.)"
-    _TRADES_REGEX = r"^([\w-]+)\-(trades)?(?=\.)"
+    _OHLCV_REGEX = re.compile(r"^([\w-]+)\-(\d+[a-zA-Z]{1,2})\-?([a-zA-Z_]*)?(?=\.)")
+    _TRADES_REGEX = re.compile(r"^([\w-]+)\-(trades)?(?=\.)")
 
     def __init__(self, datadir: Path) -> None:
         self._datadir = datadir
@@ -56,8 +62,7 @@ class IDataHandler(ABC):
         if trading_mode == TradingMode.FUTURES:
             datadir = datadir.joinpath("futures")
         _tmp = [
-            re.search(cls._OHLCV_REGEX, p.name)
-            for p in datadir.glob(f"*.{cls._get_file_extension()}")
+            cls._OHLCV_REGEX.search(p.name) for p in datadir.glob(f"*.{cls._get_file_extension()}")
         ]
         return [
             (
@@ -78,7 +83,7 @@ class IDataHandler(ABC):
         :param pair: Pair - used to generate filename
         :param timeframe: Timeframe - used to generate filename
         :param data: Dataframe containing OHLCV data
-        :param candle_type: Any of the enum CandleType (must match trading mode!)
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
         :return: None
         """
 
@@ -89,7 +94,7 @@ class IDataHandler(ABC):
         Returns the min and max timestamp for the given pair and timeframe.
         :param pair: Pair to get min/max for
         :param timeframe: Timeframe to get min/max for
-        :param candle_type: Any of the enum CandleType (must match trading mode!)
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
         :return: (min, max, len)
         """
         df = self._ohlcv_load(pair, timeframe, None, candle_type)
@@ -114,16 +119,75 @@ class IDataHandler(ABC):
         :param timerange: Limit data to be loaded to this timerange.
                         Optionally implemented by subclasses to avoid loading
                         all data where possible.
-        :param candle_type: Any of the enum CandleType (must match trading mode!)
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
         :return: DataFrame with ohlcv data, or empty DataFrame
         """
+
+    @classmethod
+    def _empty_ohlcv_df(cls, candle_type: CandleType) -> DataFrame:
+        """
+        Empty dataframe carrying the canonical columns for this candle type.
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
+        :return: Empty DataFrame
+        """
+        return DataFrame(columns=get_candle_columns(candle_type))
+
+    @classmethod
+    def _normalize_columns(cls, df: DataFrame, pair: str, candle_type: CandleType) -> DataFrame:
+        """
+        Bring a dataframe read from storage into the layout for this candle type.
+
+        Handles files written in an older layout (e.g. funding rates stored as OHLCV
+        candles with the rate in "open") transparently - they are converted on read and
+        rewritten in the current layout the next time they are stored.
+        :param df: Dataframe as read from disk
+        :param pair: Pair the data is for - used for logging
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
+        :return: DataFrame with the canonical columns for this candle type
+        :raises ValueError: if the layout cannot be interpreted
+        """
+        columns = get_candle_columns(candle_type)
+        # Current layout - project and reorder. Checked first so a file that carries both
+        # the current columns and stale legacy ones is read as the current layout.
+        if set(columns).issubset(df.columns):
+            return df.loc[:, columns]
+        if candle_type == CandleType.FUNDING_RATE and set(OHLCV_COLUMNS).issubset(df.columns):
+            # Legacy layout, correctly named - the rate lives in "open"
+            logger.debug(f"Migrating legacy funding rate columns for {pair} on read.")
+            return df.rename(columns=FUNDING_RATE_LEGACY_RENAME).loc[:, columns]
+        return cls._normalize_columns_positional(df, pair, candle_type)
+
+    @classmethod
+    def _normalize_columns_positional(
+        cls, df: DataFrame, pair: str, candle_type: CandleType
+    ) -> DataFrame:
+        """
+        Width-based variant of _normalize_columns, for stores that don't persist column names.
+        :param df: Dataframe as read from disk
+        :param pair: Pair the data is for - used for logging
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
+        :return: DataFrame with the canonical columns for this candle type
+        :raises ValueError: if the width matches neither the current nor the legacy layout
+        """
+        columns = get_candle_columns(candle_type)
+        if df.shape[1] == len(columns):
+            df.columns = columns
+            return df
+        if candle_type == CandleType.FUNDING_RATE and df.shape[1] == len(OHLCV_COLUMNS):
+            logger.debug(f"Migrating legacy funding rate columns for {pair} on read.")
+            df.columns = OHLCV_COLUMNS
+            return df.rename(columns=FUNDING_RATE_LEGACY_RENAME).loc[:, columns]
+        raise ValueError(
+            f"Unexpected column count {df.shape[1]} for {pair}, {candle_type} - "
+            f"expected {len(columns)}."
+        )
 
     def ohlcv_purge(self, pair: str, timeframe: str, candle_type: CandleType) -> bool:
         """
         Remove data for this pair
         :param pair: Delete data for this pair.
         :param timeframe: Timeframe (e.g. "5m")
-        :param candle_type: Any of the enum CandleType (must match trading mode!)
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
         :return: True when deleted, false if file did not exist.
         """
         filename = self._pair_data_filename(self._datadir, pair, timeframe, candle_type)
@@ -141,7 +205,7 @@ class IDataHandler(ABC):
         :param pair: Pair
         :param timeframe: Timeframe this ohlcv data is for
         :param data: Data to append.
-        :param candle_type: Any of the enum CandleType (must match trading mode!)
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
         """
 
     @classmethod
@@ -155,8 +219,7 @@ class IDataHandler(ABC):
         if trading_mode == TradingMode.FUTURES:
             datadir = datadir.joinpath("futures")
         _tmp = [
-            re.search(cls._TRADES_REGEX, p.name)
-            for p in datadir.glob(f"*.{cls._get_file_extension()}")
+            cls._TRADES_REGEX.search(p.name) for p in datadir.glob(f"*.{cls._get_file_extension()}")
         ]
         return [
             cls.rebuild_pair_from_filename(match[1])
@@ -196,10 +259,8 @@ class IDataHandler(ABC):
         :return: List of Pairs
         """
         _ext = cls._get_file_extension()
-        _tmp = [
-            re.search(r"^(\S+)(?=\-trades." + _ext + ")", p.name)
-            for p in datadir.glob(f"*trades.{_ext}")
-        ]
+        _regex = re.compile(rf"^(\S+)(?=\-trades\.{re.escape(_ext)})")
+        _tmp = [_regex.search(p.name) for p in datadir.glob(f"*trades.{_ext}")]
         # Check if regex found something and only return these results to avoid exceptions.
         return [cls.rebuild_pair_from_filename(match[0]) for match in _tmp if match]
 
@@ -362,7 +423,7 @@ class IDataHandler(ABC):
         :param drop_incomplete: Drop last candle assuming it may be incomplete.
         :param startup_candles: Additional candles to load at the start of the period
         :param warn_no_data: Log a warning message when no data is found
-        :param candle_type: Any of the enum CandleType (must match trading mode!)
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
         :return: DataFrame with ohlcv data, or empty DataFrame
         """
         # Fix startup period
@@ -376,6 +437,9 @@ class IDataHandler(ABC):
         if not pairdf.empty and candle_type == CandleType.FUNDING_RATE:
             # Funding rate data is sometimes off by a couple of ms - floor to seconds
             pairdf["date"] = pairdf["date"].dt.floor("s")
+            # Aliases only for funding rates
+            pairdf = add_candle_aliases(pairdf, candle_type)
+
         if self._check_empty_df(pairdf, pair, timeframe, candle_type, warn_no_data):
             return pairdf
         else:
@@ -394,6 +458,7 @@ class IDataHandler(ABC):
                 pair=pair,
                 fill_missing=fill_missing,
                 drop_incomplete=(drop_incomplete and enddate == pairdf.iloc[-1]["date"]),
+                candle_type=candle_type,
             )
             self._check_empty_df(pairdf, pair, timeframe, candle_type, warn_no_data)
             return pairdf

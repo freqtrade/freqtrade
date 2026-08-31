@@ -5,15 +5,15 @@ Provides dynamic pair list based on trade volumes
 """
 
 import logging
-from datetime import timedelta
 from typing import Any, Literal
 
 from freqtrade.constants import DOCS_LINK, ListPairsWithTimeframes
 from freqtrade.exceptions import OperationalException
-from freqtrade.exchange import timeframe_to_minutes, timeframe_to_prev_date
+from freqtrade.exchange import timeframe_to_minutes
 from freqtrade.exchange.exchange_types import Tickers
+from freqtrade.misc import plural
 from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter, SupportsBacktesting
-from freqtrade.util import FtTTLCache, dt_now, format_ms_time
+from freqtrade.util import FtTTLCache
 
 
 logger = logging.getLogger(__name__)
@@ -42,22 +42,9 @@ class VolumePairList(IPairList):
         self._max_value: float | None = self._pairlistconfig.get("max_value", None)
         self._refresh_period = self._pairlistconfig.get("refresh_period", 1800)
         self._pair_cache: FtTTLCache = FtTTLCache(maxsize=1, ttl=self._refresh_period)
-        self._lookback_days: int = self._pairlistconfig.get("lookback_days", 0)
-        self._lookback_timeframe: str = self._pairlistconfig.get("lookback_timeframe", "1d")
-        self._lookback_period: int = self._pairlistconfig.get("lookback_period", 0)
         self._def_candletype = self._config["candle_type_def"]
 
-        if (self._lookback_days > 0) and (self._lookback_period > 0):
-            raise OperationalException(
-                "Ambiguous configuration: lookback_days and lookback_period both set in pairlist "
-                "config. Please set lookback_days only or lookback_period and lookback_timeframe "
-                "and restart the bot."
-            )
-
-        # overwrite lookback timeframe and days when lookback_days is set
-        if self._lookback_days > 0:
-            self._lookback_timeframe = "1d"
-            self._lookback_period = self._lookback_days
+        self._init_lookback_config()
 
         # get timeframe in minutes and seconds
         self._tf_in_min = timeframe_to_minutes(self._lookback_timeframe)
@@ -87,17 +74,6 @@ class VolumePairList(IPairList):
 
         if not self._validate_keys(self._sort_key):
             raise OperationalException(f"key {self._sort_key} not in {SORT_VALUES}")
-
-        candle_limit = self._exchange.ohlcv_candle_limit(
-            self._lookback_timeframe, self._def_candletype
-        )
-        if self._lookback_period < 0:
-            raise OperationalException("VolumeFilter requires lookback_period to be >= 0")
-        if self._lookback_period > candle_limit:
-            raise OperationalException(
-                "VolumeFilter requires lookback_period to not "
-                f"exceed exchange max request size ({candle_limit})"
-            )
 
     @property
     def needstickers(self) -> bool:
@@ -150,24 +126,7 @@ class VolumePairList(IPairList):
                 "help": "Maximum value to use for filtering the pairlist.",
             },
             **IPairList.refresh_period_parameter(),
-            "lookback_days": {
-                "type": "number",
-                "default": 0,
-                "description": "Lookback Days",
-                "help": "Number of days to look back at.",
-            },
-            "lookback_timeframe": {
-                "type": "string",
-                "default": "",
-                "description": "Lookback Timeframe",
-                "help": "Timeframe to use for lookback.",
-            },
-            "lookback_period": {
-                "type": "number",
-                "default": 0,
-                "description": "Lookback Period",
-                "help": "Number of periods to look back at.",
-            },
+            **IPairList.lookback_parameters(),
         }
 
     def gen_pairlist(self, tickers: Tickers) -> list[str]:
@@ -224,42 +183,19 @@ class VolumePairList(IPairList):
             # Create bare minimum from tickers structure.
             filtered_tickers: list[dict[str, Any]] = [{"symbol": k} for k in pairlist]
 
-            # get lookback period in ms, for exchange ohlcv fetch
-            since_ms = (
-                int(
-                    timeframe_to_prev_date(
-                        self._lookback_timeframe,
-                        dt_now()
-                        + timedelta(
-                            minutes=-(self._lookback_period * self._tf_in_min) - self._tf_in_min
-                        ),
-                    ).timestamp()
-                )
-                * 1000
-            )
-
-            to_ms = (
-                int(
-                    timeframe_to_prev_date(
-                        self._lookback_timeframe, dt_now() - timedelta(minutes=self._tf_in_min)
-                    ).timestamp()
-                )
-                * 1000
-            )
-
             self.log_once(
-                f"Using volume range of {self._lookback_period} candles, timeframe: "
-                f"{self._lookback_timeframe}, starting from {format_ms_time(since_ms)} "
-                f"till {format_ms_time(to_ms)}",
+                f"Using volume range of {self._lookback_period} x {self._lookback_timeframe} "
+                f"{plural(self._lookback_period, 'candle')}.",
                 logger.info,
             )
             needed_pairs: ListPairsWithTimeframes = [
                 (p, self._lookback_timeframe, self._def_candletype)
                 for p in [s["symbol"] for s in filtered_tickers]
-                if p not in self._pair_cache
             ]
 
-            candles = self._exchange.refresh_ohlcv_with_cache(needed_pairs, since_ms)
+            candles = self._exchange.refresh_ohlcv_with_cache(
+                needed_pairs, lookback_period=self._lookback_period
+            )
 
             for i, p in enumerate(filtered_tickers):
                 contract_size = self._exchange.markets[p["symbol"]].get("contractSize", 1.0) or 1.0

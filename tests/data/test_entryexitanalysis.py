@@ -13,7 +13,7 @@ from tests.conftest import get_args, patch_exchange, patched_configuration_load_
 
 
 @pytest.fixture(autouse=True)
-def entryexitanalysis_cleanup() -> None:
+def entryexitanalysis_cleanup():
     yield None
 
     Backtesting.cleanup()

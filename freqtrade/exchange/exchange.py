@@ -160,6 +160,7 @@ class Exchange:
         "funding_fee_timeframe": "1h",
         "ccxt_futures_name": "swap",
         "needs_trading_fees": False,  # use fetch_trading_fees to cache fees
+        "balance_includes_unrealized_pnl": False,  # ccxt "total" is plain wallet balance
         "order_props_in_contracts": ["amount", "filled", "remaining"],
         "fetch_orders_limit_minutes": None,  # "fetch_orders" is not time-limited by default
         # Override createMarketBuyOrderRequiresPrice where ccxt has it wrong
@@ -311,6 +312,24 @@ class Exchange:
         """
         self.close()
 
+    def _close_async_ccxt(self, ccxt_object: ccxt_pro.Exchange | None, name: str) -> None:
+        """
+        Release the aiohttp sessions of an async ccxt object.
+        Errors are logged, but don't propagate as it's only called in shutdown phase.
+        :param name: Name of the object - used for logging only.
+        """
+        if (
+            ccxt_object is not None
+            and inspect.iscoroutinefunction(ccxt_object.close)
+            # ccxt warns about either of these being left behind in its destructor.
+            and (ccxt_object.session or getattr(ccxt_object, "socks_proxy_sessions", None))
+        ):
+            logger.debug(f"Closing {name} ccxt session.")
+            try:
+                self.loop.run_until_complete(ccxt_object.close())
+            except Exception as e:
+                logger.warning(f"Error closing {name} ccxt session: {e.__class__.__name__} {e}")
+
     def close(self):
         if self._exchange_ws:
             self._exchange_ws.cleanup()
@@ -319,29 +338,17 @@ class Exchange:
             generic_loop = asyncio.get_running_loop()
         except RuntimeError:
             generic_loop = None
-        loop_running = (getattr(self, "loop", None) and self.loop.is_running()) or (
+        loop = getattr(self, "loop", None)
+        loop_running = (loop and loop.is_running()) or (
             generic_loop is not None and generic_loop.is_running()
         )
 
-        if (
-            getattr(self, "_api_async", None)
-            and inspect.iscoroutinefunction(self._api_async.close)
-            and self._api_async.session
-            and not loop_running
-        ):
-            logger.debug("Closing async ccxt session.")
-            self.loop.run_until_complete(self._api_async.close())
-        if (
-            self._ws_async
-            and inspect.iscoroutinefunction(self._ws_async.close)
-            and self._ws_async.session
-            and not loop_running
-        ):
-            logger.debug("Closing ws ccxt session.")
-            self.loop.run_until_complete(self._ws_async.close())
+        if loop and not loop.is_closed() and not loop_running:
+            self._close_async_ccxt(getattr(self, "_api_async", None), "async")
+            self._close_async_ccxt(self._ws_async, "ws")
 
-        if self.loop and not self.loop.is_closed():
-            self.loop.close()
+        if loop and not loop.is_closed():
+            loop.close()
 
     def _init_async_loop(self) -> asyncio.AbstractEventLoop:
         loop = asyncio.new_event_loop()
@@ -398,8 +405,8 @@ class Exchange:
             ),
             "secret": exchange_config.get("secret"),
             "password": exchange_config.get("password"),
-            "uid": exchange_config.get("uid", ""),
-            "accountId": exchange_config.get("account_id", exchange_config.get("accountId", "")),
+            "uid": exchange_config.get("uid"),
+            "accountId": exchange_config.get("account_id", exchange_config.get("accountId")),
             # DEX attributes:
             "walletAddress": exchange_config.get(
                 "wallet_address", exchange_config.get("walletAddress")
@@ -492,7 +499,6 @@ class Exchange:
         .api will be available at this point.
         Must be overridden in child methods if required.
         """
-        pass
 
     def _log_exchange_response(self, endpoint: str, response, *, add_info=None) -> None:
         """Log exchange responses"""
@@ -508,7 +514,7 @@ class Exchange:
         Uses ohlcv_candle_limit_per_timeframe if the exchange has different limits
         per timeframe (e.g. bittrex), otherwise falls back to ohlcv_candle_limit
         :param timeframe: Timeframe to check
-        :param candle_type: Candle-type
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
         :param since_ms: Starting timestamp
         :return: Candle limit as integer
         """
@@ -566,7 +572,7 @@ class Exchange:
         Return a list of supported quote currencies
         """
         markets = self.markets
-        return sorted(set([x["quote"] for _, x in markets.items()]))
+        return sorted({x["quote"] for _, x in markets.items()})
 
     def get_pair_quote_currency(self, pair: str) -> str:
         """Return a pair's quote currency (base/quote:settlement)"""
@@ -699,7 +705,7 @@ class Exchange:
 
             if isinstance(markets, Exception):
                 raise markets
-            return None
+            return
         except TimeoutError as e:
             logger.warning("Could not load markets. Reason: %s", e)
             raise TemporaryError from e
@@ -716,7 +722,7 @@ class Exchange:
             and self._last_markets_refresh > 0
             and (self._last_markets_refresh + self.markets_refresh_interval > dt_ts())
         ):
-            return None
+            return
         logger.debug("Performing scheduled market reload..")
         try:
             # on initial load, we retry 3 times to ensure we get the markets
@@ -986,6 +992,16 @@ class Exchange:
         Get parameter value from _ft_has
         """
         return self._ft_has.get(param, default)
+
+    def balance_includes_unrealized_pnl(self) -> bool:
+        """
+        Whether the stake currency's "total" balance as returned by get_balances() is account
+        equity (wallet balance + unrealized PnL of open positions) rather than plain wallet
+        balance. Wallets normalizes this away, so that Wallet.total has one single meaning
+        across exchanges and between dry-run and live.
+        Overridable for exchanges where this depends on more than the exchange itself.
+        """
+        return self.get_option("balance_includes_unrealized_pnl", False)
 
     def exchange_has(self, endpoint: str) -> bool:
         """
@@ -2589,7 +2605,7 @@ class Exchange:
         :param pair: Pair to download
         :param timeframe: Timeframe to get data for
         :param since_ms: Timestamp in milliseconds to get history from
-        :param candle_type: '', mark, index, premiumIndex, or funding_rate
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
         :param is_new_pair: used by binance subclass to allow "fast" new pair downloading
         :param until_ms: Timestamp in milliseconds to get history up to
         :return: Dataframe with candle (OHLCV) data
@@ -2611,7 +2627,12 @@ class Exchange:
             self._ohlcv_partial_candle if candle_type != CandleType.FUNDING_RATE else False
         )
         return ohlcv_to_dataframe(
-            data, timeframe, pair, fill_missing=False, drop_incomplete=drop_incomplete
+            data,
+            timeframe,
+            pair,
+            fill_missing=False,
+            drop_incomplete=drop_incomplete,
+            candle_type=candle_type,
         )
 
     async def _async_get_historic_ohlcv(
@@ -2625,7 +2646,7 @@ class Exchange:
     ) -> OHLCVResponse:
         """
         Download historic ohlcv
-        :param candle_type: Any of the enum CandleType (must match trading mode!)
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
         """
 
         one_call = timeframe_to_msecs(timeframe) * self.ohlcv_candle_limit(
@@ -2833,8 +2854,9 @@ class Exchange:
             ticks,
             timeframe,
             pair=pair,
-            fill_missing=not has_cache and c_type != CandleType.FUNDING_RATE,
+            fill_missing=not has_cache,
             drop_incomplete=drop_incomplete,
+            candle_type=c_type,
         )
         # keeping parsed dataframe in cache
         if cache:
@@ -2845,8 +2867,9 @@ class Exchange:
                     concat([old, ohlcv_df], axis=0),
                     timeframe,
                     pair,
-                    fill_missing=c_type != CandleType.FUNDING_RATE,
+                    fill_missing=True,
                     drop_incomplete=False,
+                    candle_type=c_type,
                 )
                 candle_limit = self.ohlcv_candle_limit(timeframe, self._config["candle_type_def"])
                 # Age out old candles
@@ -2913,37 +2936,43 @@ class Exchange:
         return results_df
 
     def refresh_ohlcv_with_cache(
-        self, pairs: list[PairWithTimeframe], since_ms: int
+        self, pairs: list[PairWithTimeframe], *, lookback_period: int
     ) -> dict[PairWithTimeframe, DataFrame]:
         """
         Refresh ohlcv data for all pairs in needed_pairs if necessary.
-        Caches data with expiring per timeframe.
-        Should only be used for pairlists which need "on time" expirarion, and no longer cache.
+        Caches data per (timeframe, lookback_period), expiring with each new candle.
+        Should only be used for pairlists which need "on time" expiration, and no longer cache.
+        :param pairs: List of pairs, timeframes to refresh
+        :param lookback_period: Amount of candles to fetch.
+            Downloads lookback_period + 1 candles, as measuring a change over N candles
+            requires N + 1 candles of data.
         """
 
         timeframes = {p[1] for p in pairs}
         for timeframe in timeframes:
-            if (timeframe, since_ms) not in self._expiring_candle_cache:
+            if (timeframe, lookback_period) not in self._expiring_candle_cache:
                 timeframe_in_sec = timeframe_to_seconds(timeframe)
                 # Initialise cache
-                self._expiring_candle_cache[(timeframe, since_ms)] = PeriodicCache(
+                self._expiring_candle_cache[(timeframe, lookback_period)] = PeriodicCache(
                     ttl=timeframe_in_sec, maxsize=1000
                 )
 
         # Get candles from cache
         candles = {
-            c: self._expiring_candle_cache[(c[1], since_ms)].get(c, None)
+            c: self._expiring_candle_cache[(c[1], lookback_period)].get(c, None)
             for c in pairs
-            if c in self._expiring_candle_cache[(c[1], since_ms)]
+            if c in self._expiring_candle_cache[(c[1], lookback_period)]
         }
         pairs_to_download = [p for p in pairs if p not in candles]
-        if pairs_to_download:
-            candles_new = self.refresh_latest_ohlcv(
-                pairs_to_download, since_ms=since_ms, cache=False
-            )
+        for timeframe in timeframes:
+            tf_pairs = [p for p in pairs_to_download if p[1] == timeframe]
+            if not tf_pairs:
+                continue
+            since_ms = dt_ts(date_minus_candles(timeframe, lookback_period + 1))
+            candles_new = self.refresh_latest_ohlcv(tf_pairs, since_ms=since_ms, cache=False)
             for c, val in candles_new.items():
                 candles[c] = val
-                self._expiring_candle_cache[(c[1], since_ms)][c] = val
+                self._expiring_candle_cache[(c[1], lookback_period)][c] = val
         return candles
 
     def _now_is_time_to_refresh(self, pair: str, timeframe: str, candle_type: CandleType) -> bool:
@@ -2964,7 +2993,7 @@ class Exchange:
     ) -> OHLCVResponse:
         """
         Asynchronously get candle history data using fetch_ohlcv
-        :param candle_type: '', mark, index, premiumIndex, or funding_rate
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
         returns tuple: (pair, timeframe, ohlcv_list)
         """
         try:
@@ -3047,8 +3076,8 @@ class Exchange:
         """
         # Funding rate
         data = await self._api_async.fetch_funding_rate_history(pair, since=since_ms, limit=limit)
-        # Convert funding rate to candle pattern
-        data = [[x["timestamp"], x["fundingRate"], 0, 0, 0, 0] for x in data]
+        # Reduce to the columns stored for funding rates (date, funding_rate)
+        data = [[x["timestamp"], x["fundingRate"]] for x in data]
         return data
 
     def check_candle_type_support(self, candle_type: CandleType) -> bool:
@@ -3176,11 +3205,7 @@ class Exchange:
                             last_cached_ms = all_stored_ticks_df.iloc[-1]["timestamp"]
                             from_id = all_stored_ticks_df.iloc[-1]["id"]
                             # only use cached if it's closer than first_candle_ms
-                            since_ms = (
-                                last_cached_ms
-                                if last_cached_ms > first_candle_ms
-                                else first_candle_ms
-                            )
+                            since_ms = max(first_candle_ms, last_cached_ms)
                         else:
                             # Skip cache, it's too old
                             all_stored_ticks_df = DataFrame(
@@ -3918,29 +3943,25 @@ class Exchange:
         :param futures_funding_rate: Fake funding rate to use if funding_rates are not available
         """
         relevant_cols = ["date", "open_mark", "open_fund"]
+        # Reduce both sides to the columns we need, under explicit names. Funding rates are
+        # stored as "funding_rate" but older in-memory frames may still use the "open" alias.
+        fund_col = "funding_rate" if "funding_rate" in funding_rates.columns else "open"
+        funding_rates = funding_rates.loc[:, ["date", fund_col]].rename(
+            columns={fund_col: "open_fund"}
+        )
+        mark_rates = mark_rates.rename(columns={"open": "open_mark"})
+
         if futures_funding_rate is None:
-            return mark_rates.merge(
-                funding_rates, on="date", how="inner", suffixes=["_mark", "_fund"]
-            )[relevant_cols]
+            return mark_rates.merge(funding_rates, on="date", how="inner")[relevant_cols]
         else:
             if len(funding_rates) == 0:
                 # No funding rate candles - full fillup with fallback variable
                 mark_rates["open_fund"] = futures_funding_rate
-                return mark_rates.rename(
-                    columns={
-                        "open": "open_mark",
-                        "close": "close_mark",
-                        "high": "high_mark",
-                        "low": "low_mark",
-                        "volume": "volume_mark",
-                    }
-                )[relevant_cols]
+                return mark_rates[relevant_cols]
 
             else:
                 # Fill up missing funding_rate candles with fallback value
-                combined = mark_rates.merge(
-                    funding_rates, on="date", how="left", suffixes=["_mark", "_fund"]
-                )
+                combined = mark_rates.merge(funding_rates, on="date", how="left")
                 # Fill only leading missing funding rates so gaps stay untouched
                 first_valid_idx = combined["open_fund"].first_valid_index()
                 if first_valid_idx is None:

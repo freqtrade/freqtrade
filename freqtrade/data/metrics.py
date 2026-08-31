@@ -75,11 +75,13 @@ def combined_dataframes_with_rel_mean(
     df_comb = combine_dataframes_by_column(data, column)
     # Trim dataframes to the given timeframe
     df_comb = df_comb.iloc[(df_comb.index >= fromdt) & (df_comb.index < todt)]
-    rel_mean = df_comb.pct_change().mean(axis=1).fillna(0).cumsum()
-    df_comb["count"] = df_comb.count(axis=1)
-    df_comb["mean"] = df_comb.mean(axis=1)
-    df_comb["rel_mean"] = rel_mean
-    return df_comb[["mean", "rel_mean", "count"]]
+    return pd.DataFrame(
+        {
+            "mean": df_comb.mean(axis=1),
+            "rel_mean": df_comb.pct_change().mean(axis=1).fillna(0).cumsum(),
+            "count": df_comb.count(axis=1),
+        }
+    )
 
 
 def combine_dataframes_with_mean(
@@ -95,9 +97,7 @@ def combine_dataframes_with_mean(
     """
     df_comb = combine_dataframes_by_column(data, column)
 
-    df_comb["mean"] = df_comb.mean(axis=1)
-
-    return df_comb
+    return pd.concat([df_comb, df_comb.mean(axis=1).rename("mean")], axis=1)
 
 
 def create_cum_profit(
@@ -300,7 +300,11 @@ def calculate_cagr(days_passed: int, starting_balance: float, final_balance: flo
     if (final_balance < 0) or (starting_balance <= 0) or (days_passed <= 0):
         # With leveraged trades, final_balance can become negative.
         return 0
-    return (final_balance / starting_balance) ** (1 / (days_passed / 365)) - 1
+    try:
+        return (final_balance / starting_balance) ** (1 / (days_passed / 365)) - 1
+    except OverflowError:
+        # Extrapolating a large gain over a very short timeframe can exceed float range.
+        return 0
 
 
 def calculate_expectancy(trades: pd.DataFrame) -> tuple[float, float]:

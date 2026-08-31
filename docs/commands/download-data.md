@@ -30,7 +30,9 @@ options:
                         Disable parallel startup download. Only use this if
                         you experience issues.
   --timerange TIMERANGE
-                        Specify what timerange of data to use.
+                        Limit action to a specific timerange. Format:
+                        (`yyyymmdd` or `yyyymmddThhmm` - e.g.
+                        `20240101-20240201T1200`).
   --dl-trades           Download trades instead of OHLCV data.
   --convert             Convert downloaded trades to OHLCV data. Only
                         applicable in combination with `--dl-trades`. Will be

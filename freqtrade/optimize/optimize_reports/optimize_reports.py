@@ -126,8 +126,7 @@ def generate_trade_signal_candles(
     preprocessed_df: dict[str, DataFrame], bt_results: BacktestContentType, date_col: str
 ) -> dict[str, DataFrame]:
     signal_candles_only = {}
-    for pair in preprocessed_df.keys():
-        pairdf = preprocessed_df[pair]
+    for pair, pairdf in preprocessed_df.items():
         resdf = bt_results["results"]
         pairresults = resdf.loc[(resdf["pair"] == pair)]
 
@@ -237,7 +236,7 @@ def calculate_trade_volume(trades_dict: list[dict[str, Any]]) -> float:
     return sum(sum(order["cost"] for order in trade.get("orders", [])) for trade in trades_dict)
 
 
-def generate_pair_metrics(  #
+def generate_pair_metrics(
     pairlist: list[str],
     stake_currency: str,
     starting_balance: float,
@@ -429,7 +428,6 @@ def calc_streak(dataframe: DataFrame) -> tuple[int, int]:
     df["streaks"] = df["result"].ne(df["result"].shift()).cumsum().rename("streaks")
     df["counter"] = df["streaks"].groupby(df["streaks"]).cumcount() + 1
     res = df.groupby(df["result"]).max()
-    #
     cons_wins = int(res.loc["win", "counter"]) if "win" in res.index else 0
     cons_losses = int(res.loc["loss", "counter"]) if "loss" in res.index else 0
     return cons_wins, cons_losses

@@ -518,14 +518,6 @@ EXCHANGES: dict[str, TestExchangeOnlineSetup] = {
             }
         ],
     },
-    "bitmart": {
-        "pair": "BTC/USDT",
-        "stake_currency": "USDT",
-        "hasQuoteVolume": True,
-        "timeframe": "1h",
-        "candle_count": 200,
-        "orderbook_max_entries": 50,
-    },
     "bitget": {
         "pair": "BTC/USDT",
         "stake_currency": "USDT",
@@ -781,8 +773,8 @@ EXCHANGES_SPOT = [exch for exch, params in EXCHANGES.items() if not params.get("
 def exchange_conf():
     config = get_default_conf_usdt((Path(__file__).parent / "testdata").resolve())
     config["exchange"]["pair_whitelist"] = []
-    config["exchange"]["key"] = ""
-    config["exchange"]["secret"] = ""
+    config["exchange"]["api_key"] = None
+    config["exchange"]["secret"] = None
     config["dry_run"] = False
     config["entry_pricing"]["use_order_book"] = True
     config["exit_pricing"]["use_order_book"] = True

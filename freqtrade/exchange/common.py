@@ -55,7 +55,6 @@ SUPPORTED_EXCHANGES = [
     "binanceus",
     "binanceusdm",
     "bingx",
-    "bitmart",
     "bitget",
     "bybit",
     "bybiteu",
@@ -112,11 +111,14 @@ EXCHANGE_HAS_OPTIONAL_FUTURES: dict[str, list[str]] = {
 }
 
 
-def calculate_backoff(retrycount, max_retries):
+def calculate_backoff(remaining_retries, max_retries):
     """
     Calculate backoff
+    :param remaining_retries: Number of retries left - counts down with each attempt,
+                              so the delay increases with each retry.
+    :param max_retries: Maximum number of retries
     """
-    return (max_retries - retrycount) ** 2 + 1
+    return (max_retries - remaining_retries) ** 2 + 1
 
 
 def retrier_async(f):

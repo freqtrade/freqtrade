@@ -188,16 +188,16 @@ def test_load_strategy_no_keys(default_conf_usdt, mocker, runmode, caplog) -> No
     strategy_config = freqtrade.strategy.config
     assert id(strategy_config["exchange"]) == id(conf["exchange"])
     # Keys have been removed and are not passed to the exchange
-    assert strategy_config["exchange"]["key"] == ""
-    assert strategy_config["exchange"]["secret"] == ""
+    assert strategy_config["exchange"]["api_key"] is None
+    assert strategy_config["exchange"]["secret"] is None
 
     assert erm.call_count == 1
     ex_conf = erm.call_args_list[0][1]["exchange_config"]
     assert id(ex_conf) != id(conf["exchange"])
     # Keys are still present
-    assert ex_conf["key"] != ""
-    assert ex_conf["key"] == default_conf_usdt["exchange"]["key"]
-    assert ex_conf["secret"] != ""
+    assert ex_conf["api_key"] is not None
+    assert ex_conf["api_key"] == default_conf_usdt["exchange"]["api_key"]
+    assert ex_conf["secret"] is not None
     assert ex_conf["secret"] == default_conf_usdt["exchange"]["secret"]
 
 
@@ -241,7 +241,7 @@ def test_check_available_stake_amount(
 
     freqtrade = FreqtradeBot(default_conf_usdt)
 
-    for i in range(0, max_open):
+    for i in range(max_open):
         if expected[i] is not None:
             limit_buy_order_usdt_open["id"] = str(i)
             result = freqtrade.wallets.get_trade_stake_amount("ETH/USDT", 1)
@@ -513,7 +513,7 @@ def test_create_trade_no_signal(default_conf_usdt, fee, mocker) -> None:
     assert not freqtrade.create_trade("ETH/USDT")
 
 
-@pytest.mark.parametrize("max_open", range(0, 5))
+@pytest.mark.parametrize("max_open", range(5))
 @pytest.mark.parametrize("tradable_balance_ratio,modifier", [(1.0, 1), (0.99, 0.8), (0.5, 0.5)])
 def test_create_trades_multiple_trades(
     default_conf_usdt,
@@ -3474,7 +3474,6 @@ def test__safe_exit_amount(default_conf_usdt, fee, caplog, mocker, amount_wallet
     patch_RPCManager(mocker)
     patch_exchange(mocker)
     amount = 95.33
-    amount_wallet = amount_wallet
     mocker.patch("freqtrade.wallets.Wallets.get_free", MagicMock(return_value=amount_wallet))
     wallet_update = mocker.patch("freqtrade.wallets.Wallets.update")
     trade = Trade(
@@ -5123,6 +5122,62 @@ def test_handle_onexchange_order_fully_canceled_enter(
     assert len(trades) == 0
 
 
+@pytest.mark.usefixtures("init_persistence")
+def test_handle_onexchange_order_other_trade(mocker, default_conf_usdt, fee, caplog):
+    # trades 1 and 6 are both on LTC/USDT, trade 1 being the closed, preceding one.
+    # Its exit order falls into the lookback window of the recovery running for trade 6,
+    # and must not be assigned to (and inflate the amount of) trade 6.
+    default_conf_usdt["dry_run"] = False
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    create_mock_trades_usdt(fee)
+
+    prev_exit_order = Trade.get_trades([Trade.id == 1]).first().orders[-1].to_ccxt_object()
+    prev_exit_order.update({"status": "closed", "filled": prev_exit_order["amount"]})
+    mocker.patch(f"{EXMS}.fetch_orders", return_value=[prev_exit_order])
+
+    trade = Trade.get_trades([Trade.id == 6]).first()
+    freqtrade.wallets = MagicMock()
+    freqtrade.wallets.get_owned = MagicMock(return_value=trade.amount)
+    prev_amount = trade.amount
+
+    assert freqtrade.handle_onexchange_order(trade) is False
+    assert log_has_re(r"Order prod_exit_1_long .* already belongs to trade 1 - skipping\.", caplog)
+    assert not log_has_re(r"Found previously unknown order .*", caplog)
+
+    # Order stayed with the preceding trade - the recovered trade is unchanged.
+    assert len(Trade.get_trades([Trade.id == 1]).first().orders) == 2
+    trade = Trade.get_trades([Trade.id == 6]).first()
+    assert len(trade.orders) == 2
+    assert trade.amount == prev_amount
+    assert trade.is_open is True
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_handle_onexchange_order_rollback(mocker, default_conf_usdt, fee, caplog):
+    # Assigning an order that's already owned by another trade on the same pair violates the
+    # (ft_pair, order_id) unique constraint. The session must be rolled back in that case,
+    # otherwise every subsequent db access fails with PendingRollbackError.
+    default_conf_usdt["dry_run"] = False
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    create_mock_trades_usdt(fee)
+
+    prev_exit_order = Trade.get_trades([Trade.id == 1]).first().orders[-1].to_ccxt_object()
+    prev_exit_order.update({"status": "closed", "filled": prev_exit_order["amount"]})
+    mocker.patch(f"{EXMS}.fetch_orders", return_value=[prev_exit_order])
+
+    trade = Trade.get_trades([Trade.id == 6]).first()
+    freqtrade.wallets = MagicMock()
+    freqtrade.wallets.get_owned = MagicMock(return_value=trade.amount)
+    # Disable the ownership check to trigger the constraint violation.
+    mocker.patch("freqtrade.freqtradebot.Order.order_by_id", return_value=None)
+
+    assert freqtrade.handle_onexchange_order(trade) is False
+    assert log_has_re(r"Error finding onexchange order", caplog)
+
+    # Session is usable again - no PendingRollbackError
+    assert len(Trade.get_trades().all()) == 7
+
+
 def test_get_valid_price(mocker, default_conf_usdt) -> None:
     patch_RPCManager(mocker)
     patch_exchange(mocker)
@@ -5261,32 +5316,34 @@ def test_update_funding_fees(
     date_eight = dt_utc(2021, 9, 1, 8)
     date_sixteen = dt_utc(2021, 9, 1, 16)
     columns = ["date", "open", "high", "low", "close", "volume"]
+    # Funding rates are stored as date + funding_rate (see freqtrade/candle_columns.py)
+    funding_columns = ["date", "funding_rate"]
     # 16:00 entry is actually never used
     # But should be kept in the test to ensure we're filtering correctly.
     funding_rates = {
         "LTC/USDT": DataFrame(
             [
-                [date_midnight, 0.00032583, 0, 0, 0, 0],
-                [date_eight, 0.00024472, 0, 0, 0, 0],
-                [date_sixteen, 0.00024472, 0, 0, 0, 0],
+                [date_midnight, 0.00032583],
+                [date_eight, 0.00024472],
+                [date_sixteen, 0.00024472],
             ],
-            columns=columns,
+            columns=funding_columns,
         ),
         "ETH/USDT": DataFrame(
             [
-                [date_midnight, 0.0001, 0, 0, 0, 0],
-                [date_eight, 0.0001, 0, 0, 0, 0],
-                [date_sixteen, 0.0001, 0, 0, 0, 0],
+                [date_midnight, 0.0001],
+                [date_eight, 0.0001],
+                [date_sixteen, 0.0001],
             ],
-            columns=columns,
+            columns=funding_columns,
         ),
         "XRP/USDT": DataFrame(
             [
-                [date_midnight, 0.00049426, 0, 0, 0, 0],
-                [date_eight, 0.00032715, 0, 0, 0, 0],
-                [date_sixteen, 0.00032715, 0, 0, 0, 0],
+                [date_midnight, 0.00049426],
+                [date_eight, 0.00032715],
+                [date_sixteen, 0.00032715],
             ],
-            columns=columns,
+            columns=funding_columns,
         ),
     }
 
@@ -5364,7 +5421,7 @@ def test_update_funding_fees(
                 sum(
                     trade.amount
                     * mark_prices[trade.pair].iloc[1:2]["open"]
-                    * funding_rates[trade.pair].iloc[1:2]["open"]
+                    * funding_rates[trade.pair].iloc[1:2]["funding_rate"]
                     * multiple
                 )
             )
@@ -5378,7 +5435,7 @@ def test_update_funding_fees(
             sum(
                 trade.amount
                 * mark_prices[trade.pair].iloc[1:2]["open"]
-                * funding_rates[trade.pair].iloc[1:2]["open"]
+                * funding_rates[trade.pair].iloc[1:2]["funding_rate"]
                 * multiple
             )
         )

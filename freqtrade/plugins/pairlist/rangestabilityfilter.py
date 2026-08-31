@@ -3,7 +3,6 @@ Rate of change pairlist filter
 """
 
 import logging
-from datetime import timedelta
 
 from pandas import DataFrame
 
@@ -12,7 +11,7 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.exchange_types import Tickers
 from freqtrade.misc import plural
 from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter, SupportsBacktesting
-from freqtrade.util import FtTTLCache, dt_floor_day, dt_now, dt_ts
+from freqtrade.util import FtTTLCache
 
 
 logger = logging.getLogger(__name__)
@@ -24,7 +23,6 @@ class RangeStabilityFilter(IPairList):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self._days = self._pairlistconfig.get("lookback_days", 10)
         self._min_rate_of_change = self._pairlistconfig.get("min_rate_of_change", 0.01)
         self._max_rate_of_change = self._pairlistconfig.get("max_rate_of_change")
         self._refresh_period = self._pairlistconfig.get("refresh_period", 86400)
@@ -33,17 +31,11 @@ class RangeStabilityFilter(IPairList):
 
         self._pair_cache: FtTTLCache = FtTTLCache(maxsize=1000, ttl=self._refresh_period)
 
-        candle_limit = self._exchange.ohlcv_candle_limit("1d", self._def_candletype)
-        if self._days < 1:
-            raise OperationalException("RangeStabilityFilter requires lookback_days to be >= 1")
-        if self._days > candle_limit:
-            raise OperationalException(
-                "RangeStabilityFilter requires lookback_days to not "
-                f"exceed exchange max request size ({candle_limit})"
-            )
+        self._init_lookback_config(required=True, deprecated_fallback=10)
+
         if self._sort_direction not in [None, "asc", "desc"]:
             raise OperationalException(
-                "RangeStabilityFilter requires sort_direction to be "
+                f"{self.name} requires sort_direction to be "
                 "either None (undefined), 'asc' or 'desc'"
             )
 
@@ -57,7 +49,8 @@ class RangeStabilityFilter(IPairList):
         return (
             f"{self.name} - Filtering pairs with rate of change below "
             f"{self._min_rate_of_change}{max_rate_desc} over the "
-            f"last {plural(self._days, 'day')}."
+            f"last {self._lookback_period} x {self._lookback_timeframe} "
+            f"{plural(self._lookback_period, 'candle')}."
         )
 
     @staticmethod
@@ -67,12 +60,6 @@ class RangeStabilityFilter(IPairList):
     @staticmethod
     def available_parameters() -> dict[str, PairlistParameter]:
         return {
-            "lookback_days": {
-                "type": "number",
-                "default": 10,
-                "description": "Lookback Days",
-                "help": "Number of days to look back at.",
-            },
             "min_rate_of_change": {
                 "type": "number",
                 "default": 0.01,
@@ -93,6 +80,7 @@ class RangeStabilityFilter(IPairList):
                 "help": "Sort Pairlist ascending or descending by rate of change.",
             },
             **IPairList.refresh_period_parameter(),
+            **IPairList.lookback_parameters(default_period=10),
         }
 
     def filter_pairlist(self, pairlist: list[str], tickers: Tickers) -> list[str]:
@@ -103,19 +91,22 @@ class RangeStabilityFilter(IPairList):
         :return: new allowlist
         """
         needed_pairs: ListPairsWithTimeframes = [
-            (p, "1d", self._def_candletype) for p in pairlist if p not in self._pair_cache
+            (p, self._lookback_timeframe, self._def_candletype)
+            for p in pairlist
+            if p not in self._pair_cache
         ]
 
-        since_ms = dt_ts(dt_floor_day(dt_now()) - timedelta(days=self._days + 1))
-        candles = self._exchange.refresh_ohlcv_with_cache(needed_pairs, since_ms=since_ms)
+        candles = self._exchange.refresh_ohlcv_with_cache(
+            needed_pairs, lookback_period=self._lookback_period
+        )
 
         resulting_pairlist: list[str] = []
         pct_changes: dict[str, float] = {}
 
         for p in pairlist:
-            daily_candles = candles.get((p, "1d", self._def_candletype), None)
+            pair_candles = candles.get((p, self._lookback_timeframe, self._def_candletype), None)
 
-            pct_change = self._calculate_rate_of_change(p, daily_candles)
+            pct_change = self._calculate_rate_of_change(p, pair_candles)
 
             if pct_change is not None:
                 if self._validate_pair_loc(p, pct_change):
@@ -132,13 +123,13 @@ class RangeStabilityFilter(IPairList):
             )
         return resulting_pairlist
 
-    def _calculate_rate_of_change(self, pair: str, daily_candles: DataFrame) -> float | None:
+    def _calculate_rate_of_change(self, pair: str, pair_candles: DataFrame) -> float | None:
         # Check symbol in cache
         if (pct_change := self._pair_cache.get(pair, None)) is not None:
             return pct_change
-        if daily_candles is not None and not daily_candles.empty:
-            highest_high = daily_candles["high"].max()
-            lowest_low = daily_candles["low"].min()
+        if pair_candles is not None and not pair_candles.empty:
+            highest_high = pair_candles["high"].max()
+            lowest_low = pair_candles["low"].min()
             pct_change = ((highest_high - lowest_low) / lowest_low) if lowest_low > 0 else 0
             self._pair_cache[pair] = pct_change
             return pct_change
@@ -157,7 +148,8 @@ class RangeStabilityFilter(IPairList):
         if pct_change < self._min_rate_of_change:
             self.log_once(
                 f"Removed {pair} from whitelist, because rate of change "
-                f"over {self._days} {plural(self._days, 'day')} is {pct_change:.3f}, "
+                f"over {self._lookback_period} x {self._lookback_timeframe} "
+                f"{plural(self._lookback_period, 'candle')} is {pct_change:.3f}, "
                 f"which is below the threshold of {self._min_rate_of_change}.",
                 logger.info,
             )
@@ -166,7 +158,8 @@ class RangeStabilityFilter(IPairList):
             if pct_change > self._max_rate_of_change:
                 self.log_once(
                     f"Removed {pair} from whitelist, because rate of change "
-                    f"over {self._days} {plural(self._days, 'day')} is {pct_change:.3f}, "
+                    f"over {self._lookback_period} x {self._lookback_timeframe} "
+                    f"{plural(self._lookback_period, 'candle')} is {pct_change:.3f}, "
                     f"which is above the threshold of {self._max_rate_of_change}.",
                     logger.info,
                 )
