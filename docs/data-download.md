@@ -103,8 +103,9 @@ The resulting dataframe has three columns:
     Check which of the two columns actually carries data for your exchange and pairs before relying on it in a strategy.
 
 !!! Note "Limited history"
-    Exchanges keep far less open interest history than candle history - Binance for example only serves the last 30 days.
+    Exchanges keep far less open interest history than candle history, and how far back they go differs between them by orders of magnitude - Binance for example only serves the last 30 days, while Bybit serves several years of the same series, going back close to the instrument's listing date.
     Downloads reaching further back will silently return no data for the missing period.
+    If you plan to backtest over a longer period, check the available depth before deciding which exchange to download open interest from - it may not be the one you intend to trade on.
 
 Exchanges that don't provide open interest history reject the download with an explicit error, and a running bot whose strategy requests open interest on such an exchange refuses to start.
 
