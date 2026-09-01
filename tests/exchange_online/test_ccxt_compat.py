@@ -332,10 +332,13 @@ class TestCCXTExchange:
             assert candles[0][0] == since_ms or (since_ms + timeframe_ms)
 
     def test_ccxt__async_get_candle_history(self, exchange: EXCHANGE_FIXTURE_TYPE):
-        exc, _, exchange_params = exchange
+        exc, exchangename, exchange_params = exchange
 
         if not exc._ft_has["ohlcv_has_history"]:
             pytest.skip("Exchange does not support candle history")
+        if exchangename in ("binanceus"):
+            # TODO: binanceUS had a reent downtime (2026-09-01). Should work again in a couple  days
+            pytest.skip("Test not currently not working due to exchange downtime.")
         pair = exchange_params["pair"]
         timeframe = exchange_params["timeframe"]
         self._ccxt__async_get_candle_history(exc, pair, timeframe, CandleType.SPOT)
