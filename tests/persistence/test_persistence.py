@@ -639,6 +639,13 @@ def test_calc_open_close_trade_price(
     assert pytest.approx(trade.close_profit_abs) == profit
     assert pytest.approx(trade.close_profit) == profit_ratio
 
+    # Reprocessing the same order (e.g. "Updating sell-fee" on a closed trade) must not
+    # wipe the funding fee already assigned to that order.
+    trade.update_trade(oobj)
+    assert trade.orders[-1].funding_fee == funding_fees
+    assert trade.funding_fees == funding_fees
+    assert pytest.approx(trade.close_profit_abs) == profit
+
 
 @pytest.mark.usefixtures("init_persistence")
 def test_trade_close(fee, time_machine):
