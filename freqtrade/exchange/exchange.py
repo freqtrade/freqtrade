@@ -3972,12 +3972,14 @@ class Exchange:
         mark_rates = mark_rates.rename(columns={"open": "open_mark"})
 
         if futures_funding_rate is None:
-            return mark_rates.merge(funding_rates, on="date", how="inner")[relevant_cols]
+            return Exchange._add_funding_columns(
+                mark_rates.merge(funding_rates, on="date", how="inner")[relevant_cols]
+            )
         else:
             if len(funding_rates) == 0:
                 # No funding rate candles - full fillup with fallback variable
                 mark_rates["open_fund"] = futures_funding_rate
-                return mark_rates[relevant_cols]
+                return Exchange._add_funding_columns(mark_rates[relevant_cols])
 
             else:
                 # Fill up missing funding_rate candles with fallback value
@@ -3991,7 +3993,25 @@ class Exchange:
                         "open_fund"
                     ].isna()
                     combined.loc[is_leading_na, "open_fund"] = futures_funding_rate
-                return combined[relevant_cols].dropna()
+                return Exchange._add_funding_columns(combined[relevant_cols].dropna())
+
+    @staticmethod
+    def _add_funding_columns(df: DataFrame) -> DataFrame:
+        """
+        Add the two columns calculate_funding_fees needs, so the per-call work is a
+        slice and a sum rather than re-deriving them from the frame every time.
+        Backtesting builds one frame per pair and reuses it for every
+        call; dry-run builds one per call - both go through here.
+        """
+        dates = df["date"]
+        if df.empty:
+            # short-circuits on empty frames.
+            return df
+        # Epoch nanoseconds, so open/close dates compare directly against Timestamp.value
+        # without having to be rounded to the column's resolution first.
+        df["_ff_date_ns"] = dates.dt.as_unit("ns").astype("int64")
+        df["_ff_fee_per_unit"] = df["open_fund"] * df["open_mark"]
+        return df
 
     def calculate_funding_fees(
         self,
@@ -4013,15 +4033,19 @@ class Exchange:
         fees: float = 0
 
         if not df.empty:
-            dates = df["date"]
-            unit = dates.dtype.unit
-            # Timestamps must be converted to column unit for dry/live mode
-            # where open/close dates can have microsecond precision - but the column may not have
-            # that precision.
-            lo = Timestamp(open_date).ceil(unit).as_unit(unit)
-            hi = Timestamp(close_date).floor(unit).as_unit(unit)
-            df1 = df.iloc[dates.searchsorted(lo, "left") : dates.searchsorted(hi, "right")]
-            fees = sum(df1["open_fund"] * df1["open_mark"] * amount)
+            if "_ff_fee_per_unit" not in df.columns:
+                # Frame not built by combine_funding_and_mark - derive them now.
+                # Safety check - should never happen in practice.
+                df = self._add_funding_columns(df)
+            dates = df["_ff_date_ns"].to_numpy()
+            fee_per_unit = df["_ff_fee_per_unit"].to_numpy()
+            # Comparing in nanoseconds handles dry/live mode, where open/close dates can carry
+            # more precision than the funding candles themselves.
+            first = dates.searchsorted(Timestamp(open_date).value, "left")
+            last = dates.searchsorted(Timestamp(close_date).value, "right")
+            # .tolist() is load-bearing: CPython's sum() applies compensated summation to
+            # exact floats, but not to the numpy scalars a bare ndarray would yield.
+            fees = sum((fee_per_unit[first:last] * amount).tolist())
         if isnan(fees):
             fees = 0.0
         # Negate fees for longs as funding_fees expects it this way based on live endpoints.
