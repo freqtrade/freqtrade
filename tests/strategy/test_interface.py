@@ -150,7 +150,6 @@ def test_returns_latest_signal(ohlcv_history, disable_dataframe_checks):
 def test_analyze_pair_empty(mocker, caplog, ohlcv_history):
     mocker.patch.object(_STRATEGY.dp, "ohlcv", return_value=ohlcv_history)
     mocker.patch.object(_STRATEGY, "_analyze_ticker_internal", return_value=DataFrame([]))
-    mocker.patch("freqtrade.strategy.interface.StrategyResultValidator.assert_df")
 
     _STRATEGY.analyze_pair("ETH/BTC")
 
@@ -192,9 +191,7 @@ def test_get_signal_exception_valueerror(mocker, caplog, ohlcv_history):
 
 
 @pytest.mark.parametrize("disable_dataframe_checks", [False, True])
-def test_get_signal_old_dataframe(
-    default_conf, mocker, caplog, ohlcv_history, disable_dataframe_checks
-):
+def test_get_signal_old_dataframe(default_conf, caplog, ohlcv_history, disable_dataframe_checks):
     _STRATEGY.disable_dataframe_checks = disable_dataframe_checks
     # disable_dataframe_checks=False (default): the latest candle is the last row by position.
     last_idx = 1 if disable_dataframe_checks else ohlcv_history.index[-1]
@@ -209,7 +206,6 @@ def test_get_signal_old_dataframe(
         mocked_history.loc[last_idx, "enter_long"] = 1
 
         caplog.set_level(logging.INFO)
-        mocker.patch("freqtrade.strategy.interface.StrategyResultValidator.assert_df")
 
         assert (None, None) == _STRATEGY.get_latest_candle(
             "xyz", default_conf["timeframe"], mocked_history
@@ -220,9 +216,7 @@ def test_get_signal_old_dataframe(
 
 
 @pytest.mark.parametrize("disable_dataframe_checks", [False, True])
-def test_get_signal_no_sell_column(
-    default_conf, mocker, caplog, ohlcv_history, disable_dataframe_checks
-):
+def test_get_signal_no_sell_column(default_conf, caplog, ohlcv_history, disable_dataframe_checks):
     _STRATEGY.disable_dataframe_checks = disable_dataframe_checks
     # disable_dataframe_checks=False (default): the latest candle is the last row by position.
     last_idx = 1 if disable_dataframe_checks else ohlcv_history.index[-1]
@@ -238,9 +232,6 @@ def test_get_signal_no_sell_column(
         mocked_history.loc[last_idx, "enter_long"] = 1
 
         caplog.set_level(logging.INFO)
-        mocker.patch(
-            "freqtrade.strategy.interface.StrategyResultValidator.assert_df",
-        )
 
         assert (SignalDirection.LONG, None) == _STRATEGY.get_entry_signal(
             "xyz", default_conf["timeframe"], mocked_history
