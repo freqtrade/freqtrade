@@ -198,10 +198,12 @@ def trades_to_volumeprofile_with_total_delta_bid_ask(
     """
     df = pd.DataFrame([], columns=DEFAULT_ORDERFLOW_COLUMNS)
     # create bid, ask where side is sell or buy
-    df["bid_amount"] = np.where(trades["side"].str.contains("sell"), trades["amount"], 0)
-    df["ask_amount"] = np.where(trades["side"].str.contains("buy"), trades["amount"], 0)
-    df["bid"] = np.where(trades["side"].str.contains("sell"), 1, 0)
-    df["ask"] = np.where(trades["side"].str.contains("buy"), 1, 0)
+    is_sell = trades["side"].str.contains("sell")
+    is_buy = trades["side"].str.contains("buy")
+    df["bid_amount"] = np.where(is_sell, trades["amount"], 0)
+    df["ask_amount"] = np.where(is_buy, trades["amount"], 0)
+    df["bid"] = np.where(is_sell, 1, 0)
+    df["ask"] = np.where(is_buy, 1, 0)
     # round the prices to the nearest multiple of the scale
     df["price"] = ((trades["price"] / scale).round() * scale).astype("float64").values
     if df.empty:
