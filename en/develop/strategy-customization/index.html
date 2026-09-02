@@ -3276,6 +3276,10 @@ you should always use these commands first. Please check the relevant documentat
 <p>Freqtrade uses <a href="https://pandas.pydata.org/">pandas</a> to store/provide the candlestick (OHLCV) data.
 Pandas is a great library developed for processing large amounts of data in tabular format.</p>
 <p>Each row in a dataframe corresponds to one candle on a chart, with the latest complete candle always being the last in the dataframe (sorted by date).</p>
+<div class="admonition warning">
+<p class="admonition-title">Row order matters</p>
+<p>Please do not sort, shuffle, or any other way to change the row order of the dataframe - doing so will make the bot act on the wrong candle. Freqtrade assume last row to be the latest closed candle, hence all actions will be based of the last row.</p>
+</div>
 <p>If we were to look at the first few rows of the main dataframe using the pandas <code>head()</code> function, we would see:</p>
 <div class="highlight"><pre><span></span><code><span class="go">&gt; dataframe.head()</span>
 <span class="go">                       date      open      high       low     close     volume</span>
