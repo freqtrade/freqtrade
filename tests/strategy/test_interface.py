@@ -141,9 +141,9 @@ def test_returns_latest_signal(ohlcv_history, disable_dataframe_checks):
             "sell_signal_02",
         )
 
+    finally:
         _STRATEGY.can_short = False
         _STRATEGY.config["trading_mode"] = "spot"
-    finally:
         _STRATEGY.disable_dataframe_checks = False
 
 
