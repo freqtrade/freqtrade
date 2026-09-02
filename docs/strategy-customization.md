@@ -113,9 +113,7 @@ Pandas is a great library developed for processing large amounts of data in tabu
 Each row in a dataframe corresponds to one candle on a chart, with the latest complete candle always being the last in the dataframe (sorted by date).
 
 !!! Warning "Row order matters"
-    By default, in live/dry run mode, Freqtrade only use the entry/exit signal from the last row of the dataframe returned by the populate functions to determine any entry/exit actions. The **last row** of the dataframe being supplied to populate_indicators function is sorted by date and it assumes that user won't change the row order, so it will assume the last row is still the latest candle and won't search for the row with the latest `date` value. Do not sort, shuffle, or otherwise change the row order of the dataframe - doing so will make the bot act on the wrong candle. Freqtrade validates that the dataframe's length and the last row's `close` and `date` value are unchanged after these calls, and will raise (or print warning on the log, if `disable_dataframe_checks` is set) when that is violated.
-
-    If you intentionally need to reorder rows, please set `disable_dataframe_checks = True` on your strategy. Freqtrade will instead try to look up the row with the latest `date` value - but this comes at a slight performance cost, and the dataframe returned by  `dp.get_analyzed_dataframe()` will be the same dataframe with its rows has been reordered.
+    Please do not sort, shuffle, or any other way to change the row order of the dataframe - doing so will make the bot act on the wrong candle. Freqtrade assume last row to be the latest closed candle, hence all actions will be based of the last row.
 
 If we were to look at the first few rows of the main dataframe using the pandas `head()` function, we would see:
 

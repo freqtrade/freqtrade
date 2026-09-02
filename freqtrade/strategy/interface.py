@@ -1222,14 +1222,10 @@ class IStrategy(ABC, HyperStrategyMixin):
             validator = StrategyResultValidator(dataframe, warn_only=self.disable_dataframe_checks)
             # Defs that only make change on new candle data.
             dataframe = self.analyze_ticker(dataframe, metadata)
-            self.__last_candle_seen_per_pair[pair] = last_date
             # validate dataframe before it being cached
-            try:
-                validator.assert_df(dataframe)
-            except StrategyError as error:
-                logger.warning(f"Unable to analyze candle (OHLCV) data for pair {pair}: {error}")
-                return remove_entry_exit_signals(dataframe)
+            validator.assert_df(dataframe)
 
+            self.__last_candle_seen_per_pair[pair] = last_date
             candle_type = self.config.get("candle_type_def", CandleType.SPOT)
             self.dp._set_cached_df(pair, self.timeframe, dataframe, candle_type=candle_type)
             self.dp._emit_df((pair, self.timeframe, candle_type), dataframe, new_candle)

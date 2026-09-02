@@ -360,7 +360,10 @@ def test_advise_all_indicators_copy(mocker, default_conf, testdatadir) -> None:
     strategy.advise_all_indicators(data)
     assert aimock.call_count == 1
     # Ensure that a copy of the dataframe is passed to advice_indicators
-    assert aimock.call_args_list[0][0][0] is not data["UNITTEST/BTC"]
+    expected = data["UNITTEST/BTC"]
+    call_df = aimock.call_args_list[0][0][0]
+    assert call_df is not expected
+    assert call_df.equals(expected)
 
 
 def test_min_roi_reached(default_conf, fee) -> None:

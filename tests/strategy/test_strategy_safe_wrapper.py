@@ -37,6 +37,27 @@ def test_strategy_safe_wrapper_error(caplog, error):
 
 
 @pytest.mark.parametrize(
+    "wrapper_kwargs",
+    [
+        {},
+        {"default_retval": True},
+        {"supress_error": True},
+    ],
+)
+def test_strategy_safe_wrapper_reraises_strategy_error(caplog, wrapper_kwargs):
+    error = StrategyError("This is a strategy error.")
+
+    def failing_method():
+        raise error
+
+    with pytest.raises(StrategyError) as exc_info:
+        strategy_safe_wrapper(failing_method, message="DeadBeef", **wrapper_kwargs)()
+
+    assert exc_info.value is error
+    assert not caplog.records
+
+
+@pytest.mark.parametrize(
     "value", [1, 22, 55, True, False, {"a": 1, "b": "112"}, [1, 2, 3, 4], (4, 2, 3, 6)]
 )
 def test_strategy_safe_wrapper(value):
