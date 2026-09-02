@@ -112,6 +112,9 @@ Pandas is a great library developed for processing large amounts of data in tabu
 
 Each row in a dataframe corresponds to one candle on a chart, with the latest complete candle always being the last in the dataframe (sorted by date).
 
+!!! Warning "Row order matters"
+    Please do not sort, shuffle, or any other way to change the row order of the dataframe - doing so will make the bot act on the wrong candle. Freqtrade assume last row to be the latest closed candle, hence all actions will be based of the last row.
+
 If we were to look at the first few rows of the main dataframe using the pandas `head()` function, we would see:
 
 ```output
