@@ -31,9 +31,8 @@ def __format_traceback(error: Exception) -> str:
 def strategy_safe_wrapper(f: F, message: str = "", default_retval=None, supress_error=False) -> F:
     """
     Wrapper around user-provided methods and functions.
-    Passes StrategyError exceptions through unchanged. Other exceptions return either the
-    default_retval (if it's not None) or raise a StrategyError exception, which then needs to be
-    handled by the calling method.
+    Caches all exceptions and returns either the default_retval (if it's not None) or raises
+    a StrategyError exception, which then needs to be handled by the calling method.
     """
 
     @wraps(f)
@@ -45,8 +44,6 @@ def strategy_safe_wrapper(f: F, message: str = "", default_retval=None, supress_
                     # Protect accidental modifications from within the strategy
                     kwargs["trade"] = deepcopy(kwargs["trade"])
             return f(*args, **kwargs)
-        except StrategyError:
-            raise
         except ValueError as error:
             traceback = __format_traceback(error)
             name = f.__name__ if hasattr(f, "__name__") else str(f)

@@ -1221,7 +1221,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         if not self.process_only_new_candles or new_candle:
             validator = StrategyResultValidator(dataframe, warn_only=self.disable_dataframe_checks)
             # Defs that only make change on new candle data.
-            dataframe = self.analyze_ticker(dataframe, metadata)
+            dataframe = strategy_safe_wrapper(self.analyze_ticker, message="")(dataframe, metadata)
             # validate dataframe before it being cached
             validator.assert_df(dataframe)
 
@@ -1253,9 +1253,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             return
 
         try:
-            dataframe = strategy_safe_wrapper(self._analyze_ticker_internal, message="")(
-                dataframe, {"pair": pair}
-            )
+            dataframe = self._analyze_ticker_internal(dataframe, {"pair": pair})
         except StrategyError as error:
             logger.warning(f"Unable to analyze candle (OHLCV) data for pair {pair}: {error}")
             return

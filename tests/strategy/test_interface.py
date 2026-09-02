@@ -177,16 +177,18 @@ def test_get_signal_empty(default_conf, caplog):
 def test_get_signal_exception_valueerror(mocker, caplog, ohlcv_history):
     caplog.set_level(logging.INFO)
     mocker.patch.object(_STRATEGY.dp, "ohlcv", return_value=ohlcv_history)
-    mocker.patch.object(_STRATEGY, "_analyze_ticker_internal", side_effect=ValueError("xyz"))
+    mocker.patch.object(_STRATEGY, "analyze_ticker", side_effect=ValueError("xyz"))
     _STRATEGY.analyze_pair("foo")
     assert log_has_re(r"Strategy caused the following exception: ValueError\('xyz'\).*", caplog)
+    assert log_has_re(r"Unable to analyze candle \(OHLCV\) data for pair foo: xyz", caplog)
     caplog.clear()
 
     mocker.patch.object(
         _STRATEGY, "analyze_ticker", side_effect=Exception("invalid ticker history ")
     )
     _STRATEGY.analyze_pair("foo")
-    assert log_has_re(r"Strategy caused the following exception: ValueError\('xyz'\).*", caplog)
+    assert log_has_re(r"Unexpected error Exception\('invalid ticker history '\).*", caplog)
+    assert log_has_re(r"Unable to analyze candle \(OHLCV\) data for pair foo", caplog)
 
 
 @pytest.mark.parametrize("disable_dataframe_checks", [False, True])
