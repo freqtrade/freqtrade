@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from freqtrade_platform.strategies.models import Strategy
+from freqtrade_platform.strategies.models import StrategyDefinition
 from freqtrade_platform.strategies.registry import StrategyRegistry
 
 
@@ -15,16 +15,16 @@ class StrategyManager:
     def __init__(self, registry: StrategyRegistry | None = None) -> None:
         self.registry = registry or StrategyRegistry()
 
-    def validate(self, strategy: Strategy) -> Strategy:
+    def validate(self, strategy: StrategyDefinition) -> StrategyDefinition:
         strategy.validate()
         return strategy
 
-    def add(self, strategy: Strategy) -> Strategy:
+    def add(self, strategy: StrategyDefinition) -> StrategyDefinition:
         self.validate(strategy)
         self.registry.register(strategy)
         return strategy
 
-    def update(self, strategy_id: str, **changes: object) -> Strategy:
+    def update(self, strategy_id: str, **changes: object) -> StrategyDefinition:
         current = self.get(strategy_id)
         if current is None:
             raise KeyError(strategy_id)
@@ -35,14 +35,14 @@ class StrategyManager:
     def delete(self, strategy_id: str) -> None:
         self.registry.remove(strategy_id)
 
-    def get(self, strategy_id: str) -> Strategy | None:
+    def get(self, strategy_id: str) -> StrategyDefinition | None:
         return self.registry.get(strategy_id)
 
-    def list(self) -> list[Strategy]:
+    def list(self) -> list[StrategyDefinition]:
         return list(self.registry.list())
 
-    def activate(self, strategy_id: str) -> Strategy:
+    def activate(self, strategy_id: str) -> StrategyDefinition:
         return self.registry.enable(strategy_id)
 
-    def deactivate(self, strategy_id: str) -> Strategy:
+    def deactivate(self, strategy_id: str) -> StrategyDefinition:
         return self.registry.disable(strategy_id)

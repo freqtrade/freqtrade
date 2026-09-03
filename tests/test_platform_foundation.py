@@ -6,7 +6,8 @@ import pytest
 import platform
 from pathlib import Path
 
-from freqtrade_platform.account.models import AccountSnapshot
+from freqtrade_platform.account.models import AccountSnapshot, RealAccountSnapshot, SimulationAccount, SimulationBootstrap
+from freqtrade_platform.account.service import AccountService
 from freqtrade_platform.capital.models import CapitalAllocation
 from freqtrade_platform.core.exceptions import PlatformValidationError
 from freqtrade_platform.core.lifecycle import PlatformLifecycle
@@ -16,7 +17,7 @@ from freqtrade_platform.storage.database import PlatformDatabase
 from freqtrade_platform.storage.models import PlatformProfileRecord
 from freqtrade_platform.storage.repositories import PlatformProfileRepository
 from freqtrade_platform.strategies.manager import StrategyManager
-from freqtrade_platform.strategies.models import Strategy, StrategyMetadata
+from freqtrade_platform.strategies.models import StrategyDefinition
 from freqtrade_platform.strategies.registry import StrategyRegistry
 
 
@@ -37,7 +38,7 @@ def test_core_domain_models_instantiate_correctly():
     assert profile.profile_id == "profile-1"
     assert profile.market_type == "spot"
 
-    strategy = StrategyMetadata(
+    strategy = StrategyDefinition(
         strategy_id="sma-fast",
         name="SMA Fast",
         market_type="spot",
@@ -60,19 +61,19 @@ def test_trading_profile_validation_works():
 
 def test_strategy_metadata_validation_works():
     with pytest.raises(PlatformValidationError, match="strategy_id"):
-        StrategyMetadata(strategy_id="", name="Bad Strategy", market_type="spot")
+        StrategyDefinition(strategy_id="", name="Bad Strategy", market_type="spot")
 
     with pytest.raises(PlatformValidationError, match="name"):
-        StrategyMetadata(strategy_id="id-1", name="", market_type="spot")
+        StrategyDefinition(strategy_id="id-1", name="", market_type="spot")
 
     with pytest.raises(PlatformValidationError, match="market_type"):
-        StrategyMetadata(strategy_id="id-2", name="Bad Market", market_type="")
+        StrategyDefinition(strategy_id="id-2", name="Bad Market", market_type="")
 
 
 def test_strategy_registry_prevents_duplicate_ids_and_supports_enable_disable():
     registry = StrategyRegistry()
-    first = StrategyMetadata(strategy_id="dup-safe", name="One", market_type="spot")
-    second = StrategyMetadata(strategy_id="dup-safe", name="Two", market_type="spot")
+    first = StrategyDefinition(strategy_id="dup-safe", name="One", market_type="spot")
+    second = StrategyDefinition(strategy_id="dup-safe", name="Two", market_type="spot")
 
     registry.register(first)
     with pytest.raises(ValueError, match="duplicate"):
@@ -99,7 +100,9 @@ def test_capital_allocation_validates_percentages():
 
 
 def test_account_snapshot_keeps_real_and_simulated_values_distinct():
-    snapshot = AccountSnapshot(
+    service = AccountService()
+
+    real_snapshot = service.create_real_snapshot(
         timestamp="2026-01-01T00:00:00Z",
         exchange="binance",
         market_type="futures",
@@ -107,14 +110,37 @@ def test_account_snapshot_keeps_real_and_simulated_values_distinct():
         total_balance=120.0,
         equity=115.0,
         positions={"BTC/USDT": 0.25},
-        raw_source_metadata={"source": "exchange"},
-        simulated_balance=75.0,
-        simulated_equity=80.0,
+        source_metadata={"source": "exchange"},
+    )
+    assert isinstance(real_snapshot, RealAccountSnapshot)
+    assert not hasattr(real_snapshot, "simulated_balance")
+
+    bootstrap = service.create_simulation_bootstrap(
+        timestamp="2026-01-01T00:00:00Z",
+        exchange="binance",
+        market_type="futures",
+        starting_balance=1000.0,
+        metadata={"source": "bootstrap"},
+    )
+    assert isinstance(bootstrap, SimulationBootstrap)
+
+    simulated = service.create_simulation_account(
+        timestamp="2026-01-01T00:00:00Z",
+        exchange="binance",
+        market_type="futures",
+        starting_balance=1000.0,
+        available_balance=75.0,
+        total_balance=80.0,
+        equity=78.0,
+        positions={"BTC/USDT": 0.25},
+        metadata={"source": "simulation"},
+        bootstrap=bootstrap,
     )
 
-    assert snapshot.available_balance == 100.0
-    assert snapshot.simulated_balance == 75.0
-    assert snapshot.equity != snapshot.simulated_equity
+    assert isinstance(simulated, SimulationAccount)
+    assert simulated.available_balance == 75.0
+    assert simulated.equity != real_snapshot.equity
+    assert not hasattr(real_snapshot, "simulated_equity")
 
 
 def test_platform_modules_do_not_use_disallowed_infrastructure():
@@ -152,9 +178,7 @@ def test_frequent_existing_core_imports_remain_usable():
 
 
 def test_strategy_model_is_single_canonical_domain_model():
-    assert StrategyMetadata is Strategy
-
-    strategy = StrategyMetadata(
+    strategy = StrategyDefinition(
         strategy_id="single-source",
         name="Single Source",
         market_type="spot",
@@ -168,7 +192,7 @@ def test_strategy_model_is_single_canonical_domain_model():
 def test_strategy_registry_update_uses_public_contract():
     registry = StrategyRegistry()
     registry.register(
-        StrategyMetadata(strategy_id="manager-1", name="Alpha", market_type="spot")
+        StrategyDefinition(strategy_id="manager-1", name="Alpha", market_type="spot")
     )
 
     updated = registry.update("manager-1", name="Beta", enabled=False)

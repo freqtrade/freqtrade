@@ -57,7 +57,7 @@ class StrategyPerformanceRecord(PlatformBase):
 
 
 class AccountSnapshotRecord(PlatformBase):
-    """Account snapshot persistence record."""
+    """Real account snapshot persistence record."""
 
     __tablename__ = "account_snapshots"
 
@@ -68,8 +68,33 @@ class AccountSnapshotRecord(PlatformBase):
     available_balance: Mapped[float] = mapped_column(Float, default=0.0)
     total_balance: Mapped[float] = mapped_column(Float, default=0.0)
     equity: Mapped[float] = mapped_column(Float, default=0.0)
-    simulated_balance: Mapped[float | None] = mapped_column(Float, nullable=True)
-    simulated_equity: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+
+class SimulationAccountRecord(PlatformBase):
+    """Simulation-only account record."""
+
+    __tablename__ = "simulation_accounts"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    timestamp: Mapped[str] = mapped_column(String(64), nullable=False)
+    exchange: Mapped[str] = mapped_column(String(64), nullable=False)
+    market_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    starting_balance: Mapped[float] = mapped_column(Float, default=0.0)
+    available_balance: Mapped[float] = mapped_column(Float, default=0.0)
+    total_balance: Mapped[float] = mapped_column(Float, default=0.0)
+    equity: Mapped[float] = mapped_column(Float, default=0.0)
+
+
+class SimulationBootstrapRecord(PlatformBase):
+    """Bootstrap for simulation initialization state."""
+
+    __tablename__ = "simulation_bootstraps"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    timestamp: Mapped[str] = mapped_column(String(64), nullable=False)
+    exchange: Mapped[str] = mapped_column(String(64), nullable=False)
+    market_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    starting_balance: Mapped[float] = mapped_column(Float, default=0.0)
 
 
 class CapitalAllocationRecord(PlatformBase):

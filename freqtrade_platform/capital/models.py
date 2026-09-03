@@ -16,6 +16,9 @@ class CapitalAllocation:
     metadata: dict[str, object] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        self.validate()
+
+    def validate(self) -> None:
         if not self.profile_id or not self.profile_id.strip():
             raise PlatformValidationError("profile_id is required")
         if not 0.0 <= float(self.allocation_percent) <= 100.0:

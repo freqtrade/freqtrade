@@ -8,16 +8,16 @@ from enum import Enum
 
 
 class PlatformLifecycleState(str, Enum):
-    """High-level lifecycle states for the platform layer."""
+    """Coherent platform lifecycle states."""
 
     CREATED = "created"
+    INITIALIZING = "initializing"
     READY = "ready"
-    STARTING = "starting"
     RUNNING = "running"
     PAUSED = "paused"
     STOPPING = "stopping"
     STOPPED = "stopped"
-    ERROR = "error"
+    FAILED = "failed"
 
 
 @dataclass(slots=True)
@@ -29,15 +29,21 @@ class PlatformLifecycle:
     stopped_at: datetime | None = None
     metadata: dict[str, object] = field(default_factory=dict)
 
+    def initialize(self) -> None:
+        """Transition from created to initializing."""
+        if self.state is not PlatformLifecycleState.CREATED:
+            raise ValueError(f"Invalid Transition from {self.state.value} to initializing")
+        self.state = PlatformLifecycleState.INITIALIZING
+
     def mark_ready(self) -> None:
         """Move the lifecycle to a ready-but-not-running state."""
-        if self.state is not PlatformLifecycleState.CREATED:
+        if self.state not in {PlatformLifecycleState.CREATED, PlatformLifecycleState.INITIALIZING}:
             raise ValueError(f"Invalid Transition from {self.state.value} to ready")
         self.state = PlatformLifecycleState.READY
 
     def start(self) -> None:
         """Transition from ready or stopped into a running state."""
-        if self.state in {PlatformLifecycleState.CREATED, PlatformLifecycleState.READY, PlatformLifecycleState.STOPPED}:
+        if self.state in {PlatformLifecycleState.READY, PlatformLifecycleState.STOPPED}:
             self.state = PlatformLifecycleState.RUNNING
             if self.started_at is None:
                 self.started_at = datetime.now(timezone.utc)
@@ -59,13 +65,15 @@ class PlatformLifecycle:
 
     def stop(self) -> None:
         """Transition to the stopped state."""
-        if self.state not in {
-            PlatformLifecycleState.CREATED,
-            PlatformLifecycleState.READY,
-            PlatformLifecycleState.STARTING,
-            PlatformLifecycleState.RUNNING,
-            PlatformLifecycleState.PAUSED,
-        }:
+        if self.state not in {PlatformLifecycleState.READY, PlatformLifecycleState.RUNNING, PlatformLifecycleState.PAUSED}:
             raise ValueError(f"Invalid Transition from {self.state.value} to stop")
+        self.state = PlatformLifecycleState.STOPPING
         self.state = PlatformLifecycleState.STOPPED
         self.stopped_at = datetime.now(timezone.utc)
+
+    def fail(self) -> None:
+        """Transition to a failed lifecycle state."""
+        if self.state in {PlatformLifecycleState.CREATED, PlatformLifecycleState.INITIALIZING, PlatformLifecycleState.READY, PlatformLifecycleState.RUNNING, PlatformLifecycleState.PAUSED}:
+            self.state = PlatformLifecycleState.FAILED
+            return
+        raise ValueError(f"Invalid Transition from {self.state.value} to failed")

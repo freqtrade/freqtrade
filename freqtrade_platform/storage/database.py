@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Iterator
 
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
@@ -24,7 +24,8 @@ class PlatformDatabase:
         self.session_factory = sessionmaker(bind=self.engine, expire_on_commit=False)
 
     def create_all(self) -> None:
-        """Create known platform metadata tables."""
+        """Create known platform metadata tables after the storage models are imported."""
+        import freqtrade_platform.storage.models  # noqa: F401
         PlatformBase.metadata.create_all(bind=self.engine)
 
     @contextmanager
