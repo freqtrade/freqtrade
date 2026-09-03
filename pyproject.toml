@@ -276,13 +276,15 @@ extend-ignore = [
   "RUF022",  # unsorted-dunder-all
   "RUF005",  # list concatenation
   "BLE001",  # Do not catch blind exception: `Exception`
+  "SIM117",  # Multiple with statements
   # TODO: the below rules are in the default now and should be reconsidered.
   "N999",  # Invalid module name
   # "DTZ",  # Use timezone-aware datetime objects
   "DTZ007",  # Use timezone-aware datetime objects
   "TRY401",  # Redundant exception object in logging.exception call
   "TRY",
-  "SIM",
+  "SIM102",
+  "SIM118",
 ]
 
 
