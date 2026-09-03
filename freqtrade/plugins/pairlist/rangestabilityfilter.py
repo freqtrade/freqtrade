@@ -154,14 +154,13 @@ class RangeStabilityFilter(IPairList):
                 logger.info,
             )
             result = False
-        if self._max_rate_of_change:
-            if pct_change > self._max_rate_of_change:
-                self.log_once(
-                    f"Removed {pair} from whitelist, because rate of change "
-                    f"over {self._lookback_period} x {self._lookback_timeframe} "
-                    f"{plural(self._lookback_period, 'candle')} is {pct_change:.3f}, "
-                    f"which is above the threshold of {self._max_rate_of_change}.",
-                    logger.info,
-                )
-                result = False
+        if self._max_rate_of_change and pct_change > self._max_rate_of_change:
+            self.log_once(
+                f"Removed {pair} from whitelist, because rate of change "
+                f"over {self._lookback_period} x {self._lookback_timeframe} "
+                f"{plural(self._lookback_period, 'candle')} is {pct_change:.3f}, "
+                f"which is above the threshold of {self._max_rate_of_change}.",
+                logger.info,
+            )
+            result = False
         return result

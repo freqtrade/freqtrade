@@ -398,17 +398,16 @@ class Telegram(RPCHandler):
         candle_val = (
             self._config["telegram"].get("notification_settings", {}).get("show_candle", "off")
         )
-        if candle_val != "off":
-            if candle_val == "ohlc":
-                analyzed_df, _ = self._rpc._freqtrade.dataprovider.get_analyzed_dataframe(
-                    pair, self._config["timeframe"]
+        if candle_val != "off" and candle_val == "ohlc":
+            analyzed_df, _ = self._rpc._freqtrade.dataprovider.get_analyzed_dataframe(
+                pair, self._config["timeframe"]
+            )
+            candle = analyzed_df.iloc[-1].squeeze() if len(analyzed_df) > 0 else None
+            if candle is not None:
+                return (
+                    f"*Candle OHLC*: `{candle['open']}, {candle['high']}, "
+                    f"{candle['low']}, {candle['close']}`\n"
                 )
-                candle = analyzed_df.iloc[-1].squeeze() if len(analyzed_df) > 0 else None
-                if candle is not None:
-                    return (
-                        f"*Candle OHLC*: `{candle['open']}, {candle['high']}, "
-                        f"{candle['low']}, {candle['close']}`\n"
-                    )
 
         return ""
 
