@@ -5,7 +5,9 @@ import pytest
 from freqtrade_platform.profiles.models import TradingProfile
 from freqtrade_platform.regimes.interface import MarketRegimeDetector
 from freqtrade_platform.regimes.models import MarketRegimeResult, MarketRegimeType, MarketObservation
+from freqtrade_platform.storage.database import PlatformDatabase
 from freqtrade_platform.strategies.models import StrategyDefinition
+from freqtrade_platform.trading.repository import TradingUniverseRepository
 from freqtrade_platform.trading.universe import TradingUniverse
 from freqtrade_platform.compatibility.evaluator import StrategyCompatibilityEvaluator
 from freqtrade_platform.selection.selector import StrategySelector
@@ -26,6 +28,7 @@ def profile() -> TradingProfile:
 @pytest.fixture
 def universe() -> TradingUniverse:
     return TradingUniverse(
+        universe_id="uv-fixture",
         exchange="binance",
         market_type="spot",
         include_symbols=["BTC/USDT", "ETH/USDT", "SOL/USDT", "ADA/USDT"],
@@ -76,6 +79,7 @@ def test_profile_scope_is_a_narrowing_constraint_on_universe() -> None:
     )
 
     universe = TradingUniverse(
+        universe_id="uv-profile-scope",
         exchange="binance",
         market_type="spot",
         include_symbols=["BTC/USDT", "ETH/USDT", "SOL/USDT"],
@@ -98,13 +102,14 @@ def test_universe_filters_and_normalizes_symbols(universe: TradingUniverse) -> N
     assert universe.eligible_symbols(["BTC/USDT", "ETH/USDT", "SOL/USDT", "ADA/USDT"]) == ["BTC/USDT", "SOL/USDT"]
     assert universe.eligible_symbols([]) == []
 
-    empty_universe = TradingUniverse(exchange="binance", market_type="spot", include_symbols=[])
+    empty_universe = TradingUniverse(universe_id="uv-empty", exchange="binance", market_type="spot", include_symbols=[])
     assert empty_universe.contains("BTC/USDT") is True
     assert empty_universe.eligible_symbols(["BTC/USDT", "ETH/USDT"]) == ["BTC/USDT", "ETH/USDT"]
 
 
 def test_universe_rejects_disabled_or_invalid_state() -> None:
     universe = TradingUniverse(
+        universe_id="uv-disabled",
         exchange="binance",
         market_type="spot",
         include_symbols=["BTC/USDT", ""],
@@ -116,7 +121,7 @@ def test_universe_rejects_disabled_or_invalid_state() -> None:
     assert universe.eligible_symbols(["BTC/USDT", "ETH/USDT"]) == []
 
     with pytest.raises(ValueError, match="exchange"):
-        TradingUniverse(exchange="", market_type="spot", include_symbols=["BTC/USDT"])
+        TradingUniverse(universe_id="uv-invalid", exchange="", market_type="spot", include_symbols=["BTC/USDT"])
 
 
 def test_market_regime_result_requires_valid_confidence() -> None:
@@ -221,3 +226,128 @@ def test_selector_returns_no_trade_when_nothing_matches() -> None:
 
     assert selection.selected_strategy_id is None
     assert selection.decision == "NO_TRADE"
+
+
+def test_universe_identity_and_repository_roundtrip() -> None:
+    db = PlatformDatabase("sqlite:///:memory:")
+    db.create_all()
+
+    repo = TradingUniverseRepository(db)
+    universe = TradingUniverse(
+        universe_id="uv-1",
+        exchange="binance",
+        market_type="spot",
+        include_symbols=["BTC/USDT", "ETH/USDT"],
+        exclude_symbols=["ETH/USDT"],
+        max_symbols=1,
+        enabled=True,
+        metadata={"source": "synthetic"},
+    )
+
+    repo.add(universe)
+    loaded = repo.get("uv-1")
+    assert loaded is not None
+    assert loaded.universe_id == "uv-1"
+    assert loaded.exchange == "binance"
+    assert loaded.include_symbols == ["BTC/USDT"]
+    assert loaded.metadata == {"source": "synthetic"}
+    assert len(repo.list()) == 1
+
+    second = TradingUniverse(universe_id="uv-2", exchange="kraken", market_type="spot", include_symbols=["SOL/USDT"])
+    repo.add(second)
+    assert {item.universe_id for item in repo.list()} == {"uv-1", "uv-2"}
+
+    with pytest.raises(ValueError, match="universe_id"):
+        TradingUniverse(universe_id="", exchange="binance", market_type="spot")
+
+
+def test_profile_must_reference_existing_universe_and_scope_can_only_narrow() -> None:
+    universe = TradingUniverse(
+        universe_id="uv-profile",
+        exchange="binance",
+        market_type="spot",
+        include_symbols=["BTC/USDT", "ETH/USDT", "SOL/USDT"],
+        exclude_symbols=["ETH/USDT"],
+        enabled=True,
+    )
+
+    profile = TradingProfile(
+        profile_id="profile-refs-universe",
+        name="Universe Profile",
+        exchange="binance",
+        market_type="spot",
+        universe_id="uv-profile",
+        symbol_scope=["BTC/USDT", "DOGE/USDT"],
+    )
+
+    assert profile.resolve_symbols(universe.eligible_symbols(["BTC/USDT", "ETH/USDT", "SOL/USDT"])) == ["BTC/USDT"]
+    assert profile.resolve_symbols(["BTC/USDT", "ETH/USDT", "SOL/USDT"], universe_enabled=False) == []
+
+    repo = TradingUniverseRepository()
+    assert repo.get("missing-universe") is None
+
+
+def test_selector_only_uses_assigned_strategies_and_rejects_unknown_or_empty() -> None:
+    trend = StrategyDefinition(
+        strategy_id="trend-core",
+        name="Trend Core",
+        market_type="spot",
+        compatible_regimes=[MarketRegimeType.STRONG_UPTREND],
+    )
+    range_strategy = StrategyDefinition(
+        strategy_id="range-core",
+        name="Range Core",
+        market_type="spot",
+        compatible_regimes=[MarketRegimeType.QUIET_RANGE],
+    )
+
+    regime_result = MarketRegimeResult(
+        regime=MarketRegimeType.STRONG_UPTREND,
+        confidence=0.9,
+        timeframe="1h",
+        timestamp="2026-01-01T00:00:00Z",
+        evidence={"trend": "strong"},
+    )
+
+    selector = StrategySelector()
+    profile = TradingProfile(
+        profile_id="assigned-only",
+        name="Assigned Only",
+        exchange="binance",
+        market_type="spot",
+        assigned_strategies=["trend-core", "range-core", "missing-core"],
+    )
+
+    selection = selector.select(profile=profile, regime_result=regime_result, strategies=[trend, range_strategy])
+    assert selection.selected_strategy_id == "trend-core"
+    assert selection.decision == "TRADE"
+    assert "missing-core" in " ".join(selection.rejected_candidates)
+
+    empty_profile = TradingProfile(
+        profile_id="empty-assigned",
+        name="Empty Assigned",
+        exchange="binance",
+        market_type="spot",
+        assigned_strategies=[],
+    )
+    empty_selection = selector.select(profile=empty_profile, regime_result=regime_result, strategies=[trend])
+    assert empty_selection.decision == "NO_TRADE"
+    assert empty_selection.selected_strategy_id is None
+
+    disabled = StrategyDefinition(
+        strategy_id="disabled-core",
+        name="Disabled Core",
+        market_type="spot",
+        enabled=False,
+        compatible_regimes=[MarketRegimeType.STRONG_UPTREND],
+    )
+    disabled_profile = TradingProfile(
+        profile_id="disabled-assigned",
+        name="Disabled Assigned",
+        exchange="binance",
+        market_type="spot",
+        assigned_strategies=["disabled-core"],
+    )
+    disabled_selection = selector.select(profile=disabled_profile, regime_result=regime_result, strategies=[disabled])
+    assert disabled_selection.decision == "NO_TRADE"
+    assert disabled_selection.selected_strategy_id is None

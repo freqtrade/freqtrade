@@ -20,6 +20,46 @@ class TradingProfileRepository:
         self._profiles: dict[str, TradingProfile] | None = {} if storage is None else None
 
     @staticmethod
+    def _load_json_list(raw: str | None) -> list[str]:
+        if not raw:
+            return []
+        import json
+
+        try:
+            parsed = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"malformed list payload in profile record: {raw!r}") from exc
+        if not isinstance(parsed, list):
+            raise ValueError("expected JSON list in profile record")
+        return [str(item) for item in parsed]
+
+    @staticmethod
+    def _dump_json_list(values: list[str]) -> str | None:
+        if not values:
+            return None
+        return json.dumps(values, separators=(",", ":"), sort_keys=True)
+
+    @staticmethod
+    def _load_json_dict(raw: str | None) -> dict[str, object]:
+        if not raw:
+            return {}
+        import json
+
+        try:
+            parsed = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"malformed dict payload in profile record: {raw!r}") from exc
+        if not isinstance(parsed, dict):
+            raise ValueError("expected JSON dict in profile record")
+        return parsed
+
+    @staticmethod
+    def _dump_json_dict(values: dict[str, object]) -> str | None:
+        if not values:
+            return None
+        return json.dumps(values, separators=(",", ":"), sort_keys=True)
+
+    @staticmethod
     def _profile_from_record(record: PlatformProfileRecord) -> TradingProfile:
         return TradingProfile(
             profile_id=record.profile_id,
@@ -28,6 +68,12 @@ class TradingProfileRepository:
             market_type=record.market_type,
             universe_id=record.universe_id,
             symbol_scope=[item for item in (record.symbol_scope or "").split(",") if item],
+            primary_timeframe=record.primary_timeframe,
+            informative_timeframes=TradingProfileRepository._load_json_list(record.informative_timeframes),
+            assigned_strategies=TradingProfileRepository._load_json_list(record.assigned_strategies),
+            regime_policy=record.regime_policy,
+            risk_configuration=TradingProfileRepository._load_json_dict(record.risk_configuration),
+            execution_configuration=TradingProfileRepository._load_json_dict(record.execution_configuration),
             capital_allocation=record.capital_allocation,
         )
 
@@ -39,6 +85,12 @@ class TradingProfileRepository:
             market_type=profile.market_type,
             universe_id=profile.universe_id,
             symbol_scope=",".join(profile.symbol_scope) if profile.symbol_scope else None,
+            primary_timeframe=profile.primary_timeframe,
+            informative_timeframes=self._dump_json_list(profile.informative_timeframes),
+            assigned_strategies=self._dump_json_list(profile.assigned_strategies),
+            regime_policy=profile.regime_policy,
+            risk_configuration=self._dump_json_dict(profile.risk_configuration),
+            execution_configuration=self._dump_json_dict(profile.execution_configuration),
             capital_allocation=profile.capital_allocation,
         )
 
@@ -60,6 +112,12 @@ class TradingProfileRepository:
                 record.market_type = profile.market_type
                 record.universe_id = profile.universe_id
                 record.symbol_scope = ",".join(profile.symbol_scope) if profile.symbol_scope else None
+                record.primary_timeframe = profile.primary_timeframe
+                record.informative_timeframes = self._dump_json_list(profile.informative_timeframes)
+                record.assigned_strategies = self._dump_json_list(profile.assigned_strategies)
+                record.regime_policy = profile.regime_policy
+                record.risk_configuration = self._dump_json_dict(profile.risk_configuration)
+                record.execution_configuration = self._dump_json_dict(profile.execution_configuration)
                 record.capital_allocation = profile.capital_allocation
         return profile
 

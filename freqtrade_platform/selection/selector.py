@@ -47,7 +47,24 @@ class StrategySelector:
         candidate_ids: list[str] = []
         rejected: list[str] = []
 
-        for strategy in strategies:
+        assigned_ids = [strategy_id.strip() for strategy_id in profile.assigned_strategies if strategy_id and str(strategy_id).strip()]
+        if not assigned_ids:
+            return StrategySelectionResult(
+                selected_strategy_id=None,
+                decision=SelectionDecision.NO_TRADE,
+                regime=regime_result.regime.value,
+                reason="no assigned strategies configured",
+                candidate_strategies=[],
+                rejected_candidates=["profile: no assigned strategies"],
+                timestamp=regime_result.timestamp,
+            )
+
+        strategy_map = {strategy.strategy_id: strategy for strategy in strategies}
+        for strategy_id in assigned_ids:
+            strategy = strategy_map.get(strategy_id)
+            if strategy is None:
+                rejected.append(f"unknown strategy: {strategy_id}")
+                continue
             if not strategy.enabled:
                 rejected.append(f"{strategy.strategy_id}: disabled")
                 continue
@@ -68,7 +85,7 @@ class StrategySelector:
                 selected_strategy_id=None,
                 decision=SelectionDecision.NO_TRADE,
                 regime=regime_result.regime.value,
-                reason=f"no compatible strategy for regime {regime_result.regime.value}",
+                reason=f"no compatible assigned strategy for regime {regime_result.regime.value}",
                 candidate_strategies=[],
                 rejected_candidates=rejected,
                 timestamp=regime_result.timestamp,
@@ -87,8 +104,5 @@ class StrategySelector:
 
     @staticmethod
     def _order_candidates(profile: TradingProfile, candidate_ids: list[str]) -> list[str]:
-        ordered = sorted(set(candidate_ids))
-        if profile.assigned_strategies:
-            priority = {strategy_id: index for index, strategy_id in enumerate(profile.assigned_strategies)}
-            ordered = sorted(ordered, key=lambda strategy_id: (priority.get(strategy_id, len(priority)), strategy_id))
-        return ordered
+        priority = {strategy_id: index for index, strategy_id in enumerate(profile.assigned_strategies)}
+        return sorted(set(candidate_ids), key=lambda strategy_id: (priority.get(strategy_id, len(priority)), strategy_id))

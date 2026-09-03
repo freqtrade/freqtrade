@@ -11,6 +11,7 @@ from freqtrade_platform.core.exceptions import PlatformValidationError
 class TradingUniverse:
     """Platform-owned definition of eligible tradable symbols for a market profile."""
 
+    universe_id: str
     exchange: str
     market_type: str
     include_symbols: list[str] = field(default_factory=list)
@@ -28,6 +29,8 @@ class TradingUniverse:
             raise PlatformValidationError("max_symbols cannot be negative")
 
     def validate(self) -> None:
+        if not self.universe_id or not self.universe_id.strip():
+            raise ValueError("universe_id is required")
         if not self.exchange or not self.exchange.strip():
             raise ValueError("exchange is required")
         if not self.market_type or not self.market_type.strip():

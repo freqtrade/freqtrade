@@ -6,6 +6,7 @@ from freqtrade_platform.storage.models import (
     CapitalAllocationRecord,
     PlatformProfileRecord,
     PlatformStrategyRecord,
+    PlatformUniverseRecord,
     StrategyAssignmentRecord,
     StrategyPerformanceRecord,
 )
@@ -14,6 +15,7 @@ __all__ = [
     "PlatformDatabase",
     "PlatformProfileRecord",
     "PlatformStrategyRecord",
+    "PlatformUniverseRecord",
     "StrategyAssignmentRecord",
     "StrategyPerformanceRecord",
     "AccountSnapshotRecord",

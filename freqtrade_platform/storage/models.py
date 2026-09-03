@@ -12,6 +12,7 @@ class PlatformProfileRecord(PlatformBase):
     """Platform profile metadata persistence record."""
 
     __tablename__ = "platform_profiles"
+    __table_args__ = {"extend_existing": True}
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     profile_id: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
@@ -20,13 +21,37 @@ class PlatformProfileRecord(PlatformBase):
     market_type: Mapped[str] = mapped_column(String(32), nullable=False)
     universe_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     symbol_scope: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    primary_timeframe: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    informative_timeframes: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    assigned_strategies: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    regime_policy: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    risk_configuration: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    execution_configuration: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     capital_allocation: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+
+class PlatformUniverseRecord(PlatformBase):
+    """Platform-owned universe metadata record."""
+
+    __tablename__ = "platform_universes"
+    __table_args__ = {"extend_existing": True}
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    universe_id: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
+    exchange: Mapped[str] = mapped_column(String(64), nullable=False)
+    market_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    include_symbols: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    exclude_symbols: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    max_symbols: Mapped[int | None] = mapped_column(nullable=True)
+    enabled: Mapped[bool] = mapped_column(default=True)
+    metadata_json: Mapped[str | None] = mapped_column(String(2048), nullable=True)
 
 
 class PlatformStrategyRecord(PlatformBase):
     """Platform strategy metadata persistence record."""
 
     __tablename__ = "platform_strategies"
+    __table_args__ = {"extend_existing": True}
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     strategy_id: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
@@ -39,6 +64,7 @@ class StrategyAssignmentRecord(PlatformBase):
     """Assignment between a profile and a strategy."""
 
     __tablename__ = "strategy_assignments"
+    __table_args__ = {"extend_existing": True}
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     profile_id: Mapped[str] = mapped_column(String(128), nullable=False)
@@ -50,6 +76,7 @@ class StrategyPerformanceRecord(PlatformBase):
     """Strategy performance metadata storage record."""
 
     __tablename__ = "strategy_performance"
+    __table_args__ = {"extend_existing": True}
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     strategy_id: Mapped[str] = mapped_column(String(128), nullable=False)
@@ -62,6 +89,7 @@ class AccountSnapshotRecord(PlatformBase):
     """Real account snapshot persistence record."""
 
     __tablename__ = "account_snapshots"
+    __table_args__ = {"extend_existing": True}
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     timestamp: Mapped[str] = mapped_column(String(64), nullable=False)
@@ -76,6 +104,7 @@ class SimulationAccountRecord(PlatformBase):
     """Simulation-only account record."""
 
     __tablename__ = "simulation_accounts"
+    __table_args__ = {"extend_existing": True}
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     timestamp: Mapped[str] = mapped_column(String(64), nullable=False)
@@ -91,6 +120,7 @@ class SimulationBootstrapRecord(PlatformBase):
     """Bootstrap for simulation initialization state."""
 
     __tablename__ = "simulation_bootstraps"
+    __table_args__ = {"extend_existing": True}
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     timestamp: Mapped[str] = mapped_column(String(64), nullable=False)
@@ -103,6 +133,7 @@ class CapitalAllocationRecord(PlatformBase):
     """Capital allocation persistence record."""
 
     __tablename__ = "capital_allocations"
+    __table_args__ = {"extend_existing": True}
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     profile_id: Mapped[str] = mapped_column(String(128), nullable=False)
