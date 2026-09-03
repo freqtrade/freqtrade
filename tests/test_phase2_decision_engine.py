@@ -65,6 +65,28 @@ def test_detector_contract_and_profile_universe_relationship() -> None:
     assert isinstance(result, MarketRegimeResult)
 
 
+def test_profile_scope_is_a_narrowing_constraint_on_universe() -> None:
+    profile = TradingProfile(
+        profile_id="scoped-profile",
+        name="Scoped Profile",
+        exchange="binance",
+        market_type="spot",
+        universe_id="uv-1",
+        symbol_scope=["btc/usdt", " sol/usdt ", "DOGE/USDT"],
+    )
+
+    universe = TradingUniverse(
+        exchange="binance",
+        market_type="spot",
+        include_symbols=["BTC/USDT", "ETH/USDT", "SOL/USDT"],
+        exclude_symbols=["ETH/USDT"],
+    )
+
+    assert profile.resolve_symbols(universe.eligible_symbols(["BTC/USDT", "ETH/USDT", "SOL/USDT"])) == ["BTC/USDT", "SOL/USDT"]
+    assert profile.resolve_symbols(["BTC/USDT", "ETH/USDT", "SOL/USDT"], universe_enabled=True) == ["BTC/USDT", "SOL/USDT"]
+    assert profile.resolve_symbols(["BTC/USDT", "ETH/USDT"], universe_enabled=False) == []
+
+
 def test_universe_filters_and_normalizes_symbols(universe: TradingUniverse) -> None:
     universe.add_symbol("btc/usdt")
     universe.exclude_symbol("eth/usdt")
@@ -74,6 +96,11 @@ def test_universe_filters_and_normalizes_symbols(universe: TradingUniverse) -> N
     assert universe.contains("BTC/USDT") is True
     assert universe.contains("ADA/USDT") is False
     assert universe.eligible_symbols(["BTC/USDT", "ETH/USDT", "SOL/USDT", "ADA/USDT"]) == ["BTC/USDT", "SOL/USDT"]
+    assert universe.eligible_symbols([]) == []
+
+    empty_universe = TradingUniverse(exchange="binance", market_type="spot", include_symbols=[])
+    assert empty_universe.contains("BTC/USDT") is True
+    assert empty_universe.eligible_symbols(["BTC/USDT", "ETH/USDT"]) == ["BTC/USDT", "ETH/USDT"]
 
 
 def test_universe_rejects_disabled_or_invalid_state() -> None:
@@ -86,6 +113,7 @@ def test_universe_rejects_disabled_or_invalid_state() -> None:
 
     assert universe.enabled is False
     assert universe.contains("BTC/USDT") is False
+    assert universe.eligible_symbols(["BTC/USDT", "ETH/USDT"]) == []
 
     with pytest.raises(ValueError, match="exchange"):
         TradingUniverse(exchange="", market_type="spot", include_symbols=["BTC/USDT"])

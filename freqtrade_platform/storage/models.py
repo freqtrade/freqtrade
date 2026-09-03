@@ -18,6 +18,8 @@ class PlatformProfileRecord(PlatformBase):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     exchange: Mapped[str] = mapped_column(String(64), nullable=False)
     market_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    universe_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    symbol_scope: Mapped[str | None] = mapped_column(String(512), nullable=True)
     capital_allocation: Mapped[float | None] = mapped_column(Float, nullable=True)
 
 

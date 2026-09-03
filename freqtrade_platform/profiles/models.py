@@ -12,8 +12,10 @@ from freqtrade_platform.core.exceptions import PlatformValidationError
 class TradingProfile:
     """Profile-specific trading configuration.
 
-    The profile is not a duplicate of TradingUniverse. It references the universe through
-    ``universe_id`` and may also carry profile-scoped constraints such as ``symbol_scope``.
+    ``TradingUniverse`` defines the base eligible asset set for the platform. A profile
+    references that universe through ``universe_id`` and may add an optional narrower
+    ``symbol_scope`` constraint. The final eligible symbols are the universe eligibility
+    intersected with the profile scope when the profile scope is non-empty.
     """
 
     profile_id: str
@@ -32,6 +34,38 @@ class TradingProfile:
 
     def __post_init__(self) -> None:
         self._validate()
+        self.symbol_scope = self._normalize_symbols(self.symbol_scope)
+
+    @staticmethod
+    def _normalize_symbols(symbols: list[str]) -> list[str]:
+        normalized: list[str] = []
+        seen: set[str] = set()
+        for symbol in symbols:
+            if symbol is None:
+                continue
+            cleaned = str(symbol).strip()
+            if not cleaned:
+                continue
+            canonical = cleaned.upper()
+            if canonical not in seen:
+                seen.add(canonical)
+                normalized.append(canonical)
+        return normalized
+
+    def resolve_symbols(self, universe_symbols: list[str], *, universe_enabled: bool = True) -> list[str]:
+        """Return the final eligible symbols for this profile.
+
+        The base universe is authoritative. The profile scope can only narrow it.
+        """
+        if not universe_enabled:
+            return []
+
+        universe_set = set(self._normalize_symbols(universe_symbols))
+        if not self.symbol_scope:
+            return sorted(universe_set)
+
+        narrowed = set(self._normalize_symbols(self.symbol_scope))
+        return sorted(universe_set & narrowed)
 
     def _validate(self) -> None:
         if not self.profile_id or not self.profile_id.strip():

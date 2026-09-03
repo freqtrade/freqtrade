@@ -57,13 +57,18 @@ class TradingUniverse:
             return False
         if canonical in self.exclude_symbols:
             return False
+        if not self.include_symbols:
+            return True
         return canonical in self.include_symbols
 
     def eligible_symbols(self, all_available_symbols: list[str]) -> list[str]:
         if not self.enabled:
             return []
         pool = self._normalize_symbols(all_available_symbols)
-        eligible = [symbol for symbol in pool if self.contains(symbol)]
+        if not self.include_symbols:
+            eligible = [symbol for symbol in pool if symbol not in self.exclude_symbols]
+        else:
+            eligible = [symbol for symbol in pool if self.contains(symbol)]
         if self.max_symbols is not None:
             eligible = eligible[: self.max_symbols]
         return eligible
