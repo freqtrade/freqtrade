@@ -15,6 +15,7 @@ from freqtrade.data.converter import (
     count_total_order_book,
     ohlcv_fill_up_missing_data,
     ohlcv_to_dataframe,
+    order_book_to_dataframe,
     reduce_dataframe_footprint,
     trades_df_remove_duplicates,
     trades_dict_to_list,
