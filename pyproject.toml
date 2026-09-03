@@ -282,7 +282,7 @@ extend-ignore = [
   # "DTZ",  # Use timezone-aware datetime objects
   "DTZ007",  # Use timezone-aware datetime objects
   "TRY401",  # Redundant exception object in logging.exception call
-  "TRY",
+  "TRY004",  # Wrong exception type when raising for type error
 ]
 
 
