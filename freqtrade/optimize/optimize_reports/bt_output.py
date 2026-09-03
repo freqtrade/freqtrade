@@ -254,9 +254,7 @@ def text_table_add_metrics(strat_results: dict) -> None:
                 ),
                 (
                     "Drawdown duration",
-                    strat_results["drawdown_duration"]
-                    if "drawdown_duration" in strat_results
-                    else "N/A",
+                    strat_results.get("drawdown_duration", "N/A"),
                 ),
                 (
                     "Profit at drawdown start",
@@ -344,9 +342,7 @@ def text_table_add_metrics(strat_results: dict) -> None:
                         ),
                         (
                             "Drawdown duration",
-                            wallet_stats["drawdown_duration"]
-                            if "drawdown_duration" in wallet_stats
-                            else "N/A",
+                            wallet_stats.get("drawdown_duration", "N/A"),
                         ),
                         (
                             "Profit at drawdown start",

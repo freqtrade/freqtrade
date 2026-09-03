@@ -314,7 +314,7 @@ class IPairList(LoggingMixin, ABC):
             # Copy list since we're modifying this list
             for p in pairlist.copy():
                 # Filter out assets
-                if not self._validate_pair(p, tickers[p] if p in tickers else None):
+                if not self._validate_pair(p, tickers.get(p, None)):
                     pairlist.remove(p)
 
         return pairlist

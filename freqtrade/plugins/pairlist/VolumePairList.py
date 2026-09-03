@@ -199,10 +199,8 @@ class VolumePairList(IPairList):
 
             for i, p in enumerate(filtered_tickers):
                 contract_size = self._exchange.markets[p["symbol"]].get("contractSize", 1.0) or 1.0
-                pair_candles = (
-                    candles[(p["symbol"], self._lookback_timeframe, self._def_candletype)]
-                    if (p["symbol"], self._lookback_timeframe, self._def_candletype) in candles
-                    else None
+                pair_candles = candles.get(
+                    (p["symbol"], self._lookback_timeframe, self._def_candletype), None
                 )
                 # in case of candle data calculate typical price and quoteVolume for candle
                 if pair_candles is not None and not pair_candles.empty:
