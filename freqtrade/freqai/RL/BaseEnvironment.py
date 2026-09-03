@@ -196,7 +196,7 @@ class BaseEnvironment(gym.Env):
         :param inc: (deprecated) sets whether the `value` is incremented or not
         :param category: `metric` category
         """
-        increment = True if value is None else False
+        increment = value is None
         value = 1 if increment else value
 
         if category not in self.tensorboard_metrics:
