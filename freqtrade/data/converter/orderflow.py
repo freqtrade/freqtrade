@@ -195,12 +195,12 @@ def trades_to_volumeprofile_with_total_delta_bid_ask(
     """
     df = pd.DataFrame([], columns=DEFAULT_ORDERFLOW_COLUMNS)
     # create bid, ask where side is sell or buy
-    is_sell = trades["side"].str.contains("sell")
-    is_buy = trades["side"].str.contains("buy")
-    df["bid_amount"] = np.where(is_sell, trades["amount"], 0)
-    df["ask_amount"] = np.where(is_buy, trades["amount"], 0)
-    df["bid"] = np.where(is_sell, 1, 0)
-    df["ask"] = np.where(is_buy, 1, 0)
+    is_sell_mask = trades["side"].str.contains("sell")
+    is_buy_mask = trades["side"].str.contains("buy")
+    df["bid_amount"] = np.where(is_sell_mask, trades["amount"], 0)
+    df["ask_amount"] = np.where(is_buy_mask, trades["amount"], 0)
+    df["bid"] = np.where(is_sell_mask, 1, 0)
+    df["ask"] = np.where(is_buy_mask, 1, 0)
     # round the prices to the nearest multiple of the scale
     df["price"] = ((trades["price"] / scale).round() * scale).astype("float64").values
     if df.empty:
@@ -229,11 +229,11 @@ def trades_orderflow_to_imbalances(df: pd.DataFrame, imbalance_ratio: int, imbal
     ask = df.ask.shift(-1)
     bid_imbalance = (bid / ask) > (imbalance_ratio)
     # overwrite bid_imbalance with False if volume is not big enough
-    cached_volume_check = df.total_volume < imbalance_volume
-    bid_imbalance_filtered = np.where(cached_volume_check, False, bid_imbalance)
+    volume_check_mask = df.total_volume < imbalance_volume
+    bid_imbalance_filtered = np.where(volume_check_mask, False, bid_imbalance)
     ask_imbalance = (ask / bid) > (imbalance_ratio)
     # overwrite ask_imbalance with False if volume is not big enough
-    ask_imbalance_filtered = np.where(cached_volume_check, False, ask_imbalance)
+    ask_imbalance_filtered = np.where(volume_check_mask, False, ask_imbalance)
     dataframe = pd.DataFrame(
         {"bid_imbalance": bid_imbalance_filtered, "ask_imbalance": ask_imbalance_filtered},
         index=df.index,
