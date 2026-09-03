@@ -16,7 +16,7 @@ from schedule import Scheduler
 from freqtrade import constants
 from freqtrade.configuration import remove_exchange_credentials, validate_config_consistency
 from freqtrade.constants import BuySell, Config, EntryExecuteMode, ExchangeConfig, LongShort
-from freqtrade.data.converter import order_book_to_dataframe
+from freqtrade.data.converter import count_total_order_book
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import (
     ExitCheckTuple,
@@ -894,9 +894,9 @@ class FreqtradeBot(LoggingMixin):
         conf_bids_to_ask_delta = conf.get("bids_to_ask_delta", 0)
         logger.info(f"Checking depth of market for {pair} ...")
         order_book = self.exchange.fetch_l2_order_book(pair, 1000)
-        order_book_data_frame = order_book_to_dataframe(order_book["bids"], order_book["asks"])
-        order_book_bids = order_book_data_frame["b_size"].sum()
-        order_book_asks = order_book_data_frame["a_size"].sum()
+        order_book_bids, order_book_asks = count_total_order_book(
+            order_book["bids"], order_book["asks"]
+        )
 
         entry_side = order_book_bids if side == SignalDirection.LONG else order_book_asks
         exit_side = order_book_asks if side == SignalDirection.LONG else order_book_bids
