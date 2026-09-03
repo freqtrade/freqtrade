@@ -387,7 +387,7 @@ For such exchanges, the response of an inactive pair contains no candle for the 
 interval - freqtrade detects this and re-queries these pairs at candle cadence.
 As long as the exchange did not issue a newer candle, a candle that just closed may still be
 published late or updated. It is therefore only treated as final once `ohlcv_late_candle_grace_secs`
-seconds (defaults to 15) passed since it closed - until then it is withheld, so strategies never see an incomplete candle.
+seconds (defaults to 15, capped at half the timeframe) passed since it closed - until then it is withheld from REST polling, so strategies never see an incomplete candle.
 Raise this value for exchanges that are known to publish or update candles later than this.
 
 ### Update binance cached leverage tiers
