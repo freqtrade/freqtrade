@@ -135,6 +135,4 @@ class Base3ActionRLEnv(BaseEnvironment):
         if self.can_short:
             return action in [Actions.Buy.value, Actions.Sell.value, Actions.Neutral.value]
         else:
-            if action == Actions.Sell.value and self._position != Positions.Long:
-                return False
-            return True
+            return not (action == Actions.Sell.value and self._position != Positions.Long)

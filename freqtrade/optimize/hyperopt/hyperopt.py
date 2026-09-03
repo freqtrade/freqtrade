@@ -158,9 +158,7 @@ class Hyperopt:
         for t in asked_trials:
             if t.params not in asked_trials_no_dups:
                 asked_trials_no_dups.append(t)
-        if len(asked_trials_no_dups) != len(asked_trials):
-            return True
-        return False
+        return len(asked_trials_no_dups) != len(asked_trials)
 
     def get_asked_points(self, n_points: int, dimensions: dict) -> tuple[list[Any], list[bool]]:
         """

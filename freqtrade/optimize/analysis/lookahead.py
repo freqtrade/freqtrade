@@ -59,10 +59,7 @@ class LookaheadAnalysis(BaseAnalysis):
             return False
         else:
             df_cut = df[(df[column_name] == checked_timestamp)]
-            if df_cut[column_name].shape[0] == 0:
-                return False
-            else:
-                return True
+            return df_cut[column_name].shape[0] != 0
         return False
 
     # analyzes two data frames with processed indicators and shows differences between them.

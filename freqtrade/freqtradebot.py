@@ -2600,9 +2600,7 @@ class FreqtradeBot(LoggingMixin):
         if not trades:
             return False
         # We expect amount and cost to be present in all trade objects.
-        if any(trade.get("amount") is None or trade.get("cost") is None for trade in trades):
-            return False
-        return True
+        return not any(trade.get("amount") is None or trade.get("cost") is None for trade in trades)
 
     def fee_detection_from_trades(
         self, trade: Trade, order: CcxtOrder, order_obj: Order, order_amount: float, trades: list

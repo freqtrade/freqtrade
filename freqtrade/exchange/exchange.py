@@ -2733,9 +2733,7 @@ class Exchange:
         Check if we can use websocket for this pair.
         Acts as typeguard for exchangeWs
         """
-        if exchange_ws and candle_type in (CandleType.SPOT, CandleType.FUTURES):
-            return True
-        return False
+        return bool(exchange_ws and candle_type in (CandleType.SPOT, CandleType.FUTURES))
 
     def _build_coroutine(
         self,
