@@ -5,7 +5,6 @@ Functions to convert data from one format to another
 import logging
 
 import numpy as np
-import pandas as pd
 from pandas import DataFrame, to_datetime
 
 from freqtrade.candle_columns import (
@@ -219,37 +218,16 @@ def trim_dataframes(
     return processed
 
 
-def order_book_to_dataframe(bids: list, asks: list) -> DataFrame:
+def count_total_order_book(bids: list, asks: list) -> tuple[float, float]:
     """
-    Gets order book list, returns dataframe with below format per suggested by creslin
-    -------------------------------------------------------------------
-     b_sum       b_size       bids       asks       a_size       a_sum
-    -------------------------------------------------------------------
+    Calculate the total size of bids and asks in the order book and return them as a tuple.
+    :param bids: List of bid levels in the order book containing [price, size].
+    :param asks: List of ask levels in the order book containing [price, size].
+    :return: A tuple containing the total size of bids and asks in the order book.
     """
-    cols = ["bids", "b_size"]
-
-    bids_frame = DataFrame(bids, columns=cols)
-    # add cumulative sum column
-    bids_frame["b_sum"] = bids_frame["b_size"].cumsum()
-    cols2 = ["asks", "a_size"]
-    asks_frame = DataFrame(asks, columns=cols2)
-    # add cumulative sum column
-    asks_frame["a_sum"] = asks_frame["a_size"].cumsum()
-
-    frame = pd.concat(
-        [
-            bids_frame["b_sum"],
-            bids_frame["b_size"],
-            bids_frame["bids"],
-            asks_frame["asks"],
-            asks_frame["a_size"],
-            asks_frame["a_sum"],
-        ],
-        axis=1,
-        keys=["b_sum", "b_size", "bids", "asks", "a_size", "a_sum"],
-    )
-    # logger.info('order book %s', frame )
-    return frame
+    order_book_bids = np.nansum([level[1] for level in bids])
+    order_book_asks = np.nansum([level[1] for level in asks])
+    return order_book_bids, order_book_asks
 
 
 def convert_ohlcv_format(
