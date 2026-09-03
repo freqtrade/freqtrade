@@ -327,7 +327,7 @@ class BaseEnvironment(gym.Env):
 
     def _update_history(self, info):
         if not self.history:
-            self.history = {key: [] for key in info.keys()}
+            self.history = {key: [] for key in info}
 
         for key, value in info.items():
             self.history[key].append(value)

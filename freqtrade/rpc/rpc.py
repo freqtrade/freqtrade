@@ -1538,7 +1538,7 @@ class RPC:
                 dataframe.loc[:, "date"].dt.as_unit("ms").astype("int64")
             )
             # Move signal close to separate column when signal for easy plotting
-            for sig_type in signals.keys():
+            for sig_type in signals:
                 if sig_type in dataframe.columns:
                     mask = dataframe[sig_type] == 1
                     signals[sig_type] = int(mask.sum())

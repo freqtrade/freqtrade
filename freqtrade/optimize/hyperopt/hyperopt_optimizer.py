@@ -162,7 +162,7 @@ class HyperOptimizer:
         """
         result: dict = {}
 
-        for space in self.spaces.keys():
+        for space in self.spaces:
             if space == "protection":
                 result["protection"] = round_dict(
                     {p.name: params.get(p.name) for p in self.spaces[space]}, 13
@@ -412,7 +412,7 @@ class HyperOptimizer:
         )
 
         if isinstance(o_sampler, str):
-            if o_sampler not in optuna_samplers_dict.keys():
+            if o_sampler not in optuna_samplers_dict:
                 raise OperationalException(f"Optuna Sampler {o_sampler} not supported.")
             with warnings.catch_warnings():
                 warnings.filterwarnings(action="ignore", category=ExperimentalWarning)

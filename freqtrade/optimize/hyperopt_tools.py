@@ -396,7 +396,7 @@ class HyperoptTools:
         ]
         perc_multi = 100
 
-        param_metrics = [("params_dict." + param) for param in results[0]["params_dict"].keys()]
+        param_metrics = [("params_dict." + param) for param in results[0]["params_dict"]]
         trials = trials[base_metrics + param_metrics]
 
         base_columns = [

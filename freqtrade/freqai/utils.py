@@ -36,7 +36,7 @@ def download_all_data_for_training(dp: DataProvider, config: Config) -> None:
         p
         for p in dp._exchange.get_markets(
             tradable_only=True, active_only=not config.get("include_inactive")
-        ).keys()
+        )
     ]
 
     all_pairs = dynamic_expand_pairlist(config, markets)

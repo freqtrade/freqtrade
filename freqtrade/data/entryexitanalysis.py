@@ -350,7 +350,7 @@ def process_entry_exit_reasons(config: Config):
         except ValueError as e:
             raise ConfigurationError(e) from e
 
-        for strategy_name in backtest_stats["strategy"].keys():
+        for strategy_name in backtest_stats["strategy"]:
             trades = load_backtest_data(
                 config["exportdirectory"], strategy_name, config["exportfilename"]
             )

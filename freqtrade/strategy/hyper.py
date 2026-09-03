@@ -93,7 +93,7 @@ class HyperStrategyMixin:
         """
         self._ft_hyper_params = detect_all_parameters(self)
 
-        for space in self._ft_hyper_params.keys():
+        for space in self._ft_hyper_params:
             params_values = deep_merge_dicts(
                 self._ft_params_from_file.get(space, {}), getattr(self, f"{space}_params", {})
             )

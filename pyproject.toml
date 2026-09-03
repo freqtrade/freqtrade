@@ -284,7 +284,6 @@ extend-ignore = [
   "TRY401",  # Redundant exception object in logging.exception call
   "TRY",
   "SIM102",
-  "SIM118",
 ]
 
 
