@@ -225,8 +225,8 @@ def count_total_order_book(bids: list, asks: list) -> tuple[float, float]:
     :param asks: List of ask levels in the order book containing [price, size].
     :return: A tuple containing the total size of bids and asks in the order book.
     """
-    order_book_bids = np.nansum([level[1] for level in bids])
-    order_book_asks = np.nansum([level[1] for level in asks])
+    order_book_bids = np.nansum(np.asarray([level[1] for level in bids], dtype=float))
+    order_book_asks = np.nansum(np.asarray([level[1] for level in asks], dtype=float))
     return order_book_bids, order_book_asks
 
 
