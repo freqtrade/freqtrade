@@ -236,10 +236,12 @@ class NameUpdater(ast_comments.NodeTransformer):
         return node
 
     def visit_Subscript(self, node):
-        if isinstance(node.slice, ast_comments.Constant):
-            if node.slice.value in StrategyUpdater.rename_dict:
-                # Replace the slice attributes with the values from rename_dict
-                node.slice.value = StrategyUpdater.rename_dict[node.slice.value]
+        if (
+            isinstance(node.slice, ast_comments.Constant)
+            and node.slice.value in StrategyUpdater.rename_dict
+        ):
+            # Replace the slice attributes with the values from rename_dict
+            node.slice.value = StrategyUpdater.rename_dict[node.slice.value]
         if hasattr(node.slice, "elts"):
             self.visit_elts(node.slice.elts)
         if hasattr(node.slice, "value") and hasattr(node.slice.value, "elts"):

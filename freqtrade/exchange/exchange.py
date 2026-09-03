@@ -817,9 +817,10 @@ class Exchange:
         """
         Checks if order-types configured in strategy/config are supported
         """
-        if any(v == "market" for k, v in order_types.items()):
-            if not self.exchange_has("createMarketOrder"):
-                raise ConfigurationError(f"Exchange {self.name} does not support market orders.")
+        if any(v == "market" for k, v in order_types.items()) and not self.exchange_has(
+            "createMarketOrder"
+        ):
+            raise ConfigurationError(f"Exchange {self.name} does not support market orders.")
         self.validate_stop_ordertypes(order_types)
 
     def validate_stop_ordertypes(self, order_types: dict) -> None:
@@ -946,14 +947,15 @@ class Exchange:
         """
         if trading_mode == TradingMode.SPOT:
             return
-        if allow_none_margin_mode and margin_mode is None:
-            # Verify trading mode independent of margin mode
-            if not any(
+        # Verify trading mode independent of margin mode
+        if (
+            allow_none_margin_mode
+            and margin_mode is None
+            and not any(
                 trading_mode == pair[0] for pair in self._supported_trading_mode_margin_pairs
-            ):
-                raise ConfigurationError(
-                    f"Freqtrade does not support '{trading_mode}' on {self.name}."
-                )
+            )
+        ):
+            raise ConfigurationError(f"Freqtrade does not support '{trading_mode}' on {self.name}.")
 
         if not allow_none_margin_mode and (
             (trading_mode, margin_mode) not in self._supported_trading_mode_margin_pairs
@@ -1751,17 +1753,20 @@ class Exchange:
             params["stop"] = True
         order = self.fetch_order(order_id, pair, params)
         val = self.get_option("stoploss_algo_order_info_id")
-        if val and order.get("status", "open") == "closed":
-            if new_orderid := order.get("info", {}).get(val):
-                # Fetch real order, which was placed by the algo order.
-                actual_order = self.fetch_order(order_id=new_orderid, pair=pair, params=None)
-                actual_order["id_stop"] = actual_order["id"]
-                actual_order["id"] = order_id
-                actual_order["type"] = "stoploss"
-                actual_order["stopPrice"] = order.get("stopPrice")
-                actual_order["status_stop"] = "triggered"
+        if (
+            val
+            and order.get("status", "open") == "closed"
+            and (new_orderid := order.get("info", {}).get(val))
+        ):
+            # Fetch real order, which was placed by the algo order.
+            actual_order = self.fetch_order(order_id=new_orderid, pair=pair, params=None)
+            actual_order["id_stop"] = actual_order["id"]
+            actual_order["id"] = order_id
+            actual_order["type"] = "stoploss"
+            actual_order["stopPrice"] = order.get("stopPrice")
+            actual_order["status_stop"] = "triggered"
 
-                return actual_order
+            return actual_order
 
         return order
 
@@ -2744,10 +2749,9 @@ class Exchange:
         cache: bool,
     ) -> Coroutine[Any, Any, OHLCVResponse]:
         not_all_data = cache and self.required_candle_call_count > 1
-        if cache:
-            if self._can_use_websocket(self._exchange_ws, pair, timeframe, candle_type):
-                # Subscribe to websocket
-                self._exchange_ws.schedule_ohlcv(pair, timeframe, candle_type)
+        if cache and self._can_use_websocket(self._exchange_ws, pair, timeframe, candle_type):
+            # Subscribe to websocket
+            self._exchange_ws.schedule_ohlcv(pair, timeframe, candle_type)
 
         if cache and (pair, timeframe, candle_type) in self._klines:
             candle_limit = self.ohlcv_candle_limit(timeframe, candle_type)

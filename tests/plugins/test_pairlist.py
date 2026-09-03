@@ -1098,9 +1098,8 @@ def test_VolumePairList_range(
         time_machine.move_to(start_dt)
         # remove ohlcv when looback_timeframe != 1d
         # to enforce fallback to ticker data
-        if "lookback_timeframe" in pairlists[0]:
-            if pairlists[0]["lookback_timeframe"] != "1d":
-                ohlcv_data = {}
+        if "lookback_timeframe" in pairlists[0] and pairlists[0]["lookback_timeframe"] != "1d":
+            ohlcv_data = {}
 
         ohclv_mock = mocker.patch(f"{EXMS}.refresh_latest_ohlcv", return_value=ohlcv_data)
 

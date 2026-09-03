@@ -83,14 +83,16 @@ class LookaheadAnalysis(BaseAnalysis):
                 other_value = compare_df_row.iloc[col_idx + 1]
 
                 # output differences
-                if self_value != other_value:
-                    if not self.current_analysis.false_indicators.__contains__(col_name[0]):
-                        self.current_analysis.false_indicators.append(col_name[0])
-                        logger.info(
-                            f"=> found look ahead bias in column "
-                            f"{col_name[0]}. "
-                            f"{str(self_value)} != {str(other_value)}"
-                        )
+                if (
+                    self_value != other_value
+                    and not self.current_analysis.false_indicators.__contains__(col_name[0])
+                ):
+                    self.current_analysis.false_indicators.append(col_name[0])
+                    logger.info(
+                        f"=> found look ahead bias in column "
+                        f"{col_name[0]}. "
+                        f"{str(self_value)} != {str(other_value)}"
+                    )
 
     def prepare_data(self, varholder: VarHolder, pairs_to_load: list[DataFrame]):
         if "freqai" in self.local_config and "identifier" in self.local_config["freqai"]:

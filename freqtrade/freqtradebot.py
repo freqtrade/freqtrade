@@ -1437,14 +1437,13 @@ class FreqtradeBot(LoggingMixin):
         for should_exit in exits:
             if should_exit.exit_flag:
                 exit_tag1 = exit_tag if should_exit.exit_type == ExitType.EXIT_SIGNAL else None
-                if trade.has_open_orders:
-                    if prev_eval := self._exit_reason_cache.get(
+                if trade.has_open_orders and (
+                    prev_eval := self._exit_reason_cache.get(
                         f"{trade.pair}_{trade.id}_{exit_tag1 or should_exit.exit_reason}", None
-                    ):
-                        logger.debug(
-                            f"Exit reason already seen this candle, first seen at {prev_eval}"
-                        )
-                        continue
+                    )
+                ):
+                    logger.debug(f"Exit reason already seen this candle, first seen at {prev_eval}")
+                    continue
 
                 logger.info(
                     f"Exit for {trade.pair} detected. Reason: {should_exit.exit_type}"
@@ -1880,13 +1879,12 @@ class FreqtradeBot(LoggingMixin):
         """
         if trade.has_open_orders:
             oo = trade.select_order(side, True)
-            if oo is not None:
-                if price == oo.price and side == oo.side and amount == oo.amount:
-                    logger.info(
-                        f"A similar open order was found for {trade.pair}. "
-                        f"Keeping existing {trade.exit_side} order. {price=},  {amount=}"
-                    )
-                    return True
+            if oo is not None and price == oo.price and side == oo.side and amount == oo.amount:
+                logger.info(
+                    f"A similar open order was found for {trade.pair}. "
+                    f"Keeping existing {trade.exit_side} order. {price=},  {amount=}"
+                )
+                return True
             # cancel open orders of this trade if order is different
             self.cancel_open_orders_of_trade(
                 trade,
@@ -2192,9 +2190,10 @@ class FreqtradeBot(LoggingMixin):
             logger.info(f"User denied exit for {trade.pair}.")
             return False
 
-        if trade.has_open_orders:
-            if self.handle_similar_open_order(trade, limit, amount, trade.exit_side):
-                return False
+        if trade.has_open_orders and self.handle_similar_open_order(
+            trade, limit, amount, trade.exit_side
+        ):
+            return False
 
         try:
             # Execute exit and update trade record

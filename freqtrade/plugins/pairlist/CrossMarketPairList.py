@@ -119,13 +119,12 @@ class CrossMarketPairList(IPairList):
                         break
 
                     # Avoid false positive since there are KAVA and AVA pairs, which aren't related
-                    if prefix != "K":
-                        # Check in case of 1000PEPE needs to be changed into PEPE for example
-                        if base.startswith(prefix):
-                            temp_base = base.removeprefix(prefix)
-                            found_in_bases = temp_base in bases
-                            if found_in_bases:
-                                break
+                    # Check in case of 1000PEPE needs to be changed into PEPE for example
+                    if prefix != "K" and base.startswith(prefix):
+                        temp_base = base.removeprefix(prefix)
+                        found_in_bases = temp_base in bases
+                        if found_in_bases:
+                            break
             if found_in_bases:
                 whitelisted_pairlist.append(pair)
                 filtered_pairlist.remove(pair)

@@ -115,11 +115,11 @@ def authorized_only(command_handler: Callable[..., Coroutine[Any, Any, None]]):
         if cchat_id != chat_id:
             logger.info(f"Rejected unauthorized message from: {cchat_id}")
             return None
-        if (topic_id := self._config["telegram"].get("topic_id")) is not None:
-            if str(ctopic_id) != topic_id:
-                # This can be quite common in multi-topic environments.
-                logger.debug(f"Rejected message from wrong channel: {cchat_id}, {ctopic_id}")
-                return None
+        topic_id = self._config["telegram"].get("topic_id")
+        if topic_id is not None and str(ctopic_id) != topic_id:
+            # This can be quite common in multi-topic environments.
+            logger.debug(f"Rejected message from wrong channel: {cchat_id}, {ctopic_id}")
+            return None
 
         authorized = self._config["telegram"].get("authorized_users", None)
         if authorized is not None and from_user_id not in authorized:

@@ -1008,18 +1008,19 @@ class Backtesting:
         """
         Calculate funding fees if necessary and add them to the trade.
         """
-        if self.trading_mode == TradingMode.FUTURES:
-            if force or (current_time.timestamp() % self.funding_fee_timeframe_secs) == 0:
-                # Funding fee interval.
-                trade.set_funding_fees(
-                    self.exchange.calculate_funding_fees(
-                        self.futures_data[trade.pair],
-                        amount=trade.amount,
-                        is_short=trade.is_short,
-                        open_date=trade.date_last_filled_utc,
-                        close_date=current_time,
-                    )
+        if self.trading_mode == TradingMode.FUTURES and (
+            force or (current_time.timestamp() % self.funding_fee_timeframe_secs) == 0
+        ):
+            # Funding fee interval.
+            trade.set_funding_fees(
+                self.exchange.calculate_funding_fees(
+                    self.futures_data[trade.pair],
+                    amount=trade.amount,
+                    is_short=trade.is_short,
+                    open_date=trade.date_last_filled_utc,
+                    close_date=current_time,
                 )
+            )
 
     def get_valid_entry_price_and_stake(
         self,
@@ -1186,21 +1187,20 @@ class Backtesting:
             # Backcalculate actual stake amount.
             stake_amount = amount * propose_rate / leverage
 
-            if not pos_adjust:
-                # Confirm trade entry:
-                if not strategy_safe_wrapper(
-                    self.strategy.confirm_trade_entry, default_retval=True
-                )(
-                    pair=pair,
-                    order_type=order_type,
-                    amount=amount,
-                    rate=propose_rate,
-                    time_in_force=time_in_force,
-                    current_time=current_time,
-                    entry_tag=entry_tag,
-                    side=direction,
-                ):
-                    return trade
+            # Confirm trade entry:
+            if not pos_adjust and not strategy_safe_wrapper(
+                self.strategy.confirm_trade_entry, default_retval=True
+            )(
+                pair=pair,
+                order_type=order_type,
+                amount=amount,
+                rate=propose_rate,
+                time_in_force=time_in_force,
+                current_time=current_time,
+                entry_tag=entry_tag,
+                side=direction,
+            ):
+                return trade
 
             is_short = direction == "short"
             # Necessary for Margin trading. Disabled until support is enabled.
@@ -1364,13 +1364,12 @@ class Backtesting:
         """
         if trade.has_open_orders:
             oo = trade.select_order(side, True)
-            if oo:
-                if (price == oo.price) and (side == oo.side) and (amount == oo.amount):
-                    # logger.info(
-                    #     f"A similar open order was found for {trade.pair}. "
-                    #     f"Keeping existing {trade.exit_side} order. {price=},  {amount=}"
-                    # )
-                    return True
+            if oo and (price == oo.price) and (side == oo.side) and (amount == oo.amount):
+                # logger.info(
+                #     f"A similar open order was found for {trade.pair}. "
+                #     f"Keeping existing {trade.exit_side} order. {price=},  {amount=}"
+                # )
+                return True
             self.cancel_open_orders(trade, current_time)
 
         return False
