@@ -2919,16 +2919,16 @@ class Exchange:
         # candle the exchange may still update - consumers must never see an incomplete candle.
         # Exchanges omitting candles without trades can return a completed
         # candle as last element, which shouldn't be dropped.
-        drop_incomplete = (
+        drop_incomplete_ = (
             drop_incomplete
             and bool(ticks)
             and (ticks[-1][0] >= curr_candle_date or not candles_final)
         )
         if cache:
-            # Remember when this pair was last queried - even if the response was empty.
+            # Remember when this pair was last queried
             self._pairs_last_poll_time[(pair, timeframe, c_type)] = fetch_start_ms
             # keeping last candle time as last refreshed time of the pair
-            kept_ticks = ticks[:-1] if drop_incomplete else ticks
+            kept_ticks = ticks[:-1] if drop_incomplete_ else ticks
             if kept_ticks:
                 # The newest candle we hold - a provisional last candle was dropped above.
                 self._pairs_last_refresh_time[(pair, timeframe, c_type)] = kept_ticks[-1][0]
@@ -2944,7 +2944,7 @@ class Exchange:
             timeframe,
             pair=pair,
             fill_missing=not has_cache,
-            drop_incomplete=drop_incomplete,
+            drop_incomplete=drop_incomplete_,
             candle_type=c_type,
         )
         # keeping parsed dataframe in cache
