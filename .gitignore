@@ -122,3 +122,4 @@ target/
 !config_examples/config_freqai.example.json
 
 docker-compose-*.yml
+.tmp_legacy_platform.db
