@@ -3557,14 +3557,18 @@ async def test__fetch_open_interest_history_missing_side(default_conf, mocker):
     assert df["open_interest_amount"].isna().tolist() == [False, True, False]
 
 
-def test_refresh_latest_ohlcv_open_interest(mocker, default_conf_usdt) -> None:
+def test_refresh_latest_ohlcv_open_interest(mocker, default_conf_usdt, time_machine) -> None:
     """Open interest goes through its own endpoint and keeps its own columns."""
-    ohlcv = generate_test_data_raw("1h", 24, "2025-01-02 12:00:00+00:00")
+    start = datetime(2025, 1, 2, 12, 0, 0, tzinfo=UTC)
+    ohlcv = generate_test_data_raw("1h", 24, start)
     oi_data = [
         {"timestamp": x[0], "openInterestAmount": x[1], "openInterestValue": x[4]} for x in ohlcv
     ]
+    # Mid-way through the last returned candle - it's still forming, so it must be dropped.
+    time_machine.move_to(start + timedelta(hours=23, minutes=30), tick=False)
 
     exchange = get_patched_exchange(mocker, default_conf_usdt)
+    exchange._set_startup_candle_count(default_conf_usdt)
     exchange._api_async.fetch_ohlcv = AsyncMock(return_value=ohlcv)
     exchange._api_async.fetch_open_interest_history = AsyncMock(return_value=oi_data)
 
@@ -3579,10 +3583,13 @@ def test_refresh_latest_ohlcv_open_interest(mocker, default_conf_usdt) -> None:
     # The last record is the still-updating period and is dropped as incomplete
     assert len(df) == len(ohlcv) - 1
 
-    # Second refresh goes through the concat/clean cache-merge path
+    # Once the next candle opened, the formerly incomplete candle is final and gets merged in
+    # through the concat/clean cache-merge path.
+    time_machine.move_to(start + timedelta(hours=24, minutes=5), tick=False)
     second = exchange.refresh_latest_ohlcv([pair_tf], cache=True)[pair_tf]
+    assert exchange._api_async.fetch_open_interest_history.call_count == 2
     assert list(second.columns) == list(df.columns)
-    assert len(second) == len(df)
+    assert len(second) == len(ohlcv)
 
 
 @pytest.mark.parametrize("exchange_name", [e for e in EXCHANGES if e not in ["okx"]])
