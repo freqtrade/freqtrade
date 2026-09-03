@@ -567,7 +567,7 @@ class TestCCXTExchange:
             if leverage_in_market_spot:
                 spot_pair = exchange_params.get("pair", exchange_params["pair"])
                 spot_leverage = spot.get_max_leverage(spot_pair, 20)
-                assert isinstance(spot_leverage, float) or isinstance(spot_leverage, int)
+                assert isinstance(spot_leverage, (float, int))
                 assert spot_leverage >= 1.0
 
     def test_ccxt_get_max_leverage_futures(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
@@ -576,14 +576,14 @@ class TestCCXTExchange:
         if leverage_tiers_public:
             futures_pair = exchange_params.get("futures_pair", exchange_params["pair"])
             futures_leverage = futures.get_max_leverage(futures_pair, 20)
-            assert isinstance(futures_leverage, float) or isinstance(futures_leverage, int)
+            assert isinstance(futures_leverage, (float, int))
             assert futures_leverage >= 1.0
 
     def test_ccxt_get_contract_size(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
         futures, _, exchange_params = exchange_futures
         futures_pair = exchange_params.get("futures_pair", exchange_params["pair"])
         contract_size = futures.get_contract_size(futures_pair)
-        assert isinstance(contract_size, float) or isinstance(contract_size, int)
+        assert isinstance(contract_size, (float, int))
         assert contract_size >= 0.0
 
     def test_ccxt_load_leverage_tiers(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):

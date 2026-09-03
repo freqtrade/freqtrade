@@ -578,13 +578,11 @@ class FreqaiDataDrawer:
                     sorted(delete_dict[coin]["timestamps"].items())
                 )
                 num_delete = len(sorted_dict) - num_keep
-                deleted = 0
-                for v in sorted_dict.values():
+                for deleted, v in enumerate(sorted_dict.values()):
                     if deleted >= num_delete:
                         break
                     logger.info(f"Freqai purging old model file {v}")
                     shutil.rmtree(v)
-                    deleted += 1
 
     def save_metadata(self, dk: FreqaiDataKitchen) -> None:
         """
