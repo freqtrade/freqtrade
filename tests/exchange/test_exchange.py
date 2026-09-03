@@ -169,6 +169,51 @@ def test_init(default_conf, mocker, caplog):
     assert log_has("Instance is running with dry_run enabled", caplog)
 
 
+@pytest.mark.parametrize(
+    "enable_ws,exp_ohlcv,exp_orderbook",
+    [
+        # historic boolean behavior - enables/disables all streams
+        (True, True, True),
+        (False, False, False),
+        # per-stream dict control
+        ({"ohlcv": True, "orderbook": True}, True, True),
+        ({"ohlcv": True, "orderbook": False}, True, False),
+        ({"ohlcv": False, "orderbook": True}, False, True),
+        ({"ohlcv": False, "orderbook": False}, False, False),
+        # streams omitted from the dict default to enabled
+        ({"orderbook": False}, True, False),
+        ({"ohlcv": False}, False, True),
+        ({}, True, True),
+    ],
+)
+def test_exchange_ws_enable_per_stream(default_conf, mocker, enable_ws, exp_ohlcv, exp_orderbook):
+    # Patch ExchangeWS to avoid spinning up a real websocket thread.
+    ws_mock = mocker.patch("freqtrade.exchange.exchange.ExchangeWS")
+    default_conf["runmode"] = RunMode.DRY_RUN
+    default_conf["exchange"]["enable_ws"] = enable_ws
+    # Force the exchange to "support" both watch endpoints regardless of the ccxt mock.
+    default_conf["exchange"]["_ft_has_params"] = {
+        "exchange_has_overrides": {"watchOHLCV": True, "watchOrderBook": True},
+    }
+
+    exchange = get_patched_exchange(mocker, default_conf)
+
+    assert exchange._has_watch_ohlcv is exp_ohlcv
+    assert exchange._has_watch_orderbook is exp_orderbook
+
+    # The websocket handler is only created if at least one stream is active.
+    if exp_ohlcv or exp_orderbook:
+        assert exchange._exchange_ws is not None
+        assert ws_mock.call_count == 1
+    else:
+        assert exchange._exchange_ws is None
+        assert ws_mock.call_count == 0
+
+    # can_use_websocket respects settings
+    can_use = exchange._can_use_websocket(exchange._exchange_ws, "BTC/USDT", "5m", CandleType.SPOT)
+    assert can_use is (exp_ohlcv and exchange._exchange_ws is not None)
+
+
 def test_init_ccxt_kwargs(default_conf, mocker, caplog):
     mocker.patch(f"{EXMS}.reload_markets")
     mocker.patch(f"{EXMS}.validate_stakecurrency")
@@ -3506,6 +3551,66 @@ def test_fetch_l2_order_book(default_conf, mocker, order_book_l2, exchange_name)
         else:
             next_limit = exchange.get_next_limit_in_list(val, exchange.get_option("l2_limit_range"))
             assert api_mock.fetch_l2_order_book.call_args_list[0][0][1] == next_limit
+
+
+def test_fetch_l2_order_book_ws_stale_fallback(default_conf, mocker, order_book_l2, caplog):
+    api_mock = MagicMock()
+    api_mock.fetch_l2_order_book = order_book_l2
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+
+    ws_ob = {
+        "bids": [[10.0 - i, 1.0] for i in range(20)],
+        "asks": [[11.0 + i, 1.0] for i in range(20)],
+    }
+    ws_mock = MagicMock()
+    ws_mock.get_orderbook.return_value = ws_ob
+    exchange._exchange_ws = ws_mock
+    exchange._has_watch_orderbook = True
+    # Max age is sourced from ft_has and passed through to the freshness check.
+    exchange._ft_has["orderbook_max_age"] = 7
+
+    # Fresh feed with sufficient depth -> use the websocket book, no REST call.
+    ws_mock.orderbook_is_fresh.return_value = True
+    order_book = exchange.fetch_l2_order_book("ETH/BTC", limit=10)
+    assert order_book == ws_ob
+    ws_mock.schedule_orderbook.assert_called_with("ETH/BTC")
+    # The depth is passed down, so the copy stays cheap.
+    ws_mock.get_orderbook.assert_called_with("ETH/BTC", 10)
+    ws_mock.orderbook_is_fresh.assert_called_with("ETH/BTC", 7)
+    assert api_mock.fetch_l2_order_book.call_count == 0
+
+    # The limit is rounded up to what the exchange's REST endpoint would return
+    # (binance l2_limit_range), so both paths yield the same number of entries.
+    exchange.fetch_l2_order_book("ETH/BTC", limit=15)
+    ws_mock.get_orderbook.assert_called_with("ETH/BTC", 20)
+    assert api_mock.fetch_l2_order_book.call_count == 0
+
+    # Book is shallower than the REST response would be -> fall back to REST rather
+    # than silently returning fewer entries.
+    caplog.set_level(logging.DEBUG)
+    order_book = exchange.fetch_l2_order_book("ETH/BTC", limit=50)
+    assert order_book != ws_ob
+    assert api_mock.fetch_l2_order_book.call_count == 1
+    assert log_has_re(r"Websocket orderbook for ETH/BTC only has 20/50 entries", caplog)
+
+    # Exchanges capping the REST depth (e.g. hyperliquid's [20]) can serve deep
+    # requests from the websocket - REST wouldn't return more either.
+    caplog.clear()
+    exchange._ft_has["l2_limit_range"] = [20]
+    order_book = exchange.fetch_l2_order_book("ETH/BTC", limit=1000)
+    assert order_book == ws_ob
+    ws_mock.get_orderbook.assert_called_with("ETH/BTC", 20)
+    assert api_mock.fetch_l2_order_book.call_count == 1
+    exchange._ft_has["l2_limit_range"] = [5, 10, 20, 50, 100, 500, 1000]
+
+    # Stale feed (stuck websocket) -> warn and fall back to REST.
+    caplog.clear()
+    ws_mock.orderbook_is_fresh.return_value = False
+    order_book = exchange.fetch_l2_order_book("ETH/BTC", limit=10)
+    assert "bids" in order_book
+    assert "asks" in order_book
+    assert api_mock.fetch_l2_order_book.call_count == 2
+    assert log_has_re(r"Websocket orderbook for ETH/BTC is stale .* falling back to REST", caplog)
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)

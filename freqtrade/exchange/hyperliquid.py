@@ -42,7 +42,7 @@ class Hyperliquid(Exchange):
         "exchange_has_overrides": {"fetchTrades": False},
         "marketOrderRequiresPrice": True,
         "download_data_parallel_quick": False,
-        "ws_enabled": True,
+        "ws_enabled": {"ohlcv": True, "orderbook": True},
     }
     _ft_has_futures: FtHas = {
         "stoploss_on_exchange": True,

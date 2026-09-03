@@ -226,7 +226,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `exchange.ccxt_config` | Additional CCXT parameters passed to both ccxt instances (sync and async). This is usually the correct place for additional ccxt configurations. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://docs.ccxt.com/#/README?id=overriding-exchange-properties-upon-instantiation). Please avoid adding exchange secrets here (use the dedicated fields instead), as they may be contained in logs. <br> **Datatype:** Dict
 | `exchange.ccxt_sync_config` | Additional CCXT parameters passed to the regular (sync) ccxt instance. Parameters may differ from exchange to exchange and are documented in the [ccxt documentation](https://docs.ccxt.com/#/README?id=overriding-exchange-properties-upon-instantiation) <br> **Datatype:** Dict
 | `exchange.ccxt_async_config` | Additional CCXT parameters passed to the async ccxt instance. Parameters may differ from exchange to exchange  and are documented in the [ccxt documentation](https://docs.ccxt.com/#/README?id=overriding-exchange-properties-upon-instantiation) <br> **Datatype:** Dict
-| `exchange.enable_ws` | Enable the usage of Websockets for the exchange. <br>[More information](#consuming-exchange-websockets).<br>*Defaults to `true`.* <br> **Datatype:** Boolean
+| `exchange.enable_ws` | Enable the usage of Websockets for the exchange. Either a boolean to enable/disable all streams, or an object for per-stream control (e.g. `{"ohlcv": true, "orderbook": false}`). Streams omitted from the object default to enabled. <br>[More information](#consuming-exchange-websockets).<br>*Defaults to `true`.* <br> **Datatype:** Boolean or Dict
 | `exchange.markets_refresh_interval` | The interval in minutes in which markets are reloaded. <br>*Defaults to `60` minutes.* <br> **Datatype:** Positive Integer
 | `exchange.skip_open_order_update` | Skips open order updates on startup should the exchange cause problems. Only relevant in live conditions.<br>*Defaults to `false`*<br> **Datatype:** Boolean
 | `exchange.unknown_fee_rate` | Fallback value to use when calculating trading fees. This can be useful for exchanges which have fees in non-tradable currencies. The value provided here will be multiplied with the "fee cost".<br>*Defaults to `None`*<br> **Datatype:** float
@@ -668,6 +668,19 @@ Should you experience problems you suspect are caused by websockets, you can dis
 "exchange": {
     // ...
     "enable_ws": false,
+    // ...
+}
+```
+
+`enable_ws` also accepts an object for per-stream control - this lets you keep one stream while disabling another (streams omitted from the object default to enabled):
+
+```jsonc
+"exchange": {
+    // ...
+    "enable_ws": {
+        "ohlcv": true,
+        "orderbook": false
+    },
     // ...
 }
 ```
