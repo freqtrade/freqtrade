@@ -301,6 +301,8 @@ class Exchange:
             # Initial markets load
             self.reload_markets(True, load_leverage_tiers=False)
             self.validate_config(self._config)
+            if self._config["runmode"] in TRADE_MODES:
+                self.check_time_offset()
 
         if self.trading_mode != TradingMode.SPOT and load_leverage_tiers:
             self.fill_leverage_tiers()
@@ -499,6 +501,36 @@ class Exchange:
         .api will be available at this point.
         Must be overridden in child methods if required.
         """
+
+    def check_time_offset(self) -> None:
+        """
+        Compare the exchange time to the local system time.
+        An out-of-sync clock causes authentication failures on most exchanges, and can cause odd
+        sync issues with freqtrade.
+        """
+        if not self.exchange_has("fetchTime"):
+            logger.debug(f"{self.name} does not support fetchTime, skipping time offset check.")
+            return
+        try:
+            before = dt_ts()
+            exchange_time = self._api.fetch_time()
+            # Use the middle of the request to compensate for the request duration.
+            offset = (before + dt_ts()) // 2 - exchange_time
+        except ccxt.BaseError as e:
+            logger.debug(
+                f"Could not fetch exchange time due to {e.__class__.__name__}. Message: {e}"
+            )
+            return
+
+        # Maximum tolerated deviation between exchange and local time before warning the user.
+        if abs(offset) > 1500:
+            logger.warning(
+                f"Your system time deviates by {offset / 1000:.1f}s from the time of "
+                f"{self.name}. This can cause failing requests - please synchronize your "
+                "system clock (e.g. via NTP)."
+            )
+        else:
+            logger.info(f"Time offset to {self.name} is {offset}ms.")
 
     def _log_exchange_response(self, endpoint: str, response, *, add_info=None) -> None:
         """Log exchange responses"""
