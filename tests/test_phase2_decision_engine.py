@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from freqtrade_platform.profiles.models import TradingProfile
+from freqtrade_platform.profiles.repository import TradingProfileRepository
 from freqtrade_platform.regimes.interface import MarketRegimeDetector
 from freqtrade_platform.regimes.models import MarketRegimeResult, MarketRegimeType, MarketObservation
 from freqtrade_platform.storage.database import PlatformDatabase
@@ -228,6 +229,40 @@ def test_selector_returns_no_trade_when_nothing_matches() -> None:
     assert selection.decision == "NO_TRADE"
 
 
+def test_trading_profile_repository_roundtrip_preserves_phase2_state() -> None:
+    db = PlatformDatabase("sqlite:///:memory:")
+    db.create_all()
+
+    repo = TradingProfileRepository(db)
+    profile = TradingProfile(
+        profile_id="profile-roundtrip",
+        name="Roundtrip Profile",
+        exchange="binance",
+        market_type="spot",
+        universe_id="uv-1",
+        symbol_scope=["BTC/USDT", "ETH/USDT"],
+        primary_timeframe="1h",
+        informative_timeframes=["4h", "1d"],
+        assigned_strategies=["trend-core", "range-core"],
+        regime_policy="trend-following",
+        risk_configuration={"max_drawdown": 0.15},
+        execution_configuration={"mode": "paper"},
+        capital_allocation=55.0,
+    )
+
+    repo.add(profile)
+    loaded = repo.get("profile-roundtrip")
+    assert loaded is not None
+    assert loaded.profile_id == profile.profile_id
+    assert loaded.primary_timeframe == "1h"
+    assert loaded.informative_timeframes == ["4h", "1d"]
+    assert loaded.assigned_strategies == ["trend-core", "range-core"]
+    assert loaded.regime_policy == "trend-following"
+    assert loaded.risk_configuration == {"max_drawdown": 0.15}
+    assert loaded.execution_configuration == {"mode": "paper"}
+    assert loaded.capital_allocation == 55.0
+
+
 def test_universe_identity_and_repository_roundtrip() -> None:
     db = PlatformDatabase("sqlite:///:memory:")
     db.create_all()
@@ -259,6 +294,21 @@ def test_universe_identity_and_repository_roundtrip() -> None:
 
     with pytest.raises(ValueError, match="universe_id"):
         TradingUniverse(universe_id="", exchange="binance", market_type="spot")
+
+
+def test_sqlite_database_migrates_legacy_platform_tables() -> None:
+    db_path = "sqlite:///./.tmp_legacy_platform.db"
+    legacy = PlatformDatabase(db_path)
+    with legacy.engine.begin() as connection:
+        connection.exec_driver_sql("CREATE TABLE platform_profiles (id INTEGER PRIMARY KEY AUTOINCREMENT, profile_id TEXT UNIQUE NOT NULL, name TEXT NOT NULL, exchange TEXT NOT NULL, market_type TEXT NOT NULL, universe_id TEXT, symbol_scope TEXT, capital_allocation REAL)")
+    legacy.create_all()
+
+    with legacy.engine.begin() as connection:
+        columns = {column[1] for column in connection.exec_driver_sql("PRAGMA table_info(platform_profiles)").fetchall()}
+        assert "primary_timeframe" in columns
+        assert "assigned_strategies" in columns
+        assert "risk_configuration" in columns
+        assert "execution_configuration" in columns
 
 
 def test_profile_must_reference_existing_universe_and_scope_can_only_narrow() -> None:

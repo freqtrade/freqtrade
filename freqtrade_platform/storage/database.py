@@ -6,7 +6,8 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
+from sqlalchemy.dialects import sqlite
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
@@ -24,9 +25,31 @@ class PlatformDatabase:
         self.session_factory = sessionmaker(bind=self.engine, expire_on_commit=False)
 
     def create_all(self) -> None:
-        """Create known platform metadata tables after the storage models are imported."""
+        """Create known platform metadata tables and migrate existing SQLite metadata."""
         import freqtrade_platform.storage.models  # noqa: F401
         PlatformBase.metadata.create_all(bind=self.engine)
+        self.migrate_existing_database()
+
+    def migrate_existing_database(self) -> None:
+        """Add missing columns to legacy SQLite tables without a heavyweight migration tool."""
+        if self.engine.url.get_backend_name() != "sqlite":
+            return
+
+        with self.engine.begin() as connection:
+            inspector = inspect(connection)
+            for table in PlatformBase.metadata.sorted_tables:
+                if not inspector.has_table(table.name):
+                    continue
+
+                existing_columns = {column["name"] for column in inspector.get_columns(table.name)}
+                for column in table.columns:
+                    if column.name in existing_columns:
+                        continue
+                    column_type = column.type.compile(dialect=sqlite.dialect())
+                    sql = f"ALTER TABLE {table.name} ADD COLUMN {column.name} {column_type}"
+                    if not column.nullable:
+                        sql = f"{sql} NOT NULL"
+                    connection.execute(text(sql))
 
     @contextmanager
     def session(self) -> Iterator[Session]:

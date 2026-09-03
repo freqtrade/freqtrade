@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 from sqlalchemy import select
 
 from freqtrade_platform.profiles.models import TradingProfile
@@ -23,7 +25,6 @@ class TradingProfileRepository:
     def _load_json_list(raw: str | None) -> list[str]:
         if not raw:
             return []
-        import json
 
         try:
             parsed = json.loads(raw)
@@ -43,7 +44,6 @@ class TradingProfileRepository:
     def _load_json_dict(raw: str | None) -> dict[str, object]:
         if not raw:
             return {}
-        import json
 
         try:
             parsed = json.loads(raw)
