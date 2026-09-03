@@ -10,7 +10,6 @@ ProfitLossStr = Literal["profit", "loss"]
 
 class RPCSendMsgBase(TypedDict):
     pass
-    # ty1pe: Literal[RPCMessageType]
 
 
 class RPCStatusMsg(RPCSendMsgBase):
@@ -39,6 +38,31 @@ class RPCProtectionMsg(RPCSendMsgBase):
     reason: str
     side: str
     active: bool
+
+
+class RPCLiquidationWarningMsg(RPCSendMsgBase):
+    """Sent when open position(s) approach freqtrade's liquidation"""
+
+    type: Literal[RPCMessageType.LIQUIDATION_WARNING]
+    exchange: str
+    margin_mode: str
+    # Details of the position closest to its liquidation stop
+    trade_id: int
+    pair: str
+    base_currency: str
+    quote_currency: str
+    direction: str
+    leverage: float | None
+    current_rate: float
+    liquidation_price: float
+    # Share of the open_rate to liquidation_price distance that is left.
+    # 1.0 at the open rate, 0.0 at the liquidation price.
+    remaining_ratio: float
+    # Configured `liquidation_warn_ratio` that triggered this message
+    warn_ratio: float
+    # Positions within warn_ratio, and open positions in total
+    positions_at_risk: int
+    open_positions: int
 
 
 class RPCWhitelistMsg(RPCSendMsgBase):
@@ -129,6 +153,7 @@ RPCSendMsg = (
     RPCStatusMsg
     | RPCStrategyMsg
     | RPCProtectionMsg
+    | RPCLiquidationWarningMsg
     | RPCWhitelistMsg
     | RPCEntryMsg
     | RPCCancelMsg
