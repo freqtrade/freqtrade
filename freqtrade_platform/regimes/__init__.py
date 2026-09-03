@@ -1,6 +1,6 @@
 """Market regime domain namespace."""
 
-from freqtrade_platform.regimes.interface import RegimeDetector
-from freqtrade_platform.regimes.models import MarketRegime, MarketRegimeType
+from freqtrade_platform.regimes.interface import MarketRegimeDetector
+from freqtrade_platform.regimes.models import MarketObservation, MarketRegimeResult, MarketRegimeType
 
-__all__ = ["MarketRegime", "MarketRegimeType", "RegimeDetector"]
+__all__ = ["MarketRegimeType", "MarketObservation", "MarketRegimeResult", "MarketRegimeDetector"]

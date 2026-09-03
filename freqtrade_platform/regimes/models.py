@@ -57,19 +57,3 @@ class MarketRegimeResult:
                 datetime.fromisoformat(self.timestamp.replace("Z", "+00:00"))
             except ValueError as exc:
                 raise ValueError("timestamp must be ISO-8601") from exc
-
-
-@dataclass(slots=True)
-class MarketRegime:
-    """Legacy convenience model retaining the same domain semantics."""
-
-    name: str
-    confidence: float = 0.0
-    metadata: dict[str, object] = field(default_factory=dict)
-    compatible_strategies: list[str] = field(default_factory=list)
-
-    def __post_init__(self) -> None:
-        if not self.name or not self.name.strip():
-            raise ValueError("name is required")
-        if not 0.0 <= float(self.confidence) <= 1.0:
-            raise ValueError("confidence must be between 0.0 and 1.0")

@@ -10,12 +10,17 @@ from freqtrade_platform.core.exceptions import PlatformValidationError
 
 @dataclass(slots=True)
 class TradingProfile:
-    """Definition of how a profile should allocate and execute within a platform scope."""
+    """Profile-specific trading configuration.
+
+    The profile is not a duplicate of TradingUniverse. It references the universe through
+    ``universe_id`` and may also carry profile-scoped constraints such as ``symbol_scope``.
+    """
 
     profile_id: str
     name: str
     exchange: str
     market_type: str
+    universe_id: str | None = None
     symbol_scope: list[str] = field(default_factory=list)
     primary_timeframe: str | None = None
     informative_timeframes: list[str] = field(default_factory=list)
@@ -48,5 +53,6 @@ def build_default_profile() -> TradingProfile:
         name="Default Profile",
         exchange="binance",
         market_type="spot",
+        universe_id="default-universe",
         symbol_scope=["BTC/USDT"],
     )

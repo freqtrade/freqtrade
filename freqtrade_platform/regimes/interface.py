@@ -1,19 +1,15 @@
-"""Interface boundary for future market regime detection services."""
+"""Canonical market regime detector contract."""
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from typing import Protocol
 
-from freqtrade_platform.regimes.models import MarketRegime
+from freqtrade_platform.regimes.models import MarketObservation, MarketRegimeResult
 
 
-class RegimeDetector(ABC):
-    """Interface for future regime evaluation engines.
+class MarketRegimeDetector(Protocol):
+    """Protocol for market regime detection based on typed multi-timeframe observations."""
 
-    This phase intentionally avoids implementation. The detector is a stable boundary for later
-    integration with Freqtrade data providers and strategy compatibility checks.
-    """
-
-    @abstractmethod
-    def detect(self, market_data: object) -> MarketRegime:
-        """Return the currently dominant market regime for the supplied context."""
+    def detect(self, observations: list[MarketObservation] | tuple[MarketObservation, ...]) -> MarketRegimeResult:
+        """Return the dominant market regime for the supplied observation set."""
+        ...
