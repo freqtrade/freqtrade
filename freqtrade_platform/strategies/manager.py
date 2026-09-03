@@ -28,11 +28,9 @@ class StrategyManager:
         current = self.get(strategy_id)
         if current is None:
             raise KeyError(strategy_id)
-        for key, value in changes.items():
-            setattr(current, key, value)
-        self.validate(current)
-        self.registry._strategies[strategy_id] = current
-        return current
+        updated = self.registry.update(strategy_id, **changes)
+        self.validate(updated)
+        return updated
 
     def delete(self, strategy_id: str) -> None:
         self.registry.remove(strategy_id)

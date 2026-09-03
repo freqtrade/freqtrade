@@ -17,9 +17,30 @@ class PlatformProfileRepository:
 
     def __init__(self, session: object | None = None) -> None:
         self.session = session
+        self._records: dict[str, PlatformProfileRecord] = {}
 
     def add(self, record: PlatformProfileRecord) -> PlatformProfileRecord:
+        self._records[record.profile_id] = record
+        if self.session is not None and hasattr(self.session, "add"):
+            self.session.add(record)
         return record
+
+    def get(self, profile_id: str) -> PlatformProfileRecord | None:
+        if self.session is not None and hasattr(self.session, "query"):
+            return self.session.query(PlatformProfileRecord).filter_by(profile_id=profile_id).one_or_none()
+        return self._records.get(profile_id)
+
+    def list(self) -> list[PlatformProfileRecord]:
+        if self.session is not None and hasattr(self.session, "query"):
+            return list(self.session.query(PlatformProfileRecord).all())
+        return list(self._records.values())
+
+    def remove(self, profile_id: str) -> None:
+        self._records.pop(profile_id, None)
+        if self.session is not None and hasattr(self.session, "query"):
+            record = self.session.query(PlatformProfileRecord).filter_by(profile_id=profile_id).one_or_none()
+            if record is not None:
+                self.session.delete(record)
 
 
 class PlatformStrategyRepository:

@@ -6,7 +6,7 @@ registry for discovered strategies and their enablement state.
 
 from __future__ import annotations
 
-from freqtrade_platform.strategies.models import StrategyMetadata
+from freqtrade_platform.strategies.models import Strategy, StrategyMetadata
 
 
 class StrategyRegistry:
@@ -27,6 +27,13 @@ class StrategyRegistry:
 
     def list(self) -> list[StrategyMetadata]:
         return list(self._strategies.values())
+
+    def update(self, strategy_id: str, **changes: object) -> StrategyMetadata:
+        strategy = self._strategies[strategy_id]
+        for key, value in changes.items():
+            setattr(strategy, key, value)
+        strategy._validate()
+        return strategy
 
     def enable(self, strategy_id: str) -> StrategyMetadata:
         strategy = self._strategies[strategy_id]

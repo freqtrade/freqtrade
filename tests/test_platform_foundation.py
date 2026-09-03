@@ -9,8 +9,14 @@ from pathlib import Path
 from freqtrade_platform.account.models import AccountSnapshot
 from freqtrade_platform.capital.models import CapitalAllocation
 from freqtrade_platform.core.exceptions import PlatformValidationError
+from freqtrade_platform.core.lifecycle import PlatformLifecycle
 from freqtrade_platform.profiles.models import TradingProfile
-from freqtrade_platform.strategies.models import StrategyMetadata
+from freqtrade_platform.profiles.repository import TradingProfileRepository
+from freqtrade_platform.storage.database import PlatformDatabase
+from freqtrade_platform.storage.models import PlatformProfileRecord
+from freqtrade_platform.storage.repositories import PlatformProfileRepository
+from freqtrade_platform.strategies.manager import StrategyManager
+from freqtrade_platform.strategies.models import Strategy, StrategyMetadata
 from freqtrade_platform.strategies.registry import StrategyRegistry
 
 
@@ -143,3 +149,83 @@ def test_frequent_existing_core_imports_remain_usable():
 
     assert FreqtradeBot is not None
     assert StrategyResolver is not None
+
+
+def test_strategy_model_is_single_canonical_domain_model():
+    assert StrategyMetadata is Strategy
+
+    strategy = StrategyMetadata(
+        strategy_id="single-source",
+        name="Single Source",
+        market_type="spot",
+        compatible_regimes=["STRONG_UPTREND"],
+    )
+
+    assert strategy.config == {}
+    assert strategy.enabled is True
+
+
+def test_strategy_registry_update_uses_public_contract():
+    registry = StrategyRegistry()
+    registry.register(
+        StrategyMetadata(strategy_id="manager-1", name="Alpha", market_type="spot")
+    )
+
+    updated = registry.update("manager-1", name="Beta", enabled=False)
+    assert updated.name == "Beta"
+    assert updated.enabled is False
+
+    manager = StrategyManager(registry)
+    manager.update("manager-1", description="Updated description")
+    assert manager.get("manager-1").description == "Updated description"
+
+
+def test_trading_profile_repository_persists_to_sqlite():
+    db = PlatformDatabase("sqlite:///:memory:")
+    db.create_all()
+
+    repo = TradingProfileRepository(db)
+    profile = TradingProfile(
+        profile_id="profile-db-1",
+        name="DB Profile",
+        exchange="binance",
+        market_type="spot",
+        symbol_scope=["BTC/USDT"],
+        capital_allocation=55.0,
+    )
+
+    repo.add(profile)
+    assert repo.get("profile-db-1") is not None
+    assert len(repo.list()) == 1
+
+
+def test_platform_lifecycle_rejects_invalid_transitions():
+    lifecycle = PlatformLifecycle()
+    lifecycle.mark_ready()
+    lifecycle.start()
+
+    with pytest.raises(ValueError, match="Transition"):
+        lifecycle.start()
+
+    lifecycle.pause()
+    lifecycle.resume()
+    lifecycle.stop()
+    assert lifecycle.state.value == "stopped"
+
+
+def test_storage_repositories_crud_operations():
+    db = PlatformDatabase("sqlite:///:memory:")
+    db.create_all()
+
+    with db.session() as session:
+        repository = PlatformProfileRepository(session)
+        record = PlatformProfileRecord(
+            profile_id="db-profile",
+            name="SQLite Profile",
+            exchange="binance",
+            market_type="spot",
+            capital_allocation=33.3,
+        )
+        repository.add(record)
+        assert repository.get("db-profile").profile_id == "db-profile"
+        assert len(repository.list()) == 1
