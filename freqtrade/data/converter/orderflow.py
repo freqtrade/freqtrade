@@ -118,13 +118,14 @@ def populate_dataframe_with_trades(
             if is_between.any():
                 # there can only be one row with the same date
                 index = dataframe.index[is_between][0]
-                cached_trades_date = cached_grouped_trades["date"] == candle_start
-                if cached_grouped_trades is not None and cached_trades_date.any():
-                    # Check if the trades are already in the cache
-                    cache_idx = cached_grouped_trades.index[cached_trades_date][0]
-                    for col in ORDERFLOW_ADDED_COLUMNS:
-                        dataframe.at[index, col] = cached_grouped_trades.at[cache_idx, col]
-                    continue
+                if cached_grouped_trades is not None:
+                    cached_trades_date = cached_grouped_trades["date"] == candle_start
+                    if cached_trades_date.any():
+                        # Check if the trades are already in the cache
+                        cache_idx = cached_grouped_trades.index[cached_trades_date][0]
+                        for col in ORDERFLOW_ADDED_COLUMNS:
+                            dataframe.at[index, col] = cached_grouped_trades.at[cache_idx, col]
+                        continue
 
                 dataframe.at[index, "trades"] = trades_grouped_df.drop(
                     columns=["candle_start", "candle_end"]
