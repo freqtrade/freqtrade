@@ -6,6 +6,7 @@ registry for discovered strategies and their enablement state.
 
 from __future__ import annotations
 
+import copy
 from typing import Any
 
 from freqtrade_platform.strategies.models import StrategyDefinition
@@ -45,7 +46,10 @@ class StrategyRegistry:
         if strategy_id not in self._strategies:
             raise KeyError(strategy_id)
 
-        strategy = self._strategies[strategy_id]
+        original = self._strategies[strategy_id]
+        working = copy.deepcopy(original)
+        next_strategy_id = strategy_id
+
         for key, value in changes.items():
             if key not in self._ALLOWED_UPDATE_FIELDS:
                 raise ValueError(f"unknown strategy field: {key}")
@@ -55,27 +59,29 @@ class StrategyRegistry:
                     raise ValueError("strategy_id is required")
                 if new_id != strategy_id and new_id in self._strategies:
                     raise ValueError(f"duplicate strategy id: {new_id}")
-                self._strategies.pop(strategy_id)
-                strategy.strategy_id = new_id
-                strategy_id = new_id
+                next_strategy_id = new_id
+                working.strategy_id = new_id
             elif key == "name":
-                strategy.name = str(value)
+                working.name = str(value)
             elif key == "market_type":
-                strategy.market_type = str(value)
+                working.market_type = str(value)
             elif key == "description":
-                strategy.description = value if value is None else str(value)
+                working.description = value if value is None else str(value)
             elif key == "version":
-                strategy.version = str(value)
+                working.version = str(value)
             elif key == "enabled":
-                strategy.enabled = bool(value)
+                working.enabled = bool(value)
             elif key == "compatible_regimes":
-                strategy.compatible_regimes = list(value)
+                working.compatible_regimes = list(value)
             elif key == "config":
-                strategy.config = dict(value)
+                working.config = dict(value)
 
-        strategy.validate()
-        self._strategies[strategy_id] = strategy
-        return strategy
+        working.validate()
+
+        if strategy_id != next_strategy_id:
+            self._strategies.pop(strategy_id, None)
+        self._strategies[next_strategy_id] = working
+        return working
 
     def enable(self, strategy_id: str) -> StrategyDefinition:
         strategy = self._strategies[strategy_id]

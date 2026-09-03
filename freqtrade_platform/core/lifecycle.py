@@ -64,10 +64,9 @@ class PlatformLifecycle:
         self.state = PlatformLifecycleState.RUNNING
 
     def stop(self) -> None:
-        """Transition to the stopped state."""
+        """Transition directly to the stopped state without a transient stopping state."""
         if self.state not in {PlatformLifecycleState.READY, PlatformLifecycleState.RUNNING, PlatformLifecycleState.PAUSED}:
             raise ValueError(f"Invalid Transition from {self.state.value} to stop")
-        self.state = PlatformLifecycleState.STOPPING
         self.state = PlatformLifecycleState.STOPPED
         self.stopped_at = datetime.now(timezone.utc)
 

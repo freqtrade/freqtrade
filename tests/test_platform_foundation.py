@@ -1,4 +1,5 @@
 import ast
+import importlib
 from pathlib import Path
 
 import pytest
@@ -6,7 +7,7 @@ import pytest
 import platform
 from pathlib import Path
 
-from freqtrade_platform.account.models import AccountSnapshot, RealAccountSnapshot, SimulationAccount, SimulationBootstrap
+from freqtrade_platform.account.models import RealAccountSnapshot, SimulationAccount, SimulationBootstrap
 from freqtrade_platform.account.service import AccountService
 from freqtrade_platform.capital.models import CapitalAllocation
 from freqtrade_platform.core.exceptions import PlatformValidationError
@@ -253,3 +254,48 @@ def test_storage_repositories_crud_operations():
         repository.add(record)
         assert repository.get("db-profile").profile_id == "db-profile"
         assert len(repository.list()) == 1
+
+
+def test_trading_profile_repository_uses_sqlite_as_authoritative_storage():
+    db = PlatformDatabase("sqlite:///:memory:")
+    db.create_all()
+
+    repo = TradingProfileRepository(db)
+    profile = TradingProfile(
+        profile_id="profile-sqlite-authoritative",
+        name="Authoritative",
+        exchange="binance",
+        market_type="spot",
+        symbol_scope=["BTC/USDT"],
+        capital_allocation=42.0,
+    )
+
+    repo.add(profile)
+    assert repo._profiles is None
+    assert repo.get("profile-sqlite-authoritative") is not None
+    assert repo.list()
+
+
+def test_strategy_registry_update_is_atomic_on_validation_failure():
+    registry = StrategyRegistry()
+    registry.register(StrategyDefinition(strategy_id="atomic-1", name="Alpha", market_type="spot"))
+
+    with pytest.raises(PlatformValidationError, match="name"):
+        registry.update("atomic-1", name="", market_type="")
+
+    assert registry.get("atomic-1").name == "Alpha"
+    assert registry.get("atomic-1").market_type == "spot"
+
+
+def test_platform_lifecycle_stop_moves_directly_to_stopped_state():
+    lifecycle = PlatformLifecycle()
+    lifecycle.mark_ready()
+    lifecycle.start()
+    lifecycle.stop()
+
+    assert lifecycle.state == lifecycle.state.__class__.STOPPED
+
+
+def test_account_models_do_not_expose_legacy_alias():
+    account_module = importlib.import_module("freqtrade_platform.account.models")
+    assert not hasattr(account_module, "AccountSnapshot")

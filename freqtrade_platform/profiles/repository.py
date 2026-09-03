@@ -19,7 +19,7 @@ class TradingProfileRepository:
 
     def __init__(self, storage: PlatformDatabase | object | None = None) -> None:
         self._storage = storage
-        self._profiles: dict[str, TradingProfile] = {}
+        self._profiles: dict[str, TradingProfile] | None = {} if storage is None else None
 
     def _record_from_profile(self, profile: TradingProfile) -> PlatformProfileRecord:
         return PlatformProfileRecord(
@@ -31,61 +31,67 @@ class TradingProfileRepository:
         )
 
     def add(self, profile: TradingProfile) -> TradingProfile:
-        self._profiles[profile.profile_id] = profile
-        if isinstance(self._storage, PlatformDatabase):
-            with self._storage.session() as session:
-                record = session.scalar(
-                    select(PlatformProfileRecord).where(PlatformProfileRecord.profile_id == profile.profile_id)
-                )
-                if record is None:
-                    record = self._record_from_profile(profile)
-                    session.add(record)
-                else:
-                    record.name = profile.name
-                    record.exchange = profile.exchange
-                    record.market_type = profile.market_type
-                    record.capital_allocation = profile.capital_allocation
+        if self._storage is None:
+            self._profiles[profile.profile_id] = profile
+            return profile
+
+        with self._storage.session() as session:
+            record = session.scalar(
+                select(PlatformProfileRecord).where(PlatformProfileRecord.profile_id == profile.profile_id)
+            )
+            if record is None:
+                record = self._record_from_profile(profile)
+                session.add(record)
+            else:
+                record.name = profile.name
+                record.exchange = profile.exchange
+                record.market_type = profile.market_type
+                record.capital_allocation = profile.capital_allocation
         return profile
 
     def get(self, profile_id: str) -> TradingProfile | None:
-        if isinstance(self._storage, PlatformDatabase):
-            with self._storage.session() as session:
-                record = session.scalar(
-                    select(PlatformProfileRecord).where(PlatformProfileRecord.profile_id == profile_id)
-                )
-                if record is None:
-                    return self._profiles.get(profile_id)
-                return TradingProfile(
+        if self._storage is None:
+            return self._profiles.get(profile_id)
+
+        with self._storage.session() as session:
+            record = session.scalar(
+                select(PlatformProfileRecord).where(PlatformProfileRecord.profile_id == profile_id)
+            )
+            if record is None:
+                return None
+            return TradingProfile(
+                profile_id=record.profile_id,
+                name=record.name,
+                exchange=record.exchange,
+                market_type=record.market_type,
+                capital_allocation=record.capital_allocation,
+            )
+
+    def list(self) -> Iterable[TradingProfile]:
+        if self._storage is None:
+            return list(self._profiles.values())
+
+        with self._storage.session() as session:
+            records = session.scalars(select(PlatformProfileRecord)).all()
+            return [
+                TradingProfile(
                     profile_id=record.profile_id,
                     name=record.name,
                     exchange=record.exchange,
                     market_type=record.market_type,
                     capital_allocation=record.capital_allocation,
                 )
-        return self._profiles.get(profile_id)
-
-    def list(self) -> Iterable[TradingProfile]:
-        if isinstance(self._storage, PlatformDatabase):
-            with self._storage.session() as session:
-                records = session.scalars(select(PlatformProfileRecord)).all()
-                return [
-                    TradingProfile(
-                        profile_id=record.profile_id,
-                        name=record.name,
-                        exchange=record.exchange,
-                        market_type=record.market_type,
-                        capital_allocation=record.capital_allocation,
-                    )
-                    for record in records
-                ]
-        return list(self._profiles.values())
+                for record in records
+            ]
 
     def remove(self, profile_id: str) -> None:
-        self._profiles.pop(profile_id, None)
-        if isinstance(self._storage, PlatformDatabase):
-            with self._storage.session() as session:
-                record = session.scalar(
-                    select(PlatformProfileRecord).where(PlatformProfileRecord.profile_id == profile_id)
-                )
-                if record is not None:
-                    session.delete(record)
+        if self._storage is None:
+            self._profiles.pop(profile_id, None)
+            return
+
+        with self._storage.session() as session:
+            record = session.scalar(
+                select(PlatformProfileRecord).where(PlatformProfileRecord.profile_id == profile_id)
+            )
+            if record is not None:
+                session.delete(record)

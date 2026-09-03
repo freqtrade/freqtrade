@@ -78,5 +78,3 @@ class SimulationAccount:
         if self.starting_balance < 0 or self.available_balance < 0 or self.total_balance < 0 or self.equity < 0:
             raise PlatformValidationError("simulation balances cannot be negative")
 
-
-AccountSnapshot = RealAccountSnapshot
