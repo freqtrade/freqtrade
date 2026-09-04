@@ -3,6 +3,7 @@ import logging
 import re
 from copy import deepcopy
 from datetime import UTC, datetime, timedelta
+from functools import partial
 from random import randint
 from unittest.mock import AsyncMock, MagicMock, Mock, PropertyMock, patch
 
@@ -410,6 +411,35 @@ def test_validate_demo_trading(default_conf_usdt, mocker, caplog):
     ex_bybit = get_patched_exchange(mocker, default_conf_usdt, exchange="bybit")
     ex_bybit.validate_demo_trading(default_conf_usdt["exchange"])
     assert log_has_re(msg, caplog)
+
+
+def test_check_time_offset(default_conf, mocker, caplog, time_machine):
+    # patch_exchange mocks this method away - keep a reference to the real implementation.
+    check_time_offset_orig = Exchange.check_time_offset
+    time_machine.move_to("2024-01-01 10:00:00 +00:00", tick=False)
+    api_mock = MagicMock()
+    api_mock.fetch_time = MagicMock(return_value=dt_ts())
+    mocker.patch(f"{EXMS}.exchange_has", return_value=False)
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    check_time_offset = partial(check_time_offset_orig, exchange)
+
+    # Exchange without fetchTime support - no call is made.
+    check_time_offset()
+    assert api_mock.fetch_time.call_count == 0
+
+    mocker.patch(f"{EXMS}.exchange_has", return_value=True)
+    check_time_offset()
+    assert api_mock.fetch_time.call_count == 1
+    assert log_has("Time offset to Binance is 0ms.", caplog)
+
+    # Local time is 5s ahead of the exchange.
+    api_mock.fetch_time = MagicMock(return_value=dt_ts() - 5000)
+    check_time_offset()
+    assert log_has_re(r"Your system time deviates by 5.0s from the time of Binance\..*", caplog)
+
+    # Failing to fetch the time is not fatal.
+    api_mock.fetch_time = MagicMock(side_effect=ccxt.BaseError("DeadBeef"))
+    check_time_offset()
 
 
 @pytest.mark.parametrize(
