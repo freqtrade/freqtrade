@@ -27,7 +27,7 @@ class PlatformDatabase:
     def create_all(self) -> None:
         """Create known platform metadata tables and migrate existing SQLite metadata."""
         import freqtrade_platform.storage.models  # noqa: F401
-        PlatformBase.metadata.create_all(bind=self.engine)
+        PlatformBase.metadata.create_all(bind=self.engine, checkfirst=True)
         self.migrate_existing_database()
 
     def migrate_existing_database(self) -> None:

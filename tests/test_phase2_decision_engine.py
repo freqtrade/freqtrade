@@ -296,8 +296,8 @@ def test_universe_identity_and_repository_roundtrip() -> None:
         TradingUniverse(universe_id="", exchange="binance", market_type="spot")
 
 
-def test_sqlite_database_migrates_legacy_platform_tables() -> None:
-    db_path = "sqlite:///./.tmp_legacy_platform.db"
+def test_sqlite_database_migrates_legacy_platform_tables(tmp_path) -> None:
+    db_path = f"sqlite:///{tmp_path / 'legacy_platform.db'}"
     legacy = PlatformDatabase(db_path)
     with legacy.engine.begin() as connection:
         connection.exec_driver_sql("CREATE TABLE platform_profiles (id INTEGER PRIMARY KEY AUTOINCREMENT, profile_id TEXT UNIQUE NOT NULL, name TEXT NOT NULL, exchange TEXT NOT NULL, market_type TEXT NOT NULL, universe_id TEXT, symbol_scope TEXT, capital_allocation REAL)")

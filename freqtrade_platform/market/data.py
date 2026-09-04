@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 
 import pandas as pd
 
@@ -17,6 +18,8 @@ class CanonicalMarketSeries:
     timeframe: str
     data: pd.DataFrame
     metadata: dict[str, object] = field(default_factory=dict)
+    quality: dict[str, object] = field(default_factory=dict)
+    as_of: datetime | str | None = None
 
     def __post_init__(self) -> None:
         if not self.symbol or not self.symbol.strip():
@@ -30,6 +33,29 @@ class CanonicalMarketSeries:
         missing = sorted(required - set(self.data.columns))
         if missing:
             raise ValueError(f"invalid OHLCV market data: missing columns {missing}")
+        if "closed" not in self.data.columns:
+            self.data["closed"] = True
+        self.data["date"] = pd.to_datetime(self.data["date"], utc=True)
+        self.data = self.data.sort_values("date").reset_index(drop=True)
+        self.data["closed"] = self.data["closed"].fillna(True).astype(bool)
+        closed = self.data[self.data["closed"]].copy()
+        if not closed.empty:
+            last_closed = closed.iloc[-1]["date"]
+            if isinstance(last_closed, pd.Timestamp):
+                self.as_of = last_closed.to_pydatetime().astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+        else:
+            self.as_of = self.data.iloc[-1]["date"].to_pydatetime().astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+        self.quality = self.metadata.get("quality", self.quality) or {}
+
+    @property
+    def closed_candles(self) -> pd.DataFrame:
+        return self.data[self.data["closed"]].copy().reset_index(drop=True)
+
+    def aligned_to(self, as_of: datetime | str | None) -> pd.DataFrame:
+        if as_of is None:
+            return self.closed_candles
+        anchor = pd.Timestamp(as_of).tz_convert("UTC") if hasattr(pd.Timestamp(as_of), "tzinfo") and pd.Timestamp(as_of).tzinfo is not None else pd.Timestamp(as_of, tz="UTC")
+        return self.closed_candles[self.closed_candles["date"] <= anchor].copy().reset_index(drop=True)
 
 
 class DataProviderMarketAdapter:
@@ -45,14 +71,19 @@ class DataProviderMarketAdapter:
         dataframe: pd.DataFrame,
         *,
         metadata: dict[str, object] | None = None,
+        as_of: datetime | str | None = None,
     ) -> CanonicalMarketSeries:
-        cleaned = self._validator.validate(dataframe)
-        return CanonicalMarketSeries(
+        cleaned = self._validator.validate(dataframe, expected_timeframe=timeframe)
+        quality = getattr(cleaned, "attrs", {}).get("quality", {})
+        series = CanonicalMarketSeries(
             symbol=str(symbol).strip(),
             timeframe=str(timeframe).strip(),
             data=cleaned,
-            metadata=metadata or {},
+            metadata={**(metadata or {}), "quality": quality},
         )
+        if as_of is not None:
+            series.as_of = as_of
+        return series
 
     def from_data_provider(self, data_provider: object, pair: str, timeframe: str, candle_type: str = "") -> CanonicalMarketSeries:
         """Fetch a normalized series directly from a Freqtrade DataProvider."""
