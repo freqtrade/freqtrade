@@ -25,6 +25,15 @@ class RuntimeProcessHandle:
         """Check if process is currently running."""
         return self.poll() is None
 
+    def confirm_startup(self, check_window_secs: float = 0.5) -> bool:
+        """Confirm that the process did not exit immediately during initial startup window."""
+        start_time = time.time()
+        while time.time() - start_time < check_window_secs:
+            if self.poll() is not None:
+                return False
+            time.sleep(0.05)
+        return self.poll() is None
+
     def stop(self, timeout: float = 5.0) -> int:
         """Gracefully stop process using SIGINT/SIGTERM, or terminate if non-responsive."""
         if not self.is_running():

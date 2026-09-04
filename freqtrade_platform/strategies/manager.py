@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from freqtrade_platform.storage.repositories import PlatformStrategyRepository, PlatformStrategySourceRepository
 from freqtrade_platform.strategies.models import StrategyDefinition
 from freqtrade_platform.strategies.registry import StrategyRegistry
 
@@ -12,8 +13,36 @@ class StrategyManager:
     This is intentionally thin and does not trigger code execution or strategy loading.
     """
 
-    def __init__(self, registry: StrategyRegistry | None = None) -> None:
+    def __init__(
+        self,
+        registry: StrategyRegistry | None = None,
+        source_repository: PlatformStrategySourceRepository | None = None,
+        strategy_repository: PlatformStrategyRepository | None = None,
+    ) -> None:
         self.registry = registry or StrategyRegistry()
+        self.source_repository = source_repository
+        self.strategy_repository = strategy_repository
+        self.reload_from_repository()
+
+    def reload_from_repository(self) -> None:
+        if self.source_repository:
+            sources = self.source_repository.list()
+            for source in sources:
+                if self.registry.get(source.strategy_id) is None:
+                    enabled = True
+                    market_type = "SPOT"
+                    if self.strategy_repository:
+                        rec = self.strategy_repository.get(source.strategy_id)
+                        if rec:
+                            enabled = rec.enabled
+                            market_type = rec.market_type
+                    strat_def = StrategyDefinition(
+                        strategy_id=source.strategy_id,
+                        name=source.name,
+                        market_type=market_type,
+                        enabled=enabled,
+                    )
+                    self.registry.register(strat_def)
 
     def validate(self, strategy: StrategyDefinition) -> StrategyDefinition:
         strategy.validate()

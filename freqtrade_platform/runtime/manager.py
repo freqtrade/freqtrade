@@ -169,12 +169,15 @@ class StrategyRuntimeManager:
 
         instance.transition_to(RuntimeState.VALIDATING)
 
+        symbols = self._resolve_universe_symbols(profile_rec)
+
         ws_path = self.workspace_manager.prepare_workspace(
             runtime_id=runtime_id,
             strategy_name=strat_def.name,
             source_code=source_rec.source_code,
             mode=mode,
             market_type=market_type,
+            symbols=symbols,
             custom_config=custom_config,
         )
         instance.workspace_path = str(ws_path)
@@ -239,9 +242,19 @@ class StrategyRuntimeManager:
             )
             instance.process_id = handle.pid
             instance.started_at = datetime.now(timezone.utc).isoformat()
+
+            # Perform startup confirmation window check
+            if not handle.confirm_startup(check_window_secs=0.3):
+                exit_code = handle.poll()
+                error_msg = f"Process exited immediately upon startup with exit code {exit_code}"
+                instance.transition_to(RuntimeState.FAILED, error_message=error_msg)
+                self._save_runtime_record(instance)
+                raise RuntimeError(error_msg)
+
             instance.transition_to(RuntimeState.RUNNING)
         except Exception as e:
-            instance.transition_to(RuntimeState.FAILED, error_message=str(e))
+            if instance.state != RuntimeState.FAILED:
+                instance.transition_to(RuntimeState.FAILED, error_message=str(e))
             self._save_runtime_record(instance)
             raise RuntimeError(f"Failed to start runtime process: {e}") from e
 
@@ -351,12 +364,15 @@ class StrategyRuntimeManager:
 
         instance.transition_to(RuntimeState.VALIDATING)
 
+        symbols = self._resolve_universe_symbols(profile_rec)
+
         ws_path = self.workspace_manager.prepare_workspace(
             runtime_id=runtime_id,
             strategy_name=strat_def.name,
             source_code=source_rec.source_code,
             mode=mode,
             market_type=market_type,
+            symbols=symbols,
             custom_config=custom_config,
         )
         instance.workspace_path = str(ws_path)
@@ -423,6 +439,33 @@ class StrategyRuntimeManager:
             self._runtimes[rec.runtime_id] = inst
             return inst
         return None
+
+    def _resolve_universe_symbols(self, profile_rec: Any) -> list[str]:
+        if not profile_rec or not profile_rec.universe_id:
+            return ["BTC/USDT"]
+
+        univ_rec = self.universe_repository.get(profile_rec.universe_id)
+        if not univ_rec:
+            raise PlatformValidationError(f"Unknown universe: {profile_rec.universe_id}")
+
+        if hasattr(univ_rec, "enabled") and not univ_rec.enabled:
+            raise PlatformValidationError(f"Universe {profile_rec.universe_id} is disabled")
+
+        if univ_rec.include_symbols:
+            inc = [s.strip().upper() for s in univ_rec.include_symbols.split(",") if s.strip()]
+        else:
+            inc = []
+
+        if univ_rec.exclude_symbols:
+            exc = {s.strip().upper() for s in univ_rec.exclude_symbols.split(",") if s.strip()}
+        else:
+            exc = set()
+
+        eligible = [s for s in inc if s not in exc]
+        if hasattr(univ_rec, "max_symbols") and univ_rec.max_symbols is not None:
+            eligible = eligible[: univ_rec.max_symbols]
+
+        return eligible if eligible else ["BTC/USDT"]
 
     def _save_runtime_record(self, instance: StrategyRuntimeInstance) -> None:
         record = PlatformRuntimeRecord(
