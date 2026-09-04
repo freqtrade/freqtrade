@@ -73,7 +73,7 @@ class DataProviderMarketAdapter:
         metadata: dict[str, object] | None = None,
         as_of: datetime | str | None = None,
     ) -> CanonicalMarketSeries:
-        cleaned = self._validator.validate(dataframe, expected_timeframe=timeframe)
+        cleaned = self._validator.validate(dataframe, expected_timeframe=timeframe, as_of=as_of)
         quality = getattr(cleaned, "attrs", {}).get("quality", {})
         series = CanonicalMarketSeries(
             symbol=str(symbol).strip(),
