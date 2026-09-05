@@ -102,6 +102,120 @@ def test_liquidation_warning_cross(mocker, default_conf_usdt) -> None:
     assert freqtrade.rpc.send_msg.call_count == 0
 
 
+def test_liquidation_warning_cross_tracks_closest(mocker, default_conf_usdt) -> None:
+    # Only ETH is close to its stop - XRP has 81% of its distance left.
+    trades = [
+        _make_trade(1, "ETH/USDT:USDT", 0.9),
+        _make_trade(2, "XRP/USDT:USDT", 0.5),
+    ]
+    freqtrade = _get_bot(mocker, default_conf_usdt, "cross", 0.905, trades, warn_ratio=0.2)
+
+    freqtrade.check_liquidation_warnings()
+    assert freqtrade.rpc.send_msg.call_count == 1
+    msg = freqtrade.rpc.send_msg.call_args[0][0]
+    assert msg["pair"] == "ETH/USDT:USDT"
+    assert msg["positions_at_risk"] == 1
+    assert msg["open_positions"] == 2
+
+    freqtrade.rpc.send_msg.reset_mock()
+    # XRP enters the warning zone (15% left) - ETH is still the closest, the account was warned.
+    mocker.patch(f"{EXMS}.get_rate", side_effect=[0.905, 0.575])
+    freqtrade.check_liquidation_warnings()
+    assert freqtrade.rpc.send_msg.call_count == 0
+
+    # ETH is exited - XRP is now the closest position and is warned about right away.
+    mocker.patch("freqtrade.persistence.Trade.get_open_trades", return_value=trades[1:])
+    mocker.patch(f"{EXMS}.get_rate", return_value=0.575)
+    freqtrade.check_liquidation_warnings()
+    assert freqtrade.rpc.send_msg.call_count == 1
+    msg = freqtrade.rpc.send_msg.call_args[0][0]
+    assert msg["pair"] == "XRP/USDT:USDT"
+    assert msg["positions_at_risk"] == 1
+    assert msg["open_positions"] == 1
+
+    freqtrade.rpc.send_msg.reset_mock()
+    # A new position overtakes XRP (10% left) - warned about once, then quiet.
+    trades.append(_make_trade(3, "ADA/USDT:USDT", 0.5))
+    mocker.patch("freqtrade.persistence.Trade.get_open_trades", return_value=trades[1:])
+    for _ in range(2):
+        mocker.patch(f"{EXMS}.get_rate", side_effect=[0.575, 0.55])
+        freqtrade.check_liquidation_warnings()
+    assert freqtrade.rpc.send_msg.call_count == 1
+    msg = freqtrade.rpc.send_msg.call_args[0][0]
+    assert msg["pair"] == "ADA/USDT:USDT"
+    assert msg["positions_at_risk"] == 2
+
+    freqtrade.rpc.send_msg.reset_mock()
+    # XRP is the closest again, but was warned about already - no message
+    mocker.patch(f"{EXMS}.get_rate", side_effect=[0.575, 0.6])
+    freqtrade.check_liquidation_warnings()
+    assert freqtrade.rpc.send_msg.call_count == 0
+
+    freqtrade.rpc.send_msg.reset_mock()
+    # The account recovers - all state is reset, ...
+    mocker.patch(f"{EXMS}.get_rate", return_value=0.9)
+    freqtrade.check_liquidation_warnings()
+    assert freqtrade._liq_warn_cache == {}
+    # ... so approaching again warns immediately, about a position warned about before.
+    mocker.patch(f"{EXMS}.get_rate", side_effect=[0.575, 0.9])
+    freqtrade.check_liquidation_warnings()
+    assert freqtrade.rpc.send_msg.call_count == 1
+    assert freqtrade.rpc.send_msg.call_args[0][0]["pair"] == "XRP/USDT:USDT"
+
+
+def test_liquidation_warning_cross_many_positions(mocker, default_conf_usdt) -> None:
+    """Several positions approaching liquidation together result in one message, not one each."""
+    trades = [_make_trade(i, f"{i}/USDT:USDT", 0.9) for i in range(1, 6)]
+    freqtrade = _get_bot(mocker, default_conf_usdt, "cross", 0.919, trades, warn_ratio=0.2)
+    # Approaching together - 19%, 15% and 12% left
+    for rate in (0.919, 0.915, 0.912):
+        mocker.patch(f"{EXMS}.get_rate", return_value=rate)
+        freqtrade.check_liquidation_warnings()
+    assert freqtrade.rpc.send_msg.call_count == 1
+    assert freqtrade.rpc.send_msg.call_args[0][0]["positions_at_risk"] == 5
+
+    freqtrade.rpc.send_msg.reset_mock()
+    # Halved (9% left) - warned again, once
+    for rate in (0.909, 0.908):
+        mocker.patch(f"{EXMS}.get_rate", return_value=rate)
+        freqtrade.check_liquidation_warnings()
+    assert freqtrade.rpc.send_msg.call_count == 1
+
+
+@pytest.mark.parametrize("is_short", [False, True])
+def test_liquidation_warning_past_stop(mocker, default_conf_usdt, is_short) -> None:
+    """A position past its stop (exit order not filled yet) warns once, not on every iteration."""
+    trade = _make_trade(1, "ETH/USDT:USDT", 1.1 if is_short else 0.9, is_short)
+    rate = 1.11 if is_short else 0.89
+    freqtrade = _get_bot(mocker, default_conf_usdt, "isolated", rate, [trade], warn_ratio=0.2)
+
+    for _ in range(3):
+        freqtrade.check_liquidation_warnings()
+    assert freqtrade.rpc.send_msg.call_count == 1
+    assert freqtrade.rpc.send_msg.call_args[0][0]["remaining_ratio"] == 0.0
+
+
+@pytest.mark.parametrize("is_short", [False, True])
+def test_liquidation_warning_stop_beyond_open_rate(mocker, default_conf_usdt, is_short) -> None:
+    """
+    In cross margin, losses on other positions can push the liquidation stop past the open rate.
+    The distance is then measured from the stop in the direction that liquidates.
+    """
+    # Long: open 100, stop 105 - Short: open 100, stop 95
+    trade = _make_trade(1, "ETH/USDT:USDT", 95.0 if is_short else 105.0, is_short, open_rate=100.0)
+    # 5 away from the stop - the full distance is left.
+    rate = 90.0 if is_short else 110.0
+    freqtrade = _get_bot(mocker, default_conf_usdt, "cross", rate, [trade], warn_ratio=0.2)
+    freqtrade.check_liquidation_warnings()
+    assert freqtrade.rpc.send_msg.call_count == 0
+
+    # 0.5 away from the stop - 10% left
+    mocker.patch(f"{EXMS}.get_rate", return_value=94.5 if is_short else 105.5)
+    freqtrade.check_liquidation_warnings()
+    assert freqtrade.rpc.send_msg.call_count == 1
+    assert pytest.approx(freqtrade.rpc.send_msg.call_args[0][0]["remaining_ratio"]) == 0.1
+
+
 def test_liquidation_warning_escalates_and_resets(mocker, default_conf_usdt) -> None:
     # Open rate 1.0, liquidation stop 0.9 - so 0.1 of price movement is the full distance.
     trade = _make_trade(1, "ETH/USDT:USDT", 0.9)
