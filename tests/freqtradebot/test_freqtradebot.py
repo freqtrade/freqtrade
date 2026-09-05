@@ -105,6 +105,29 @@ def test_process_calls_sendmsg(mocker, default_conf_usdt) -> None:
     assert freqtrade.rpc.process_msg_queue.call_count == 1
 
 
+def test_process_scheduled_job_failure_is_isolated(mocker, default_conf_usdt, caplog) -> None:
+    # A crashing maintenance job (e.g. the daily wallet snapshot) must not take
+    # the whole trading loop down - it should be logged and the loop should finish.
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    mocker.patch.object(
+        freqtrade._schedule, "run_pending", side_effect=AttributeError("bad response")
+    )
+    freqtrade.process()
+    assert log_has("Error running scheduled job, skipping this run.", caplog)
+    assert freqtrade.rpc.process_msg_queue.call_count == 1
+
+
+def test_process_scheduled_job_operational_exception_propagates(mocker, default_conf_usdt) -> None:
+    # OperationalException is freqtrade's deliberate "stop the trader" signal and
+    # must still reach the worker rather than being swallowed as a maintenance error.
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    mocker.patch.object(
+        freqtrade._schedule, "run_pending", side_effect=OperationalException("stop")
+    )
+    with pytest.raises(OperationalException):
+        freqtrade.process()
+
+
 def test_bot_cleanup(mocker, default_conf_usdt, caplog) -> None:
     mock_cleanup = mocker.patch("freqtrade.freqtradebot.Trade.commit")
     coo_mock = mocker.patch("freqtrade.freqtradebot.FreqtradeBot.cancel_all_open_orders")

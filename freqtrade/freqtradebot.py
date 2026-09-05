@@ -332,7 +332,15 @@ class FreqtradeBot(LoggingMixin):
         # Then looking for entry opportunities
         if self.state == State.RUNNING and ((free_trade_slots := self.get_free_open_trades()) > 0):
             self.enter_positions(free_trade_slots)
-        self._schedule.run_pending()
+        try:
+            self._schedule.run_pending()
+        except OperationalException:
+            # Deliberate "stop the trader" signal - let the worker handle it.
+            raise
+        except Exception:
+            # A failing maintenance job (e.g. the daily wallet snapshot) must not
+            # take the trading loop down; log it and carry on.
+            logger.exception("Error running scheduled job, skipping this run.")
         Trade.commit()
         self.rpc.process_msg_queue(self.dataprovider._msg_queue)
         self.last_process = datetime.now(UTC)
