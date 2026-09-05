@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 import time
 from pathlib import Path
@@ -34,6 +35,7 @@ from freqtrade_platform.storage.repositories import (
     PlatformStrategySourceRepository,
     PlatformUniverseRepository,
 )
+from freqtrade_platform.strategies.manager import StrategyManager
 
 
 SAMPLE_VALID_STRATEGY = """
@@ -118,7 +120,9 @@ def setup_manager(temp_workspace_dir):
             universe_id="univ_btc",
             exchange="binance",
             market_type="SPOT",
-            include_symbols="BTC/USDT",
+            include_symbols="BTC/USDT,ETH/USDT,SOL/USDT",
+            exclude_symbols="SOL/USDT",
+            enabled=True,
         )
     )
 
@@ -154,6 +158,39 @@ def test_strategy_source_persistence(setup_manager):
     assert source_rec.name == "SampleStrategy"
     assert source_rec.source_code == SAMPLE_VALID_STRATEGY
     assert len(source_rec.source_hash) == 64
+
+
+def test_strategy_persistence_reload_across_manager_recreation(temp_workspace_dir):
+    source_repo = PlatformStrategySourceRepository()
+    strat_repo = PlatformStrategyRepository()
+
+    # Manager 1 registers a strategy
+    mgr1 = StrategyRuntimeManager(
+        strategy_source_repository=source_repo,
+        strategy_repository=strat_repo,
+        workspace_manager=RuntimeWorkspaceManager(base_workspace_dir=temp_workspace_dir),
+    )
+    mgr1.paste_and_register_strategy(
+        strategy_id="strat_reload",
+        name="SampleStrategy",
+        source_code=SAMPLE_VALID_STRATEGY,
+    )
+
+    # Manager 2 recreated with same repositories
+    new_strat_mgr = StrategyManager(
+        source_repository=source_repo,
+        strategy_repository=strat_repo,
+    )
+    mgr2 = StrategyRuntimeManager(
+        strategy_manager=new_strat_mgr,
+        strategy_source_repository=source_repo,
+        strategy_repository=strat_repo,
+        workspace_manager=RuntimeWorkspaceManager(base_workspace_dir=temp_workspace_dir),
+    )
+
+    reloaded_strat = mgr2.strategy_manager.get("strat_reload")
+    assert reloaded_strat is not None
+    assert reloaded_strat.name == "SampleStrategy"
 
 
 # --- 2. Deterministic Hash ---
@@ -231,7 +268,79 @@ def test_workspace_isolation(temp_workspace_dir):
     assert (ws2 / "strategies" / "ReplacementStrategy.py").exists()
 
 
-# --- 6. Runtime Lifecycle Transitions ---
+# --- 6. Universe Symbol Resolution ---
+def test_profile_universe_symbol_resolution(setup_manager):
+    mgr = setup_manager
+    mgr.paste_and_register_strategy(
+        strategy_id="strat_univ",
+        name="SampleStrategy",
+        source_code=SAMPLE_VALID_STRATEGY,
+    )
+
+    rt = mgr.create_runtime(
+        profile_id="prof_btc",
+        strategy_id="strat_univ",
+    )
+
+    ws_config_file = Path(rt.workspace_path) / "config" / "config.json"
+    assert ws_config_file.exists()
+
+    config_data = json.loads(ws_config_file.read_text(encoding="utf-8"))
+    whitelist = config_data["exchange"]["pair_whitelist"]
+
+    # Profile -> Universe -> include BTC/USDT, ETH/USDT; exclude SOL/USDT
+    assert "BTC/USDT" in whitelist
+    assert "ETH/USDT" in whitelist
+    assert "SOL/USDT" not in whitelist
+
+
+# --- 7. Complete Mode & Market Type CLI/Config Boundaries ---
+def test_complete_mode_and_market_type_boundaries():
+    adapter = StrategyRuntimeAdapter(python_executable="python")
+    ws_path = Path("/tmp/dummy_workspace")
+
+    # DRY_RUN SPOT
+    inst_dry_spot = StrategyRuntimeInstance(
+        runtime_id="rt_dry_spot",
+        profile_id="p1",
+        strategy_id="s1",
+        strategy_source_hash="h1",
+        mode=RuntimeMode.DRY_RUN,
+        market_type=MarketType.SPOT,
+    )
+    cmd_dry_spot = adapter.build_command(inst_dry_spot, ws_path, "SampleStrategy")
+    assert "trade" in cmd_dry_spot
+    assert "--dry-run" in cmd_dry_spot
+    assert "--trading-mode" in cmd_dry_spot and cmd_dry_spot[cmd_dry_spot.index("--trading-mode") + 1] == "spot"
+
+    # LIVE FUTURES
+    inst_live_fut = StrategyRuntimeInstance(
+        runtime_id="rt_live_fut",
+        profile_id="p1",
+        strategy_id="s1",
+        strategy_source_hash="h1",
+        mode=RuntimeMode.LIVE,
+        market_type=MarketType.FUTURES,
+    )
+    cmd_live_fut = adapter.build_command(inst_live_fut, ws_path, "SampleStrategy")
+    assert "trade" in cmd_live_fut
+    assert "--dry-run" not in cmd_live_fut
+    assert "--trading-mode" in cmd_live_fut and cmd_live_fut[cmd_live_fut.index("--trading-mode") + 1] == "futures"
+
+    # BACKTEST SPOT
+    inst_backtest = StrategyRuntimeInstance(
+        runtime_id="rt_backtest",
+        profile_id="p1",
+        strategy_id="s1",
+        strategy_source_hash="h1",
+        mode=RuntimeMode.BACKTEST,
+        market_type=MarketType.SPOT,
+    )
+    cmd_backtest = adapter.build_command(inst_backtest, ws_path, "SampleStrategy")
+    assert "backtesting" in cmd_backtest
+
+
+# --- 8. Runtime Lifecycle Transitions ---
 def test_runtime_state_transitions():
     inst = StrategyRuntimeInstance(
         runtime_id="rt_state_1",
@@ -263,7 +372,7 @@ def test_runtime_state_transitions():
         inst.transition_to(RuntimeState.RUNNING)
 
 
-# --- 7. Real Subprocess Lifecycle ---
+# --- 9. Real Subprocess Lifecycle & Startup Confirmation ---
 def test_real_process_lifecycle(setup_manager):
     mgr = setup_manager
     mgr.paste_and_register_strategy(
@@ -291,7 +400,29 @@ def test_real_process_lifecycle(setup_manager):
     assert mgr.process_manager.is_running(rt.runtime_id) is False
 
 
-# --- 8. Duplicate Active Runtime Prevention ---
+def test_real_process_startup_failure_detection(setup_manager):
+    mgr = setup_manager
+    mgr.paste_and_register_strategy(
+        strategy_id="strat_fail_proc",
+        name="SampleStrategy",
+        source_code=SAMPLE_VALID_STRATEGY,
+    )
+
+    rt = mgr.create_runtime(
+        profile_id="prof_btc",
+        strategy_id="strat_fail_proc",
+    )
+
+    # Process that exits immediately with failure code
+    failing_cmd = [sys.executable, "-c", "import sys; sys.exit(2)"]
+
+    with pytest.raises(RuntimeError, match="exited immediately upon startup"):
+        mgr.start_runtime(rt.runtime_id, cmd_override=failing_cmd)
+
+    assert rt.state == RuntimeState.FAILED
+
+
+# --- 10. Duplicate Active Runtime Prevention ---
 def test_duplicate_active_runtime_rejection(setup_manager):
     mgr = setup_manager
     mgr.paste_and_register_strategy(
@@ -313,7 +444,7 @@ def test_duplicate_active_runtime_rejection(setup_manager):
         )
 
 
-# --- 9. Crash Detection ---
+# --- 11. Crash Detection ---
 def test_crash_detection(setup_manager):
     mgr = setup_manager
     mgr.paste_and_register_strategy(
@@ -328,9 +459,11 @@ def test_crash_detection(setup_manager):
     )
 
     crash_cmd = [sys.executable, "-c", "import sys; sys.exit(1)"]
-    mgr.start_runtime(rt.runtime_id, cmd_override=crash_cmd)
+    # Bypass initial startup window check by using a delayed crash script
+    delayed_crash_cmd = [sys.executable, "-c", "import time, sys; time.sleep(0.4); sys.exit(1)"]
+    mgr.start_runtime(rt.runtime_id, cmd_override=delayed_crash_cmd)
 
-    time.sleep(0.5)
+    time.sleep(0.6)
     crashed = mgr.monitor_and_detect_crashes()
 
     assert rt.runtime_id in crashed
@@ -338,7 +471,7 @@ def test_crash_detection(setup_manager):
     assert "Process exited unexpectedly" in rt.last_error
 
 
-# --- 10. Disabled Strategy Blocking ---
+# --- 12. Disabled Strategy Blocking ---
 def test_disabled_strategy_cannot_start(setup_manager):
     mgr = setup_manager
     mgr.paste_and_register_strategy(
@@ -356,7 +489,7 @@ def test_disabled_strategy_cannot_start(setup_manager):
         )
 
 
-# --- 11. Profile Mapping & Unknown Identifiers ---
+# --- 13. Profile Mapping & Unknown Identifiers ---
 def test_unknown_profile_or_strategy_rejected(setup_manager):
     mgr = setup_manager
     mgr.paste_and_register_strategy(
@@ -372,7 +505,7 @@ def test_unknown_profile_or_strategy_rejected(setup_manager):
         mgr.create_runtime(profile_id="prof_btc", strategy_id="strat_unknown")
 
 
-# --- 12. Safe Dynamic Strategy Switching & Rollback ---
+# --- 14. Safe Dynamic Strategy Switching & Rollback ---
 def test_safe_dynamic_strategy_switching(setup_manager):
     mgr = setup_manager
 
@@ -412,13 +545,18 @@ def test_safe_dynamic_strategy_switching(setup_manager):
     mgr.stop_runtime(rt_beta.runtime_id)
 
 
-def test_failed_switch_preserves_current_runtime(setup_manager):
+def test_failed_replacement_process_startup_preserves_current_runtime(setup_manager):
     mgr = setup_manager
 
     mgr.paste_and_register_strategy(
         strategy_id="strat_alpha",
         name="SampleStrategy",
         source_code=SAMPLE_VALID_STRATEGY,
+    )
+    mgr.paste_and_register_strategy(
+        strategy_id="strat_beta_fail",
+        name="ReplacementStrategy",
+        source_code=SAMPLE_SECOND_STRATEGY,
     )
 
     rt_alpha = mgr.create_runtime(
@@ -430,12 +568,18 @@ def test_failed_switch_preserves_current_runtime(setup_manager):
     mgr.start_runtime(rt_alpha.runtime_id, cmd_override=dummy_cmd_alpha)
     assert rt_alpha.state == RuntimeState.RUNNING
 
-    with pytest.raises(PlatformValidationError, match="Unknown strategy"):
+    failing_cmd_beta = [sys.executable, "-c", "import sys; sys.exit(3)"]
+
+    # Replacement strategy Beta exists and is valid, but fails during startup
+    with pytest.raises(PlatformValidationError, match="Strategy switch failed"):
         mgr.switch_strategy(
             profile_id="prof_btc",
-            replacement_strategy_id="non_existent_strat",
+            replacement_strategy_id="strat_beta_fail",
+            start_replacement=True,
+            replacement_cmd_override=failing_cmd_beta,
         )
 
+    # Confirm rt_alpha remains RUNNING and alive
     assert rt_alpha.state == RuntimeState.RUNNING
     assert mgr.process_manager.is_running(rt_alpha.runtime_id) is True
 

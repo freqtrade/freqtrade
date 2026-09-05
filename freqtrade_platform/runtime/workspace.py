@@ -36,8 +36,10 @@ class RuntimeWorkspaceManager:
         source_code: str,
         mode: RuntimeMode = RuntimeMode.DRY_RUN,
         market_type: MarketType = MarketType.SPOT,
+        symbols: list[str] | None = None,
         custom_config: dict[str, Any] | None = None,
     ) -> Path:
+        pair_whitelist = list(symbols) if symbols else ["BTC/USDT"]
         workspace_dir = self.get_workspace_path(runtime_id)
         config_dir = workspace_dir / "config"
         strategies_dir = workspace_dir / "strategies"
@@ -83,7 +85,7 @@ class RuntimeWorkspaceManager:
                 "name": "binance",
                 "key": "",
                 "secret": "",
-                "pair_whitelist": ["BTC/USDT", "ETH/USDT"],
+                "pair_whitelist": pair_whitelist,
                 "pair_blacklist": [],
             },
             "pairlists": [{"method": "StaticPairList"}],
