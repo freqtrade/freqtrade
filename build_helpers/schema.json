@@ -268,7 +268,15 @@
       "description": "Buffer ratio for liquidation.",
       "type": "number",
       "minimum": 0.0,
-      "maximum": 0.99
+      "maximum": 0.99,
+      "default": 0.05
+    },
+    "liquidation_warn_ratio": {
+      "description": "Notify when less than this fraction of the distance between a position's open rate and its liquidation stop is left. Set to 0 to disable.",
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "default": 0.2
     },
     "backtest_breakdown": {
       "description": "Breakdown configuration for backtesting.",
@@ -853,6 +861,16 @@
                 "silent"
               ],
               "default": "on"
+            },
+            "liquidation_warning": {
+              "description": "Telegram setting for liquidation warnings.",
+              "type": "string",
+              "enum": [
+                "on",
+                "off",
+                "silent"
+              ],
+              "default": "on"
             }
           }
         },
@@ -930,6 +948,9 @@
           "type": "object"
         },
         "protection_trigger_global": {
+          "type": "object"
+        },
+        "liquidation_warning": {
           "type": "object"
         },
         "strategy_msg": {
