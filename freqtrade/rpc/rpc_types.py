@@ -60,7 +60,7 @@ class RPCLiquidationWarningMsg(RPCSendMsgBase):
     remaining_ratio: float
     # Configured `liquidation_warn_ratio` that triggered this message
     warn_ratio: float
-    # Positions within warn_ratio, and open positions in total
+    # Positions within warn_ratio, and open trades in total
     positions_at_risk: int
     open_positions: int
 

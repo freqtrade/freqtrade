@@ -2373,7 +2373,8 @@ def test_send_msg_liquidation_warning_notification(default_conf, mocker) -> None
         "This is freqtrade's own liquidation, placed ahead of the exchange's liquidation price by "
         "`liquidation_buffer` - it is not an exchange liquidation. In cross margin all "
         "positions share the same collateral. Adding margin moves the liquidation stop away "
-        "from all of them - without it freqtrade will exit the closest position first."
+        "from all of them - without it freqtrade will exit each position as it reaches its "
+        "own stop."
     )
 
     # Singular wording

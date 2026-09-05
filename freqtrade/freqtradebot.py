@@ -429,7 +429,7 @@ class FreqtradeBot(LoggingMixin):
         In cross margin one account wide message is sent, as all positions share the same
         collateral - in isolated margin each position is warned about separately.
         """
-        warn_ratio = self.config.get("liquidation_warn_ratio", 0.0)
+        warn_ratio = self.config.get("liquidation_warn_ratio", 0.2)
         if not warn_ratio or self.trading_mode != TradingMode.FUTURES:
             return
 

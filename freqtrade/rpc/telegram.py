@@ -562,7 +562,7 @@ class Telegram(RPCHandler):
             advice = (
                 "In cross margin all positions share the same collateral. Adding margin moves "
                 "the liquidation stop away from all of them - without it freqtrade will exit "
-                "the closest position first."
+                "each position as it reaches its own stop."
             )
         else:
             headline = (
@@ -581,8 +581,8 @@ class Telegram(RPCHandler):
             f"*Current Rate:* `{fmt_coin2(msg['current_rate'], msg['quote_currency'])}`\n"
             f"*Liquidation Stop:* `{fmt_coin2(msg['liquidation_price'], msg['quote_currency'])}`\n"
             f"*Remaining:* `{msg['remaining_ratio']:.2%}` of the distance from the open rate\n\n"
-            "This is freqtrade's own liquidation, placed ahead of the exchange's liquidation price by "
-            f"`liquidation_buffer` - it is not an exchange liquidation. {advice}"
+            "This is freqtrade's own liquidation, placed ahead of the exchange's liquidation "
+            f"price by `liquidation_buffer` - it is not an exchange liquidation. {advice}"
         )
 
     def compose_message(self, msg: RPCSendMsg) -> str | None:
