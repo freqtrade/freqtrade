@@ -142,7 +142,7 @@ To avoid a stream of messages while a position sits close to its stop, a warning
 
 ### Cross margin - Liquidation warning
 
-A single, account wide message is sent - all positions share the same collateral, so a loss on one position moves the liquidation stop of every other position closer as well. The message names the position closest to its stop, along with how many positions are currently at risk. It is sent again when another position enters the warning zone, or when a position in it halves its remaining distance. Each position is still exited individually once it reaches its own liquidation stop.
+A single, account wide message is sent - all positions share the same collateral, so a loss on one position moves the liquidation stop of every other position closer as well. The message names the position closest to its stop, along with how many positions are currently at risk. It is sent again when a different position becomes the closest one, or when the closest position halves its remaining distance. Each position is still exited individually once it reaches its own liquidation stop.
 
 Adding collateral to the account moves the liquidation stop away from all positions at once. freqtrade refreshes cross liquidation prices at startup, on every order fill, and twice per hour - so it can take up to 30 minutes until the warning check picks up the new stop.
 

@@ -433,24 +433,28 @@ class FreqtradeBot(LoggingMixin):
         if not warn_ratio or self.trading_mode != TradingMode.FUTURES:
             return
 
+        open_trades = Trade.get_open_trades()
         distances: list[LiquidationDistance] = []
-        for trade in Trade.get_open_trades():
+        for trade in open_trades:
             liq_price = trade.liquidation_price
             if (
                 not trade.has_open_position
                 or not liq_price
-                or not (span := trade.open_rate - liq_price)
+                or not (span := abs(trade.open_rate - liq_price))
             ):
                 continue
             try:
                 rate = self.exchange.get_rate(
                     trade.pair, side="exit", is_short=trade.is_short, refresh=False
                 )
-            except (PricingError, ExchangeError):
+            except DependencyException:
                 logger.debug(f"Could not get rate for {trade.pair} - skipping liquidation check.")
                 continue
-            # Compared against the open rate
-            distances.append(LiquidationDistance((rate - liq_price) / span, trade, rate, liq_price))
+            # Distance to the stop in the direction that liquidates - positive while the position
+            # is alive, no matter which side of the open rate the stop sits on.
+            distance = liq_price - rate if trade.is_short else rate - liq_price
+            remaining = max(0.0, distance / span)
+            distances.append(LiquidationDistance(remaining, trade, rate, liq_price))
 
         if not distances:
             return
@@ -458,19 +462,21 @@ class FreqtradeBot(LoggingMixin):
         distances.sort(key=lambda x: x.remaining)
 
         if self.margin_mode == MarginMode.CROSS:
-            at_risk = [d for d in distances if d.remaining <= warn_ratio]
             # One message for the account, describing the position closest to liquidation.
+            # Keyed by that position - so once it's exited (or overtaken), the next closest
+            # position is warned about right away.
             closest = distances[0]
-            if self._should_warn_liquidation("__cross__", closest.remaining, warn_ratio):
-                self._send_liquidation_warning(closest, len(at_risk), len(distances), warn_ratio)
+            if self._should_warn_liquidation(closest.trade.id, closest.remaining, warn_ratio):
+                at_risk = [d for d in distances if d.remaining <= warn_ratio]
+                self._send_liquidation_warning(closest, len(at_risk), len(open_trades), warn_ratio)
         else:
             for entry in distances:
                 if self._should_warn_liquidation(entry.trade.id, entry.remaining, warn_ratio):
-                    self._send_liquidation_warning(entry, 1, len(distances), warn_ratio)
+                    self._send_liquidation_warning(entry, 1, len(open_trades), warn_ratio)
 
-    def _should_warn_liquidation(self, key: int | str, remaining: float, warn_ratio: float) -> bool:
+    def _should_warn_liquidation(self, trade_id: int, remaining: float, warn_ratio: float) -> bool:
         """
-        Decide whether a liquidation warning is due for the given cache key.
+        Decide whether a liquidation warning is due for the given trade.
         Warns when entering the warning zone, and again once what's left halved since.
         :param remaining: Share of the open rate to liquidation stop distance that is left
         :param warn_ratio: Configured share below which to warn
@@ -479,16 +485,21 @@ class FreqtradeBot(LoggingMixin):
         # recovered. Avoids repeated messages while a position hovers around the threshold.
         if remaining > warn_ratio * 1.2:
             # Recovered - reset, so the next approach warns immediately.
-            self._liq_warn_cache.pop(key, None)
+            if self.margin_mode == MarginMode.CROSS:
+                # Only the closest position is checked in cross margin - if that one recovered,
+                # so did every position warned about before it.
+                self._liq_warn_cache.clear()
+            else:
+                self._liq_warn_cache.pop(trade_id, None)
             return False
         if remaining > warn_ratio:
             # keep the current state, but don't warn again.
             return False
 
-        last_remaining = self._liq_warn_cache.get(key)
+        last_remaining = self._liq_warn_cache.get(trade_id)
         # Re-warn early once what's left halved compared to the last warning.
         if last_remaining is None or remaining < last_remaining * 0.5:
-            self._liq_warn_cache[key] = remaining
+            self._liq_warn_cache[trade_id] = remaining
             return True
         return False
 
