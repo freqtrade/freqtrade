@@ -7,6 +7,7 @@ import shutil
 from pathlib import Path
 from typing import Any
 
+from freqtrade_platform.core.exceptions import PlatformValidationError
 from freqtrade_platform.runtime.models import MarketType, RuntimeMode
 
 
@@ -39,7 +40,11 @@ class RuntimeWorkspaceManager:
         symbols: list[str] | None = None,
         custom_config: dict[str, Any] | None = None,
     ) -> Path:
-        pair_whitelist = list(symbols) if symbols else ["BTC/USDT"]
+        if symbols is None:
+            symbols = ["BTC/USDT"]
+        elif not symbols:
+            raise PlatformValidationError("Cannot prepare workspace with empty symbol list")
+        pair_whitelist = list(symbols)
         workspace_dir = self.get_workspace_path(runtime_id)
         config_dir = workspace_dir / "config"
         strategies_dir = workspace_dir / "strategies"
@@ -102,6 +107,28 @@ class RuntimeWorkspaceManager:
 
         if custom_config:
             config_data.update(custom_config)
+
+        # Enforce protected platform runtime invariants against custom_config overrides
+        config_data["strategy"] = strategy_name
+        config_data["strategy_path"] = str(strategies_dir)
+        config_data["user_data_dir"] = str(workspace_dir)
+        config_data["db_url"] = f"sqlite:///{state_dir}/tradesv3.sqlite"
+        config_data["logfile"] = str(logs_dir / "freqtrade.log")
+        config_data["bot_name"] = f"freqtrade_{runtime_id}"
+        config_data["dry_run"] = (mode != RuntimeMode.LIVE)
+        config_data["trading_mode"] = "futures" if market_type == MarketType.FUTURES else "spot"
+
+        if "exchange" not in config_data or not isinstance(config_data["exchange"], dict):
+            config_data["exchange"] = {
+                "name": "binance",
+                "key": "",
+                "secret": "",
+                "pair_whitelist": pair_whitelist,
+                "pair_blacklist": [],
+            }
+        else:
+            config_data["exchange"]["pair_whitelist"] = pair_whitelist
+            config_data["exchange"]["pair_blacklist"] = []
 
         config_file = config_dir / "config.json"
         config_file.write_text(json.dumps(config_data, indent=2), encoding="utf-8")

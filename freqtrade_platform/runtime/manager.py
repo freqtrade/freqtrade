@@ -9,6 +9,7 @@ from typing import Any
 
 from freqtrade_platform.core.exceptions import PlatformValidationError
 from freqtrade_platform.profiles.manager import TradingProfileManager
+from freqtrade_platform.profiles.models import TradingProfile
 from freqtrade_platform.runtime.adapter import StrategyRuntimeAdapter
 from freqtrade_platform.runtime.models import (
     MarketType,
@@ -52,7 +53,6 @@ class StrategyRuntimeManager:
         process_manager: RuntimeProcessManager | None = None,
         adapter: StrategyRuntimeAdapter | None = None,
     ) -> None:
-        self.strategy_manager = strategy_manager or StrategyManager()
         self.profile_manager = profile_manager or TradingProfileManager()
         self.profile_repository = profile_repository or PlatformProfileRepository()
         self.universe_repository = universe_repository or PlatformUniverseRepository()
@@ -61,6 +61,10 @@ class StrategyRuntimeManager:
         )
         self.runtime_repository = runtime_repository or PlatformRuntimeRepository()
         self.strategy_repository = strategy_repository or PlatformStrategyRepository()
+        self.strategy_manager = strategy_manager or StrategyManager(
+            source_repository=self.strategy_source_repository,
+            strategy_repository=self.strategy_repository,
+        )
         self.workspace_manager = workspace_manager or RuntimeWorkspaceManager()
         self.process_manager = process_manager or RuntimeProcessManager()
         self.adapter = adapter or StrategyRuntimeAdapter()
@@ -143,6 +147,8 @@ class StrategyRuntimeManager:
         if not strat_def.enabled:
             raise PlatformValidationError(f"Strategy {strategy_id} is disabled and cannot be run")
 
+        self._validate_market_type_consistency(market_type, strat_def, profile_rec)
+
         source_rec = self.strategy_source_repository.get(strategy_id)
         if not source_rec:
             raise PlatformValidationError(f"No source code found for strategy {strategy_id}")
@@ -224,6 +230,23 @@ class StrategyRuntimeManager:
         instance.transition_to(RuntimeState.STARTING)
 
         ws_path = Path(instance.workspace_path)
+        strategy_file = ws_path / "strategies" / f"{strat_def.name}.py"
+
+        if not strategy_file.exists():
+            error_msg = f"Materialized strategy file does not exist: {strategy_file}"
+            instance.transition_to(RuntimeState.FAILED, error_message=error_msg)
+            self._save_runtime_record(instance)
+            raise PlatformValidationError(error_msg)
+
+        materialized_code = strategy_file.read_text(encoding="utf-8")
+        current_hash = calculate_source_hash(materialized_code)
+
+        if current_hash != instance.strategy_source_hash:
+            error_msg = f"Materialized strategy source code modified (hash mismatch: expected {instance.strategy_source_hash}, got {current_hash})"
+            instance.transition_to(RuntimeState.FAILED, error_message=error_msg)
+            self._save_runtime_record(instance)
+            raise PlatformValidationError(error_msg)
+
         cmd = cmd_override or self.adapter.build_command(
             instance=instance,
             workspace_path=ws_path,
@@ -317,7 +340,20 @@ class StrategyRuntimeManager:
 
         if current_active and current_active.runtime_id != replacement_runtime.runtime_id:
             if current_active.state in {RuntimeState.RUNNING, RuntimeState.STARTING}:
-                self.stop_runtime(current_active.runtime_id)
+                try:
+                    self.stop_runtime(current_active.runtime_id)
+                except Exception as stop_exc:
+                    try:
+                        if replacement_runtime.state in {RuntimeState.RUNNING, RuntimeState.STARTING}:
+                            self.stop_runtime(replacement_runtime.runtime_id)
+                        else:
+                            replacement_runtime.transition_to(RuntimeState.STOPPED)
+                            self._save_runtime_record(replacement_runtime)
+                    except Exception:
+                        pass
+                    raise PlatformValidationError(
+                        f"Strategy switch failed while stopping old runtime ({current_active.runtime_id}): {stop_exc}"
+                    ) from stop_exc
 
         return replacement_runtime
 
@@ -343,6 +379,8 @@ class StrategyRuntimeManager:
 
         if not strat_def.enabled:
             raise PlatformValidationError(f"Strategy {strategy_id} is disabled and cannot be run")
+
+        self._validate_market_type_consistency(market_type, strat_def, profile_rec)
 
         source_rec = self.strategy_source_repository.get(strategy_id)
         if not source_rec:
@@ -440,32 +478,100 @@ class StrategyRuntimeManager:
             return inst
         return None
 
+    def _validate_market_type_consistency(
+        self,
+        requested_market_type: MarketType | str,
+        strat_def: StrategyDefinition,
+        profile_rec: Any,
+    ) -> None:
+        def _norm(mt: Any) -> str:
+            if isinstance(mt, MarketType):
+                return mt.value.upper()
+            return str(mt).strip().upper()
+
+        req_mt = _norm(requested_market_type)
+        strat_mt = _norm(strat_def.market_type)
+
+        prof_raw_mt = getattr(profile_rec, "market_type", None) or "SPOT"
+        prof_mt = _norm(prof_raw_mt)
+
+        if req_mt != strat_mt:
+            raise PlatformValidationError(
+                f"Incompatible market type: requested runtime ({req_mt}) does not match strategy market type ({strat_mt})"
+            )
+
+        if req_mt != prof_mt:
+            raise PlatformValidationError(
+                f"Incompatible market type: requested runtime ({req_mt}) does not match profile market type ({prof_mt})"
+            )
+
+        universe_id = getattr(profile_rec, "universe_id", None)
+        if universe_id:
+            univ_rec = self.universe_repository.get(universe_id)
+            if univ_rec and hasattr(univ_rec, "market_type") and univ_rec.market_type:
+                univ_mt = _norm(univ_rec.market_type)
+                if req_mt != univ_mt:
+                    raise PlatformValidationError(
+                        f"Incompatible market type: requested runtime ({req_mt}) does not match universe market type ({univ_mt})"
+                    )
+
     def _resolve_universe_symbols(self, profile_rec: Any) -> list[str]:
-        if not profile_rec or not profile_rec.universe_id:
-            return ["BTC/USDT"]
+        if not profile_rec:
+            raise PlatformValidationError("Profile record is required for symbol resolution")
 
-        univ_rec = self.universe_repository.get(profile_rec.universe_id)
-        if not univ_rec:
-            raise PlatformValidationError(f"Unknown universe: {profile_rec.universe_id}")
-
-        if hasattr(univ_rec, "enabled") and not univ_rec.enabled:
-            raise PlatformValidationError(f"Universe {profile_rec.universe_id} is disabled")
-
-        if univ_rec.include_symbols:
-            inc = [s.strip().upper() for s in univ_rec.include_symbols.split(",") if s.strip()]
+        if isinstance(profile_rec, TradingProfile):
+            prof = profile_rec
         else:
-            inc = []
+            raw_scope = getattr(profile_rec, "symbol_scope", "")
+            if isinstance(raw_scope, str):
+                symbol_scope = [s.strip() for s in raw_scope.split(",") if s.strip()]
+            elif isinstance(raw_scope, list):
+                symbol_scope = [str(s).strip() for s in raw_scope if s]
+            else:
+                symbol_scope = []
 
-        if univ_rec.exclude_symbols:
-            exc = {s.strip().upper() for s in univ_rec.exclude_symbols.split(",") if s.strip()}
-        else:
-            exc = set()
+            prof = TradingProfile(
+                profile_id=profile_rec.profile_id,
+                name=getattr(profile_rec, "name", profile_rec.profile_id),
+                exchange=getattr(profile_rec, "exchange", "binance"),
+                market_type=getattr(profile_rec, "market_type", "SPOT"),
+                universe_id=getattr(profile_rec, "universe_id", None),
+                symbol_scope=symbol_scope,
+            )
 
-        eligible = [s for s in inc if s not in exc]
-        if hasattr(univ_rec, "max_symbols") and univ_rec.max_symbols is not None:
-            eligible = eligible[: univ_rec.max_symbols]
+        universe_enabled = True
+        univ_symbols: list[str] = []
 
-        return eligible if eligible else ["BTC/USDT"]
+        if prof.universe_id:
+            univ_rec = self.universe_repository.get(prof.universe_id)
+            if not univ_rec:
+                raise PlatformValidationError(f"Unknown universe: {prof.universe_id}")
+
+            if hasattr(univ_rec, "enabled") and not univ_rec.enabled:
+                universe_enabled = False
+
+            if univ_rec.include_symbols:
+                inc = [s.strip().upper() for s in univ_rec.include_symbols.split(",") if s.strip()]
+            else:
+                inc = []
+
+            if univ_rec.exclude_symbols:
+                exc = {s.strip().upper() for s in univ_rec.exclude_symbols.split(",") if s.strip()}
+            else:
+                exc = set()
+
+            univ_symbols = [s for s in inc if s not in exc]
+            if hasattr(univ_rec, "max_symbols") and univ_rec.max_symbols is not None:
+                univ_symbols = univ_symbols[: univ_rec.max_symbols]
+
+        resolved = prof.resolve_symbols(univ_symbols, universe_enabled=universe_enabled)
+
+        if not resolved:
+            raise PlatformValidationError(
+                f"No eligible trading symbols resolved for profile '{prof.profile_id}'"
+            )
+
+        return resolved
 
     def _save_runtime_record(self, instance: StrategyRuntimeInstance) -> None:
         record = PlatformRuntimeRecord(

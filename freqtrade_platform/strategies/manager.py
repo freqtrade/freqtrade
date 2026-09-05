@@ -28,21 +28,43 @@ class StrategyManager:
         if self.source_repository:
             sources = self.source_repository.list()
             for source in sources:
-                if self.registry.get(source.strategy_id) is None:
-                    enabled = True
-                    market_type = "SPOT"
-                    if self.strategy_repository:
-                        rec = self.strategy_repository.get(source.strategy_id)
-                        if rec:
-                            enabled = rec.enabled
-                            market_type = rec.market_type
+                enabled = True
+                market_type = "SPOT"
+                version = "1.0.0"
+                compatible_regimes = []
+                config = {}
+
+                if self.strategy_repository:
+                    rec = self.strategy_repository.get(source.strategy_id)
+                    if rec:
+                        enabled = rec.enabled
+                        market_type = rec.market_type
+                        if hasattr(rec, "version") and rec.version:
+                            version = rec.version
+                        if hasattr(rec, "compatible_regimes") and rec.compatible_regimes:
+                            compatible_regimes = rec.compatible_regimes
+                        if hasattr(rec, "config") and rec.config:
+                            config = rec.config
+
+                existing = self.registry.get(source.strategy_id)
+                if existing is None:
                     strat_def = StrategyDefinition(
                         strategy_id=source.strategy_id,
                         name=source.name,
                         market_type=market_type,
                         enabled=enabled,
+                        version=version,
+                        compatible_regimes=compatible_regimes,
+                        config=config,
                     )
                     self.registry.register(strat_def)
+                else:
+                    existing.name = source.name
+                    existing.market_type = market_type
+                    existing.enabled = enabled
+                    existing.version = version
+                    existing.compatible_regimes = compatible_regimes
+                    existing.config = config
 
     def validate(self, strategy: StrategyDefinition) -> StrategyDefinition:
         strategy.validate()

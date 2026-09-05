@@ -584,3 +584,272 @@ def test_failed_replacement_process_startup_preserves_current_runtime(setup_mana
     assert mgr.process_manager.is_running(rt_alpha.runtime_id) is True
 
     mgr.stop_runtime(rt_alpha.runtime_id)
+
+
+# --- 15. Remediation Tests (P0/P1/P2) ---
+def test_empty_or_out_of_scope_universe_raises_validation_error(setup_manager):
+    mgr = setup_manager
+    mgr.paste_and_register_strategy(
+        strategy_id="strat_scope",
+        name="SampleStrategy",
+        source_code=SAMPLE_VALID_STRATEGY,
+    )
+
+    # 1. Profile symbol scope out of universe scope
+    prof_out = PlatformProfileRecord(
+        profile_id="prof_out",
+        name="Out of scope Profile",
+        exchange="binance",
+        market_type="SPOT",
+        universe_id="univ_btc",
+        symbol_scope="XRP/USDT",
+    )
+    mgr.profile_repository.add(prof_out)
+
+    with pytest.raises(PlatformValidationError, match="No eligible trading symbols resolved"):
+        mgr.create_runtime(profile_id="prof_out", strategy_id="strat_scope")
+
+    # 2. Disabled universe
+    mgr.universe_repository.add(
+        PlatformUniverseRecord(
+            universe_id="univ_disabled",
+            exchange="binance",
+            market_type="SPOT",
+            include_symbols="BTC/USDT",
+            enabled=False,
+        )
+    )
+    prof_dis = PlatformProfileRecord(
+        profile_id="prof_dis",
+        name="Disabled Univ Profile",
+        exchange="binance",
+        market_type="SPOT",
+        universe_id="univ_disabled",
+    )
+    mgr.profile_repository.add(prof_dis)
+
+    with pytest.raises(PlatformValidationError, match="No eligible trading symbols resolved"):
+        mgr.create_runtime(profile_id="prof_dis", strategy_id="strat_scope")
+
+    # 3. All symbols excluded
+    mgr.universe_repository.add(
+        PlatformUniverseRecord(
+            universe_id="univ_empty",
+            exchange="binance",
+            market_type="SPOT",
+            include_symbols="BTC/USDT",
+            exclude_symbols="BTC/USDT",
+            enabled=True,
+        )
+    )
+    prof_emp = PlatformProfileRecord(
+        profile_id="prof_emp",
+        name="Empty Univ Profile",
+        exchange="binance",
+        market_type="SPOT",
+        universe_id="univ_empty",
+    )
+    mgr.profile_repository.add(prof_emp)
+
+    with pytest.raises(PlatformValidationError, match="No eligible trading symbols resolved"):
+        mgr.create_runtime(profile_id="prof_emp", strategy_id="strat_scope")
+
+
+def test_custom_config_cannot_override_platform_invariants(setup_manager):
+    mgr = setup_manager
+    mgr.paste_and_register_strategy(
+        strategy_id="strat_invariants",
+        name="SampleStrategy",
+        source_code=SAMPLE_VALID_STRATEGY,
+    )
+
+    malicious_custom_config = {
+        "strategy": "HackedStrategy",
+        "dry_run": False,
+        "trading_mode": "futures",
+        "exchange": {
+            "pair_whitelist": ["HACK/USDT"],
+        },
+        "db_url": "sqlite:////tmp/hacked.sqlite",
+    }
+
+    rt = mgr.create_runtime(
+        profile_id="prof_btc",
+        strategy_id="strat_invariants",
+        mode=RuntimeMode.DRY_RUN,
+        market_type=MarketType.SPOT,
+        custom_config=malicious_custom_config,
+    )
+
+    config_file = Path(rt.workspace_path) / "config" / "config.json"
+    cfg = json.loads(config_file.read_text(encoding="utf-8"))
+
+    # Invariants preserved
+    assert cfg["strategy"] == "SampleStrategy"
+    assert cfg["dry_run"] is True
+    assert cfg["trading_mode"] == "spot"
+    assert cfg["exchange"]["pair_whitelist"] != ["HACK/USDT"]
+    assert "BTC/USDT" in cfg["exchange"]["pair_whitelist"]
+    assert cfg["db_url"] != "sqlite:////tmp/hacked.sqlite"
+
+
+def test_market_type_consistency_validation(setup_manager):
+    mgr = setup_manager
+
+    mgr.paste_and_register_strategy(
+        strategy_id="strat_spot",
+        name="SampleStrategy",
+        source_code=SAMPLE_VALID_STRATEGY,
+        market_type="SPOT",
+    )
+    mgr.paste_and_register_strategy(
+        strategy_id="strat_futures",
+        name="SampleStrategy",
+        source_code=SAMPLE_VALID_STRATEGY,
+        market_type="FUTURES",
+    )
+
+    # Mismatch: SPOT profile + FUTURES requested runtime
+    with pytest.raises(PlatformValidationError, match="Incompatible market type"):
+        mgr.create_runtime(
+            profile_id="prof_btc",
+            strategy_id="strat_spot",
+            market_type=MarketType.FUTURES,
+        )
+
+    # Mismatch: FUTURES strategy + SPOT requested runtime
+    mgr.profile_repository.add(
+        PlatformProfileRecord(
+            profile_id="prof_fut",
+            name="Futures Profile",
+            exchange="binance",
+            market_type="FUTURES",
+            universe_id="univ_fut",
+        )
+    )
+    mgr.universe_repository.add(
+        PlatformUniverseRecord(
+            universe_id="univ_fut",
+            exchange="binance",
+            market_type="FUTURES",
+            include_symbols="BTC/USDT:USDT",
+            enabled=True,
+        )
+    )
+
+    with pytest.raises(PlatformValidationError, match="Incompatible market type"):
+        mgr.create_runtime(
+            profile_id="prof_fut",
+            strategy_id="strat_futures",
+            market_type=MarketType.SPOT,
+        )
+
+    # Valid FUTURES + FUTURES
+    rt_fut = mgr.create_runtime(
+        profile_id="prof_fut",
+        strategy_id="strat_futures",
+        market_type=MarketType.FUTURES,
+    )
+    assert rt_fut.market_type == MarketType.FUTURES
+
+
+def test_materialized_strategy_source_hash_integrity_verification(setup_manager):
+    mgr = setup_manager
+    mgr.paste_and_register_strategy(
+        strategy_id="strat_integrity",
+        name="SampleStrategy",
+        source_code=SAMPLE_VALID_STRATEGY,
+    )
+
+    rt = mgr.create_runtime(
+        profile_id="prof_btc",
+        strategy_id="strat_integrity",
+    )
+
+    # Tamper with materialized strategy file
+    strat_file = Path(rt.workspace_path) / "strategies" / "SampleStrategy.py"
+    strat_file.write_text(SAMPLE_VALID_STRATEGY + "\n# TAMPERED LINE\n", encoding="utf-8")
+
+    dummy_cmd = [sys.executable, "-c", "import time; time.sleep(1)"]
+    with pytest.raises(PlatformValidationError, match="hash mismatch"):
+        mgr.start_runtime(rt.runtime_id, cmd_override=dummy_cmd)
+
+    assert rt.state == RuntimeState.FAILED
+
+
+def test_strategy_registry_persistence_reconciliation(temp_workspace_dir):
+    source_repo = PlatformStrategySourceRepository()
+    strat_repo = PlatformStrategyRepository()
+
+    mgr = StrategyRuntimeManager(
+        strategy_source_repository=source_repo,
+        strategy_repository=strat_repo,
+        workspace_manager=RuntimeWorkspaceManager(base_workspace_dir=temp_workspace_dir),
+    )
+
+    mgr.paste_and_register_strategy(
+        strategy_id="strat_reconcile",
+        name="SampleStrategy",
+        source_code=SAMPLE_VALID_STRATEGY,
+        market_type="SPOT",
+    )
+
+    # Directly mutate registry definition to simulate stale state
+    registered_def = mgr.strategy_manager.get("strat_reconcile")
+    registered_def.enabled = False
+    registered_def.market_type = "FUTURES"
+
+    # Persisted record says enabled=True, market_type="SPOT"
+    mgr.strategy_manager.reload_from_repository()
+
+    reconciled_def = mgr.strategy_manager.get("strat_reconcile")
+    assert reconciled_def.enabled is True
+    assert reconciled_def.market_type == "SPOT"
+
+
+def test_failed_old_runtime_stop_during_switch_cleans_up_replacement(setup_manager):
+    mgr = setup_manager
+
+    mgr.paste_and_register_strategy(
+        strategy_id="strat_a",
+        name="SampleStrategy",
+        source_code=SAMPLE_VALID_STRATEGY,
+    )
+    mgr.paste_and_register_strategy(
+        strategy_id="strat_b",
+        name="ReplacementStrategy",
+        source_code=SAMPLE_SECOND_STRATEGY,
+    )
+
+    rt_a = mgr.create_runtime(
+        profile_id="prof_btc",
+        strategy_id="strat_a",
+    )
+
+    dummy_cmd = [sys.executable, "-c", "import time; time.sleep(10)"]
+    mgr.start_runtime(rt_a.runtime_id, cmd_override=dummy_cmd)
+
+    # Mock stop_runtime to fail when stopping rt_a
+    orig_stop = mgr.stop_runtime
+
+    def mock_stop_runtime(runtime_id: str, timeout: float = 5.0):
+        if runtime_id == rt_a.runtime_id:
+            raise RuntimeError("Simulated stop failure on old runtime")
+        return orig_stop(runtime_id, timeout=timeout)
+
+    mgr.stop_runtime = mock_stop_runtime
+
+    with pytest.raises(PlatformValidationError, match="Strategy switch failed while stopping old runtime"):
+        mgr.switch_strategy(
+            profile_id="prof_btc",
+            replacement_strategy_id="strat_b",
+            start_replacement=True,
+            replacement_cmd_override=dummy_cmd,
+        )
+
+    # Active runtime is still rt_a
+    active_rt = mgr.get_active_runtime_for_profile("prof_btc")
+    assert active_rt.runtime_id == rt_a.runtime_id
+
+    mgr.stop_runtime = orig_stop
+    mgr.stop_runtime(rt_a.runtime_id)
