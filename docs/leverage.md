@@ -123,6 +123,35 @@ Possible values are any floats between 0.0 and 0.99
 !!! Danger "A `liquidation_buffer` of 0.0, or a low `liquidation_buffer` is likely to result in liquidations, and liquidation fees"
     Currently Freqtrade is able to calculate liquidation prices, but does not calculate liquidation fees. Setting your `liquidation_buffer` to 0.0, or using a low `liquidation_buffer` could result in your positions being liquidated. Freqtrade does not track liquidation fees, so liquidations will result in inaccurate profit/loss results for your bot. If you use a low `liquidation_buffer`, it is recommended to use `stoploss_on_exchange` if your exchange supports this.
 
+## Liquidation warnings
+
+*Defaults to `0.2`*
+
+`liquidation_warn_ratio` sends a notification once an open position gets close to its [liquidation buffer](#understand-liquidation_buffer) - giving you the chance to react before freqtrade force-closes the position.
+
+It is expressed as the fraction of the distance between the position's open rate and its liquidation stop that is still left - `1.0` at the open rate, `0.0` at the stop. With the default of `0.2`, you'll be notified once a position has used up 80% of that distance - or said differently, when only 20% of the distance to the liquidation stop remains.
+
+Measuring it this way keeps the setting meaningful regardless of leverage - a plain price distance would trigger at wildly different points for a 2x and a 20x position (and for high leverage, immediately on entry).
+
+The reference is the liquidation stop described above, which already includes `liquidation_buffer` - not the exchange's raw liquidation price. Set the value to `0` to disable these notifications. The corresponding telegram notification can also be silenced or disabled via [`notification_settings`](telegram-usage.md#control-telegram-noise) (`liquidation_warning`).
+
+To avoid a stream of messages while a position sits close to its stop, a warning for the same position is repeated at most once per day. It is repeated earlier if the remaining distance halves compared to the last warning, and the state is reset once the position recovers to a comfortable distance again.
+
+!!! Warning "Warnings are not a substitute for a stoploss"
+    A liquidation warning is only sent while the bot is running, and reaching it means your regular stoploss did not trigger first. It is a last resort notification, not a risk management tool.
+
+### Cross margin - Liquidation warning
+
+A single, account wide message is sent - all positions share the same collateral, so they approach their liquidation stop together. The message names the position closest to its stop, along with how many positions are currently at risk.
+
+Adding collateral to the account moves the liquidation stop away from all positions at once, and freqtrade recalculates cross liquidation prices on every iteration - so the effect shows up in the next warning check.
+
+### Isolated margin - Liquidation warning
+
+Each position is warned about separately.
+
+Be aware that an isolated position's collateral is fixed at the amount committed to it - **adding funds to your account will not move its liquidation stop**. Your options in this case are to reduce or close the position.
+
 ## Unavailable funding rates
 
 For futures data, exchanges commonly provide the futures candles, the marks, and the funding rates. However, it is common that whilst candles and marks might be available, the funding rates are not. This can affect backtesting timeranges, i.e. you may only be able to test recent timeranges and not earlier, experiencing the `No data found. Terminating.` error. To get around this, add the `futures_funding_rate` config option as listed in [configuration.md](configuration.md), and it is recommended that you set this to `0`, unless you know a given specific funding rate for your pair, exchange and timerange. Setting this to anything other than `0` can have drastic effects on your profit calculations within strategy, e.g. within the `custom_exit`, `custom_stoploss`, etc functions.
