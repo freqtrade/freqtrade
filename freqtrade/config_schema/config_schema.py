@@ -236,6 +236,7 @@ CONF_SCHEMA = {
             "type": "number",
             "minimum": 0.0,
             "maximum": 0.99,
+            "default": 0.05,
         },
         "liquidation_warn_ratio": {
             "description": (
