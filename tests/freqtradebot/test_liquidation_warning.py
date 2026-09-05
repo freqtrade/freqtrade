@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from freqtrade.enums import RPCMessageType, TradingMode
+from freqtrade.exceptions import PricingError, TemporaryError
 from freqtrade.persistence import Trade
 from freqtrade.util import dt_now
 from tests.conftest import EXMS, get_patched_freqtradebot, patch_get_signal
@@ -46,13 +47,14 @@ def _get_bot(mocker, conf, margin_mode: str, rate: float, trades: list[Trade], w
 
 @pytest.mark.parametrize("is_short", [False, True])
 def test_liquidation_warning_isolated(mocker, default_conf_usdt, is_short) -> None:
-    # Open rate 1.0, liquidation stop 0.9 - at 0.919 only 19% of that distance is left.
-    # The second trade's stop is far away, so 100% is left there.
+    # Open rate 1.0, liquidation stop 0.9 (1.1 for shorts) - at 0.919 (1.081) only 19% of that
+    # distance is left. The second trade's stop is far away, so 100% is left there.
     trades = [
-        _make_trade(1, "ETH/USDT:USDT", 0.9, is_short),
-        _make_trade(2, "XRP/USDT:USDT", 0.5, is_short),
+        _make_trade(1, "ETH/USDT:USDT", 1.1 if is_short else 0.9, is_short),
+        _make_trade(2, "XRP/USDT:USDT", 1.5 if is_short else 0.5, is_short),
     ]
-    freqtrade = _get_bot(mocker, default_conf_usdt, "isolated", 0.919, trades, warn_ratio=0.2)
+    rate = 1.081 if is_short else 0.919
+    freqtrade = _get_bot(mocker, default_conf_usdt, "isolated", rate, trades, warn_ratio=0.2)
 
     freqtrade.check_liquidation_warnings()
 
@@ -63,17 +65,18 @@ def test_liquidation_warning_isolated(mocker, default_conf_usdt, is_short) -> No
     assert msg["trade_id"] == 1
     assert msg["margin_mode"] == "isolated"
     assert msg["direction"] == ("Short" if is_short else "Long")
-    assert msg["liquidation_price"] == 0.9
-    assert msg["current_rate"] == 0.919
+    assert msg["liquidation_price"] == (1.1 if is_short else 0.9)
+    assert msg["current_rate"] == rate
     assert msg["warn_ratio"] == 0.2
     assert pytest.approx(msg["remaining_ratio"]) == 0.19
     # Isolated warns per position
     assert msg["positions_at_risk"] == 1
     assert msg["open_positions"] == 2
 
+    freqtrade.rpc.send_msg.reset_mock()
     # Repeated calls don't repeat the warning
     freqtrade.check_liquidation_warnings()
-    assert freqtrade.rpc.send_msg.call_count == 1
+    assert freqtrade.rpc.send_msg.call_count == 0
 
 
 def test_liquidation_warning_cross(mocker, default_conf_usdt) -> None:
@@ -94,8 +97,9 @@ def test_liquidation_warning_cross(mocker, default_conf_usdt) -> None:
     assert msg["positions_at_risk"] == 2
     assert msg["open_positions"] == 2
 
+    freqtrade.rpc.send_msg.reset_mock()
     freqtrade.check_liquidation_warnings()
-    assert freqtrade.rpc.send_msg.call_count == 1
+    assert freqtrade.rpc.send_msg.call_count == 0
 
 
 def test_liquidation_warning_escalates_and_resets(mocker, default_conf_usdt) -> None:
@@ -107,31 +111,36 @@ def test_liquidation_warning_escalates_and_resets(mocker, default_conf_usdt) -> 
     freqtrade.check_liquidation_warnings()
     assert freqtrade.rpc.send_msg.call_count == 1
 
+    freqtrade.rpc.send_msg.reset_mock()
     # 9% left - more than halved, warn again
     mocker.patch(f"{EXMS}.get_rate", return_value=0.909)
     freqtrade.check_liquidation_warnings()
-    assert freqtrade.rpc.send_msg.call_count == 2
+    assert freqtrade.rpc.send_msg.call_count == 1
 
     # 8% left - closer, but not halved - no new message
+    freqtrade.rpc.send_msg.reset_mock()
     mocker.patch(f"{EXMS}.get_rate", return_value=0.908)
     freqtrade.check_liquidation_warnings()
-    assert freqtrade.rpc.send_msg.call_count == 2
+    assert freqtrade.rpc.send_msg.call_count == 0
 
     # 23% left - inside the recovery area, state is kept
+    freqtrade.rpc.send_msg.reset_mock()
     mocker.patch(f"{EXMS}.get_rate", return_value=0.923)
     freqtrade.check_liquidation_warnings()
-    assert freqtrade.rpc.send_msg.call_count == 2
+    assert freqtrade.rpc.send_msg.call_count == 0
 
     # 50% left - recovered beyond the recovery area, state is reset
+    freqtrade.rpc.send_msg.reset_mock()
     mocker.patch(f"{EXMS}.get_rate", return_value=0.95)
     freqtrade.check_liquidation_warnings()
-    assert freqtrade.rpc.send_msg.call_count == 2
+    assert freqtrade.rpc.send_msg.call_count == 0
     assert freqtrade._liq_warn_cache == {}
 
     # Approaching again warns immediately
+    freqtrade.rpc.send_msg.reset_mock()
     mocker.patch(f"{EXMS}.get_rate", return_value=0.919)
     freqtrade.check_liquidation_warnings()
-    assert freqtrade.rpc.send_msg.call_count == 3
+    assert freqtrade.rpc.send_msg.call_count == 1
 
 
 def test_liquidation_warning_leverage_independent(mocker, default_conf_usdt) -> None:
@@ -182,12 +191,11 @@ def test_liquidation_warning_not_sent(
     assert freqtrade.rpc.send_msg.call_count == expected
 
 
-def test_liquidation_warning_pricing_error(mocker, default_conf_usdt, caplog) -> None:
-    from freqtrade.exceptions import PricingError
-
+@pytest.mark.parametrize("exception", [PricingError, TemporaryError])
+def test_liquidation_warning_pricing_error(mocker, default_conf_usdt, exception) -> None:
     trade = _make_trade(1, "ETH/USDT:USDT", 0.9)
     freqtrade = _get_bot(mocker, default_conf_usdt, "isolated", 0.919, [trade], warn_ratio=0.2)
-    mocker.patch(f"{EXMS}.get_rate", side_effect=PricingError())
+    mocker.patch(f"{EXMS}.get_rate", side_effect=exception())
 
     freqtrade.check_liquidation_warnings()
     assert freqtrade.rpc.send_msg.call_count == 0
