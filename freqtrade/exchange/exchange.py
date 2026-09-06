@@ -2587,7 +2587,7 @@ class Exchange:
         # Calculate fee based on order details
         if fee_curr == self.get_pair_base_currency(symbol):
             # Base currency - divide by amount
-            return round(fee_cost / amount, 8)
+            return round(fee_cost / amount, 8) if amount else None
         elif fee_curr == self.get_pair_quote_currency(symbol):
             # Quote currency - divide by cost
             return round(fee_cost / cost, 8) if cost else None

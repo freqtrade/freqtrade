@@ -5383,6 +5383,37 @@ def test_extract_cost_curr_rate(mocker, default_conf, order, expected) -> None:
             None,
             None,
         ),
+        # Zero amount - fee reported, filled amount missing (see #5842)
+        (
+            {
+                "symbol": "ETH/BTC",
+                "amount": 0.0,
+                "cost": 0.0,
+                "fee": {"currency": "ETH", "cost": 0.005, "rate": None},
+            },
+            None,
+            None,
+        ),
+        (
+            {
+                "symbol": "ETH/BTC",
+                "amount": 0.0,
+                "cost": 0.0,
+                "fee": {"currency": "BTC", "cost": 0.005, "rate": None},
+            },
+            None,
+            None,
+        ),
+        (
+            {
+                "symbol": "ETH/BTC",
+                "amount": 0.0,
+                "cost": 0.0,
+                "fee": {"currency": "NEO", "cost": 0.005, "rate": None},
+            },
+            None,
+            None,
+        ),
         # Invalid pair combination - POINT/BTC is not a pair
         (
             {
