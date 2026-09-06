@@ -4,7 +4,7 @@
 import logging
 import time
 from copy import deepcopy
-from datetime import timedelta
+from datetime import datetime, timedelta
 from unittest.mock import ANY, MagicMock, PropertyMock, patch
 
 import pytest
@@ -30,7 +30,7 @@ from freqtrade.exceptions import (
     PricingError,
     TemporaryError,
 )
-from freqtrade.freqtradebot import FreqtradeBot
+from freqtrade.freqtradebot import FreqtradeBot, scheduled_job_wrapper
 from freqtrade.persistence import Order, PairLocks, Trade
 from freqtrade.plugins.protections.iprotection import ProtectionReturn
 from freqtrade.util.datetime_helpers import dt_now, dt_utc
@@ -107,13 +107,31 @@ def test_process_calls_sendmsg(mocker, default_conf_usdt) -> None:
 
 def test_process_scheduled_job_failure_is_isolated(mocker, default_conf_usdt, caplog) -> None:
     # A crashing maintenance job (e.g. the daily wallet snapshot) must not take
-    # the whole trading loop down - it should be logged and the loop should finish.
+    # the whole trading loop down. The exception has to be caught inside the job
+    # function: schedule's Job.run() only reschedules after the job returns, so an
+    # exception unwinding run_pending() would leave the failing job permanently due
+    # and skip every job scheduled after it in the same pass.
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
-    mocker.patch.object(
-        freqtrade._schedule, "run_pending", side_effect=AttributeError("bad response")
+
+    def failing_snapshot():
+        raise AttributeError("bad response")
+
+    later_job_calls = []
+    failing_job = freqtrade._schedule.every().day.do(scheduled_job_wrapper(failing_snapshot))
+    later_job = freqtrade._schedule.every().day.do(
+        scheduled_job_wrapper(lambda: later_job_calls.append(1))
     )
+    # Make both jobs due, the failing one first (schedule runs jobs sorted by next_run).
+    failing_job.next_run = datetime.now() - timedelta(seconds=2)
+    later_job.next_run = datetime.now() - timedelta(seconds=1)
+
     freqtrade.process()
-    assert log_has("Error running scheduled job, skipping this run.", caplog)
+
+    assert log_has_re(r"Unexpected error in scheduled job .*failing_snapshot", caplog)
+    # The failing job was rescheduled instead of staying permanently due ...
+    assert failing_job.next_run > datetime.now()
+    # ... and the job scheduled after it in the same pass still ran.
+    assert later_job_calls == [1]
     assert freqtrade.rpc.process_msg_queue.call_count == 1
 
 
@@ -121,9 +139,12 @@ def test_process_scheduled_job_operational_exception_propagates(mocker, default_
     # OperationalException is freqtrade's deliberate "stop the trader" signal and
     # must still reach the worker rather than being swallowed as a maintenance error.
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
-    mocker.patch.object(
-        freqtrade._schedule, "run_pending", side_effect=OperationalException("stop")
-    )
+
+    def stopping_job():
+        raise OperationalException("stop")
+
+    job = freqtrade._schedule.every().day.do(scheduled_job_wrapper(stopping_job))
+    job.next_run = datetime.now() - timedelta(seconds=1)
     with pytest.raises(OperationalException):
         freqtrade.process()
 

@@ -4,8 +4,10 @@ Freqtrade is the main module of this bot. It contains the FreqtradeBot class.
 
 import logging
 import traceback
+from collections.abc import Callable
 from copy import deepcopy
 from datetime import UTC, datetime, time, timedelta
+from functools import wraps
 from math import isclose
 from threading import Lock
 from time import sleep
@@ -69,6 +71,30 @@ from freqtrade.wallets import Wallets
 
 
 logger = logging.getLogger(__name__)
+
+
+def scheduled_job_wrapper(f: Callable[[], Any]) -> Callable[[], Any]:
+    """
+    Wrap a scheduled maintenance job so an unexpected error does not kill the bot.
+
+    The exception must be caught inside the job function (not around `run_pending()`):
+    `schedule`'s `Job.run()` only sets `last_run` / reschedules after the job returns,
+    and an exception unwinding `run_pending()`'s loop would leave the failing job
+    permanently due (re-raising every iteration) while skipping all jobs after it.
+    OperationalException is freqtrade's deliberate "stop the trader" signal and is
+    re-raised so it still reaches the worker.
+    """
+
+    @wraps(f)
+    def wrapper() -> Any:
+        try:
+            return f()
+        except OperationalException:
+            raise
+        except Exception:
+            logger.exception(f"Unexpected error in scheduled job {getattr(f, '__qualname__', f)}")
+
+    return wrapper
 
 
 class FreqtradeBot(LoggingMixin):
@@ -170,10 +196,14 @@ class FreqtradeBot(LoggingMixin):
                 for time_slot in range(24):
                     for minutes in [1, 31]:
                         t = str(time(time_slot, minutes, 2))
-                        self._schedule.every().day.at(t).do(update)
+                        self._schedule.every().day.at(t).do(scheduled_job_wrapper(update))
 
-            self._schedule.every().day.at("00:02").do(self.exchange.ws_connection_reset)
-            self._schedule.every().day.at("00:07").do(self.wallets.record_wallet_state)
+            self._schedule.every().day.at("00:02").do(
+                scheduled_job_wrapper(self.exchange.ws_connection_reset)
+            )
+            self._schedule.every().day.at("00:07").do(
+                scheduled_job_wrapper(self.wallets.record_wallet_state)
+            )
 
             self.strategy.ft_bot_start()
             # Initialize protections AFTER bot start - otherwise parameters are not loaded.
@@ -332,15 +362,7 @@ class FreqtradeBot(LoggingMixin):
         # Then looking for entry opportunities
         if self.state == State.RUNNING and ((free_trade_slots := self.get_free_open_trades()) > 0):
             self.enter_positions(free_trade_slots)
-        try:
-            self._schedule.run_pending()
-        except OperationalException:
-            # Deliberate "stop the trader" signal - let the worker handle it.
-            raise
-        except Exception:
-            # A failing maintenance job (e.g. the daily wallet snapshot) must not
-            # take the trading loop down; log it and carry on.
-            logger.exception("Error running scheduled job, skipping this run.")
+        self._schedule.run_pending()
         Trade.commit()
         self.rpc.process_msg_queue(self.dataprovider._msg_queue)
         self.last_process = datetime.now(UTC)
