@@ -377,6 +377,32 @@ def test_rpc_trade_history(mocker, default_conf, markets, fee, is_short):
     assert trades["trades"][0]["pair"] == "XRP/BTC"
 
 
+def test_rpc_reload_trade_from_exchange(mocker, default_conf, fee) -> None:
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    rpc = RPC(freqtradebot)
+
+    with pytest.raises(RPCException, match=r"Could not find trade with id 1\."):
+        rpc._rpc_reload_trade_from_exchange(1)
+
+    create_mock_trades(fee)
+
+    # handle_onexchange_order mutates the trade (and may delete it), so it must run
+    # under the same lock the main loop holds while calling it from exit_positions().
+    lock_states = []
+
+    def _record_lock_state(trade):
+        lock_states.append(freqtradebot._exit_lock.locked())
+        return False
+
+    mocker.patch.object(freqtradebot, "handle_onexchange_order", side_effect=_record_lock_state)
+
+    assert rpc._rpc_reload_trade_from_exchange(1) == {
+        "status": "Reloaded from orders from exchange"
+    }
+    assert lock_states == [True]
+    assert not freqtradebot._exit_lock.locked()
+
+
 @pytest.mark.parametrize("is_short", [True, False])
 def test_rpc_delete_trade(mocker, default_conf, fee, markets, caplog, is_short):
     mocker.patch("freqtrade.rpc.telegram.Telegram", MagicMock())
