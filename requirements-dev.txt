@@ -31,6 +31,6 @@ types-tabulate==0.10.0.20260508
 types-python-dateutil==2.9.0.20260807
 pip-audit==2.10.1
 # For build step in CI
-build==1.5.0
+build==1.6.0
 # For pre-commit-update check
 pyyaml==6.0.3
