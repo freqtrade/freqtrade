@@ -60,7 +60,7 @@ from tests.conftest_trades import (
     mock_order_5_stoploss,
     mock_order_6_sell,
 )
-from tests.conftest_trades_usdt import mock_trade_usdt_4
+from tests.conftest_trades_usdt import mock_trade_usdt_4, mock_trade_usdt_5
 
 
 def patch_RPCManager(mocker) -> MagicMock:
@@ -2733,6 +2733,47 @@ def test_handle_cancel_enter_exchanges(
         caplog,
     )
     assert notify_mock.call_count == 1
+
+
+@pytest.mark.parametrize("is_short", [False, True])
+def test_handle_cancel_enter_dca(mocker, default_conf_usdt, ticker_usdt, fee, is_short) -> None:
+    """
+    A partially filled position adjustment order must be cancellable - the trade already
+    holds an exitable position from the initial entry.
+    """
+    cancel_order_mock = MagicMock(
+        return_value={"id": "dca_12345", "status": "canceled", "filled": 1.0}
+    )
+    mocker.patch.multiple(
+        EXMS,
+        fetch_ticker=ticker_usdt,
+        get_min_pair_stake_amount=MagicMock(return_value=10),
+        cancel_order_with_result=cancel_order_mock,
+    )
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+
+    trade = mock_trade_usdt_5(fee, is_short)
+    dca_order = {
+        "id": "dca_12345",
+        "symbol": trade.pair,
+        "status": "open",
+        "side": entry_side(is_short),
+        "type": "limit",
+        "price": 2.0,
+        "amount": 5.0,
+        "filled": 1.0,
+        "remaining": 4.0,
+    }
+    trade.orders.append(Order.parse_from_ccxt_object(dca_order, trade.pair, entry_side(is_short)))
+    Trade.session.add(trade)
+    Trade.commit()
+
+    # Filled amount alone (1.0 * 2.0) is below minstake - the existing position is not.
+    assert not freqtrade.handle_cancel_enter(
+        trade, dca_order, trade.open_orders[0], CANCEL_REASON["TIMEOUT"]
+    )
+    assert cancel_order_mock.call_count == 1
+    assert not trade.has_open_orders
 
 
 @pytest.mark.parametrize("is_short", [False, True])
