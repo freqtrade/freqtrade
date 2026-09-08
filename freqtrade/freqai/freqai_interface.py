@@ -968,6 +968,16 @@ class IFreqaiModel(ABC):
             set(saved_dataframe.columns).intersection(dk.return_dataframe.columns)
         )
         dk.return_dataframe = dk.return_dataframe.drop(columns=list(columns_to_drop))
+        # saved predictions reloaded from disk can be tz-naive while the strategy
+        # dataframe date is tz-aware (or vice versa) - normalize both to UTC only
+        # in that mixed case (pandas refuses mixed tz-aware/tz-naive merges).
+        saved_tz = pd.to_datetime(saved_dataframe["date_pred"]).dt.tz
+        df_tz = pd.to_datetime(dk.return_dataframe["date"]).dt.tz
+        if (saved_tz is None) != (df_tz is None):
+            saved_dataframe["date_pred"] = pd.to_datetime(
+                saved_dataframe["date_pred"], utc=True
+            )
+            dk.return_dataframe["date"] = pd.to_datetime(dk.return_dataframe["date"], utc=True)
         dk.return_dataframe = pd.merge(
             dk.return_dataframe, saved_dataframe, how="left", left_on="date", right_on="date_pred"
         )

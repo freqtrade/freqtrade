@@ -355,8 +355,15 @@ class FreqaiDataDrawer:
         hist_preds = self.historic_predictions[pair].copy()
 
         # ensure both dataframes have the same date format so they can be merged
+        # (historic predictions reloaded from disk can be tz-naive while the
+        # live dataframe date is tz-aware, or vice versa - normalize to UTC only
+        # in that mixed case, since pandas refuses to compare or merge mixed
+        # tz-aware/tz-naive frames)
         new_pred["date_pred"] = pd.to_datetime(new_pred["date_pred"])
         hist_preds["date_pred"] = pd.to_datetime(hist_preds["date_pred"])
+        if (new_pred["date_pred"].dt.tz is None) != (hist_preds["date_pred"].dt.tz is None):
+            new_pred["date_pred"] = pd.to_datetime(new_pred["date_pred"], utc=True)
+            hist_preds["date_pred"] = pd.to_datetime(hist_preds["date_pred"], utc=True)
 
         # Find the closest common date between new_pred and historic predictions
         # and cut off the new_pred dataframe at that date
@@ -684,7 +691,7 @@ class FreqaiDataDrawer:
             dk.model_filename = self.pair_dict[coin]["model_filename"]
             dk.data_path = Path(self.pair_dict[coin]["data_path"])
 
-        if coin in self.meta_data_dictionary:
+        if coin in self.meta_data_dictionary and METADATA in self.meta_data_dictionary[coin]:
             dk.data = self.meta_data_dictionary[coin][METADATA]
             dk.feature_pipeline = self.meta_data_dictionary[coin][FEATURE_PIPELINE]
             dk.label_pipeline = self.meta_data_dictionary[coin][LABEL_PIPELINE]
