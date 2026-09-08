@@ -96,7 +96,9 @@ def version():
     return {"version": __version__}
 
 
-@router.get("/show_config", response_model=ShowConfig, tags=["Info"])
+@router.get(
+    "/show_config", response_model=ShowConfig, tags=["Info"], response_model_exclude_unset=True
+)
 def show_config(rpc: RPC | None = Depends(get_rpc_optional), config=Depends(get_config)):
     state: State | str = ""
     strategy_version = None

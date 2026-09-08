@@ -237,6 +237,7 @@ class ShowConfig(BaseModel):
     margin_mode: str
     short_allowed: bool
     stake_currency: str
+    proxy_coin: str | None = None
     stake_amount: str
     available_capital: float | None = None
     stake_currency_decimals: int

@@ -698,7 +698,17 @@ def test_api_show_config(botclient):
     assert "unfilledtimeout" in response
     assert "version" in response
     assert "api_version" in response
+    assert "proxy_coin" not in response
     assert 2.1 <= response["api_version"] < 3.0
+
+    # proxy_coin is only set when available
+    ftbot.config["proxy_coin"] = "BNFCR"
+    ftbot.config["trading_mode"] = "futures"
+    ftbot.config["margin_mode"] = "cross"
+
+    rc = client_get(client, f"{BASE_URI}/show_config")
+    response1 = rc.json()
+    assert response1["proxy_coin"] == "BNFCR"
 
 
 def test_api_daily(botclient, mocker, ticker, fee, markets):

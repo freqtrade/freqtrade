@@ -190,6 +190,10 @@ class RPC:
                 else -1
             ),
         }
+        if config.get("trading_mode", "spot") == TradingMode.FUTURES and (
+            proxy_coin := config.get("proxy_coin")
+        ):
+            val["proxy_coin"] = proxy_coin
         return val
 
     def _rpc_trade_status(self, trade_ids: list[int] | None = None) -> list[dict[str, Any]]:
