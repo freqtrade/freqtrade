@@ -275,7 +275,7 @@
       "description": "Notify when less than this fraction of the distance between a position's open rate and its liquidation stop is left. Set to 0 to disable.",
       "type": "number",
       "minimum": 0.0,
-      "maximum": 1.0,
+      "maximum": 0.99,
       "default": 0.2
     },
     "backtest_breakdown": {
