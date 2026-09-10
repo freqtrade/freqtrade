@@ -4727,6 +4727,38 @@ def test_get_fee(default_conf, mocker, exchange_name):
     assert api_mock.calculate_fee.call_count == 0
 
 
+def test_get_fee_no_rate(default_conf, mocker, caplog):
+    caplog.set_level(logging.DEBUG)
+    api_mock = MagicMock()
+    api_mock.calculate_fee = MagicMock(
+        return_value={"type": "maker", "currency": "BTC", "rate": None, "cost": None}
+    )
+    api_mock.fees = {"trading": {"maker": 0.001, "taker": 0.002}}
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+    exchange._config.pop("fee", None)
+
+    # Missing per-market fees fall back to the exchange-wide defaults
+    assert exchange.get_fee("ETH/BTC", taker_or_maker="maker") == 0.001
+    assert exchange.get_fee("ETH/BTC", taker_or_maker="taker") == 0.002
+    assert not log_has_re(r"Could not determine .* fee for ETH/BTC.*", caplog)
+
+    api_mock.fees = {}
+    # Dry-run / backtesting never see real fees - warn, as the 0 would be permanent.
+    assert exchange.get_fee("ETH/BTC") == 0.0
+    assert log_has_re(
+        r"Could not determine maker fee for ETH/BTC - assuming 0\. "
+        r"Please set 'fee' in your configuration\.",
+        caplog,
+    )
+
+    caplog.clear()
+    exchange._config["dry_run"] = False
+    # Live trading updates the fee from the order once it filled - debug only.
+    assert exchange.get_fee("ETH/BTC") == 0.0
+    assert not log_has_re(r".*Please set 'fee' in your configuration.*", caplog)
+    assert log_has("Could not determine maker fee for ETH/BTC - assuming 0.", caplog)
+
+
 def test_stoploss_order_unsupported_exchange(default_conf, mocker):
     exchange = get_patched_exchange(mocker, default_conf, exchange="bitpanda")
     with pytest.raises(OperationalException, match=r"stoploss is not implemented .*"):
