@@ -37,6 +37,18 @@ def deploy_new_strategy(strategy_name: str, strategy_path: Path, subtemplate: st
     """
     from freqtrade.util import render_template, render_template_with_fallback
 
+    if subtemplate.endswith("-ai"):
+        strategy_text = _render_freqai_strategy(strategy_name, subtemplate)
+    else:
+        strategy_text = _render_strategy(strategy_name, subtemplate)
+
+    logger.info(f"Writing strategy to `{strategy_path}`.")
+    strategy_path.write_text(strategy_text)
+
+
+def _render_strategy(strategy_name: str, subtemplate: str) -> str:
+    from freqtrade.util import render_template, render_template_with_fallback
+
     fallback = "full"
     attributes = render_template_with_fallback(
         templatefile=f"strategy_subtemplates/strategy_attributes_{subtemplate}.j2",
@@ -63,7 +75,7 @@ def deploy_new_strategy(strategy_name: str, strategy_path: Path, subtemplate: st
         templatefallbackfile="strategy_subtemplates/strategy_methods_empty.j2",
     )
 
-    strategy_text = render_template(
+    return render_template(
         templatefile="base_strategy.py.j2",
         arguments={
             "strategy": strategy_name,
@@ -76,8 +88,74 @@ def deploy_new_strategy(strategy_name: str, strategy_path: Path, subtemplate: st
         },
     )
 
-    logger.info(f"Writing strategy to `{strategy_path}`.")
-    strategy_path.write_text(strategy_text)
+
+def _render_freqai_strategy(strategy_name: str, subtemplate: str) -> str:
+    from freqtrade.util import render_template, render_template_with_fallback
+
+    fallback = "full-ai"
+    attributes = render_template_with_fallback(
+        templatefile=f"strategy_subtemplates/strategy_attributes_{subtemplate}.j2",
+        templatefallbackfile=f"strategy_subtemplates/strategy_attributes_{fallback}.j2",
+    )
+    feature_expand_all = render_template_with_fallback(
+        templatefile=f"strategy_subtemplates/feature_expand_all_{subtemplate}.j2",
+        templatefallbackfile=f"strategy_subtemplates/feature_expand_all_{fallback}.j2",
+    )
+    feature_expand_basic = render_template_with_fallback(
+        templatefile=f"strategy_subtemplates/feature_expand_basic_{subtemplate}.j2",
+        templatefallbackfile=f"strategy_subtemplates/feature_expand_basic_{fallback}.j2",
+    )
+    feature_standard = render_template_with_fallback(
+        templatefile=f"strategy_subtemplates/feature_standard_{subtemplate}.j2",
+        templatefallbackfile=f"strategy_subtemplates/feature_standard_{fallback}.j2",
+    )
+    freqai_targets = render_template_with_fallback(
+        templatefile=f"strategy_subtemplates/freqai_targets_{subtemplate}.j2",
+        templatefallbackfile=f"strategy_subtemplates/freqai_targets_{fallback}.j2",
+    )
+    buy_trend = render_template_with_fallback(
+        templatefile=f"strategy_subtemplates/buy_trend_{subtemplate}.j2",
+        templatefallbackfile=f"strategy_subtemplates/buy_trend_{fallback}.j2",
+    )
+    sell_trend = render_template_with_fallback(
+        templatefile=f"strategy_subtemplates/sell_trend_{subtemplate}.j2",
+        templatefallbackfile=f"strategy_subtemplates/sell_trend_{fallback}.j2",
+    )
+    enter_short = render_template_with_fallback(
+        templatefile=f"strategy_subtemplates/enter_short_{subtemplate}.j2",
+        templatefallbackfile=f"strategy_subtemplates/enter_short_{fallback}.j2",
+    )
+    exit_short = render_template_with_fallback(
+        templatefile=f"strategy_subtemplates/exit_short_{subtemplate}.j2",
+        templatefallbackfile=f"strategy_subtemplates/exit_short_{fallback}.j2",
+    )
+    plot_config = render_template_with_fallback(
+        templatefile=f"strategy_subtemplates/plot_config_{subtemplate}.j2",
+        templatefallbackfile=f"strategy_subtemplates/plot_config_{fallback}.j2",
+    )
+    additional_methods = render_template_with_fallback(
+        templatefile=f"strategy_subtemplates/strategy_methods_{subtemplate}.j2",
+        templatefallbackfile="strategy_subtemplates/strategy_methods_empty.j2",
+    )
+
+    return render_template(
+        templatefile="base_freqai_strategy.py.j2",
+        arguments={
+            "strategy": strategy_name,
+            "template": subtemplate,
+            "attributes": attributes,
+            "feature_expand_all": feature_expand_all,
+            "feature_expand_basic": feature_expand_basic,
+            "feature_standard": feature_standard,
+            "freqai_targets": freqai_targets,
+            "buy_trend": buy_trend,
+            "sell_trend": sell_trend,
+            "enter_short": enter_short,
+            "exit_short": exit_short,
+            "plot_config": plot_config,
+            "additional_methods": additional_methods,
+        },
+    )
 
 
 def start_new_strategy(args: dict[str, Any]) -> None:

@@ -1,0 +1,30 @@
+
+# Regression target: mean close return over label_period_candles.
+dataframe["&-s_close"] = (
+    dataframe["close"]
+    .shift(-self.freqai_info["feature_parameters"]["label_period_candles"])
+    .rolling(self.freqai_info["feature_parameters"]["label_period_candles"])
+    .mean()
+    / dataframe["close"]
+    - 1
+)
+
+# Classifiers typically use string targets, e.g.:
+# dataframe["&s-up_or_down"] = np.where(
+#     dataframe["close"].shift(-self.freqai_info["feature_parameters"]["label_period_candles"])
+#     > dataframe["close"],
+#     "up",
+#     "down",
+# )
+
+# Multi-target example (needs a multioutput model such as LightGBMRegressorMultiTarget):
+# dataframe["&-s_range"] = (
+#     dataframe["close"]
+#     .shift(-self.freqai_info["feature_parameters"]["label_period_candles"])
+#     .rolling(self.freqai_info["feature_parameters"]["label_period_candles"])
+#     .max()
+#     - dataframe["close"]
+#     .shift(-self.freqai_info["feature_parameters"]["label_period_candles"])
+#     .rolling(self.freqai_info["feature_parameters"]["label_period_candles"])
+#     .min()
+# )

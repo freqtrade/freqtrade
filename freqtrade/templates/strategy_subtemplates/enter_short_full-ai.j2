@@ -1,0 +1,9 @@
+
+enter_short_conditions = [
+    df["do_predict"] == 1,
+    df["&-s_close"] < -0.01,
+]
+if enter_short_conditions:
+    df.loc[
+        reduce(lambda x, y: x & y, enter_short_conditions), ["enter_short", "enter_tag"]
+    ] = (1, "short")

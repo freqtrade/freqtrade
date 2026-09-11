@@ -1,0 +1,11 @@
+
+# FreqAI full template: enable shorts (futures/margin). Disable for spot-only.
+can_short: bool = True
+
+# Optional order type mapping.
+order_types = {
+    "entry": "limit",
+    "exit": "limit",
+    "stoploss": "market",
+    "stoploss_on_exchange": False
+}

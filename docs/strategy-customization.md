@@ -34,7 +34,21 @@ This will create a new strategy called `AwesomeStrategy` from a template, which 
     The `new-strategy` command generates starting examples which will not be profitable out of the box.
 
 ??? Hint "Different template levels"
-    `freqtrade new-strategy` has an additional parameter, `--template`, which controls the amount of pre-build information you get in the created strategy. Use `--template minimal` to get an empty strategy without any indicator examples, or `--template advanced` to get a template with more complicated features defined.
+    `freqtrade new-strategy` has an additional parameter, `--template`, which controls the amount of pre-built information you get in the created strategy.
+
+    Classic strategies:
+
+    - `--template minimal` — empty strategy without indicator examples
+    - `--template full` (default) — sample indicators and entry/exit logic
+    - `--template advanced` — full template plus optional callback stubs
+
+    FreqAI strategies:
+
+    - `--template minimal-ai` — slim FreqAI skeleton (few features, long-only)
+    - `--template full-ai` — richer feature set with long/short prediction entries
+    - `--template advanced-ai` — full-ai plus extra callbacks (`confirm_trade_entry`, …)
+
+    See also the [FreqAI documentation](freqai.md).
 
 ### Anatomy of a strategy
 

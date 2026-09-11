@@ -110,6 +110,14 @@ Using the advanced template (populates all optional functions and methods)
 freqtrade new-strategy --strategy AwesomeStrategy --template advanced
 ```
 
+FreqAI strategy templates (`minimal-ai`, `full-ai`, `advanced-ai`)
+
+```bash
+freqtrade new-strategy --strategy MyFreqAIStrategy --template minimal-ai
+```
+
+Use a FreqAI-enabled config (for example `config_examples/config_freqai.example.json`) and a prediction model such as `--freqaimodel LightGBMRegressor` when running the generated strategy.
+
 ## List Strategies
 
 Use the `list-strategies` subcommand to see all strategies in one particular directory.

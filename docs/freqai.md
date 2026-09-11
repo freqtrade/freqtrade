@@ -41,6 +41,14 @@ An example strategy, prediction model, and config to use as a starting points ca
 `freqtrade/templates/FreqaiExampleStrategy.py`, `freqtrade/freqai/prediction_models/LightGBMRegressor.py`, and
 `config_examples/config_freqai.example.json`, respectively.
 
+You can also generate a FreqAI strategy skeleton with:
+
+```bash
+freqtrade new-strategy --strategy MyFreqAIStrategy --template minimal-ai
+```
+
+Available FreqAI templates: `minimal-ai` (slim starter), `full-ai` (richer features + shorts), `advanced-ai` (full-ai plus callback stubs).
+
 ## General approach
 
 You provide FreqAI with a set of custom *base indicators* (the same way as in a [typical Freqtrade strategy](strategy-customization.md)) as well as target values (*labels*). For each pair in the whitelist, FreqAI trains a model to predict the target values based on the input of custom indicators. The models are then consistently retrained, with a predetermined frequency, to adapt to market conditions. FreqAI offers the ability to both backtest strategies (emulating reality with periodic retraining on historic data) and deploy dry/live runs. In dry/live conditions, FreqAI can be set to constant retraining in a background thread to keep models as up to date as possible.

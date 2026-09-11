@@ -724,6 +724,45 @@ def test_start_new_strategy(caplog, user_dir):
     assert (user_dir / "nonexistent").is_dir()
     assert (user_dir / "nonexistent" / "CoolNewStrategy.py").exists()
 
+    # FreqAI templates
+    for template, strategy_name, must_contain, must_not_contain in (
+        (
+            "minimal-ai",
+            "MinimalAIStrategy",
+            ("feature_engineering_expand_all", "freqai.start", "%-rsi-period"),
+            ("enter_short_conditions", "confirm_trade_entry"),
+        ),
+        (
+            "full-ai",
+            "FullAIStrategy",
+            ("enter_short_conditions", "%-bb_width-period", "can_short"),
+            ("confirm_trade_entry",),
+        ),
+        (
+            "advanced-ai",
+            "AdvancedAIStrategy",
+            ("confirm_trade_entry", "custom_stoploss", "enter_short_conditions"),
+            (),
+        ),
+    ):
+        args = [
+            "new-strategy",
+            "--strategy",
+            strategy_name,
+            "--template",
+            template,
+            "--strategy-path",
+            str(strategy_dir),
+        ]
+        start_new_strategy(get_args(args))
+        strategy_file = strategy_dir / f"{strategy_name}.py"
+        assert strategy_file.exists()
+        content = strategy_file.read_text()
+        for needle in must_contain:
+            assert needle in content
+        for needle in must_not_contain:
+            assert needle not in content
+
     shutil.rmtree(str(user_dir))
 
 

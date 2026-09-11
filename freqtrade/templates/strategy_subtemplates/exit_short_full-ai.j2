@@ -1,0 +1,4 @@
+
+exit_short_conditions = [df["do_predict"] == 1, df["&-s_close"] > 0]
+if exit_short_conditions:
+    df.loc[reduce(lambda x, y: x & y, exit_short_conditions), "exit_short"] = 1
