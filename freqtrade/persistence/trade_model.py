@@ -1451,6 +1451,13 @@ class LocalTrade:
         """
         return CustomDataWrapper.get_custom_data(trade_id=self.id)
 
+    def delete_custom_data(self, key: str | None = None) -> None:
+        """
+        Delete custom data for this trade.
+        :param key: Only delete this key. Deletes all custom data of the trade if None.
+        """
+        CustomDataWrapper.delete_custom_data(trade_id=self.id, key=key)
+
     @property
     def nr_of_successful_entries(self) -> int:
         """

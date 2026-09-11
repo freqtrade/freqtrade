@@ -57,6 +57,71 @@ def test_trade_custom_data(fee, use_db):
         enable_database_use()
 
 
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize("use_db", [True, False])
+def test_trade_custom_data_delete(fee, use_db):
+    if not use_db:
+        disable_database_use("5m")
+    Trade.reset_trades()
+    CustomDataWrapper.reset_custom_data()
+
+    create_mock_trades_usdt(fee, use_db=use_db)
+
+    trade1 = Trade.get_trades_proxy()[0]
+    if not use_db:
+        trade1.id = 1
+
+    trade1.set_custom_data("test_str", "test_value")
+    trade1.set_custom_data("test_int", 1)
+    trade1.set_custom_data("test_float", 1.55)
+    assert len(trade1.get_all_custom_data()) == 3
+
+    # Delete a single key - remaining keys are kept.
+    trade1.delete_custom_data("test_int")
+    assert trade1.get_custom_data("test_int") is None
+    assert len(trade1.get_all_custom_data()) == 2
+    assert trade1.get_custom_data("test_str") == "test_value"
+    assert trade1.get_custom_data("test_float") == 1.55
+
+    # Deleting a non-existent key is a no-op.
+    trade1.delete_custom_data("test_nonexistant")
+    assert len(trade1.get_all_custom_data()) == 2
+
+    # Key lookup is case-insensitive, like get/set_custom_data.
+    trade1.delete_custom_data("TEST_STR")
+    assert trade1.get_custom_data("test_str") is None
+    assert len(trade1.get_all_custom_data()) == 1
+
+    # Without key, all custom data of the trade is deleted.
+    trade1.delete_custom_data()
+    assert trade1.get_all_custom_data() == []
+
+    # Setting data again after deletion works (also in in-memory mode).
+    trade1.set_custom_data("test_str", "test_value")
+    assert trade1.get_custom_data("test_str") == "test_value"
+    assert len(trade1.get_all_custom_data()) == 1
+
+    if not use_db:
+        enable_database_use()
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_trade_custom_data_delete_on_trade_delete(fee):
+    Trade.reset_trades()
+    CustomDataWrapper.reset_custom_data()
+
+    create_mock_trades_usdt(fee)
+
+    trade1 = Trade.get_trades_proxy()[0]
+    trade1.set_custom_data("test_str", "test_value")
+    trade1.set_custom_data("test_int", 1)
+    assert len(trade1.get_all_custom_data()) == 2
+
+    # Deleting the trade must not leave custom data behind.
+    trade1.delete()
+    assert CustomDataWrapper.get_custom_data(trade_id=trade1.id) == []
+
+
 def test_trade_custom_data_strategy_compat(mocker, default_conf_usdt, fee):
     mocker.patch(f"{EXMS}.get_rate", return_value=0.50)
     mocker.patch("freqtrade.freqtradebot.FreqtradeBot.get_real_amount", return_value=None)
