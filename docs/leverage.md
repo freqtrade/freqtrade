@@ -135,7 +135,7 @@ Measuring it this way keeps the setting meaningful regardless of leverage - a pl
 
 The reference is the liquidation stop described above, which already includes `liquidation_buffer` - not the exchange's raw liquidation price. Set the value to `0` to disable these notifications. The corresponding telegram notification can also be silenced or disabled via [`notification_settings`](telegram-usage.md#control-telegram-noise) (`liquidation_warning`).
 
-To avoid a stream of messages while a position sits close to its stop, a warning for the same position is repeated at most once per day. It is repeated earlier if the remaining distance halves compared to the last warning, and the state is reset once the position recovers to a comfortable distance again.
+To avoid a stream of messages while a position sits close to its stop, a warning for the same position is repeated at most once per day. It is repeated earlier if the remaining distance halves compared to the last warning, and the state is reset once the position recovers to a comfortable distance again. No warning is sent for positions with open, unfilled exit orders.
 
 !!! Warning "Warnings are not a substitute for a stoploss"
     A liquidation warning is only sent while the bot is running, and reaching it means your regular stoploss did not trigger first. It is a last resort notification, not a risk management tool.

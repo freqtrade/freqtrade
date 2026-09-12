@@ -434,11 +434,15 @@ class FreqtradeBot(LoggingMixin):
         if not warn_ratio or self.trading_mode != TradingMode.FUTURES:
             return
 
-        open_trades = Trade.get_open_trades()
+        open_trades: list[Trade] = Trade.get_open_trades()
         distances: list[LiquidationDistance] = []
         for trade in open_trades:
             liq_price = trade.liquidation_price
             if not trade.has_open_position or not liq_price:
+                continue
+            if any(o.ft_order_side == trade.exit_side for o in trade.open_orders):
+                # Already being exited - nothing left to warn about, and in cross margin
+                # a position stuck at its stop must not hide the next closest one.
                 continue
             try:
                 rate = self.exchange.get_rate(
