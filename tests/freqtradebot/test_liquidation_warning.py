@@ -4,7 +4,7 @@ import pytest
 
 from freqtrade.enums import RPCMessageType, TradingMode
 from freqtrade.exceptions import PricingError, TemporaryError
-from freqtrade.persistence import Trade
+from freqtrade.persistence import Order, Trade
 from freqtrade.util import dt_now
 from tests.conftest import EXMS, get_patched_freqtradebot, patch_get_signal
 
@@ -39,6 +39,28 @@ def _make_trade(
     )
     trade.liquidation_price = liquidation_price
     return trade
+
+
+def _add_open_exit_order(trade: Trade, rate: float) -> None:
+    """Attach an unfilled exit order, as placed by the liquidation exit."""
+    trade.orders.append(
+        Order(
+            ft_order_side=trade.exit_side,
+            ft_pair=trade.pair,
+            ft_is_open=True,
+            ft_amount=trade.amount,
+            ft_price=rate,
+            order_id=f"exit_{trade.id}",
+            status="open",
+            symbol=trade.pair,
+            order_type="limit",
+            side=trade.exit_side,
+            price=rate,
+            filled=0,
+            remaining=trade.amount,
+            order_date=dt_now(),
+        )
+    )
 
 
 def _get_bot(mocker, conf, margin_mode: str, rate: float, trades: list[Trade], warn_ratio=0.2):
@@ -193,7 +215,10 @@ def test_liquidation_warning_cross_many_positions(mocker, default_conf_usdt) -> 
 
 @pytest.mark.parametrize("is_short", [False, True])
 def test_liquidation_warning_past_stop(mocker, default_conf_usdt, is_short) -> None:
-    """A position past its stop (exit order not filled yet) warns once, not on every iteration."""
+    """
+    A position past its stop whose exit could not be placed (exchange error) warns once,
+    not on every iteration.
+    """
     trade = _make_trade(1, "ETH/USDT:USDT", 1.1 if is_short else 0.9, is_short)
     rate = 1.11 if is_short else 0.89
     freqtrade = _get_bot(mocker, default_conf_usdt, "isolated", rate, [trade], warn_ratio=0.2)
@@ -202,6 +227,55 @@ def test_liquidation_warning_past_stop(mocker, default_conf_usdt, is_short) -> N
         freqtrade.check_liquidation_warnings()
     assert freqtrade.rpc.send_msg.call_count == 1
     assert freqtrade.rpc.send_msg.call_args[0][0]["remaining_ratio"] == 0.0
+
+
+@pytest.mark.parametrize("is_short", [False, True])
+def test_liquidation_warning_open_exit_order(mocker, default_conf_usdt, is_short) -> None:
+    """
+    Once the liquidation exit is placed there is nothing left to warn about - even if the
+    order sits unfilled while the price keeps moving.
+    """
+    trade = _make_trade(1, "ETH/USDT:USDT", 1.1 if is_short else 0.9, is_short)
+    rate = 1.11 if is_short else 0.89
+    _add_open_exit_order(trade, rate)
+    freqtrade = _get_bot(mocker, default_conf_usdt, "isolated", rate, [trade], warn_ratio=0.2)
+
+    freqtrade.check_liquidation_warnings()
+    assert freqtrade.rpc.send_msg.call_count == 0
+
+
+def test_liquidation_warning_cross_exiting_position_not_shadowing(
+    mocker, default_conf_usdt
+) -> None:
+    """
+    In cross margin only the closest position is checked. A position past its stop is always
+    the closest - while its exit order rests unfilled it must not hide other positions
+    approaching their own stops.
+    """
+    trades = [
+        _make_trade(1, "ETH/USDT:USDT", 0.9),
+        _make_trade(2, "XRP/USDT:USDT", 0.9),
+    ]
+    freqtrade = _get_bot(mocker, default_conf_usdt, "cross", 0.5, trades, warn_ratio=0.2)
+    rates = {"ETH/USDT:USDT": 0.89, "XRP/USDT:USDT": 0.95}
+    mocker.patch(f"{EXMS}.get_rate", side_effect=lambda pair, **kwargs: rates[pair])
+
+    # ETH past its stop - warned about, exit order placed by exit_positions
+    freqtrade.check_liquidation_warnings()
+    assert freqtrade.rpc.send_msg.call_count == 1
+    assert freqtrade.rpc.send_msg.call_args[0][0]["trade_id"] == 1
+    _add_open_exit_order(trades[0], 0.89)
+    freqtrade.rpc.send_msg.reset_mock()
+
+    # ETH's exit still not filled - XRP enters the warning zone and must be warned about.
+    for rate in (0.93, 0.915):
+        rates["XRP/USDT:USDT"] = rate
+        freqtrade.check_liquidation_warnings()
+    assert freqtrade.rpc.send_msg.call_count == 1
+    msg = freqtrade.rpc.send_msg.call_args[0][0]
+    assert msg["trade_id"] == 2
+    assert msg["positions_at_risk"] == 1
+    assert pytest.approx(msg["remaining_ratio"]) == 0.15
 
 
 @pytest.mark.parametrize("is_short", [False, True])
