@@ -112,9 +112,31 @@ class CustomDataWrapper:
             CustomDataWrapper.custom_data = []
 
     @staticmethod
-    def delete_custom_data(trade_id: int) -> None:
-        _CustomData.session.query(_CustomData).filter(_CustomData.ft_trade_id == trade_id).delete()
-        _CustomData.session.commit()
+    def delete_custom_data(trade_id: int, key: str | None = None) -> None:
+        """
+        Delete custom data entries for a trade.
+
+        Works in both database and in-memory mode - the session is only
+        available when a database is initialized, so backtesting (use_db=False)
+        must operate on the in-memory list.
+        :param trade_id: Trade id to delete the entries for
+        :param key: Only delete this key. Deletes all entries of the trade if None.
+        """
+        if CustomDataWrapper.use_db:
+            filters = [_CustomData.ft_trade_id == trade_id]
+            if key is not None:
+                filters.append(_CustomData.cd_key.ilike(key))
+            _CustomData.session.query(_CustomData).filter(*filters).delete()
+            _CustomData.session.commit()
+        else:
+            CustomDataWrapper.custom_data = [
+                data_entry
+                for data_entry in CustomDataWrapper.custom_data
+                if not (
+                    data_entry.ft_trade_id == trade_id
+                    and (key is None or data_entry.cd_key.casefold() == key.casefold())
+                )
+            ]
 
     @staticmethod
     def get_custom_data(*, trade_id: int, key: str | None = None) -> list[_CustomData]:
