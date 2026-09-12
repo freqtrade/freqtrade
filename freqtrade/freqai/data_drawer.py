@@ -205,11 +205,13 @@ class FreqaiDataDrawer:
     @staticmethod
     def _ensure_date_pred_dtype(df: DataFrame) -> None:
         """
-        Convert an object dtype date_pred column to datetime. Pandas refuses to merge on
-        object dtype dates, so predictions written by older versions must be converted.
+        Normalize the date_pred column to UTC datetimes. Pandas refuses to merge on object
+        dtype dates, or tz-naive against a tz-aware columns, so predictions written by
+        older versions must be converted. Naive dates are assumed to be UTC - which is
+        what freqtrade itself always writes.
         :param df: DataFrame = frame carrying a date_pred column, converted in place
         """
-        if df["date_pred"].dtype.kind != "M":
+        if df["date_pred"].dtype.kind != "M" or str(df["date_pred"].dt.tz) != "UTC":
             df["date_pred"] = pd.to_datetime(df["date_pred"], utc=True).dt.as_unit("ms")
 
     def _repair_historic_predictions(self, pair: str, pair_df: DataFrame) -> DataFrame:
