@@ -254,11 +254,14 @@ class FreqaiDataKitchen:
                 f"{self.pair}: dropped {len(unfiltered_df) - len(filtered_df)} training points"
                 f" due to NaNs in populated dataset {len(unfiltered_df)}."
             )
-            if len(filtered_df) == 0 and not self.live:
+            # Empty after NaN drop: backtest must abort; live skips this pair (caught in
+            # scanning loop). Common for brand-new listings vs long feature lookbacks.
+            if len(filtered_df) == 0:
                 raise OperationalException(
-                    f"{self.pair}: all training data dropped due to NaNs. "
-                    "You likely did not download enough training data prior "
-                    "to your backtest timerange. Hint:\n"
+                    f"{self.pair}: all training data dropped due to NaNs "
+                    f"({len(unfiltered_df)} rows in window → 0 usable). "
+                    "Pair is likely too new for the configured train_period_days / "
+                    "feature lookbacks, or not enough OHLCV is on disk. Hint:\n"
                     f"{DOCS_LINK}/freqai-running/"
                     "#downloading-data-to-cover-the-full-backtest-period"
                 )
@@ -588,11 +591,22 @@ class FreqaiDataKitchen:
 
         self.model_filename = f"cb_{coin.lower()}_{timestamp_id}"
 
-    def set_all_pairs(self) -> None:
+    def set_all_pairs(self, whitelist: list[str] | None = None) -> None:
+        """
+        Build the list of pairs for history load / feature attachment.
+
+        :param whitelist: Resolved trading pairlist (after pairlist handlers). When omitted,
+            falls back to config exchange.pair_whitelist (may still contain regexes).
+        """
         self.all_pairs = (
             self.freqai_config["feature_parameters"].get("include_corr_pairlist", []).copy()
         )
-        for pair in self.config.get("exchange", "").get("pair_whitelist"):
+        pairs = (
+            whitelist
+            if whitelist is not None
+            else self.config.get("exchange", {}).get("pair_whitelist", [])
+        )
+        for pair in pairs:
             if pair not in self.all_pairs:
                 self.all_pairs.append(pair)
 

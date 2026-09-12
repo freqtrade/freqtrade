@@ -90,7 +90,12 @@ class IFreqaiModel(ABC):
         self.class_names: list[str] = []  # used in classification subclasses
         self.pair_it = 0
         self.pair_it_train = 0
-        self.total_pairs = len(self.config.get("exchange", {}).get("pair_whitelist"))
+        self.data_provider: DataProvider | None = None
+        # Build an initial queue here so the object is usable before ensure_pairlist().
+        # Until DataProvider is attached this may still be raw config entries (incl. regex);
+        # load_freqAI_model() / start() call ensure_pairlist() and rebuild from the
+        # resolved pairlist — expect a second "train queue" log line right after.
+        self.total_pairs = len(self._train_pairlist())
         self.train_queue = self._set_train_queue()
         self.inference_time: float = 0
         self.train_time: float = 0
@@ -106,7 +111,6 @@ class IFreqaiModel(ABC):
         self._threads: list[threading.Thread] = []
         self._stop_event = threading.Event()
         self.metadata: dict[str, Any] = self.dd.load_global_metadata_from_disk()
-        self.data_provider: DataProvider | None = None
         self.max_system_threads = max(int(psutil.cpu_count() * 2 - 2), 1)
         self.can_short = True  # overridden in start() with strategy.can_short
         self.model: Any = None
@@ -140,12 +144,13 @@ class IFreqaiModel(ABC):
         """
         self.live = strategy.dp.runmode in (RunMode.DRY_RUN, RunMode.LIVE)
         self.dd.set_pair_dict_info(metadata)
-        self.data_provider = strategy.dp
+        self.ensure_pairlist(strategy.dp)
         self.can_short = strategy.can_short
 
         if self.live:
             self.inference_timer("start")
             self.dk = FreqaiDataKitchen(self.config, self.live, metadata["pair"])
+            self.dk.set_all_pairs(self._train_pairlist())
             dk = self.start_live(dataframe, metadata, strategy, self.dk)
             dataframe = dk.remove_features_from_df(dk.return_dataframe)
 
@@ -227,6 +232,9 @@ class IFreqaiModel(ABC):
         while not self._stop_event.is_set():
             time.sleep(1)
 
+            # Keep queue aligned with live pairlist (VolumePairList / regex filters).
+            self._reconcile_train_queue(strategy.dp.current_whitelist())
+
             if not self.train_queue:
                 continue
 
@@ -254,6 +262,10 @@ class IFreqaiModel(ABC):
                     self.extract_data_and_train_model(
                         new_trained_timerange, pair, strategy, dk, data_load_timerange
                     )
+                except OperationalException as msg:
+                    # Expected skip (e.g. new listing → 0 rows after NaN filter).
+                    # Do not dump a full traceback for this case.
+                    logger.warning(f"Training {pair} skipped: {msg}")
                 except Exception as msg:
                     logger.exception(
                         f"Training {pair} raised exception {msg.__class__.__name__}. "
@@ -791,14 +803,58 @@ class IFreqaiModel(ABC):
 
         return init_model
 
+    def _train_pairlist(self) -> list[str]:
+        """
+        Pairs FreqAI should train/infer on.
+
+        Prefer the DataProvider whitelist (result after StaticPairList / VolumePairList /
+        regex expansion and filters). Fall back to the raw config whitelist only when no
+        DataProvider is attached yet (early construction / some unit tests).
+        """
+        if self.data_provider is not None:
+            return self.data_provider.current_whitelist()
+        return list(self.config.get("exchange", {}).get("pair_whitelist") or [])
+
+    def ensure_pairlist(self, dp: DataProvider) -> None:
+        """
+        Attach DataProvider and rebuild train queue from the resolved pairlist.
+        Called after the bot's initial pairlist refresh (and again from start()).
+        """
+        self.data_provider = dp
+        self.total_pairs = len(self._train_pairlist())
+        self.train_queue = self._set_train_queue()
+
+    def _reconcile_train_queue(self, whitelist: list[str]) -> None:
+        """Drop removed pairs and enqueue newly whitelisted pairs."""
+        wl_set = set(whitelist)
+        if set(self.train_queue) == wl_set and self.total_pairs == len(whitelist):
+            return
+
+        kept = deque(p for p in self.train_queue if p in wl_set)
+        queued = set(kept)
+        for pair in whitelist:
+            if pair not in queued:
+                kept.append(pair)
+                queued.add(pair)
+        self.train_queue = kept
+        self.total_pairs = len(whitelist)
+
     def _set_train_queue(self):
         """
         Sets train queue from existing train timestamps if they exist
-        otherwise it sets the train queue based on the provided whitelist.
+        otherwise it sets the train queue based on the resolved whitelist.
         """
-        current_pairlist = self.config.get("exchange", {}).get("pair_whitelist")
+        current_pairlist = self._train_pairlist()
+        # Distinguish log wording: constructor often runs before ensure_pairlist(), so the
+        # first line may still show config regexes; the following ensure_pairlist() rebuild
+        # logs the real expanded pairs. Both lines are intentional (not an error).
+        if self.data_provider is not None:
+            source = "resolved pairlist"
+        else:
+            source = "config whitelist (DataProvider not attached yet; may include regex)"
+
         if not self.dd.pair_dict:
-            logger.info(f"Set fresh train queue from whitelist. Queue: {current_pairlist}")
+            logger.info(f"Set fresh train queue from {source}. Queue: {current_pairlist}")
             return deque(current_pairlist)
 
         best_queue = deque()
@@ -814,7 +870,8 @@ class IFreqaiModel(ABC):
                 best_queue.appendleft(pair)
 
         logger.info(
-            f"Set existing queue from trained timestamps. Best approximation queue: {best_queue}"
+            f"Set existing queue from trained timestamps ({source}). "
+            f"Best approximation queue: {best_queue}"
         )
         return best_queue
 

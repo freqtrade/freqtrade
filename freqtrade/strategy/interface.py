@@ -191,6 +191,10 @@ class IStrategy(ABC, HyperStrategyMixin):
 
             self.freqai = FreqaiModelResolver.load_freqaimodel(self.config)
             self.freqai_info = self.config["freqai"]
+            # Pairlist has already been refreshed in FreqtradeBot.__init__; feed the
+            # resolved whitelist into FreqAI (not raw config regexes).
+            if self.dp is not None:
+                self.freqai.ensure_pairlist(self.dp)
 
             # download the desired data in dry/live
             if self.config.get("runmode") in (RunMode.DRY_RUN, RunMode.LIVE):

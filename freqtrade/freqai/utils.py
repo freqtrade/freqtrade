@@ -32,14 +32,23 @@ def download_all_data_for_training(dp: DataProvider, config: Config) -> None:
 
     if dp._exchange is None:
         raise OperationalException("No exchange object found.")
-    markets = [
-        p
-        for p in dp._exchange.get_markets(
-            tradable_only=True, active_only=not config.get("include_inactive")
-        )
-    ]
 
-    all_pairs = dynamic_expand_pairlist(config, markets)
+    # Prefer the live pairlist result (regex / VolumePairList / filters already applied).
+    # Fall back to expanding config["pairs"] when no pairlist manager is attached.
+    if dp._pairlists is not None:
+        all_pairs = list(dp.current_whitelist())
+        corr_pairlist = config.get("freqai", {}).get("feature_parameters", {}).get(
+            "include_corr_pairlist", []
+        )
+        all_pairs += [pair for pair in corr_pairlist if pair not in all_pairs]
+    else:
+        markets = [
+            p
+            for p in dp._exchange.get_markets(
+                tradable_only=True, active_only=not config.get("include_inactive")
+            )
+        ]
+        all_pairs = dynamic_expand_pairlist(config, markets)
 
     timerange = get_required_data_timerange(config)
 

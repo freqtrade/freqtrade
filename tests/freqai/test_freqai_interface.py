@@ -1,5 +1,6 @@
 import logging
 import shutil
+from collections import deque
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -573,12 +574,30 @@ def test_start_set_train_queue(mocker, freqai_conf, caplog):
     freqai = strategy.freqai
     freqai.live = False
 
+    # Without DataProvider: falls back to config whitelist
     freqai.train_queue = freqai._set_train_queue()
-
     assert log_has_re(
-        "Set fresh train queue from whitelist.",
+        "Set fresh train queue from config whitelist",
         caplog,
     )
+
+    # With DataProvider: use resolved pairlist (not raw config regexes)
+    resolved = ["BTC/USDT", "ETH/USDT", "SOL/USDT"]
+    mocker.patch.object(strategy.dp, "current_whitelist", return_value=resolved)
+    freqai.ensure_pairlist(strategy.dp)
+    assert list(freqai.train_queue) == resolved
+    assert freqai.total_pairs == len(resolved)
+
+
+def test_reconcile_train_queue_follows_pairlist(mocker, freqai_conf):
+    strategy = get_patched_freqai_strategy(mocker, freqai_conf)
+    freqai = strategy.freqai
+    freqai.train_queue = deque(["BTC/USDT", "ETH/USDT", "XRP/USDT"])
+    freqai.total_pairs = 3
+
+    freqai._reconcile_train_queue(["ETH/USDT", "SOL/USDT"])
+    assert list(freqai.train_queue) == ["ETH/USDT", "SOL/USDT"]
+    assert freqai.total_pairs == 2
 
 
 def test_get_required_data_timerange(mocker, freqai_conf):
