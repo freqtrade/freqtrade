@@ -129,6 +129,9 @@ Possible values are any floats between 0.0 and 0.99
 
 `liquidation_warn_ratio` sends a notification once an open position gets close to its [liquidation buffer](#understand-liquidation_buffer) - giving you the chance to react before freqtrade force-closes the position.
 
+!!! Warning "Experimental - best effort only"
+    Liquidation warnings are a new, experimental feature and are sent on a best effort basis. They rely on the liquidation price reported by the exchange (or freqtrade's estimate in dry-run), which is only refreshed periodically. A fast market move, a liquidation stop jumping between two refreshes - which is common in highly leveraged cross margin - or the bot being stopped can all result in a position being force-closed *without* a prior warning.
+
 It is expressed as a fraction of the price move that would use up a position's margin - `100% / leverage`, so a 10% move for a 10x position. With the default of `0.2` a 10x position is warned about once its liquidation stop is less than 2% away (`0.2 * 10%`), a 5x position once it is less than 4% away.
 
 Measuring it this way keeps the setting meaningful regardless of leverage - a plain price distance would trigger at wildly different points for a 2x and a 20x position (and for high leverage, immediately on entry). A freshly opened position reads a little below `1.0`, as the exchange's maintenance margin and `liquidation_buffer` take their share of the move right away - the more so the higher the leverage.
