@@ -74,8 +74,9 @@ logger = logging.getLogger(__name__)
 
 class LiquidationDistance(NamedTuple):
     """
-    An open position, and how much of the distance between its open rate and its
-    liquidation stop is left. 1.0 at the open rate, 0.0 at the liquidation stop.
+    An open position, and how much room is left to its liquidation stop: the distance to the
+    stop as a fraction of the price move that would use up the position's margin (a 10% move at
+    10x leverage). About 1.0 for a freshly opened position, 0.0 at the liquidation stop.
     """
 
     remaining: float
@@ -437,11 +438,7 @@ class FreqtradeBot(LoggingMixin):
         distances: list[LiquidationDistance] = []
         for trade in open_trades:
             liq_price = trade.liquidation_price
-            if (
-                not trade.has_open_position
-                or not liq_price
-                or not (span := abs(trade.open_rate - liq_price))
-            ):
+            if not trade.has_open_position or not liq_price:
                 continue
             try:
                 rate = self.exchange.get_rate(
@@ -453,7 +450,11 @@ class FreqtradeBot(LoggingMixin):
             # Distance to the stop in the direction that liquidates - positive while the position
             # is alive, no matter which side of the open rate the stop sits on.
             distance = liq_price - rate if trade.is_short else rate - liq_price
-            remaining = max(0.0, distance / span)
+            # Measured against the price move that would use up the position's margin (10% at 10x),
+            # so the same setting means the same thing at any leverage.
+            # The reference is whichever of open rate and current rate sits further from the stop.
+            ref = min(trade.open_rate, rate) if trade.is_short else max(trade.open_rate, rate)
+            remaining = max(0.0, distance * trade.leverage / ref)
             distances.append(LiquidationDistance(remaining, trade, rate, liq_price))
 
         if not distances:
@@ -478,7 +479,7 @@ class FreqtradeBot(LoggingMixin):
         """
         Decide whether a liquidation warning is due for the given trade.
         Warns when entering the warning zone, and again once what's left halved since.
-        :param remaining: Share of the open rate to liquidation stop distance that is left
+        :param remaining: Room left to the liquidation stop, see LiquidationDistance
         :param warn_ratio: Configured share below which to warn
         """
         # Position must move back to this multiple of liquidation_warn_ratio before it's considered

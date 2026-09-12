@@ -240,8 +240,9 @@ CONF_SCHEMA = {
         },
         "liquidation_warn_ratio": {
             "description": (
-                "Notify when less than this fraction of the distance between a position's open "
-                "rate and its liquidation stop is left. Set to 0 to disable."
+                "Notify when the distance to a position's liquidation stop falls below this "
+                "fraction of the price move that would use up its margin - with the default of "
+                "0.2, once the stop is less than 2% away at 10x leverage. Set to 0 to disable."
             ),
             "type": "number",
             "minimum": 0.0,

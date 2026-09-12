@@ -55,8 +55,8 @@ class RPCLiquidationWarningMsg(RPCSendMsgBase):
     leverage: float | None
     current_rate: float
     liquidation_price: float
-    # Share of the open_rate to liquidation_price distance that is left.
-    # 1.0 at the open rate, 0.0 at the liquidation price.
+    # Distance to the liquidation stop, as a share of the price move that would use up the
+    # position's margin (10% at 10x leverage). About 1.0 when freshly opened, 0.0 at the stop.
     remaining_ratio: float
     # Configured `liquidation_warn_ratio` that triggered this message
     warn_ratio: float

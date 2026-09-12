@@ -580,7 +580,7 @@ class Telegram(RPCHandler):
             headline + f"*Direction:* `{direction}`\n"
             f"*Current Rate:* `{fmt_coin2(msg['current_rate'], msg['quote_currency'])}`\n"
             f"*Liquidation Stop:* `{fmt_coin2(msg['liquidation_price'], msg['quote_currency'])}`\n"
-            f"*Remaining:* `{msg['remaining_ratio']:.2%}` of the distance from the open rate\n\n"
+            f"*Remaining:* `{msg['remaining_ratio']:.2%}` of the price move the margin covers\n\n"
             "This is freqtrade's own liquidation, placed ahead of the exchange's liquidation "
             f"price by `liquidation_buffer` - it is not an exchange liquidation. {advice}"
         )
