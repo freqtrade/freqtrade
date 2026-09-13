@@ -28,6 +28,7 @@ class Okx(Exchange):
 
     _ft_has: FtHas = {
         "ohlcv_candle_limit": 100,  # Warning, special case with data prior to X months
+        "l2_limit_upper": 5000,
         "stoploss_order_types": {"limit": "limit", "market": "market"},
         "stoploss_on_exchange": True,
         "stoploss_query_requires_stop_flag": True,
