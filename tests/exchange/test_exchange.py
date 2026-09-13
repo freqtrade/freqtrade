@@ -11,6 +11,7 @@ import ccxt
 import pytest
 from numpy import nan
 from pandas import DataFrame, to_datetime
+from requests.adapters import HTTPAdapter
 
 from freqtrade.constants import DEFAULT_DATAFRAME_COLUMNS
 from freqtrade.data.converter import ohlcv_to_dataframe
@@ -211,6 +212,23 @@ def test_init_ccxt_kwargs(default_conf, mocker, caplog):
     assert ex._api.hello == "world"
     assert ex._ccxt_config == {}
     Exchange._headers = {}
+
+
+def test_init_ccxt_sync_http_pool(default_conf, mocker):
+    mocker.patch(f"{EXMS}.reload_markets")
+    mocker.patch(f"{EXMS}.validate_stakecurrency")
+    mocker.patch(f"{EXMS}.ft_additional_exchange_init")
+
+    # The sync ccxt session must not keep requests' default of 10 idle connections, as
+    # freqtrade issues more than that concurrently - urllib3 would discard the surplus
+    # connections ("Connection pool is full, discarding connection: ...") and re-handshake.
+    exchange = Exchange(default_conf)
+    assert exchange._api.session is not None
+    adapter = exchange._api.session.get_adapter(f"https://{exchange._api.hostname}")
+    assert isinstance(adapter, HTTPAdapter)
+    assert adapter._pool_maxsize > 10
+    # The async (aiohttp based) session must not be affected.
+    assert not isinstance(exchange._api_async.session, HTTPAdapter)
 
 
 def test_destroy(default_conf, mocker, caplog):

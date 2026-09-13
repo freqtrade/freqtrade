@@ -20,6 +20,7 @@ import ccxt.pro as ccxt_pro
 from ccxt import TICK_SIZE
 from dateutil import parser
 from pandas import DataFrame, Timestamp, concat
+from requests.adapters import HTTPAdapter
 
 from freqtrade.configuration import remove_exchange_credentials
 from freqtrade.constants import (
@@ -431,6 +432,17 @@ class Exchange:
 
         if self.get_option("supports_demo_trading") and exchange_config.get("demo_trading", False):
             api.enable_demo_trading(True)
+
+        if sync and getattr(api, "session", None) is not None:
+            # ccxt creates its sync session as a stock requests.Session, i.e. with the default
+            # HTTPAdapter that only keeps 10 idle connections. Freqtrade issues bursts of more
+            # than that (order management, balance/position/ticker refresh, startup reloads),
+            # and urllib3 then *discards* the surplus connection instead of reusing it:
+            #   WARNING - Connection pool is full, discarding connection: <host>
+            # every discarded connection costs an additional DNS+TLS handshake. Keep a larger pool.
+            http_adapter = HTTPAdapter(pool_connections=10, pool_maxsize=64)
+            api.session.mount("https://", http_adapter)
+            api.session.mount("http://", http_adapter)
 
         return api
 
