@@ -468,8 +468,6 @@ class FreqtradeBot(LoggingMixin):
 
         if self.margin_mode == MarginMode.CROSS:
             # One message for the account, describing the position closest to liquidation.
-            # Keyed by that position - so once it's exited (or overtaken), the next closest
-            # position is warned about right away.
             closest = distances[0]
             if self._should_warn_liquidation(closest.trade.id, closest.remaining, warn_ratio):
                 at_risk = [d for d in distances if d.remaining <= warn_ratio]
@@ -483,6 +481,9 @@ class FreqtradeBot(LoggingMixin):
         """
         Decide whether a liquidation warning is due for the given trade.
         Warns when entering the warning zone, and again once what's left halved since.
+        Keyed by trade id - so once it's exited (or overtaken), the next closest
+        position is warned about right away.
+        :param trade_id: ID of the trade that's currently evaluated for liquidation warning.
         :param remaining: Room left to the liquidation stop, see LiquidationDistance
         :param warn_ratio: Configured share below which to warn
         """
