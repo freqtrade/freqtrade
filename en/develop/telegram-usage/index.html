@@ -2679,6 +2679,7 @@ Each setting has the following possible values:</p>
 <span class="w">        </span><span class="nt">"exit_fill"</span><span class="p">:</span><span class="w"> </span><span class="s2">"off"</span><span class="p">,</span>
 <span class="w">        </span><span class="nt">"protection_trigger"</span><span class="p">:</span><span class="w"> </span><span class="s2">"off"</span><span class="p">,</span>
 <span class="w">        </span><span class="nt">"protection_trigger_global"</span><span class="p">:</span><span class="w"> </span><span class="s2">"on"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"liquidation_warning"</span><span class="p">:</span><span class="w"> </span><span class="s2">"on"</span><span class="p">,</span>
 <span class="w">        </span><span class="nt">"strategy_msg"</span><span class="p">:</span><span class="w"> </span><span class="s2">"off"</span><span class="p">,</span>
 <span class="w">        </span><span class="nt">"show_candle"</span><span class="p">:</span><span class="w"> </span><span class="s2">"off"</span>
 <span class="w">    </span><span class="p">},</span>
@@ -2692,6 +2693,7 @@ Each setting has the following possible values:</p>
     Exit messages (<code>exit</code> and <code>exit_fill</code>) can be further controlled at individual exit reasons level, with the specific exit reason as the key. the default for all exit reasons is <code>on</code> - but can be configured via special <code>*</code> key - which will act as a wildcard for all exit reasons that are not explicitly defined.</li>
 <li><code>*_fill</code> notifications are off by default and must be explicitly enabled.  </li>
 <li><code>protection_trigger</code> notifications are sent when a protection triggers and <code>protection_trigger_global</code> notifications trigger when global protections are triggered.  </li>
+<li><code>liquidation_warning</code> notifications are sent when an open position approaches its liquidation stop - see <a href="../leverage/#liquidation-warnings">liquidation warnings</a>.  </li>
 <li><code>strategy_msg</code> - Receive notifications from the strategy, sent via <code>self.dp.send_msg()</code> from the strategy <a href="../strategy-customization/#send-notification">more details</a>.  </li>
 <li><code>show_candle</code> - show candle values as part of entry/exit messages. Only possible values are <code>"ohlc"</code> or <code>"off"</code>.  </li>
 <li><code>balance_dust_level</code> will define what the <code>/balance</code> command takes as "dust" - Currencies with a balance below this will be shown.  </li>

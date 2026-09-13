@@ -3260,6 +3260,10 @@ In the below case, <code>max_open_trades</code> would be 3 after the merging - a
 <td>A ratio specifying how large of a safety net to place between the liquidation price and the stoploss to prevent a position from reaching the liquidation price <a href="../leverage/">leverage documentation</a>. <br><em>Defaults to <code>0.05</code>.</em>  <br> <strong>Datatype:</strong> Float</td>
 </tr>
 <tr>
+<td><code>liquidation_warn_ratio</code></td>
+<td>Notify when the distance to a position's liquidation stop falls below this fraction of the price move that would use up its margin - with the default of <code>0.2</code>, once the stop is less than 2% away at 10x leverage. Set to <code>0</code> to disable <a href="../leverage/#liquidation-warnings">leverage documentation</a>. <br><em>Defaults to <code>0.2</code>.</em>  <br> <strong>Datatype:</strong> Float</td>
+</tr>
+<tr>
 <td></td>
 <td><strong>Unfilled timeout</strong></td>
 </tr>
