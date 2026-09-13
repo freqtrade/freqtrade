@@ -15,5 +15,5 @@ class WindowDataset(torch.utils.data.Dataset):
         window_x = self.xs[idx_rev : idx_rev + self.window_size, :]
         # Beware of indexing, these two window_x and window_y are aimed at the same row!
         # this is what happens when you use :
-        window_y = self.ys[idx_rev + self.window_size - 1, :].unsqueeze(0)
+        window_y = self.ys[idx_rev + self.window_size - 1]
         return window_x, window_y
