@@ -41,7 +41,13 @@ from freqtrade.exceptions import OperationalException
 from freqtrade.misc import chunks, plural
 from freqtrade.persistence import Trade
 from freqtrade.rpc import RPC, RPCException, RPCHandler
-from freqtrade.rpc.rpc_types import RPCEntryMsg, RPCExitMsg, RPCOrderMsg, RPCSendMsg
+from freqtrade.rpc.rpc_types import (
+    RPCEntryMsg,
+    RPCExitMsg,
+    RPCLiquidationWarningMsg,
+    RPCOrderMsg,
+    RPCSendMsg,
+)
 from freqtrade.util import (
     dt_from_ts,
     dt_humanize_delta,
@@ -386,7 +392,7 @@ class Telegram(RPCHandler):
         asyncio.run_coroutine_threadsafe(self._cleanup_telegram(), self._loop)
         self._thread.join()
 
-    def _exchange_from_msg(self, msg: RPCOrderMsg) -> str:
+    def _exchange_from_msg(self, msg: RPCOrderMsg | RPCLiquidationWarningMsg) -> str:
         """
         Extracts the exchange name from the given message.
         :param msg: The message to extract the exchange name from.
@@ -539,6 +545,46 @@ class Telegram(RPCHandler):
             profit_fiat_extra = f" / {profit_fiat:.3f} {fiat_currency}"
         return profit_fiat_extra
 
+    def _format_liquidation_warning_msg(self, msg: RPCLiquidationWarningMsg) -> str:
+        direction = msg["direction"]
+        if msg.get("leverage") and msg.get("leverage", 1.0) != 1.0:
+            direction += f" ({msg['leverage']:.3g}x)"
+
+        if msg["margin_mode"] == "cross":
+            single = msg["positions_at_risk"] == 1
+            headline = (
+                f"\N{WARNING SIGN} *{self._exchange_from_msg(msg)}:* "
+                f"{msg['positions_at_risk']} of {msg['open_positions']} positions "
+                f"{'is' if single else 'are'} approaching "
+                f"{'its' if single else 'their'} liquidation stop\n"
+                f"*Closest:* `{msg['pair']}` (#{msg['trade_id']})\n"
+            )
+            advice = (
+                "In cross margin all positions share the same collateral. Adding margin moves "
+                "the liquidation stop away from all of them - without it freqtrade will exit "
+                "each position as it reaches its own stop."
+            )
+        else:
+            headline = (
+                f"\N{WARNING SIGN} *{self._exchange_from_msg(msg)}:* "
+                f"`{msg['pair']}` (#{msg['trade_id']}) is approaching its liquidation stop\n"
+            )
+            advice = (
+                "In isolated margin this position's collateral is fixed - adding funds to "
+                "your account will not move its liquidation stop. Reduce or close the "
+                "position, or add margin to it directly on the exchange - freqtrade picks "
+                "the changed liquidation price up on the next order fill for this trade."
+            )
+
+        return (
+            headline + f"*Direction:* `{direction}`\n"
+            f"*Current Rate:* `{fmt_coin2(msg['current_rate'], msg['quote_currency'])}`\n"
+            f"*Liquidation Stop:* `{fmt_coin2(msg['liquidation_price'], msg['quote_currency'])}`\n"
+            f"*Remaining:* `{msg['remaining_ratio']:.2%}` of the price move the margin covers\n\n"
+            "This is freqtrade's own liquidation, placed ahead of the exchange's liquidation "
+            f"price by `liquidation_buffer` - it is not an exchange liquidation. {advice}"
+        )
+
     def compose_message(self, msg: RPCSendMsg) -> str | None:
         if msg["type"] == RPCMessageType.ENTRY or msg["type"] == RPCMessageType.ENTRY_FILL:
             message = self._format_entry_msg(msg)
@@ -568,6 +614,9 @@ class Telegram(RPCHandler):
                 f"*Protection* triggered due to {msg['reason']}. "
                 f"*All pairs* will be locked until `{msg['lock_end_time']}`."
             )
+
+        elif msg["type"] == RPCMessageType.LIQUIDATION_WARNING:
+            message = self._format_liquidation_warning_msg(msg)
 
         elif msg["type"] == RPCMessageType.STATUS:
             message = f"*Status:* `{msg['status']}`"

@@ -123,6 +123,40 @@ Possible values are any floats between 0.0 and 0.99
 !!! Danger "A `liquidation_buffer` of 0.0, or a low `liquidation_buffer` is likely to result in liquidations, and liquidation fees"
     Currently Freqtrade is able to calculate liquidation prices, but does not calculate liquidation fees. Setting your `liquidation_buffer` to 0.0, or using a low `liquidation_buffer` could result in your positions being liquidated. Freqtrade does not track liquidation fees, so liquidations will result in inaccurate profit/loss results for your bot. If you use a low `liquidation_buffer`, it is recommended to use `stoploss_on_exchange` if your exchange supports this.
 
+## Liquidation warnings
+
+*Defaults to `0.2`*
+
+`liquidation_warn_ratio` sends a notification once an open position gets close to its [liquidation buffer](#understand-liquidation_buffer) - giving you the chance to react before freqtrade force-closes the position.
+
+!!! Warning "Experimental - best effort only"
+    Liquidation warnings are a new, experimental feature and are sent on a best effort basis. They rely on the liquidation price reported by the exchange (or freqtrade's estimate in dry-run), which is only refreshed periodically. A fast market move, a liquidation stop jumping between two refreshes - which is common in highly leveraged cross margin - or the bot being stopped can all result in a position being force-closed *without* a prior warning.
+
+It is expressed as a fraction of the price move that would use up a position's margin - `100% / leverage`, so a 10% move for a 10x position. With the default of `0.2` a 10x position is warned about once its liquidation stop is less than 2% away (`0.2 * 10%`), a 5x position once it is less than 4% away.
+
+Measuring it this way keeps the setting meaningful regardless of leverage - a plain price distance would trigger at wildly different points for a 2x and a 20x position (and for high leverage, immediately on entry). A freshly opened position reads a little below `1.0`, as the exchange's maintenance margin and `liquidation_buffer` take their share of the move right away - the more so the higher the leverage.
+
+The reference is the liquidation stop described above, which already includes `liquidation_buffer` - not the exchange's raw liquidation price. Set the value to `0` to disable these notifications. The corresponding telegram notification can also be silenced or disabled via [`notification_settings`](telegram-usage.md#control-telegram-noise) (`liquidation_warning`).
+
+To avoid a stream of messages while a position sits close to its stop, a warning for the same position is repeated at most once per day. It is repeated earlier if the remaining distance halves compared to the last warning, and the state is reset once the position recovers to a comfortable distance again. No warning is sent for positions with open, unfilled exit orders.
+
+!!! Warning "Warnings are not a substitute for a stoploss"
+    A liquidation warning is only sent while the bot is running, and reaching it means your regular stoploss did not trigger first. It is a last resort notification, not a risk management tool.
+
+### Cross margin - Liquidation warning
+
+A single, account wide message is sent - all positions share the same collateral, so a loss on one position moves the liquidation stop of every other position closer as well. The message names the position closest to its stop, along with how many positions are currently at risk. It is sent again when a different position becomes the closest one, or when the closest position halves its remaining distance. Each position is still exited individually once it reaches its own liquidation stop.
+
+As the distance is measured from the current price, a stop being pulled closer by losses elsewhere on the account - other positions falling, funding fees, realized losses, a withdrawal, or positions on the same account that this bot does not manage - is picked up the same way as the position itself falling.
+
+Adding collateral to the account moves the liquidation stop away from all positions at once. freqtrade refreshes cross liquidation prices at startup, on every order fill, and twice per hour - so it can take up to 30 minutes until the warning check picks up a changed stop, in either direction.
+
+### Isolated margin - Liquidation warning
+
+Each position is warned about separately.
+
+Be aware that an isolated position's collateral is fixed at the amount committed to it - **adding funds to your account will not move its liquidation stop**. Your options in this case are to reduce or close the position.
+
 ## Unavailable funding rates
 
 For futures data, exchanges commonly provide the futures candles, the marks, and the funding rates. However, it is common that whilst candles and marks might be available, the funding rates are not. This can affect backtesting timeranges, i.e. you may only be able to test recent timeranges and not earlier, experiencing the `No data found. Terminating.` error. To get around this, add the `futures_funding_rate` config option as listed in [configuration.md](configuration.md), and it is recommended that you set this to `0`, unless you know a given specific funding rate for your pair, exchange and timerange. Setting this to anything other than `0` can have drastic effects on your profit calculations within strategy, e.g. within the `custom_exit`, `custom_stoploss`, etc functions.
