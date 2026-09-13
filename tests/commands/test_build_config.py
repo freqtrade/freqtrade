@@ -51,7 +51,7 @@ def test_start_new_config(mocker, caplog, exchange):
         "trading_mode": "spot",
         "margin_mode": "",
         "exchange_name": exchange,
-        "exchange_key": "sampleKey",
+        "exchange_api_key": "sampleKey",
         "exchange_secret": "Samplesecret",
         "telegram": False,
         "telegram_token": "asdf1244",
@@ -75,6 +75,7 @@ def test_start_new_config(mocker, caplog, exchange):
         parse_mode=rapidjson.PM_COMMENTS | rapidjson.PM_TRAILING_COMMAS,
     )
     assert result["exchange"]["name"] == exchange
+    assert result["exchange"]["api_key"] == "sampleKey"
     assert result["timeframe"] == "15m"
 
 

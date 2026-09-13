@@ -224,7 +224,6 @@ def test_validate_stake_amount(
         (None, 10, 100, 910, 1000),
         (None, 0, 0, 2500, 2500),
         (None, 500, 0, 2500, 2000),
-        (None, 500, 0, 2500, 2000),
         (None, -70, 0, 1930, 2000),
         # Only available balance matters when it's set.
         (100, 0, 0, 0, 100),

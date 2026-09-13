@@ -34,6 +34,7 @@ from freqtrade.misc import remove_entry_exit_signals
 from freqtrade.persistence import Order, PairLocks, Trade
 from freqtrade.strategy.hyper import HyperStrategyMixin
 from freqtrade.strategy.informative_decorator import (
+    InformativeCache,
     InformativeData,
     PopulateIndicators,
     _create_and_merge_informative_pair,
@@ -153,6 +154,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         self.config = config
         # Dict to determine if analysis is necessary
         self.__last_candle_seen_per_pair: dict[str, datetime] = {}
+        self._ft_informative_cache: InformativeCache | None = None
         super().__init__(config)
 
         # Gather informative pairs from @informative-decorated methods.
@@ -175,6 +177,11 @@ class IStrategy(ABC, HyperStrategyMixin):
                 if not informative_data.candle_type:
                     informative_data.candle_type = config["candle_type_def"]
                 self._ft_informative.append((informative_data, cls_method))
+
+        if config.get("runmode") in (RunMode.DRY_RUN, RunMode.LIVE) and any(
+            inf_data.cache for inf_data, _ in self._ft_informative
+        ):
+            self._ft_informative_cache = InformativeCache(maxsize=500)
 
     def load_freqAI_model(self) -> None:
         if self.config.get("freqai", {}).get("enabled", False):
@@ -277,7 +284,6 @@ class IStrategy(ABC, HyperStrategyMixin):
         Called only once after bot instantiation.
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         """
-        pass
 
     def bot_loop_start(self, current_time: datetime, **kwargs) -> None:
         """
@@ -287,7 +293,6 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         """
-        pass
 
     def check_buy_timeout(
         self, pair: str, trade: Trade, order: Order, current_time: datetime, **kwargs
@@ -437,7 +442,6 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param current_time: datetime object, containing the current datetime
         :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
         """
-        pass
 
     def custom_stoploss(
         self,
@@ -660,7 +664,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         current_entry_profit: float,
         current_exit_profit: float,
         **kwargs,
-    ) -> float | None | tuple[float | None, str | None]:
+    ) -> float | tuple[float | None, str | None] | None:
         """
         Custom trade adjustment logic, returning the stake amount that a trade should be
         increased or decreased.
@@ -1209,16 +1213,19 @@ class IStrategy(ABC, HyperStrategyMixin):
         :return: DataFrame of candle (OHLCV) data with indicator data and signals added
         """
         pair = str(metadata.get("pair"))
+        last_date = dataframe.iloc[-1]["date"]
 
-        new_candle = self.__last_candle_seen_per_pair.get(pair, None) != dataframe.iloc[-1]["date"]
+        new_candle = self.__last_candle_seen_per_pair.get(pair, None) != last_date
         # Test if seen this pair and last candle before.
         # always run if process_only_new_candles is set to false
         if not self.process_only_new_candles or new_candle:
+            validator = StrategyResultValidator(dataframe, warn_only=self.disable_dataframe_checks)
             # Defs that only make change on new candle data.
-            dataframe = self.analyze_ticker(dataframe, metadata)
+            dataframe = strategy_safe_wrapper(self.analyze_ticker, message="")(dataframe, metadata)
+            # validate dataframe before it being cached
+            validator.assert_df(dataframe)
 
-            self.__last_candle_seen_per_pair[pair] = dataframe.iloc[-1]["date"]
-
+            self.__last_candle_seen_per_pair[pair] = last_date
             candle_type = self.config.get("candle_type_def", CandleType.SPOT)
             self.dp._set_cached_df(pair, self.timeframe, dataframe, candle_type=candle_type)
             self.dp._emit_df((pair, self.timeframe, candle_type), dataframe, new_candle)
@@ -1246,15 +1253,7 @@ class IStrategy(ABC, HyperStrategyMixin):
             return
 
         try:
-            validator = StrategyResultValidator(
-                dataframe, warn_only=not self.disable_dataframe_checks
-            )
-
-            dataframe = strategy_safe_wrapper(self._analyze_ticker_internal, message="")(
-                dataframe, {"pair": pair}
-            )
-
-            validator.assert_df(dataframe)
+            dataframe = self._analyze_ticker_internal(dataframe, {"pair": pair})
         except StrategyError as error:
             logger.warning(f"Unable to analyze candle (OHLCV) data for pair {pair}: {error}")
             return
@@ -1268,6 +1267,9 @@ class IStrategy(ABC, HyperStrategyMixin):
         Analyze all pairs using analyze_pair().
         :param pairs: List of pairs to analyze
         """
+        if self._ft_informative_cache is not None:
+            self._ft_informative_cache.expire()
+
         for pair in pairs:
             self.analyze_pair(pair)
 
@@ -1291,13 +1293,18 @@ class IStrategy(ABC, HyperStrategyMixin):
             return None, None
 
         try:
-            latest_date_pd = dataframe["date"].max()
-            latest = dataframe.loc[dataframe["date"] == latest_date_pd].iloc[-1]
+            if self.disable_dataframe_checks:
+                # Dataframe checks are disabled - row order is not guaranteed, so look up
+                # the candle by date instead of trusting the last row's position.
+                latest_date_pd = dataframe["date"].max()
+                latest = dataframe.loc[dataframe["date"] == latest_date_pd].iloc[-1]
+            else:
+                latest = dataframe.iloc[-1]
         except Exception as e:
             logger.warning(f"Unable to get latest candle (OHLCV) data for pair {pair} - {e}")
             return None, None
         # Explicitly convert to datetime object to ensure the below comparison does not fail
-        latest_date: datetime = latest_date_pd.to_pydatetime()
+        latest_date: datetime = latest["date"].to_pydatetime()
 
         # Check if dataframe is out of date
         timeframe_minutes = timeframe_to_minutes(timeframe)
@@ -1695,7 +1702,7 @@ class IStrategy(ABC, HyperStrategyMixin):
                 logger.debug(f"Custom ROI function did not return a valid ROI for {trade.pair}")
 
         # Get highest entry in ROI dict where key <= trade-duration
-        roi_list = [x for x in self.minimal_roi.keys() if x <= trade_dur]
+        roi_list = [x for x in self.minimal_roi if x <= trade_dur]
         if roi_list:
             roi_entry = max(roi_list)
             min_roi = self.minimal_roi[roi_entry]
@@ -1761,9 +1768,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         """
         res = {}
         for pair, pair_data in data.items():
-            validator = StrategyResultValidator(
-                pair_data, warn_only=not self.disable_dataframe_checks
-            )
+            validator = StrategyResultValidator(pair_data, warn_only=self.disable_dataframe_checks)
             res[pair] = self.advise_indicators(pair_data.copy(), {"pair": pair}).copy()
             validator.assert_df(res[pair])
         return res

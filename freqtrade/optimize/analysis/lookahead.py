@@ -59,10 +59,7 @@ class LookaheadAnalysis(BaseAnalysis):
             return False
         else:
             df_cut = df[(df[column_name] == checked_timestamp)]
-            if df_cut[column_name].shape[0] == 0:
-                return False
-            else:
-                return True
+            return df_cut[column_name].shape[0] != 0
         return False
 
     # analyzes two data frames with processed indicators and shows differences between them.
@@ -86,14 +83,16 @@ class LookaheadAnalysis(BaseAnalysis):
                 other_value = compare_df_row.iloc[col_idx + 1]
 
                 # output differences
-                if self_value != other_value:
-                    if not self.current_analysis.false_indicators.__contains__(col_name[0]):
-                        self.current_analysis.false_indicators.append(col_name[0])
-                        logger.info(
-                            f"=> found look ahead bias in column "
-                            f"{col_name[0]}. "
-                            f"{str(self_value)} != {str(other_value)}"
-                        )
+                if (
+                    self_value != other_value
+                    and not self.current_analysis.false_indicators.__contains__(col_name[0])
+                ):
+                    self.current_analysis.false_indicators.append(col_name[0])
+                    logger.info(
+                        f"=> found look ahead bias in column "
+                        f"{col_name[0]}. "
+                        f"{str(self_value)} != {str(other_value)}"
+                    )
 
     def prepare_data(self, varholder: VarHolder, pairs_to_load: list[DataFrame]):
         if "freqai" in self.local_config and "identifier" in self.local_config["freqai"]:
@@ -129,7 +128,7 @@ class LookaheadAnalysis(BaseAnalysis):
         varholder.timeframe = backtesting.timeframe
 
         temp_indicators = backtesting.strategy.advise_all_indicators(varholder.data)
-        filled_indicators = dict()
+        filled_indicators = {}
         for pair, dataframe in temp_indicators.items():
             filled_indicators[pair] = backtesting.strategy.ft_advise_signals(
                 dataframe, {"pair": pair}
@@ -238,7 +237,7 @@ class LookaheadAnalysis(BaseAnalysis):
                     f"minimum trade amount = {self.minimum_trade_amount}. "
                     f"Exiting this lookahead-analysis"
                 )
-                return None
+                return
             if "force_exit" in result_row["exit_reason"]:
                 logger.info(
                     f"found force-exit in pair: {result_row['pair']}, "

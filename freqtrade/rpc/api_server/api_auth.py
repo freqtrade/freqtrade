@@ -68,7 +68,7 @@ async def validate_ws_token(
             is_valid_ws_token = secrets.compare_digest(secret_ws_token, ws_token)
         elif isinstance(secret_ws_token, list):
             is_valid_ws_token = any(
-                [secrets.compare_digest(potential, ws_token) for potential in secret_ws_token]
+                secrets.compare_digest(potential, ws_token) for potential in secret_ws_token
             )
 
         if is_valid_ws_token:

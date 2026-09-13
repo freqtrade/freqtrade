@@ -31,7 +31,8 @@ def test_parse_timerange_incorrect():
     assert isinstance(timerange.stopdt, datetime)
     assert timerange.startdt == datetime.fromtimestamp(1231006505, tz=UTC)
     assert timerange.stopdt == datetime.fromtimestamp(1233360000, tz=UTC)
-    assert timerange.timerange_str == "20090103-20090131"
+    # Non-midnight timestamps round-trip with minute (or second) precision
+    assert timerange.timerange_str == "20090103T181505-20090131"
 
     timerange = TimeRange.parse_timerange("1231006505000-1233360000000")
     assert TimeRange("date", "date", 1231006505, 1233360000) == timerange
@@ -49,6 +50,113 @@ def test_parse_timerange_incorrect():
         OperationalException, match=r"Start date is after stop date for timerange.*"
     ):
         TimeRange.parse_timerange("20100523-20100522")
+
+
+def test_parse_timerange_minutes():
+    timerange = TimeRange.parse_timerange("20100522T1030-")
+    assert TimeRange("date", None, 1274524200, 0) == timerange
+    assert timerange.timerange_str == "20100522T1030-"
+    assert timerange.start_fmt == "2010-05-22 10:30:00"
+
+    timerange = TimeRange.parse_timerange("-20100522T1030")
+    assert TimeRange(None, "date", 0, 1274524200) == timerange
+    assert timerange.timerange_str == "-20100522T1030"
+
+    timerange = TimeRange.parse_timerange("20100522T1030-20150730T2359")
+    assert TimeRange("date", "date", 1274524200, 1438300740) == timerange
+    assert timerange.timerange_str == "20100522T1030-20150730T2359"
+
+    # Seconds are supported, too
+    timerange = TimeRange.parse_timerange("20100522T103045-20150730T235901")
+    assert TimeRange("date", "date", 1274524245, 1438300741) == timerange
+    assert timerange.timerange_str == "20100522T103045-20150730T235901"
+
+    # Midnight keeps the plain date format
+    timerange = TimeRange.parse_timerange("20100522T0000-20150730T0000")
+    assert TimeRange("date", "date", 1274486400, 1438214400) == timerange
+    assert timerange.timerange_str == "20100522-20150730"
+
+    with pytest.raises(
+        OperationalException, match=r"Start date is after stop date for timerange.*"
+    ):
+        TimeRange.parse_timerange("20100522T1030-20100522T1029")
+
+
+@pytest.mark.parametrize(
+    "timerange,expected,expected_str",
+    [
+        (
+            "20100522-20100523T1030",
+            TimeRange("date", "date", 1274486400, 1274610600),
+            "20100522-20100523T1030",
+        ),
+        (
+            "20100522T1030-20100523",
+            TimeRange("date", "date", 1274524200, 1274572800),
+            "20100522T1030-20100523",
+        ),
+        (
+            "1274524200-20100523T1030",
+            TimeRange("date", "date", 1274524200, 1274610600),
+            "20100522T1030-20100523T1030",
+        ),
+        (
+            "20100522T1030-1274610600000",
+            TimeRange("date", "date", 1274524200, 1274610600),
+            "20100522T1030-20100523T1030",
+        ),
+        (
+            "20100522T1030-",
+            TimeRange("date", None, 1274524200, 0),
+            "20100522T1030-",
+        ),
+        (
+            "-20100522T103002",
+            TimeRange(None, "date", 0, 1274524202),
+            "-20100522T103002",
+        ),
+        (
+            "20100522-",
+            TimeRange("date", None, 1274486400, 0),
+            "20100522-",
+        ),
+        (
+            "-20100522",
+            TimeRange(None, "date", 0, 1274486400),
+            "-20100522",
+        ),
+        (
+            "",
+            TimeRange(None, None, 0, 0),
+            "-",
+        ),
+    ],
+)
+def test_parse_timerange_mixed_formats(timerange, expected, expected_str):
+    tr = TimeRange.parse_timerange(timerange)
+    assert tr == expected
+    assert tr.timerange_str == expected_str
+
+
+@pytest.mark.parametrize(
+    "timerange",
+    [
+        "-",
+        "20100522",
+        "20100522-20100523-20100524",
+        "20100522t1030-",
+        "20100522T103-",
+        "20100522T10300-",
+        "20100522T1060-",
+        "20100522T2530-",
+        "20100532T1030-",
+        "20100522 1030-",
+        "20100522T10:30-",
+    ],
+)
+def test_parse_timerange_invalid(timerange):
+    with pytest.raises(OperationalException, match=r"Incorrect syntax for timerange.*"):
+        TimeRange.parse_timerange(timerange)
 
 
 def test_subtract_start():

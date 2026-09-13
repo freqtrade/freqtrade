@@ -10,7 +10,11 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from freqtrade.enums import CandleType
-from freqtrade.exchange import timeframe_to_minutes, timeframe_to_prev_date
+from freqtrade.exchange import (
+    timeframe_to_minutes,
+    timeframe_to_prev_date,
+    timeframe_to_resample_freq,
+)
 from freqtrade.exchange.exchange import Exchange, timeframe_to_msecs
 from freqtrade.util import dt_floor_day, dt_now, dt_ts
 from tests.exchange_online.conftest import EXCHANGE_FIXTURE_TYPE
@@ -158,7 +162,6 @@ class TestCCXTExchange:
                 assert currency in balances
                 assert isinstance(balance, dict)
                 assert balance == balances[currency]
-            pass
         else:
             pytest.skip(f"No sample Balances available for exchange {exchangename}")
 
@@ -368,6 +371,59 @@ class TestCCXTExchange:
             candle_type=candle_type,
         )
 
+    def test_ccxt_fetch_open_interest_history(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
+        exchange, exchange_name, exchange_params = exchange_futures
+
+        if not exchange.check_candle_type_support(CandleType.OPEN_INTEREST):
+            pytest.skip(f"{exchange_name} does not support open interest history")
+
+        # Open interest history is short-lived, and how far back it goes differs
+        # per exchange - hence the per-exchange setting instead of one global value.
+        # Setting it to None disables the test for that exchange.
+        history_days = exchange_params.get("open_interest_history_days", 30)
+        if not history_days:
+            pytest.skip(f"No open interest history depth configured for {exchange_name}")
+
+        pair = exchange_params.get("futures_pair", exchange_params["pair"])
+        timeframe = exchange_params["timeframe"]
+        tf_delta = timedelta(minutes=timeframe_to_minutes(timeframe))
+        pair_tf = (pair, timeframe, CandleType.OPEN_INTEREST)
+        since_date = timeframe_to_prev_date(timeframe, dt_now() - timedelta(days=history_days))
+
+        res = exchange.refresh_latest_ohlcv(
+            [pair_tf], since_ms=dt_ts(since_date), drop_incomplete=False
+        )
+        oi = res[pair_tf]
+
+        assert list(oi.columns) == ["date", "open_interest_amount", "open_interest_value"]
+        assert len(oi) > 0
+        # Exchanges report open interest in base currency, quote currency, or both -
+        # but at least one of the two has to carry data.
+        assert not (
+            oi["open_interest_amount"].isna().all() and oi["open_interest_value"].isna().all()
+        ), f"{exchange_name} returned no open interest values at all"
+
+        # Dates are aligned to the timeframe and strictly increasing
+        assert oi["date"].is_monotonic_increasing
+        assert (oi["date"] == oi["date"].dt.floor(timeframe_to_resample_freq(timeframe))).all()
+
+        # History must start at the requested date - exchanges may skip the very first candle.
+        assert oi.iloc[0]["date"] <= since_date + tf_delta, (
+            f"{exchange_name} open interest history starts at {oi.iloc[0]['date']}, "
+            f"expected {since_date}"
+        )
+        # ... and must reach up to now. Open interest usually lags OHLCV by one candle.
+        last_date = timeframe_to_prev_date(timeframe, dt_now())
+        assert oi.iloc[-1]["date"] >= last_date - 3 * tf_delta, (
+            f"{exchange_name} open interest history is stale - last candle {oi.iloc[-1]['date']}"
+        )
+        # The full range must be covered, not just the last call. Assume 90% uptime,
+        # in line with the other candle history tests.
+        expected_candles = (last_date - since_date) // tf_delta
+        assert len(oi) >= expected_candles * 0.9, (
+            f"{exchange_name} returned {len(oi)} of ~{expected_candles} open interest candles"
+        )
+
     def test_ccxt_fetch_funding_rate_history(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
         exchange, _, exchange_params = exchange_futures
 
@@ -405,16 +461,23 @@ class TestCCXTExchange:
         assert row2["date"] == hour2 or row2["date"] == h8_hour2
         assert row3["date"] == hour3 or row3["date"] == h8_hour3
 
+        # Funding rates are stored as "funding_rate" - "open" remains as a legacy alias
+        assert list(rate.columns) == ["date", "funding_rate", "open"]
+        assert (rate["open"] == rate["funding_rate"]).all()
+
         # Test For last 4 hours
         # Avoids random test-failure when funding-fees are 0 for a few hours.
         assert (
-            row0["open"] != 0.0 or row1["open"] != 0.0 or row2["open"] != 0.0 or row3["open"] != 0.0
+            row0["funding_rate"] != 0.0
+            or row1["funding_rate"] != 0.0
+            or row2["funding_rate"] != 0.0
+            or row3["funding_rate"] != 0.0
         )
         # We expect funding rates to be different from 0.0 - or moving around.
         assert (
-            rate["open"].max() != 0.0
-            or rate["open"].min() != 0.0
-            or (rate["open"].min() != rate["open"].max())
+            rate["funding_rate"].max() != 0.0
+            or rate["funding_rate"].min() != 0.0
+            or (rate["funding_rate"].min() != rate["funding_rate"].max())
         )
 
     def test_ccxt_fetch_mark_price_history(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
@@ -501,7 +564,7 @@ class TestCCXTExchange:
             if leverage_in_market_spot:
                 spot_pair = exchange_params.get("pair", exchange_params["pair"])
                 spot_leverage = spot.get_max_leverage(spot_pair, 20)
-                assert isinstance(spot_leverage, float) or isinstance(spot_leverage, int)
+                assert isinstance(spot_leverage, (float, int))
                 assert spot_leverage >= 1.0
 
     def test_ccxt_get_max_leverage_futures(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
@@ -510,14 +573,14 @@ class TestCCXTExchange:
         if leverage_tiers_public:
             futures_pair = exchange_params.get("futures_pair", exchange_params["pair"])
             futures_leverage = futures.get_max_leverage(futures_pair, 20)
-            assert isinstance(futures_leverage, float) or isinstance(futures_leverage, int)
+            assert isinstance(futures_leverage, (float, int))
             assert futures_leverage >= 1.0
 
     def test_ccxt_get_contract_size(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
         futures, _, exchange_params = exchange_futures
         futures_pair = exchange_params.get("futures_pair", exchange_params["pair"])
         contract_size = futures.get_contract_size(futures_pair)
-        assert isinstance(contract_size, float) or isinstance(contract_size, int)
+        assert isinstance(contract_size, (float, int))
         assert contract_size >= 0.0
 
     def test_ccxt_load_leverage_tiers(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):

@@ -3,6 +3,7 @@ FROM freqtradeorg/freqtrade:develop_freqairl
 USER root
 # Install dependencies
 COPY requirements-dev.txt /freqtrade/
+COPY docs/requirements-docs.txt /freqtrade/docs/
 
 ARG USERNAME=ftuser
 
@@ -15,7 +16,7 @@ RUN apt-get update \
 
 USER ftuser
 
-RUN pip install --user autopep8 -r docs/requirements-docs.txt -r requirements-dev.txt --no-cache-dir
+RUN pip install --user autopep8 -r requirements-dev.txt --no-cache-dir
 
 # Empty the ENTRYPOINT to allow all commands
 ENTRYPOINT []

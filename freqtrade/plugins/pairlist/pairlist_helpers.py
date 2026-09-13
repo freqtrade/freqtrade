@@ -3,6 +3,9 @@ import re
 from freqtrade.constants import Config
 
 
+_VALID_PAIR_RE = re.compile(r"[\w:/-]+")
+
+
 def expand_pairlist(
     wildcardpl: list[str], available_pairs: list[str], keep_invalid: bool = False
 ) -> list[str]:
@@ -20,7 +23,7 @@ def expand_pairlist(
         for pair_wc in wildcardpl:
             try:
                 comp = re.compile(pair_wc, re.IGNORECASE)
-                result_partial = [pair for pair in available_pairs if re.fullmatch(comp, pair)]
+                result_partial = [pair for pair in available_pairs if comp.fullmatch(pair)]
                 # Add all matching pairs.
                 # If there are no matching pairs (Pair not on exchange) keep it.
                 result += result_partial or [pair_wc]
@@ -31,14 +34,14 @@ def expand_pairlist(
         result = [
             element
             for element in result
-            if re.fullmatch(r"^[\w:/-]+$", element) and "_" not in element
+            if _VALID_PAIR_RE.fullmatch(element) and "_" not in element
         ]
 
     else:
         for pair_wc in wildcardpl:
             try:
                 comp = re.compile(pair_wc, re.IGNORECASE)
-                result += [pair for pair in available_pairs if re.fullmatch(comp, pair)]
+                result += [pair for pair in available_pairs if comp.fullmatch(pair)]
             except re.error as err:
                 raise ValueError(f"Wildcard error in {pair_wc}, {err}")
     return result

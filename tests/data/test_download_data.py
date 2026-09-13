@@ -34,7 +34,7 @@ def test_download_data_main_all_pairs(mocker, markets):
     config = setup_utils_configuration({"exchange": "binance"}, RunMode.UTIL_EXCHANGE)
     config.update({"pairs": [".*/USDT"], "timeframes": ["5m", "1h"]})
     download_data_main(config)
-    expected = set(["BTC/USDT", "ETH/USDT", "XRP/USDT", "NEO/USDT", "TKN/USDT"])
+    expected = {"BTC/USDT", "ETH/USDT", "XRP/USDT", "NEO/USDT", "TKN/USDT"}
     assert set(dl_mock.call_args_list[0][1]["pairs"]) == expected
     assert dl_mock.call_count == 1
 
@@ -42,7 +42,7 @@ def test_download_data_main_all_pairs(mocker, markets):
 
     config.update({"pairs": [".*/USDT"], "timeframes": ["5m", "1h"], "include_inactive": True})
     download_data_main(config)
-    expected = set(["BTC/USDT", "ETH/USDT", "LTC/USDT", "XRP/USDT", "NEO/USDT", "TKN/USDT"])
+    expected = {"BTC/USDT", "ETH/USDT", "LTC/USDT", "XRP/USDT", "NEO/USDT", "TKN/USDT"}
     assert set(dl_mock.call_args_list[0][1]["pairs"]) == expected
 
 

@@ -69,9 +69,10 @@ logger = logging.getLogger(__name__)
 # 2.45: Add price to forceexit endpoint
 # 2.46: Add prepend_data to download-data endpoint
 # 2.47: Add Strategy parameters
-# 2.48: add /backtest/history/wallets endpoint
+# 2.48: Add /backtest/history/wallets endpoint
 # 2.49: Add /lookahead_analysis and /recursive_analysis endpoints and background job deletion
-API_VERSION = 2.49
+# 2.50: Updated supported timerange to include hour/minute precision.
+API_VERSION = 2.50
 
 # Public API, requires no auth.
 router_public = APIRouter()
@@ -95,7 +96,9 @@ def version():
     return {"version": __version__}
 
 
-@router.get("/show_config", response_model=ShowConfig, tags=["Info"])
+@router.get(
+    "/show_config", response_model=ShowConfig, tags=["Info"], response_model_exclude_unset=True
+)
 def show_config(rpc: RPC | None = Depends(get_rpc_optional), config=Depends(get_config)):
     state: State | str = ""
     strategy_version = None

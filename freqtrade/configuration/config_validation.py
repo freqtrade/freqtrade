@@ -138,12 +138,11 @@ def _validate_trailing_stoploss(conf: dict[str, Any]) -> None:
     tsl_offset = float(conf.get("trailing_stop_positive_offset", 0))
     tsl_only_offset = conf.get("trailing_only_offset_is_reached", False)
 
-    if tsl_only_offset:
-        if tsl_positive == 0.0:
-            raise ConfigurationError(
-                "The config trailing_only_offset_is_reached needs "
-                "trailing_stop_positive_offset to be more than 0 in your config."
-            )
+    if tsl_only_offset and tsl_positive == 0.0:
+        raise ConfigurationError(
+            "The config trailing_only_offset_is_reached needs "
+            "trailing_stop_positive_offset to be more than 0 in your config."
+        )
     if tsl_positive > 0 and 0 < tsl_offset <= tsl_positive:
         raise ConfigurationError(
             "The config trailing_stop_positive_offset needs "
@@ -407,11 +406,10 @@ def _validate_consumers(conf: dict[str, Any]) -> None:
 
 
 def _validate_orderflow(conf: dict[str, Any]) -> None:
-    if conf.get("exchange", {}).get("use_public_trades"):
-        if "orderflow" not in conf:
-            raise ConfigurationError(
-                "Orderflow is a required configuration key when using public trades."
-            )
+    if conf.get("exchange", {}).get("use_public_trades") and "orderflow" not in conf:
+        raise ConfigurationError(
+            "Orderflow is a required configuration key when using public trades."
+        )
 
 
 def _validate_demo_trading(conf: dict[str, Any]) -> None:

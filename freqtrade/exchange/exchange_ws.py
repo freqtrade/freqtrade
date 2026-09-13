@@ -28,6 +28,7 @@ class ExchangeWS:
         self._background_tasks: set[asyncio.Task] = set()
         self._state_lock = RLock()
         self._loop_ready = Event()
+        self._stopping = False
 
         self._klines_watching: set[PairWithTimeframe] = set()
         self._klines_scheduled: set[PairWithTimeframe] = set()
@@ -74,12 +75,13 @@ class ExchangeWS:
     def cleanup(self) -> None:
         logger.debug("Cleanup called - stopping")
         with self._state_lock:
+            self._stopping = True
             self._klines_watching.clear()
             self._ob_watching.clear()
             tasks = list(self._background_tasks)
-        for task in tasks:
-            task.cancel()
         if self._wait_for_loop(timeout=0.2) and not self._loop.is_closed():
+            for task in tasks:
+                self._loop.call_soon_threadsafe(task.cancel)
             self.reset_connections(cleanup=True)
             self._loop.call_soon_threadsafe(self._loop.stop)
         self._thread.join(timeout=5)
@@ -257,6 +259,10 @@ class ExchangeWS:
         return endpoint in self._ccxt_object.has and self._ccxt_object.has[endpoint]
 
     async def _unwatch_ohlcv(self, pair: str, timeframe: str, candle_type: CandleType) -> None:
+        if self._stopping:
+            # Unsubscribing from a connection that's going away is pointless.
+            logger.debug("Shutting down - skipping unwatch for %s, %s", pair, timeframe)
+            return
         try:
             if self.exchange_has("unWatchOHLCVForSymbols"):
                 await self._ccxt_object.un_watch_ohlcv_for_symbols([[pair, timeframe]])
@@ -267,7 +273,6 @@ class ExchangeWS:
 
         except ccxt.NotSupported as e:
             logger.debug("un_watch_ohlcv_for_symbols not supported: %s", e)
-            pass
         except ccxt.NetworkError as e:
             # Network errors are common on shutdown so we can ignore them.
             # It's a network error - which most likely means that the connection is already closed.
@@ -310,7 +315,7 @@ class ExchangeWS:
             logger.exception(f"Unhandled exception in watch task callback for {pair}, {timeframe}")
         finally:
             logger.info(f"{pair}, {timeframe}, {candle_type} - Task finished - {result}")
-            if hasattr(self, "_loop") and not self._loop.is_closed():
+            if not self._stopping and hasattr(self, "_loop") and not self._loop.is_closed():
                 asyncio.run_coroutine_threadsafe(
                     self._unwatch_ohlcv(pair, timeframe, candle_type), loop=self._loop
                 )

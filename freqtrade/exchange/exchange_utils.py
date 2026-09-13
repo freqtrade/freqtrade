@@ -303,7 +303,7 @@ def __price_to_precision_significant_digits(
     precision = round(price_precision)
 
     q = precision - dec.adjusted() - 1
-    sigfig = Decimal("10") ** -q
+    sigfig = Decimal(10) ** -q
     if q < 0:
         string_to_precision = string[:precision]
         # string_to_precision is '' when we have zero precision
@@ -360,7 +360,7 @@ def price_to_precision(
             precision = FtPrecise(price_precision)
             price_str = FtPrecise(price)
             missing = price_str % precision
-            if not missing == FtPrecise("0"):
+            if missing != FtPrecise("0"):
                 if rounding_mode == ROUND_UP:
                     res = price_str - missing + precision
                 elif rounding_mode == ROUND_DOWN:

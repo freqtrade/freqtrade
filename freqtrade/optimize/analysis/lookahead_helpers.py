@@ -44,9 +44,11 @@ class LookaheadAnalysisSubFunctions:
                     [
                         inst.strategy_obj["location"].parts[-1],
                         inst.strategy_obj["name"],
-                        "too few trades caught "
-                        f"({inst.current_analysis.total_signals}/{config['minimum_trade_amount']})."
-                        f"Test failed.",
+                        (
+                            "too few trades caught "
+                            f"({inst.current_analysis.total_signals}/{config['minimum_trade_amount']})."
+                            f"Test failed."
+                        ),
                     ]
                 )
             elif inst.failed_bias_check:
@@ -160,6 +162,10 @@ class LookaheadAnalysisSubFunctions:
                 "stoploss": "market",
                 "stoploss_on_exchange": False,
             }
+            # Adjust Pricing to not fail when order types are forced to market orders
+            config["entry_pricing"] = {**config.get("entry_pricing", {}), "price_side": "other"}
+            config["exit_pricing"] = {**config.get("exit_pricing", {}), "price_side": "other"}
+
         else:
             logger.info("Using configured order_types, skipping order_types override.")
 
@@ -266,15 +272,11 @@ class LookaheadAnalysisSubFunctions:
         if lookaheadAnalysis_instances:
             caption: str | None = None
             if any(
-                [
-                    any(
-                        [
-                            indicator.startswith("&")
-                            for indicator in inst.current_analysis.false_indicators
-                        ]
-                    )
-                    for inst in lookaheadAnalysis_instances
-                ]
+                any(
+                    indicator.startswith("&")
+                    for indicator in inst.current_analysis.false_indicators
+                )
+                for inst in lookaheadAnalysis_instances
             ):
                 caption = (
                     "Any indicators in 'biased_indicators' which are used within "

@@ -529,8 +529,7 @@ class Backtesting:
         self._set_progress_step(BacktestState.CONVERT, len(processed))
 
         # Create dict with data
-        for pair in processed.keys():
-            pair_data = processed[pair]
+        for pair, pair_data in processed.items():
             self.check_abort()
             self._increment_progress()
 
@@ -1009,18 +1008,19 @@ class Backtesting:
         """
         Calculate funding fees if necessary and add them to the trade.
         """
-        if self.trading_mode == TradingMode.FUTURES:
-            if force or (current_time.timestamp() % self.funding_fee_timeframe_secs) == 0:
-                # Funding fee interval.
-                trade.set_funding_fees(
-                    self.exchange.calculate_funding_fees(
-                        self.futures_data[trade.pair],
-                        amount=trade.amount,
-                        is_short=trade.is_short,
-                        open_date=trade.date_last_filled_utc,
-                        close_date=current_time,
-                    )
+        if self.trading_mode == TradingMode.FUTURES and (
+            force or (current_time.timestamp() % self.funding_fee_timeframe_secs) == 0
+        ):
+            # Funding fee interval.
+            trade.set_funding_fees(
+                self.exchange.calculate_funding_fees(
+                    self.futures_data[trade.pair],
+                    amount=trade.amount,
+                    is_short=trade.is_short,
+                    open_date=trade.date_last_filled_utc,
+                    close_date=current_time,
                 )
+            )
 
     def get_valid_entry_price_and_stake(
         self,
@@ -1187,21 +1187,20 @@ class Backtesting:
             # Backcalculate actual stake amount.
             stake_amount = amount * propose_rate / leverage
 
-            if not pos_adjust:
-                # Confirm trade entry:
-                if not strategy_safe_wrapper(
-                    self.strategy.confirm_trade_entry, default_retval=True
-                )(
-                    pair=pair,
-                    order_type=order_type,
-                    amount=amount,
-                    rate=propose_rate,
-                    time_in_force=time_in_force,
-                    current_time=current_time,
-                    entry_tag=entry_tag,
-                    side=direction,
-                ):
-                    return trade
+            # Confirm trade entry:
+            if not pos_adjust and not strategy_safe_wrapper(
+                self.strategy.confirm_trade_entry, default_retval=True
+            )(
+                pair=pair,
+                order_type=order_type,
+                amount=amount,
+                rate=propose_rate,
+                time_in_force=time_in_force,
+                current_time=current_time,
+                entry_tag=entry_tag,
+                side=direction,
+            ):
+                return trade
 
             is_short = direction == "short"
             # Necessary for Margin trading. Disabled until support is enabled.
@@ -1282,8 +1281,8 @@ class Backtesting:
         """
         Handling of left open trades at the end of backtesting
         """
-        for pair in open_trades.keys():
-            for trade in list(open_trades[pair]):
+        for pair, pair_trades in open_trades.items():
+            for trade in list(pair_trades):
                 if (
                     trade.has_open_orders and trade.nr_of_successful_entries == 0
                 ) or not trade.has_open_position:
@@ -1365,13 +1364,12 @@ class Backtesting:
         """
         if trade.has_open_orders:
             oo = trade.select_order(side, True)
-            if oo:
-                if (price == oo.price) and (side == oo.side) and (amount == oo.amount):
-                    # logger.info(
-                    #     f"A similar open order was found for {trade.pair}. "
-                    #     f"Keeping existing {trade.exit_side} order. {price=},  {amount=}"
-                    # )
-                    return True
+            if oo and (price == oo.price) and (side == oo.side) and (amount == oo.amount):
+                # logger.info(
+                #     f"A similar open order was found for {trade.pair}. "
+                #     f"Keeping existing {trade.exit_side} order. {price=},  {amount=}"
+                # )
+                return True
             self.cancel_open_orders(trade, current_time)
 
         return False
@@ -1944,7 +1942,7 @@ class Backtesting:
                 self.results["strategy_comparison"].extend(results["strategy_comparison"])
             else:
                 self.results = results
-            dt_appendix = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            dt_appendix = dt_now().strftime("%Y-%m-%d_%H-%M-%S")
             if self.config.get("export", "none") in ("trades", "signals"):
                 combined_res = combined_dataframes_with_rel_mean(data, min_date, max_date)
                 store_backtest_results(

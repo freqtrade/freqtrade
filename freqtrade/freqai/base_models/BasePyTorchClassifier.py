@@ -114,9 +114,9 @@ class BasePyTorchClassifier(BasePyTorchModel):
         for split in self.splits:
             label_df = data_dictionary[f"{split}_labels"]
             self.assert_valid_class_names(label_df[target_column_name], class_names)
-            label_df[target_column_name] = list(
-                map(lambda x: self.class_name_to_index[x], label_df[target_column_name])
-            )
+            label_df[target_column_name] = [
+                self.class_name_to_index[x] for x in label_df[target_column_name]
+            ]
 
     @staticmethod
     def assert_valid_class_names(target_column: pd.Series, class_names: list[str]):
@@ -132,7 +132,7 @@ class BasePyTorchClassifier(BasePyTorchModel):
         decode class name, int -> str
         """
 
-        return list(map(lambda x: self.index_to_class_name[x.item()], class_ints))
+        return [self.index_to_class_name[x.item()] for x in class_ints]
 
     def init_class_names_to_index_mapping(self, class_names):
         self.class_name_to_index = {s: i for i, s in enumerate(class_names)}

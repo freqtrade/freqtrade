@@ -45,7 +45,6 @@ from tests.conftest import (
     create_mock_trades,
     create_mock_trades_usdt,
     generate_test_data,
-    get_mock_coro,
     get_patched_freqtradebot,
     log_has,
     log_has_re,
@@ -388,9 +387,7 @@ def test_api_UvicornServer(mocker):
 
 
 def test_api_UvicornServer_run(mocker):
-    serve_mock = mocker.patch(
-        "freqtrade.rpc.api_server.uvicorn_threaded.UvicornServer.serve", get_mock_coro(None)
-    )
+    serve_mock = mocker.patch("freqtrade.rpc.api_server.uvicorn_threaded.UvicornServer.serve")
     s = UvicornServer(uvicorn.Config(MagicMock(), port=8080, host="127.0.0.1"))
     assert serve_mock.call_count == 0
 
@@ -401,9 +398,7 @@ def test_api_UvicornServer_run(mocker):
 
 
 def test_api_UvicornServer_run_no_uvloop(mocker, import_fails):
-    serve_mock = mocker.patch(
-        "freqtrade.rpc.api_server.uvicorn_threaded.UvicornServer.serve", get_mock_coro(None)
-    )
+    serve_mock = mocker.patch("freqtrade.rpc.api_server.uvicorn_threaded.UvicornServer.serve")
     asyncio.set_event_loop(asyncio.new_event_loop())
     s = UvicornServer(uvicorn.Config(MagicMock(), port=8080, host="127.0.0.1"))
     assert serve_mock.call_count == 0
@@ -703,7 +698,17 @@ def test_api_show_config(botclient):
     assert "unfilledtimeout" in response
     assert "version" in response
     assert "api_version" in response
+    assert "proxy_coin" not in response
     assert 2.1 <= response["api_version"] < 3.0
+
+    # proxy_coin is only set when available
+    ftbot.config["proxy_coin"] = "BNFCR"
+    ftbot.config["trading_mode"] = "futures"
+    ftbot.config["margin_mode"] = "cross"
+
+    rc = client_get(client, f"{BASE_URI}/show_config")
+    response1 = rc.json()
+    assert response1["proxy_coin"] == "BNFCR"
 
 
 def test_api_daily(botclient, mocker, ticker, fee, markets):
@@ -2674,6 +2679,7 @@ def test_api_strategies(botclient, tmp_path):
         "strategies": [
             "HyperoptableStrategy",
             "HyperoptableStrategyV2",
+            "InformativeDecoratorCacheTest",
             "InformativeDecoratorTest",
             "StrategyTestV2",
             "StrategyTestV3",

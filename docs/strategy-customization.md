@@ -112,6 +112,9 @@ Pandas is a great library developed for processing large amounts of data in tabu
 
 Each row in a dataframe corresponds to one candle on a chart, with the latest complete candle always being the last in the dataframe (sorted by date).
 
+!!! Warning "Row order matters"
+    Please do not sort, shuffle, or any other way to change the row order of the dataframe - doing so will make the bot act on the wrong candle. Freqtrade assume last row to be the latest closed candle, hence all actions will be based of the last row.
+
 If we were to look at the first few rows of the main dataframe using the pandas `head()` function, we would see:
 
 ```output
@@ -590,6 +593,7 @@ When hyperopting, use of the hyperoptable parameter `.value` attribute is not su
         *,
         candle_type: CandleType | str | None = None,
         ffill: bool = True,
+        cache: bool = True,
     ) -> Callable[[PopulateIndicators], PopulateIndicators]:
         """
         A decorator for populate_indicators_Nn(self, dataframe, metadata), allowing these functions to
@@ -619,9 +623,29 @@ When hyperopting, use of the hyperoptable parameter `.value` attribute is not su
         * {column} - name of dataframe column.
         * {timeframe} - timeframe of informative dataframe.
         :param ffill: ffill dataframe after merging informative pair.
-        :param candle_type: '', mark, index, premiumIndex, or funding_rate
+        :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
+            None or '' (the default) resolves to the trading mode's candle type.
+            Attention: Availability for non-spot/futures candle-types across exchanges may vary.
+            funding_rate candles only contain the "funding_rate" column (open for historic reasons)
+            open_interest candles only contain the "open_interest_amount" and
+            "open_interest_value" columns.
+            All other columns will be missing from these dataframes.
+        :param cache: Cache populated indicators in dry/live mode while the latest informative candle
+                    remains unchanged. Entries expire after two effective informative timeframes
+                    without an update. Disable for methods that use external state, have side effects,
+                    or otherwise need to run for every base pair. Defaults to True.
         """
     ```
+
+**Caching** is enabled by default, and will greatly improve performance when using informative pairs. When caching is enabled, the informative function will only be called when a new informative candle is available (live/dry only, all other modes ignore this flag). Otherwise, the cached, precalculated dataframe will be used.  
+Use `cache=False` on methods that use non-OHLCV data, have side
+effects, or otherwise need to run for every base pair and/or every new main timeframe candles.
+When decorators are stacked, each decorator is configured independently. Cached entries expire
+after two effective informative timeframes without an update, so unused informative pairs do not
+remain cached indefinitely. For example, 15m informative timeframe will expire 30 minutes after the last 15m informative candle was refreshed.
+
+The `date_merge` column name is _reserved_ while informative decorators are being merged. It must not
+be returned by informative callbacks or column formatters, or exist in the base dataframe before informative merging. Freqtrade will raise an exception if this is violated to avoid unexpected merge behavior.
 
 ??? Example "Fast and easy way to define informative pairs"
 
@@ -970,8 +994,64 @@ Actually available data will vary between exchanges, so this code may not work a
 
 !!! Warning "Warning about backtesting"
     Current funding-rate is not part of the historic data which means backtesting and hyperopt will not work correctly if this method is used, as the method will return up-to-date values.
-    We recommend to use the historically available funding rate for backtesting (which is automatically downloaded, and is at the frequency of what the exchange provides, usually 4h or 8h).
-    `self.dp.get_pair_dataframe(pair=metadata['pair'], timeframe='8h', candle_type="funding_rate")`
+    We recommend to use the historically available funding rate for backtesting (which is automatically downloaded, and is at the frequency of what the exchange provides, usually 1h, 4h or 8h).
+
+#### Historic funding rate data
+
+Historic funding rate dataframes contain a `date` and a `funding_rate` column - with one row per funding event (usually every 1h, 4h, or 8h), not one row per candle.
+They must therefore be merged onto your dataframe by date - assigning the column directly would align the values by position and give you wrong (or mostly `NaN`) results:
+
+``` python
+from freqtrade.strategy import merge_informative_pair
+
+funding_rates = self.dp.get_pair_dataframe(
+    pair=metadata['pair'], timeframe='1h', candle_type="funding_rate"
+)
+# Adds the column as "funding_rate_1h", forward-filled between funding events.
+dataframe = merge_informative_pair(
+    dataframe, funding_rates, self.timeframe, '1h', ffill=True
+)
+```
+
+The same can be achieved with the [informative pairs decorator](#informative-pairs-decorator-informative), using `@informative('1h', candle_type='funding_rate')`.
+
+Use `ffill=False` to keep the timestamps without funding empty (absolutely necessary if you aim to aggregate funding rates over a longer period).
+
+!!! Note "The `open` column"
+    Funding rates used to be treated as regular candles, with the rate in `open` and `high`, `low`, `close` and `volume` all set to 0.
+    `open` is still available as an alias of `funding_rate`, but the unused columns are gone.
+    Please switch to `funding_rate` - the `open` alias is deprecated and will be removed in a future version.
+
+### Open Interest
+
+Historic open interest is available for futures markets on exchanges that support it, and has to be downloaded explicitly
+(see [open interest data](data-download.md#open-interest-data)).
+The dataframe contains a `date`, an `open_interest_amount` (base currency) and an `open_interest_value` (quote currency) column:
+
+``` python
+open_interest = self.dp.get_pair_dataframe(
+    pair=metadata['pair'], timeframe='1h', candle_type="open_interest"
+)
+dataframe['open_interest'] = open_interest['open_interest_amount']
+```
+
+The same works via the [informative decorator](#informative-pairs-decorator-informative), which merges the data onto your dataframe for you:
+
+``` python
+@informative('1h', candle_type='open_interest')
+def populate_indicators_oi_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    dataframe['oi_change'] = dataframe['open_interest_amount'].pct_change()
+    return dataframe
+```
+
+!!! Warning "Check which column carries data"
+    Exchanges report open interest in the base currency, the quote currency, or both.
+    Bybit for example leaves `open_interest_value` as `NaN` on linear markets.
+    Both columns are always present - an all-`NaN` column means the exchange doesn't report that side, not that the download failed.
+
+!!! Note "Exchange support is checked on startup"
+    Not every exchange provides open interest history.
+    If your strategy requests a candle type the exchange cannot serve - via `@informative` or via [`informative_pairs()`](#get-data-for-non-tradeable-pairs) - the bot refuses to start, rather than running your strategy against a permanently empty dataframe.
 
 ### Send Notification
 

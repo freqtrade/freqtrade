@@ -1,6 +1,8 @@
 from freqtrade.data.converter.converter import (
+    add_candle_aliases,
     clean_ohlcv_dataframe,
     convert_ohlcv_format,
+    count_total_order_book,
     ohlcv_fill_up_missing_data,
     ohlcv_to_dataframe,
     order_book_to_dataframe,
@@ -21,10 +23,12 @@ from freqtrade.data.converter.trade_converter import (
 
 
 __all__ = [
+    "add_candle_aliases",
     "clean_ohlcv_dataframe",
     "convert_ohlcv_format",
     "ohlcv_fill_up_missing_data",
     "ohlcv_to_dataframe",
+    "count_total_order_book",
     "order_book_to_dataframe",
     "reduce_dataframe_footprint",
     "trim_dataframe",

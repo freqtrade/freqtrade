@@ -1,17 +1,20 @@
 # pragma pylint: disable=missing-docstring, protected-access, C0103
 
+import logging
 import re
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-from pandas import DataFrame, Timestamp
+from pandas import DataFrame, Timestamp, read_feather
 from pandas.testing import assert_frame_equal
 from pyarrow import ArrowNotImplementedError
 
+from freqtrade.candle_columns import get_candle_columns
 from freqtrade.configuration import TimeRange
-from freqtrade.constants import AVAILABLE_DATAHANDLERS
+from freqtrade.constants import AVAILABLE_DATAHANDLERS, DEFAULT_DATAFRAME_COLUMNS
+from freqtrade.data.converter import ohlcv_to_dataframe
 from freqtrade.data.history.datahandlers.featherdatahandler import FeatherDataHandler
 from freqtrade.data.history.datahandlers.idatahandler import (
     IDataHandler,
@@ -66,6 +69,193 @@ def test_rebuild_pair_from_filename(pair, expected):
     assert IDataHandler.rebuild_pair_from_filename(pair) == expected
 
 
+def test_datahandler_normalize_columns_ohlcv(testdatadir):
+    dh = FeatherDataHandler(testdatadir)
+    df = DataFrame(
+        [[1, 2.0, 3.0, 1.0, 2.5, 100.0]], columns=["date", "open", "high", "low", "close", "volume"]
+    )
+    assert (
+        list(dh._normalize_columns(df, "XRP/USDT:USDT", CandleType.SPOT).columns)
+        == DEFAULT_DATAFRAME_COLUMNS
+    )
+    # Extra columns are dropped, order is normalized
+    df2 = df.assign(extra=1)[["volume", "extra", "close", "low", "high", "open", "date"]]
+    assert (
+        list(dh._normalize_columns(df2, "XRP/USDT:USDT", CandleType.SPOT).columns)
+        == DEFAULT_DATAFRAME_COLUMNS
+    )
+
+
+def test_datahandler_normalize_columns_funding_rate(testdatadir):
+    dh = FeatherDataHandler(testdatadir)
+    # Current layout - passed through unchanged
+    current = DataFrame([[1, 0.0005]], columns=["date", "funding_rate"])
+    res = dh._normalize_columns(current, "XRP/USDT:USDT", CandleType.FUNDING_RATE)
+    assert list(res.columns) == ["date", "funding_rate"]
+    assert res.iloc[0]["funding_rate"] == 0.0005
+
+    # Legacy layout - "open" carries the rate, the zero columns are dropped
+    legacy = DataFrame([[1, 0.0005, 0.0, 0.0, 0.0, 0.0]], columns=DEFAULT_DATAFRAME_COLUMNS)
+    res = dh._normalize_columns(legacy, "XRP/USDT:USDT", CandleType.FUNDING_RATE)
+    assert list(res.columns) == ["date", "funding_rate"]
+    assert res.iloc[0]["funding_rate"] == 0.0005
+
+    # Both layouts present - the current columns win, stale ones are dropped
+    both = DataFrame(
+        [[1, 0.0005, 9.9, 0.0, 0.0, 0.0, 0.0]],
+        columns=["date", "funding_rate", "open", "high", "low", "close", "volume"],
+    )
+    res = dh._normalize_columns(both, "XRP/USDT:USDT", CandleType.FUNDING_RATE)
+    assert list(res.columns) == ["date", "funding_rate"]
+    assert res.iloc[0]["funding_rate"] == 0.0005
+
+
+def test_datahandler_normalize_columns_positional(testdatadir):
+    dh = JsonDataHandler(testdatadir)
+    # json stores positionally - any names on the incoming frame are meaningless
+    current = DataFrame([[1, 0.0005]])
+    assert list(
+        dh._normalize_columns(current, "XRP/USDT:USDT", CandleType.FUNDING_RATE).columns
+    ) == [
+        "date",
+        "funding_rate",
+    ]
+    legacy = DataFrame([[1, 0.0005, 0.0, 0.0, 0.0, 0.0]])
+    res = dh._normalize_columns(legacy, "XRP/USDT:USDT", CandleType.FUNDING_RATE)
+    assert list(res.columns) == ["date", "funding_rate"]
+    assert res.iloc[0]["funding_rate"] == 0.0005
+    spot = dh._normalize_columns(
+        DataFrame([[1, 2.0, 3.0, 1.0, 2.5, 100.0]]), "XRP/USDT:USDT", CandleType.SPOT
+    )
+    assert list(spot.columns) == DEFAULT_DATAFRAME_COLUMNS
+
+
+@pytest.mark.parametrize("width", [0, 1, 3, 5, 7])
+def test_datahandler_normalize_columns_bad_width(testdatadir, width):
+    dh = JsonDataHandler(testdatadir)
+    df = DataFrame([[0] * width]) if width else DataFrame()
+    for candle_type in (CandleType.FUNDING_RATE, CandleType.SPOT):
+        with pytest.raises(ValueError, match=r"Unexpected column count .* for XRP/USDT:USDT"):
+            dh._normalize_columns(df, "XRP/USDT:USDT", candle_type)
+
+
+@pytest.mark.parametrize("datahandler", ["feather", "parquet"])
+def test_datahandler_ohlcv_load_unknown_layout(tmp_path, datahandler, caplog):
+    """A file in an unknown layout is skipped - it must not abort loading of all other data."""
+    dh = get_datahandler(tmp_path, datahandler)
+    (tmp_path / "futures").mkdir()
+    filename = dh._pair_data_filename(tmp_path, "XRP/USDT:USDT", "1h", CandleType.MARK)
+    dh._store_dataframe(DataFrame([[1, 2.0, 3.0]], columns=["a", "b", "c"]), filename)
+
+    res = dh.ohlcv_load("XRP/USDT:USDT", "1h", CandleType.MARK)
+    assert res.empty
+    assert list(res.columns) == DEFAULT_DATAFRAME_COLUMNS
+    assert log_has_re(r"Error loading data from .*Unexpected column count 3", caplog)
+
+
+def test_datahandler_funding_rate_legacy_load_and_migrate(testdatadir, tmp_path, caplog):
+    """Legacy 6-column funding files load transparently and are rewritten 2-wide."""
+    from pyarrow import dataset
+
+    caplog.set_level(logging.DEBUG)
+
+    dhbase = FeatherDataHandler(testdatadir)
+    legacy_raw = read_feather(testdatadir / "futures/XRP_USDT_USDT-1h-funding_rate.feather")
+    assert list(legacy_raw.columns) == DEFAULT_DATAFRAME_COLUMNS
+
+    loaded = dhbase.ohlcv_load("XRP/USDT:USDT", "1h", CandleType.FUNDING_RATE, fill_missing=False)
+    # funding_rate is canonical, "open" stays available as a compatibility alias
+    assert list(loaded.columns) == ["date", "funding_rate", "open"]
+    assert (loaded["open"] == loaded["funding_rate"]).all()
+    assert loaded["funding_rate"].tolist() == legacy_raw["open"].astype(float).tolist()
+    assert log_has("Migrating legacy funding rate columns for XRP/USDT:USDT on read.", caplog)
+
+    # Storing writes the new layout - aliases never reach disk
+    (tmp_path / "futures").mkdir()
+    dh_new = FeatherDataHandler(tmp_path)
+    dh_new.ohlcv_store("XRP/USDT:USDT", "1h", loaded, CandleType.FUNDING_RATE)
+    stored = tmp_path / "futures/XRP_USDT_USDT-1h-funding_rate.feather"
+    assert dataset.dataset(stored, format="feather").schema.names == ["date", "funding_rate"]
+
+    reloaded = dh_new.ohlcv_load("XRP/USDT:USDT", "1h", CandleType.FUNDING_RATE, fill_missing=False)
+    assert reloaded.equals(loaded)
+
+
+@pytest.mark.parametrize("datahandler", ["jsongz", "feather"])
+def test_datahandler_funding_rate_legacy_load_formats(testdatadir, datahandler):
+    """Both the named (feather) and positional (json) legacy layouts read identically."""
+    dh = get_datahandler(testdatadir, datahandler)
+    df = dh.ohlcv_load("XRP/USDT:USDT", "1h", CandleType.FUNDING_RATE, fill_missing=False)
+    assert list(df.columns) == ["date", "funding_rate", "open"]
+    assert len(df) == 91
+    assert (df["open"] == df["funding_rate"]).all()
+
+
+@pytest.mark.parametrize("datahandler", ["feather", "parquet"])
+@pytest.mark.parametrize(
+    "candle_type", [CandleType.SPOT, CandleType.FUNDING_RATE, CandleType.OPEN_INTEREST]
+)
+@pytest.mark.parametrize("typed", [True, False])
+def test_datahandler_ohlcv_load_empty_file(tmp_path, datahandler, candle_type, typed):
+    """An empty stored file must load as an empty dataframe, not raise.
+
+    An untyped empty frame is written with "null"-typed columns, which read back as
+    object dtype - there is no schema to interpret, and "no data" is the right answer.
+    """
+    (tmp_path / "futures").mkdir()
+    dh = get_datahandler(tmp_path, datahandler)
+    if typed:
+        empty = ohlcv_to_dataframe(
+            [],
+            "1h",
+            "XRP/USDT:USDT",
+            fill_missing=False,
+            drop_incomplete=False,
+            candle_type=candle_type,
+        )
+    else:
+        empty = DataFrame(columns=get_candle_columns(candle_type))
+    dh.ohlcv_store("XRP/USDT:USDT", "1h", empty, candle_type)
+
+    assert dh._ohlcv_load("XRP/USDT:USDT", "1h", None, candle_type).empty
+    loaded = dh.ohlcv_load("XRP/USDT:USDT", "1h", candle_type, warn_no_data=False)
+    assert loaded.empty
+    assert list(loaded.columns) == get_candle_columns(candle_type)
+
+
+@pytest.mark.parametrize("datahandler", AVAILABLE_DATAHANDLERS)
+def test_datahandler_open_interest_roundtrip(tmp_path, datahandler):
+    """Open interest survives a store/load cycle with one side missing.
+
+    Bybit reports only the base amount on linear markets, so an all-NaN
+    open_interest_value column must round-trip as NaN - not as 0, and not as an error.
+    """
+    (tmp_path / "futures").mkdir()
+    dh = get_datahandler(tmp_path, datahandler)
+    raw = [
+        [1630454400000, 108721.214, None],
+        [1630458000000, 109261.55, None],
+        [1630461600000, 107807.866, None],
+    ]
+    df = ohlcv_to_dataframe(
+        raw,
+        "1h",
+        "XRP/USDT:USDT",
+        fill_missing=False,
+        drop_incomplete=False,
+        candle_type=CandleType.OPEN_INTEREST,
+    )
+    dh.ohlcv_store("XRP/USDT:USDT", "1h", df, CandleType.OPEN_INTEREST)
+
+    loaded = dh.ohlcv_load("XRP/USDT:USDT", "1h", CandleType.OPEN_INTEREST, fill_missing=False)
+    assert list(loaded.columns) == ["date", "open_interest_amount", "open_interest_value"]
+    assert len(loaded) == 3
+    assert loaded["open_interest_amount"].tolist() == [108721.214, 109261.55, 107807.866]
+    assert loaded["open_interest_value"].isna().all()
+    assert loaded["open_interest_value"].dtype == "float64"
+    assert_frame_equal(loaded, df)
+
+
 def test_datahandler_ohlcv_get_available_data(testdatadir):
     paircombs = FeatherDataHandler.ohlcv_get_available_data(testdatadir, TradingMode.SPOT)
     # Convert to set to avoid failures due to sorting
@@ -94,6 +284,7 @@ def test_datahandler_ohlcv_get_available_data(testdatadir):
     # Convert to set to avoid failures due to sorting
     assert set(paircombs) == {
         ("UNITTEST/USDT:USDT", "1h", "mark"),
+        ("UNITTEST/USDT:USDT", "1h", "funding_rate"),
         ("XRP/USDT:USDT", "5m", "futures"),
         ("XRP/USDT:USDT", "1h", "futures"),
         ("XRP/USDT:USDT", "1h", "mark"),
@@ -311,6 +502,24 @@ def test_hdf5datahandler_deprecated(testdatadir):
         ("UNITTEST/BTC", "5m", "spot", "", "2018-01-15", "2018-01-19"),
         # Mark data goes from to 2021-11-15 2021-11-19
         ("UNITTEST/USDT:USDT", "1h", "mark", "-mark", "2021-11-16", "2021-11-18"),
+        # Legacy 6-column funding rate file - goes from 2021-11-18 to 2021-12-18
+        (
+            "XRP/USDT:USDT",
+            "1h",
+            "funding_rate",
+            "-funding_rate",
+            "2021-11-20",
+            "2021-12-01",
+        ),
+        # Funding rate file already stored in the current 2-column layout
+        (
+            "UNITTEST/USDT:USDT",
+            "1h",
+            "funding_rate",
+            "-funding_rate",
+            "2021-11-20",
+            "2021-12-01",
+        ),
     ],
 )
 @pytest.mark.parametrize("datahandler", ["feather", "parquet"])

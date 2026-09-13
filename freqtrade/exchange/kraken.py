@@ -56,7 +56,7 @@ class Kraken(Exchange):
         """
         consolidated: CcxtBalances = {}
         for currency, balance in balances.items():
-            base_currency = currency[:-2] if currency.endswith(".F") else currency
+            base_currency = currency.removesuffix(".F")
 
             if base_currency in consolidated:
                 consolidated[base_currency]["free"] += balance["free"]

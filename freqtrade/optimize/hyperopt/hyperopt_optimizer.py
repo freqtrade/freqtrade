@@ -162,7 +162,7 @@ class HyperOptimizer:
         """
         result: dict = {}
 
-        for space in self.spaces.keys():
+        for space in self.spaces:
             if space == "protection":
                 result["protection"] = round_dict(
                     {p.name: params.get(p.name) for p in self.spaces[space]}, 13
@@ -313,7 +313,7 @@ class HyperOptimizer:
             self.backtesting.strategy.max_open_trades = updated_max_open_trades
 
         with self.data_pickle_file.open("rb") as f:
-            processed = load(f, mmap_mode="r")
+            processed = load(f)  # Intentionally not using mmap mode (fd exhaustion)
         if self.analyze_per_epoch:
             # Data is not yet analyzed, rerun populate_indicators.
             processed = self.advise_and_trim(processed)
@@ -412,7 +412,7 @@ class HyperOptimizer:
         )
 
         if isinstance(o_sampler, str):
-            if o_sampler not in optuna_samplers_dict.keys():
+            if o_sampler not in optuna_samplers_dict:
                 raise OperationalException(f"Optuna Sampler {o_sampler} not supported.")
             with warnings.catch_warnings():
                 warnings.filterwarnings(action="ignore", category=ExperimentalWarning)

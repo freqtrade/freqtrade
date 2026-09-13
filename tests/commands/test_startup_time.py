@@ -9,10 +9,10 @@ MAXIMUM_STARTUP_TIME = 0.7 if is_mac() else 0.5
 
 def test_startup_time():
     # warm up to generate pyc
-    subprocess.run(["freqtrade", "-h"])
+    subprocess.run(["freqtrade", "-h"], check=True)
 
     start = time.time()
-    subprocess.run(["freqtrade", "-h"])
+    subprocess.run(["freqtrade", "-h"], check=True)
     elapsed = time.time() - start
     assert elapsed < MAXIMUM_STARTUP_TIME, (
         "The startup time is too long, try to use lazy import in the command entry function"

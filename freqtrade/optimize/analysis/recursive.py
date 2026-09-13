@@ -37,7 +37,7 @@ class RecursiveAnalysis(BaseAnalysis):
         self.partial_varHolder_array: list[VarHolder] = []
         self.partial_varHolder_lookahead_array: list[VarHolder] = []
 
-        self.dict_recursive: dict[str, dict[int, float]] = dict()
+        self.dict_recursive: dict[str, dict[int, float]] = {}
 
         self.pair_to_used: str | None = None
         self._strat_scc: int | None = None

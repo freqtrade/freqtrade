@@ -263,10 +263,19 @@ async def test_emc_create_connection_error(default_conf, caplog, mocker):
     mocker.patch("websockets.connect", side_effect=RuntimeError)
 
     dp = DataProvider(default_conf, None, None, None)
+    # Handle start explicitly to avoid messing with threading in tests
+    mocker.patch("freqtrade.rpc.external_message_consumer.ExternalMessageConsumer.start")
     emc = ExternalMessageConsumer(default_conf, dp)
 
+    async def stop_running(*args, **kwargs):
+        emc._running = False
+
+    # Stop the connection loop on the first retry-sleep instead of waiting
+    mocker.patch("freqtrade.rpc.external_message_consumer.asyncio.sleep", side_effect=stop_running)
+
     try:
-        await asyncio.sleep(0.05)
+        emc._running = True
+        await emc._create_connection(emc.producers[0], asyncio.Lock())
         assert log_has("Unexpected error has occurred:", caplog)
     finally:
         emc.shutdown()

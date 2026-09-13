@@ -1,4 +1,5 @@
 import logging
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -40,7 +41,7 @@ try:
     from plotly.subplots import make_subplots
 except ImportError:
     logger.exception("Module plotly not found \n Please install using `pip3 install plotly`")
-    exit(1)
+    sys.exit(1)
 
 
 def init_plotscript(config, markets: list, startup_candles: int = 0):
@@ -78,10 +79,11 @@ def init_plotscript(config, markets: list, startup_candles: int = 0):
     filename = config.get("exportfilename") or config.get("exportdirectory")
     if config.get("no_trades", False):
         no_trades = True
-    elif config["trade_source"] == "file":
-        if not filename or (not filename.is_dir() and not filename.is_file()):
-            logger.warning("Backtest file is missing skipping trades.")
-            no_trades = True
+    elif config["trade_source"] == "file" and (
+        not filename or (not filename.is_dir() and not filename.is_file())
+    ):
+        logger.warning("Backtest file is missing skipping trades.")
+        no_trades = True
     try:
         trades = load_trades(
             config["trade_source"],
@@ -190,7 +192,7 @@ def add_max_drawdown(
             mode="markers",
             name=f"Max drawdown {drawdown.relative_account_drawdown:.2%}",
             text=f"Max drawdown {drawdown.relative_account_drawdown:.2%}",
-            marker=dict(symbol="square-open", size=9, line=dict(width=2), color="green"),
+            marker={"symbol": "square-open", "size": 9, "line": {"width": 2}, "color": "green"},
         )
         fig.add_trace(drawdown, row, 1)
     except ValueError:
@@ -275,7 +277,7 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
             mode="markers",
             name="Trade entry",
             text=trades["desc"],
-            marker=dict(symbol="circle-open", size=11, line=dict(width=2), color="cyan"),
+            marker={"symbol": "circle-open", "size": 11, "line": {"width": 2}, "color": "cyan"},
         )
 
         trade_exits = go.Scatter(
@@ -284,7 +286,7 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
             text=trades.loc[trades["profit_ratio"] > 0, "desc"],
             mode="markers",
             name="Exit - Profit",
-            marker=dict(symbol="square-open", size=11, line=dict(width=2), color="green"),
+            marker={"symbol": "square-open", "size": 11, "line": {"width": 2}, "color": "green"},
         )
         trade_exits_loss = go.Scatter(
             x=trades.loc[trades["profit_ratio"] <= 0, "close_date"],
@@ -292,7 +294,7 @@ def plot_trades(fig, trades: pd.DataFrame) -> make_subplots:
             text=trades.loc[trades["profit_ratio"] <= 0, "desc"],
             mode="markers",
             name="Exit - Loss",
-            marker=dict(symbol="square-open", size=11, line=dict(width=2), color="red"),
+            marker={"symbol": "square-open", "size": 11, "line": {"width": 2}, "color": "red"},
         )
         fig.add_trace(trade_entries, 1, 1)
         fig.add_trace(trade_exits, 1, 1)
@@ -416,12 +418,12 @@ def create_scatter(data, column_name, color, direction) -> go.Scatter | None:
                 y=df_short.close,
                 mode="markers",
                 name=column_name,
-                marker=dict(
-                    symbol=f"triangle-{direction}-dot",
-                    size=9,
-                    line=dict(width=1),
-                    color=color,
-                ),
+                marker={
+                    "symbol": f"triangle-{direction}-dot",
+                    "size": 9,
+                    "line": {"width": 1},
+                    "color": color,
+                },
             )
             return shorts
         else:

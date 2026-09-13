@@ -188,6 +188,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `trading_mode` | Specifies if you want to trade regularly, trade with leverage, or trade contracts whose prices are derived from matching cryptocurrency prices. [leverage documentation](leverage.md). <br>*Defaults to `"spot"`.*  <br> **Datatype:** String
 | `margin_mode` | When trading with leverage, this determines if the collateral owned by the trader will be shared or isolated to each trading pair [leverage documentation](leverage.md). <br> **Datatype:** String
 | `liquidation_buffer` | A ratio specifying how large of a safety net to place between the liquidation price and the stoploss to prevent a position from reaching the liquidation price [leverage documentation](leverage.md). <br>*Defaults to `0.05`.*  <br> **Datatype:** Float
+| `liquidation_warn_ratio` | Notify when the distance to a position's liquidation stop falls below this fraction of the price move that would use up its margin - with the default of `0.2`, once the stop is less than 2% away at 10x leverage. Set to `0` to disable [leverage documentation](leverage.md#liquidation-warnings). <br>*Defaults to `0.2`.*  <br> **Datatype:** Float
 | | **Unfilled timeout**
 | `unfilledtimeout.entry` | **Required.** How long (in minutes or seconds) the bot will wait for an unfilled entry order to complete, after which the order will be cancelled. [Strategy Override](#parameters-in-the-strategy).<br> **Datatype:** Integer
 | `unfilledtimeout.exit` | **Required.** How long (in minutes or seconds) the bot will wait for an unfilled exit order to complete, after which the order will be cancelled and repeated at current (new) price, as long as there is a signal. [Strategy Override](#parameters-in-the-strategy).<br> **Datatype:** Integer
@@ -217,7 +218,7 @@ Mandatory parameters are marked as **Required**, which means that they are requi
 | `max_entry_position_adjustment` | Maximum additional order(s) for each open trade on top of the first entry Order. Set it to `-1` for unlimited additional orders. [More information here](strategy-callbacks.md#adjust-trade-position). <br> [Strategy Override](#parameters-in-the-strategy). <br>*Defaults to `-1`.*<br> **Datatype:** Positive Integer or -1
 | | **Exchange**
 | `exchange.name` | **Required.** Name of the exchange class to use. <br> **Datatype:** String
-| `exchange.key` | API key to use for the exchange. Only required when you are in production mode.<br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
+| `exchange.api_key` | API key to use for the exchange. Only required when you are in production mode.<br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
 | `exchange.secret` | API secret to use for the exchange. Only required when you are in production mode.<br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
 | `exchange.password` | API password to use for the exchange. Only required when you are in production mode and for exchanges that use password for API requests.<br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
 | `exchange.uid` | API uid to use for the exchange. Only required when you are in production mode and for exchanges that use uid for API requests.<br>**Keep it in secret, do not disclose publicly.** <br> **Datatype:** String
@@ -712,7 +713,7 @@ creating trades on the exchange.
 ```json
 "exchange": {
     "name": "binance",
-    "key": "key",
+    "api_key": "api_key",
     "secret": "secret",
     ...
 }
@@ -762,7 +763,7 @@ API Keys are usually only required for live trading (trading for real money, bot
 {
     "exchange": {
         "name": "binance",
-        "key": "af8ddd35195e9dc500b9a6f799f6f5c93d89193b",
+        "api_key": "af8ddd35195e9dc500b9a6f799f6f5c93d89193b",
         "secret": "08a9dc6db3d7b53e1acebd9275677f4b0a04f1a5",
         //"password": "", // Optional, not needed by all exchanges)
         // ...

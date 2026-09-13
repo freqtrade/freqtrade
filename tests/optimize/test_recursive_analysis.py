@@ -95,7 +95,7 @@ def test_recursive_helper_start(recursive_conf, mocker) -> None:
 
 
 def test_recursive_helper_text_table_recursive_analysis_instances(recursive_conf):
-    dict_diff = dict()
+    dict_diff = {}
     dict_diff["rsi"] = {}
     dict_diff["rsi"][100] = 0.00078
 
@@ -114,7 +114,7 @@ def test_recursive_helper_text_table_recursive_analysis_instances(recursive_conf
     assert len(data[0]) == 2
 
     # now check when there is no issue
-    dict_diff = dict()
+    dict_diff = {}
     instance = RecursiveAnalysis(recursive_conf, strategy_obj)
     instance.dict_recursive = dict_diff
     data = RecursiveAnalysisSubFunctions.text_table_recursive_analysis_instances([instance])

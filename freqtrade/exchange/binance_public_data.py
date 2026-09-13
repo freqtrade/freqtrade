@@ -34,8 +34,6 @@ class Http404(Exception):
 class BadHttpStatus(Exception):
     """Not 200/404"""
 
-    pass
-
 
 async def download_archive_ohlcv(
     candle_type: CandleType,

@@ -190,18 +190,26 @@ def test_get_pair_dataframe_funding_rate(mocker, default_conf, ohlcv_history, ca
     timeframe = "1h"
     exchange = get_patched_exchange(mocker, default_conf)
     candletype = CandleType.FUNDING_RATE
-    exchange._klines[("XRP/BTC", timeframe, candletype)] = ohlcv_history
-    exchange._klines[("UNITTEST/BTC", timeframe, candletype)] = ohlcv_history
+    # Funding rate data carries a single value, plus "open" as backwards-compat alias
+    funding_history = DataFrame(
+        {
+            "date": ohlcv_history["date"],
+            "funding_rate": ohlcv_history["open"],
+            "open": ohlcv_history["open"],
+        }
+    )
+    exchange._klines[("XRP/BTC", timeframe, candletype)] = funding_history
+    exchange._klines[("UNITTEST/BTC", timeframe, candletype)] = funding_history
 
     dp = DataProvider(default_conf, exchange)
     assert dp.runmode == RunMode.DRY_RUN
-    assert ohlcv_history.equals(
-        dp.get_pair_dataframe("UNITTEST/BTC", timeframe, candle_type="funding_rate")
-    )
+    res = dp.get_pair_dataframe("UNITTEST/BTC", timeframe, candle_type="funding_rate")
+    assert funding_history.equals(res)
+    assert list(res.columns) == ["date", "funding_rate", "open"]
     msg = r".*funding rate timeframe not matching"
     assert not log_has_re(msg, caplog)
 
-    assert ohlcv_history.equals(
+    assert funding_history.equals(
         dp.get_pair_dataframe("UNITTEST/BTC", "5h", candle_type="funding_rate")
     )
     assert log_has_re(msg, caplog)

@@ -1,12 +1,12 @@
 from copy import deepcopy
 from datetime import UTC, datetime, timedelta
-from unittest.mock import MagicMock, PropertyMock
+from unittest.mock import AsyncMock, MagicMock, PropertyMock
 
 import pytest
 
 from freqtrade.enums import MarginMode, RunMode, TradingMode
 from freqtrade.util import dt_utc
-from tests.conftest import EXMS, get_mock_coro, get_patched_exchange, log_has
+from tests.conftest import EXMS, get_patched_exchange, log_has
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
 
 
@@ -42,7 +42,7 @@ async def test_bybit_fetch_funding_rate(default_conf, mocker):
     default_conf["trading_mode"] = "futures"
     default_conf["margin_mode"] = "isolated"
     api_mock = MagicMock()
-    api_mock.fetch_funding_rate_history = get_mock_coro(return_value=[])
+    api_mock.fetch_funding_rate_history = AsyncMock(return_value=[])
     exchange = get_patched_exchange(mocker, default_conf, exchange="bybit", api_mock=api_mock)
     limit = 200
     # Test fetch_funding_rate_history (current data)
@@ -113,9 +113,7 @@ def test_bybit_fetch_orders(default_conf, mocker, limit_order):
     )
 
     def exchange_has(value):
-        if value == "fetchOrders":
-            return False
-        return True
+        return value != "fetchOrders"
 
     mocker.patch(f"{EXMS}.exchange_has", side_effect=exchange_has)
     start_time = datetime.now(UTC) - timedelta(days=20)

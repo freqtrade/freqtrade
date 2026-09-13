@@ -118,18 +118,14 @@ def populate_dataframe_with_trades(
             if is_between.any():
                 # there can only be one row with the same date
                 index = dataframe.index[is_between][0]
-
-                if (
-                    cached_grouped_trades is not None
-                    and (candle_start == cached_grouped_trades["date"]).any()
-                ):
-                    # Check if the trades are already in the cache
-                    cache_idx = cached_grouped_trades.index[
-                        cached_grouped_trades["date"] == candle_start
-                    ][0]
-                    for col in ORDERFLOW_ADDED_COLUMNS:
-                        dataframe.at[index, col] = cached_grouped_trades.at[cache_idx, col]
-                    continue
+                if cached_grouped_trades is not None:
+                    cached_trades_date = cached_grouped_trades["date"] == candle_start
+                    if cached_trades_date.any():
+                        # Check if the trades are already in the cache
+                        cache_idx = cached_grouped_trades.index[cached_trades_date][0]
+                        for col in ORDERFLOW_ADDED_COLUMNS:
+                            dataframe.at[index, col] = cached_grouped_trades.at[cache_idx, col]
+                        continue
 
                 dataframe.at[index, "trades"] = trades_grouped_df.drop(
                     columns=["candle_start", "candle_end"]
@@ -166,8 +162,9 @@ def populate_dataframe_with_trades(
                     trades_grouped_df["side"].str.contains("buy"), trades_grouped_df["amount"], 0
                 )
                 deltas_per_trade = ask - bid
-                dataframe.at[index, "max_delta"] = deltas_per_trade.cumsum().max()
-                dataframe.at[index, "min_delta"] = deltas_per_trade.cumsum().min()
+                deltas_per_trade_cumsum = deltas_per_trade.cumsum()
+                dataframe.at[index, "max_delta"] = deltas_per_trade_cumsum.max()
+                dataframe.at[index, "min_delta"] = deltas_per_trade_cumsum.min()
 
                 dataframe.at[index, "bid"] = bid.sum()
                 dataframe.at[index, "ask"] = ask.sum()
@@ -198,10 +195,12 @@ def trades_to_volumeprofile_with_total_delta_bid_ask(
     """
     df = pd.DataFrame([], columns=DEFAULT_ORDERFLOW_COLUMNS)
     # create bid, ask where side is sell or buy
-    df["bid_amount"] = np.where(trades["side"].str.contains("sell"), trades["amount"], 0)
-    df["ask_amount"] = np.where(trades["side"].str.contains("buy"), trades["amount"], 0)
-    df["bid"] = np.where(trades["side"].str.contains("sell"), 1, 0)
-    df["ask"] = np.where(trades["side"].str.contains("buy"), 1, 0)
+    is_sell_mask = trades["side"].str.contains("sell")
+    is_buy_mask = trades["side"].str.contains("buy")
+    df["bid_amount"] = np.where(is_sell_mask, trades["amount"], 0)
+    df["ask_amount"] = np.where(is_buy_mask, trades["amount"], 0)
+    df["bid"] = np.where(is_sell_mask, 1, 0)
+    df["ask"] = np.where(is_buy_mask, 1, 0)
     # round the prices to the nearest multiple of the scale
     df["price"] = ((trades["price"] / scale).round() * scale).astype("float64").values
     if df.empty:
@@ -230,10 +229,11 @@ def trades_orderflow_to_imbalances(df: pd.DataFrame, imbalance_ratio: int, imbal
     ask = df.ask.shift(-1)
     bid_imbalance = (bid / ask) > (imbalance_ratio)
     # overwrite bid_imbalance with False if volume is not big enough
-    bid_imbalance_filtered = np.where(df.total_volume < imbalance_volume, False, bid_imbalance)
+    volume_check_mask = df.total_volume < imbalance_volume
+    bid_imbalance_filtered = np.where(volume_check_mask, False, bid_imbalance)
     ask_imbalance = (ask / bid) > (imbalance_ratio)
     # overwrite ask_imbalance with False if volume is not big enough
-    ask_imbalance_filtered = np.where(df.total_volume < imbalance_volume, False, ask_imbalance)
+    ask_imbalance_filtered = np.where(volume_check_mask, False, ask_imbalance)
     dataframe = pd.DataFrame(
         {"bid_imbalance": bid_imbalance_filtered, "ask_imbalance": ask_imbalance_filtered},
         index=df.index,

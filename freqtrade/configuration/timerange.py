@@ -14,6 +14,17 @@ from freqtrade.util import dt_from_ts
 
 logger = logging.getLogger(__name__)
 
+# Supported formats for one side of a timerange.
+# Datetime formats are interpreted as UTC - a format of None means "epoch"
+# (seconds for 10 digits, milliseconds for 13 digits).
+_TIMERANGE_FORMATS: list[tuple[str, str | None]] = [
+    (r"\d{8}", "%Y%m%d"),
+    (r"\d{8}T\d{4}", "%Y%m%dT%H%M"),
+    (r"\d{8}T\d{6}", "%Y%m%dT%H%M%S"),
+    (r"\d{10}", None),
+    (r"\d{13}", None),
+]
+
 
 class TimeRange:
     """
@@ -55,18 +66,31 @@ class TimeRange:
             return dt_from_ts(self.stopts)
         return None
 
+    @staticmethod
+    def _format_dt(dt: datetime) -> str:
+        """
+        Format a datetime with the lowest precision that keeps all information.
+        yyyymmdd for midnight, yyyymmddThhmm otherwise - yyyymmddThhmmss if seconds are set.
+        """
+        if dt.second:
+            return dt.strftime("%Y%m%dT%H%M%S")
+        if dt.hour or dt.minute:
+            return dt.strftime("%Y%m%dT%H%M")
+        return dt.strftime("%Y%m%d")
+
     @property
     def timerange_str(self) -> str:
         """
         Returns a string representation of the timerange as used by parse_timerange.
         Follows the format yyyymmdd-yyyymmdd - leaving out the parts that are not set.
+        Timeranges that are not aligned to midnight use the yyyymmddThhmm[ss] format instead.
         """
         start = ""
         stop = ""
         if startdt := self.startdt:
-            start = startdt.strftime("%Y%m%d")
+            start = self._format_dt(startdt)
         if stopdt := self.stopdt:
-            stop = stopdt.strftime("%Y%m%d")
+            stop = self._format_dt(stopdt)
         return f"{start}-{stop}"
 
     @property
@@ -130,58 +154,46 @@ class TimeRange:
             self.startts = int(min_date.timestamp() + timeframe_secs * startup_candles)
             self.starttype = "date"
 
+    @staticmethod
+    def _parse_timerange_part(text: str) -> int:
+        """
+        Parse one side of a timerange to a timestamp in seconds.
+        :param text: One side of the timerange - an empty string means "unbounded"
+        :return: Timestamp in seconds - 0 if unbounded
+        :raises ValueError: If the value doesn't match any supported format
+        """
+        if not text:
+            return 0
+        for rex, fmt in _TIMERANGE_FORMATS:
+            if not re.fullmatch(rex, text):
+                continue
+            if fmt is None:
+                # Epoch - in seconds (10 digits) or milliseconds (13 digits)
+                return int(text) // 1000 if len(text) == 13 else int(text)
+            return int(datetime.strptime(text, fmt).replace(tzinfo=UTC).timestamp())
+        raise ValueError(f'Invalid timerange value "{text}"')
+
     @classmethod
     def parse_timerange(cls, text: str | None) -> Self:
         """
-        Parse the value of the argument --timerange to determine what is the range desired
+        Parse the value of the argument --timerange to determine what is the range desired.
+        Both sides are parsed independently and may use any of the supported formats:
+        yyyymmdd, yyyymmddThhmm, yyyymmddThhmmss, epoch (seconds) or epoch (milliseconds).
         :param text: value from --timerange
         :return: Start and End range period
         """
         if not text:
             return cls(None, None, 0, 0)
-        syntax = [
-            (r"^-(\d{8})$", (None, "date")),
-            (r"^(\d{8})-$", ("date", None)),
-            (r"^(\d{8})-(\d{8})$", ("date", "date")),
-            (r"^-(\d{10})$", (None, "date")),
-            (r"^(\d{10})-$", ("date", None)),
-            (r"^(\d{10})-(\d{10})$", ("date", "date")),
-            (r"^-(\d{13})$", (None, "date")),
-            (r"^(\d{13})-$", ("date", None)),
-            (r"^(\d{13})-(\d{13})$", ("date", "date")),
-        ]
-        for rex, stype in syntax:
-            # Apply the regular expression to text
-            match = re.match(rex, text)
-            if match:  # Regex has matched
-                rvals = match.groups()
-                index = 0
-                start: int = 0
-                stop: int = 0
-                if stype[0]:
-                    starts = rvals[index]
-                    if stype[0] == "date" and len(starts) == 8:
-                        start = int(
-                            datetime.strptime(starts, "%Y%m%d").replace(tzinfo=UTC).timestamp()
-                        )
-                    elif len(starts) == 13:
-                        start = int(starts) // 1000
-                    else:
-                        start = int(starts)
-                    index += 1
-                if stype[1]:
-                    stops = rvals[index]
-                    if stype[1] == "date" and len(stops) == 8:
-                        stop = int(
-                            datetime.strptime(stops, "%Y%m%d").replace(tzinfo=UTC).timestamp()
-                        )
-                    elif len(stops) == 13:
-                        stop = int(stops) // 1000
-                    else:
-                        stop = int(stops)
-                if start > stop > 0:
-                    raise ConfigurationError(
-                        f'Start date is after stop date for timerange "{text}"'
-                    )
-                return cls(stype[0], stype[1], start, stop)
-        raise ConfigurationError(f'Incorrect syntax for timerange "{text}"')
+        parts = text.split("-")
+        if len(parts) != 2 or not any(parts):
+            raise ConfigurationError(f'Incorrect syntax for timerange "{text}"')
+        starts, stops = parts
+        try:
+            start = cls._parse_timerange_part(starts)
+            stop = cls._parse_timerange_part(stops)
+        except ValueError as e:
+            raise ConfigurationError(f'Incorrect syntax for timerange "{text}"') from e
+
+        if start > stop > 0:
+            raise ConfigurationError(f'Start date is after stop date for timerange "{text}"')
+        return cls("date" if starts else None, "date" if stops else None, start, stop)

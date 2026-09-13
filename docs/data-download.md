@@ -61,6 +61,8 @@ freqtrade download-data --exchange binance --pairs ".*/USDT"
 * Use `--timeframes` to specify what timeframe download the historical candle (OHLCV) data for. Default is `--timeframes 1m 5m` which will download 1-minute and 5-minute data.
 * To use exchange, timeframe and list of pairs as defined in your configuration file, use the `-c/--config` option. With this, the script uses the whitelist defined in the config as the list of currency pairs to download data for and does not require the pairs.json file. You can combine `-c/--config` with most other options.
 * When downloading futures data (`--trading-mode futures` or a configuration specifying futures mode), freqtrade will automatically download the necessary candle types (e.g. `mark` and `funding_rate` candles) unless specified otherwise via `--candle-types`.
+* Funding rate data is stored with a `date` and a `funding_rate` column - unlike the other candle types, which use the regular OHLCV columns. Data downloaded with an older version is read transparently and rewritten in the current layout the next time it's stored, so no manual migration is needed.
+* Open interest data is not downloaded by default - request it explicitly with `--candle-types open_interest`. It is stored with a `date`, an `open_interest_amount` and an `open_interest_value` column, and is only available for futures markets on exchanges that support it.
 
 ??? Note "Permission denied errors"
     If your configuration directory `user_data` was made by docker, you may get the following error:
@@ -74,6 +76,37 @@ freqtrade download-data --exchange binance --pairs ".*/USDT"
     ```
     sudo chown -R $UID:$GID user_data
     ```
+
+### Open interest data
+
+Open interest - the total number of outstanding derivative contracts - is available for futures markets on exchanges that support it (e.g. Binance, Bybit, Gate, OKX).
+It is not part of the default download, as it's not needed to run a bot - so it has to be downloaded explicitly with `--candle-types open_interest`.
+
+``` bash
+freqtrade download-data --exchange binance --pairs BTC/USDT:USDT --timeframes 1h --trading-mode futures --candle-types open_interest
+```
+
+Unlike funding rates - which are always downloaded at the exchange's funding rate timeframe - open interest is downloaded for the timeframes you pass via `--timeframes`.
+Which timeframes an exchange offers for open interest varies, and is usually a smaller set than for regular candles.
+
+The resulting dataframe has three columns:
+
+| Column | Description |
+| ------ | ----------- |
+| `date` | Candle start date |
+| `open_interest_amount` | Open interest denominated in the base currency |
+| `open_interest_value` | Open interest denominated in the quote currency |
+
+!!! Warning "Not every exchange reports both columns"
+    Exchanges report open interest in the base currency, the quote currency, or both - and which one can depend on the market type.
+    Bybit for example only reports `open_interest_amount` on linear markets, leaving `open_interest_value` as `NaN` for the whole dataframe.
+    Check which of the two columns actually carries data for your exchange and pairs before relying on it in a strategy.
+
+!!! Note "Limited history"
+    Exchanges keep far less open interest history than candle history - Binance for example only serves the last 30 days.
+    Downloads reaching further back will silently return no data for the missing period.
+
+Exchanges that don't provide open interest history reject the download with an explicit error, and a running bot whose strategy requests open interest on such an exchange refuses to start.
 
 ### Download additional data before the current timerange
 

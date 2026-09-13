@@ -293,6 +293,9 @@ Both attributes and methods may be overridden, altering behavior of the original
 
 While keeping the subclass in the same file is technically possible, it can lead to some problems with hyperopt parameter files, we therefore recommend to use separate strategy files, and import the parent strategy as shown above.
 
+!!! Warning "backtest Caching"
+    When using Backtesting with split files - only changes in the strategy file will be taken into account for cache invalidation. If you change the parent strategy (or any imported module) - you will need to use `--cache none` once to force a fresh backtest.
+
 ## Embedding Strategies
 
 Freqtrade provides you with an easy way to embed the strategy into your configuration file.

@@ -35,7 +35,7 @@ async def index_html(rest_of_path: str):
     """
     Emulate path fallback to index.html.
     """
-    if rest_of_path.startswith("api") or rest_of_path.startswith("."):
+    if rest_of_path.startswith(("api", ".")):
         raise HTTPException(status_code=404, detail="Not Found")
     uibase = (Path(__file__).parent / "ui/installed/").resolve()
     filename = (uibase / rest_of_path).resolve()

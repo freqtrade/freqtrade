@@ -7,7 +7,6 @@ from freqtrade.exchange.exchange import Exchange
 from freqtrade.exchange.binance import Binance, Binanceus, Binanceusdm
 from freqtrade.exchange.bingx import Bingx
 from freqtrade.exchange.bitget import Bitget
-from freqtrade.exchange.bitmart import Bitmart
 from freqtrade.exchange.bitpanda import Bitpanda
 from freqtrade.exchange.bitvavo import Bitvavo
 from freqtrade.exchange.bybit import Bybit, BybitEU

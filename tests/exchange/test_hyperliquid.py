@@ -1,11 +1,11 @@
 from copy import deepcopy
 from datetime import UTC, datetime
-from unittest.mock import MagicMock, PropertyMock
+from unittest.mock import AsyncMock, MagicMock, PropertyMock
 
 import pytest
 
 from freqtrade.exceptions import ConfigurationError
-from tests.conftest import EXMS, get_mock_coro, get_patched_exchange, log_has_re
+from tests.conftest import EXMS, get_patched_exchange, log_has_re
 
 
 @pytest.fixture
@@ -415,14 +415,14 @@ def test_hyperliquid_dry_run_liquidation_price(default_conf, markets_hip3, mocke
     default_conf["trading_mode"] = "futures"
     default_conf["margin_mode"] = margin_mode
     default_conf["stake_currency"] = "USDC"
-    api_mock.load_markets = get_mock_coro()
+    api_mock.load_markets = AsyncMock()
     api_mock.markets = markets_hip3
     exchange = get_patched_exchange(
         mocker, default_conf, api_mock, exchange="hyperliquid", mock_markets=False
     )
 
     for position in positions:
-        is_short = True if position["side"] == "short" else False
+        is_short = position["side"] == "short"
         liq_price_returned = position["liquidationPrice"]
         liq_price_calculated = exchange.dry_run_liquidation_price(
             position["symbol"],
@@ -759,7 +759,7 @@ def test_hyperliquid_get_balances_hip3(default_conf, mocker, caplog, markets_hip
     """Test balance fetching from HIP-3 DEXes."""
     api_mock = MagicMock()
 
-    api_mock.load_markets = get_mock_coro()
+    api_mock.load_markets = AsyncMock()
 
     # Mock balance responses
     default_balance = {"USDC": {"free": 1000, "used": 0, "total": 1000}}
@@ -852,7 +852,7 @@ def test_hyperliquid_market_is_tradable(default_conf_usdt, mocker, markets_hip3)
     default_conf_usdt["trading_mode"] = "futures"
     default_conf_usdt["margin_mode"] = "isolated"
     api_mock = MagicMock()
-    api_mock.load_markets = get_mock_coro(return_value=markets_hip3)
+    api_mock.load_markets = AsyncMock(return_value=markets_hip3)
     api_mock.markets = markets_hip3
     # Mock parent call - we only want to test hyperliquid specifics here.
     mocker.patch(f"{EXMS}.market_is_tradable", return_value=True)

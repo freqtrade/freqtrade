@@ -34,9 +34,9 @@ class BaseParameter(ABC):
 
     space: str | None
     default: Any
-    value: Any
     in_space: bool = False
     name: str
+    _warned_static_use: bool = False
 
     def __init__(
         self,
@@ -68,7 +68,39 @@ class BaseParameter(ABC):
         self.load = load
 
     def __repr__(self):
-        return f"{self.__class__.__name__}({self.value})"
+        return f"{self.__class__.__name__}({self._value})"
+
+    @property
+    def value(self) -> Any:
+        self._warn_static_indicator_use()
+        return self._value
+
+    @value.setter
+    def value(self, new_value: Any) -> None:
+        self._value = new_value
+
+    def _warn_static_indicator_use(self) -> None:
+        """
+        Warn once if the value of an optimized parameter is used while hyperopt calculates
+        indicators. Without --analyze-per-epoch, indicators are only calculated once at
+        hyperopt startup - so the optimizer will never see the effect of such a parameter,
+        and all epochs are evaluated with its static start value.
+        """
+        if (
+            not self._warned_static_use
+            and self.in_space
+            and self.optimize
+            and HyperoptStateContainer.state == HyperoptState.INDICATORS
+        ):
+            self._warned_static_use = True
+            logger.warning(
+                f"Parameter '{getattr(self, 'name', '')}' is part of this hyperopt run, but its "
+                "value is used during indicator calculation, which only runs once at hyperopt "
+                f"startup. All epochs will be evaluated with its static start value "
+                f"({self._value}) - values sampled by the optimizer will not affect the results. "
+                "Use the '.range' functionality or run hyperopt with '--analyze-per-epoch' to "
+                "properly optimize this parameter."
+            )
 
     @property
     def param_type(self) -> str:
@@ -268,6 +300,7 @@ class DecimalParameter(NumericParameter):
 
     @property
     def value(self) -> float:
+        self._warn_static_indicator_use()
         return self._value
 
     @value.setter

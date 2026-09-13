@@ -42,6 +42,7 @@ class Bybit(Exchange):
     _ft_has_futures: FtHas = {
         "ohlcv_has_history": True,
         "funding_fee_candle_limit": 200,
+        "open_interest_candle_limit": 200,
         "stoploss_on_exchange": True,
         "stoploss_order_types": {"limit": "limit", "market": "market"},
         "stoploss_blocks_assets": False,
