@@ -67,3 +67,60 @@ class TestCCXTExchangeWs:
         # shouldn't have tried fetch_ohlcv a second time.
         assert m_cand.call_count == 1
         assert log_has_re(r"watch result.*", caplog)
+
+    def test_ccxt_watch_orderbook(self, exchange_ws: EXCHANGE_WS_FIXTURE_TYPE, caplog, mocker):
+        exch, _exchangename, pair = exchange_ws
+
+        assert exch._ws_async is not None
+        if not exch._has_watch_orderbook:
+            pytest.skip(f"{_exchangename} does not support watch_order_book.")
+
+        # Spy on the REST fallback - it must stop being called once the ws cache is warm.
+        m_rest = mocker.spy(exch._api, "fetch_l2_order_book")
+        # Keep the depth low - the websocket book is only used if it holds at least
+        # as many entries as requested, and stream depth differs per exchange.
+        limit = 5
+
+        # First call schedules the websocket subscription. The cache is still cold,
+        # so this call is served from the REST endpoint.
+        ob = exch.fetch_l2_order_book(pair, limit)
+        assert ob is not None
+        assert pair in exch._exchange_ws._ob_watching
+
+        # Wait for the websocket to populate the local orderbook cache with actual levels.
+        # (ccxt.pro creates the book object immediately on watch but it's empty)
+        # time-limited by the class-level @pytest.mark.timeout.
+        while True:
+            cached = exch._exchange_ws.get_orderbook(pair, limit)
+            if len(cached["bids"]) >= limit and len(cached["asks"]) >= limit:
+                break
+            sleep(1)
+
+        # Now that the cache is warm, further calls must be served from the websocket
+        # cache without hitting the REST endpoint again.
+        m_rest.reset_mock()
+        caplog.clear()
+        caplog.set_level(logging.DEBUG)
+        ob = exch.fetch_l2_order_book(pair, limit)
+
+        assert m_rest.call_count == 0
+        assert log_has_re(r"Using websocket orderbook for .*", caplog)
+
+        # Validate the returned orderbook structure.
+        assert ob is not None
+        assert ob["bids"] and ob["asks"]
+        # Truncated to the requested limit.
+        assert len(ob["bids"]) == limit
+        assert len(ob["asks"]) == limit
+        # Best bid must be below the best ask.
+        assert ob["bids"][0][0] < ob["asks"][0][0]
+        # Bids are sorted descending, asks ascending.
+        assert ob["bids"][0][0] >= ob["bids"][-1][0]
+        assert ob["asks"][0][0] <= ob["asks"][-1][0]
+
+        # A depth the websocket book can't satisfy falls back to REST.
+        caplog.clear()
+        deep = exch.fetch_l2_order_book(pair, 100_000)
+        assert deep is not None
+        assert m_rest.call_count == 1
+        assert log_has_re(r"Websocket orderbook for .* only has .* entries.*", caplog)
