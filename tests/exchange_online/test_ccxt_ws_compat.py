@@ -24,6 +24,9 @@ class TestCCXTExchangeWs:
         exch, _exchangename, pair = exchange_ws
 
         assert exch._ws_async is not None
+        if not exch._ft_has["ws_enabled"]["ohlcv"]:
+            pytest.skip(f"{_exchangename} does not have ohlcv websockets enabled.")
+
         timeframe = "1m"
         pair_tf = (pair, timeframe, CandleType.SPOT)
         m_hist = mocker.spy(exch, "_async_get_historic_ohlcv")
@@ -72,8 +75,8 @@ class TestCCXTExchangeWs:
         exch, _exchangename, pair = exchange_ws
 
         assert exch._ws_async is not None
-        if not exch._has_watch_orderbook:
-            pytest.skip(f"{_exchangename} does not support watch_order_book.")
+        if not exch._ft_has["ws_enabled"]["orderbook"]:
+            pytest.skip(f"{_exchangename} does not have orderbook websockets enabled.")
 
         # Spy on the REST fallback - it must stop being called once the ws cache is warm.
         m_rest = mocker.spy(exch._api, "fetch_l2_order_book")
