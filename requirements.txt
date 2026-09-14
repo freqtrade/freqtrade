@@ -25,6 +25,7 @@ tabulate==0.10.0
 pycoingecko==3.2.0
 jinja2==3.1.6
 joblib==1.6.0
+cloudpickle==3.1.2
 rich==15.0.0
 pyarrow==25.0.1; platform_machine != 'armv7l'
 
