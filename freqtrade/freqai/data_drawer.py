@@ -9,11 +9,11 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, TypedDict
 
+import cloudpickle
 import numpy as np
 import pandas as pd
 import psutil
 import rapidjson
-from joblib.externals import cloudpickle
 from numpy.typing import NDArray
 from pandas import DataFrame
 from pandas.api.types import is_numeric_dtype

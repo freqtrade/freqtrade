@@ -11,9 +11,9 @@ from multiprocessing import Manager
 from pathlib import Path
 from typing import Any
 
+import cloudpickle
 import optuna
 from joblib import delayed, dump, load, wrap_non_picklable_objects
-from joblib.externals import cloudpickle
 from optuna.exceptions import ExperimentalWarning
 from optuna.terminator import BestValueStagnationEvaluator, Terminator
 from pandas import DataFrame
