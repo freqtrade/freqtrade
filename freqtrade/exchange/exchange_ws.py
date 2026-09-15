@@ -21,6 +21,8 @@ logger = logging.getLogger(__name__)
 class ExchangeWS:
     # TODO: should either be configurable or use the main timeframe.
     ob_timeout = 60  # 1m
+    # Timeout for the get orderbook snapshot round trip to the websocket thread.
+    ob_snapshot_timeout = 1.0
 
     def __init__(self, config: Config, ccxt_object: ccxt.Exchange) -> None:
         self.config = config
@@ -411,43 +413,66 @@ class ExchangeWS:
         )
         return pair, timeframe, candle_type, candles, drop_hint
 
-    @retrier(retries=3)
+    def _empty_orderbook(self, pair: str) -> OrderBook:
+        return {
+            "symbol": pair,
+            "bids": [],
+            "asks": [],
+            "timestamp": None,
+            "datetime": None,
+            "nonce": None,
+        }
+
+    async def _orderbook_snapshot(self, pair: str, limit: int) -> OrderBook:
+        """
+        Copy the cached orderbook, truncated to `limit` entries per side.
+        Must run on the websocket event loop, and must not await while copying  to make
+        the snapshot atomic with regards to ccxt's updates.
+        Slicing before copying keeps this cheap, and the copy detaches
+        the [price, size] lists, which ccxt mutates in place on subsequent updates.
+        """
+        ob = self._ccxt_object.orderbooks.get(pair)
+        if ob is None:
+            return self._empty_orderbook(pair)
+        return {
+            "symbol": ob.get("symbol", pair),
+            "bids": deepcopy(ob.get("bids", [])[:limit]),
+            "asks": deepcopy(ob.get("asks", [])[:limit]),
+            "timestamp": ob.get("timestamp"),
+            "datetime": ob.get("datetime"),
+            "nonce": ob.get("nonce"),
+        }
+
     def get_orderbook(self, pair: str, limit: int) -> OrderBook:
         """
         Returns a copy of the cached orderbook from ccxt's "watch" cache,
         truncated to `limit` entries per side.
-        Copies so callers get a stable snapshot that's decoupled from the live cache
-        the websocket thread keeps mutating. Slicing before copying keeps this cheap
-        (the cached book can hold thousands of levels) and narrows the window in which
-        the websocket thread can mutate the book mid-copy.
+
+        The copy is taken on the websocket thread's event loop to ensure atomicity
+        assuming ccxt applies orderbook updates synchronously within a single websocket callback.
+
+        Returns an empty orderbook if there is no cached book yet, or if the loop did not
+        respond within `ob_snapshot_timeout`, which makes the caller fall back to REST.
         :param pair: Pair to get the orderbook for
         :param limit: Maximum number of entries per side to return.
         """
-        ob = self._ccxt_object.orderbooks.get(pair)
-        if ob is None:
-            # return an Empty orderbook
-            return {
-                "symbol": pair,
-                "bids": [],
-                "asks": [],
-                "timestamp": None,
-                "datetime": None,
-                "nonce": None,
-            }
+        if not self._wait_for_loop(timeout=0.2) or self._loop.is_closed():
+            logger.debug("Websocket loop not available - no orderbook snapshot for %s", pair)
+            return self._empty_orderbook(pair)
+        fut = asyncio.run_coroutine_threadsafe(
+            self._orderbook_snapshot(pair, limit), loop=self._loop
+        )
         try:
-            return {
-                "symbol": ob.get("symbol", pair),
-                "bids": deepcopy(ob.get("bids", [])[:limit]),
-                "asks": deepcopy(ob.get("asks", [])[:limit]),
-                "timestamp": ob.get("timestamp"),
-                "datetime": ob.get("datetime"),
-                "nonce": ob.get("nonce"),
-            }
-        except RuntimeError as e:
-            # Capture runtime errors (raised when the ws thread mutates the book
-            # mid-copy) and retry.
-            # TemporaryError does not cause backoff - so we're essentially retrying immediately
-            raise TemporaryError(f"Error deepcopying: {e}") from e
+            return fut.result(timeout=self.ob_snapshot_timeout)
+        except TimeoutError:
+            fut.cancel()
+            logger.warning(
+                f"Timed out after {self.ob_snapshot_timeout}s while copying the websocket "
+                f"orderbook for {pair} - falling back to REST."
+            )
+        except Exception:
+            logger.exception(f"Exception while copying the websocket orderbook for {pair}")
+        return self._empty_orderbook(pair)
 
     def orderbook_is_fresh(self, pair: str, max_age: float) -> bool:
         """
