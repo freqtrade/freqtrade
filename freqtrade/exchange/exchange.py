@@ -2298,7 +2298,8 @@ class Exchange:
 
             ob = self._exchange_ws.get_orderbook(pair, limit_eff)
             # ccxt.pro creates the orderbook object as soon as watching starts, but it's
-            # empty until the initial snapshot is applied - fall back to REST until then.
+            # empty until the initial snapshot is applied or if getting it fails.
+            # fall back to REST until then.
             ob_max_age = self._ft_has["orderbook_max_age"]
             if ob.get("bids") and ob.get("asks"):
                 if not self._exchange_ws.orderbook_is_fresh(pair, ob_max_age):
