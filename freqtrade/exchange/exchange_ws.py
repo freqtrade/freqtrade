@@ -242,7 +242,7 @@ class ExchangeWS:
             logger.exception(f"Unhandled exception in orderbook watch task callback for {pair}")
         finally:
             logger.info(f"{pair} - Orderbook task finished - {result}")
-            if hasattr(self, "_loop") and not self._loop.is_closed():
+            if not self._stopping and hasattr(self, "_loop") and not self._loop.is_closed():
                 asyncio.run_coroutine_threadsafe(self._unwatch_orderbook(pair), loop=self._loop)
 
             with self._state_lock:
@@ -281,6 +281,10 @@ class ExchangeWS:
             logger.exception(f"Exception in _unwatch_ohlcv for {pair}, {timeframe},")
 
     async def _unwatch_orderbook(self, pair: str) -> None:
+        if self._stopping:
+            # Unsubscribing from a connection that's going away is pointless.
+            logger.debug("Shutting down - skipping orderbook unwatch for %s", pair)
+            return
         try:
             if self.exchange_has("unWatchOrderBookForSymbols"):
                 await self._ccxt_object.un_watch_order_book_for_symbols([pair])
