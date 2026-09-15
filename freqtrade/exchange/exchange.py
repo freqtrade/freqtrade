@@ -1033,6 +1033,8 @@ class Exchange:
 
         if exchange_conf.get("_ft_has_params"):
             self._ft_has = deep_merge_dicts(exchange_conf.get("_ft_has_params"), self._ft_has)
+            # A plain boolean override replaces the per-stream dict - normalize it.
+            self._ft_has["ws_enabled"] = resolve_ws_enabled(self._ft_has["ws_enabled"])
             logger.info("Overriding exchange._ft_has with config params, result: %s", self._ft_has)
 
     def get_option(self, param: str, default: Any | None = None) -> Any:
