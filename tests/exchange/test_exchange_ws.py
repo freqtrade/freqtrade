@@ -15,6 +15,22 @@ from freqtrade.util import dt_ts
 from ft_client.test_client.test_rest_client import log_has_re
 
 
+@pytest.fixture
+def ws_loop():
+    """
+    A real event loop running in a background thread used for tests
+    """
+    loop = asyncio.new_event_loop()
+    thread = threading.Thread(target=loop.run_forever, daemon=True, name="ws_loop_test")
+    thread.start()
+    while not loop.is_running():
+        sleep(0.01)
+    yield loop
+    loop.call_soon_threadsafe(loop.stop)
+    thread.join(timeout=2)
+    loop.close()
+
+
 def test_exchangews_init(mocker):
     config = MagicMock()
     ccxt_object = MagicMock()
@@ -401,9 +417,10 @@ def test_exchangews_get_ohlcv_with_refresh(mocker):
     exchange_ws.cleanup()
 
 
-def test_exchangews_get_orderbook(mocker):
+def test_exchangews_get_orderbook(mocker, ws_loop):
     config = MagicMock()
     ccxt_object = MagicMock()
+    ccxt_object.close = AsyncMock()
     ob = {
         "bids": [[100.0, 1.0], [99.0, 2.0]],
         "asks": [[101.0, 1.5], [102.0, 3.0]],
@@ -414,6 +431,7 @@ def test_exchangews_get_orderbook(mocker):
     mocker.patch("freqtrade.exchange.exchange_ws.ExchangeWS._start_forever")
 
     exchange_ws = ExchangeWS(config, ccxt_object)
+    exchange_ws._loop = ws_loop
 
     result = exchange_ws.get_orderbook("ETH/USDT", 10)
     assert result["bids"] == ob["bids"]
@@ -449,41 +467,63 @@ def test_exchangews_get_orderbook(mocker):
     assert empty["asks"] == []
     assert empty["symbol"] == "BTC/USDT"
 
+    # The copy runs on the websocket loop thread, not the calling thread making
+    # reads atomic with regards to ccxt's in-place updates.
+    copied_on = []
+    orig_snapshot = exchange_ws._orderbook_snapshot
+
+    async def record_thread(pair, limit):
+        copied_on.append(threading.current_thread().name)
+        return await orig_snapshot(pair, limit)
+
+    mocker.patch.object(exchange_ws, "_orderbook_snapshot", record_thread)
+    assert exchange_ws.get_orderbook("ETH/USDT", 10)["bids"] == ob["bids"]
+    assert copied_on == ["ws_loop_test"]
+
     exchange_ws.cleanup()
 
 
-def test_exchangews_get_orderbook_deepcopy_and_retry(mocker):
+def test_exchangews_get_orderbook_fallbacks(mocker, caplog, ws_loop):
     config = MagicMock()
     ccxt_object = MagicMock()
+    ccxt_object.close = AsyncMock()
     ccxt_object.orderbooks = {"ETH/USDT": {"bids": [[1, 2]], "asks": [[3, 4]]}}
     mocker.patch("freqtrade.exchange.exchange_ws.ExchangeWS._start_forever")
+    caplog.set_level(logging.DEBUG)
 
     exchange_ws = ExchangeWS(config, ccxt_object)
 
-    call_count = {"count": 0}
+    # Every failure mode returns an empty book rather than raising, so the caller falls
+    # back to REST instead of the exception escaping fetch_l2_order_book.
 
-    def deepcopy_side_effect(value):
-        # RuntimeError mimics "collection changed size during iteration" while the
-        # ws thread mutates the book mid-copy - the retrier should swallow and retry.
-        call_count["count"] += 1
-        if call_count["count"] < 3:
-            raise RuntimeError("copy failed")
-        return [row.copy() for row in value]
+    # No loop (startup / after shutdown).
+    assert exchange_ws.get_orderbook("ETH/USDT", 10)["bids"] == []
+    assert log_has_re("Websocket loop not available .* ETH/USDT", caplog)
 
-    mocker.patch("freqtrade.exchange.exchange_ws.deepcopy", deepcopy_side_effect)
+    exchange_ws._loop = ws_loop
 
-    result = exchange_ws.get_orderbook("ETH/USDT", 10)
-
-    # 2 failures, then one successful copy per side.
-    assert call_count["count"] == 4
-    assert result["bids"] == [[1, 2]]
-    assert result["asks"] == [[3, 4]]
-    assert result is not ccxt_object.orderbooks["ETH/USDT"]
-
-    # Fail every time -> surfaces as TemporaryError once retries are exhausted.
+    # The copy itself blows up.
     mocker.patch("freqtrade.exchange.exchange_ws.deepcopy", side_effect=RuntimeError("copy failed"))
-    with pytest.raises(TemporaryError, match=r"Error deepcopying: copy failed"):
-        exchange_ws.get_orderbook("ETH/USDT", 10)
+    assert exchange_ws.get_orderbook("ETH/USDT", 10)["bids"] == []
+    assert log_has_re("Exception while copying the websocket orderbook for ETH/USDT", caplog)
+
+    # A saturated loop doesn't answer within the timeout. The sleep is deliberately far longer
+    # than the timeout, but it's never awaited to completion due to the changed timeout below.
+    snapshot_cancelled = threading.Event()
+
+    async def slow_snapshot(pair, limit):
+        try:
+            await asyncio.sleep(5)
+        except asyncio.CancelledError:
+            snapshot_cancelled.set()
+            raise
+
+    mocker.patch.object(exchange_ws, "_orderbook_snapshot", slow_snapshot)
+    exchange_ws.ob_snapshot_timeout = 0.05
+    assert exchange_ws.get_orderbook("ETH/USDT", 10)["asks"] == []
+    assert log_has_re(r"Timed out after 0\.05s while copying .* ETH/USDT", caplog)
+    # The abandoned copy is cancelled rather than left pending on the loop.
+    assert snapshot_cancelled.wait(timeout=1)
 
     exchange_ws.cleanup()
 
