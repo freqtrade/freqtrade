@@ -557,6 +557,31 @@ def test_exchangews_orderbook_stopped(mocker):
     exchange_ws.cleanup()
 
 
+def test_exchangews_orderbook_stopped_no_unwatch_while_stopping(mocker):
+    config = MagicMock()
+    ccxt_object = MagicMock()
+    ccxt_object.orderbooks = {}
+    mocker.patch("freqtrade.exchange.exchange_ws.ExchangeWS._start_forever", MagicMock())
+
+    exchange_ws = ExchangeWS(config, ccxt_object)
+    exchange_ws._loop = MagicMock()
+    exchange_ws._loop.is_closed.return_value = False
+    exchange_ws._stopping = True
+
+    run_threadsafe = mocker.patch(
+        "freqtrade.exchange.exchange_ws.asyncio.run_coroutine_threadsafe",
+    )
+    exchange_ws._ob_scheduled.add("ETH/BTC")
+    task = MagicMock()
+    task.cancelled.return_value = True
+
+    exchange_ws._orderbook_stopped(task, "ETH/BTC")
+
+    # No unwatch scheduled - it would re-open the session we're closing.
+    assert run_threadsafe.call_count == 0
+    assert "ETH/BTC" not in exchange_ws._ob_scheduled
+
+
 @pytest.mark.parametrize(
     "has,expected_call",
     [
@@ -598,6 +623,23 @@ async def test_exchangews_unwatch_orderbook(mocker, has, expected_call, caplog):
     assert log_has_re("Exception in _unwatch_orderbook for ETH/BTC", caplog)
 
     exchange_ws.cleanup()
+
+
+async def test_exchangews_unwatch_orderbook_while_stopping(mocker, caplog):
+    caplog.set_level(logging.DEBUG)
+    config = MagicMock()
+    ccxt_object = MagicMock()
+    ccxt_object.has = {"unWatchOrderBookForSymbols": True}
+    ccxt_object.un_watch_order_book_for_symbols = AsyncMock()
+    mocker.patch("freqtrade.exchange.exchange_ws.ExchangeWS._start_forever", MagicMock())
+
+    exchange_ws = ExchangeWS(config, ccxt_object)
+    exchange_ws._stopping = True
+
+    await exchange_ws._unwatch_orderbook("ETH/BTC")
+
+    assert ccxt_object.un_watch_order_book_for_symbols.call_count == 0
+    assert log_has_re("Shutting down - skipping orderbook unwatch for ETH/BTC", caplog)
 
 
 async def test_exchangews_watch_orderbook(mocker, time_machine, caplog):
