@@ -27,6 +27,7 @@ from freqtrade.exchange.common import (
     MAP_EXCHANGE_CHILDCLASS,
     SUPPORTED_EXCHANGES,
 )
+from freqtrade.exchange.exchange_types import FtWsEnabled
 from freqtrade.exchange.exchange_utils_timeframe import timeframe_to_minutes, timeframe_to_prev_date
 from freqtrade.ft_types import TradeModeType, ValidExchangesType
 from freqtrade.util import FtPrecise
@@ -156,6 +157,23 @@ def list_available_exchanges(all_exchanges: bool) -> list[ValidExchangesType]:
     ]
 
     return exchanges_valid
+
+
+def resolve_ws_enabled(enable_ws: bool | dict[str, bool]) -> FtWsEnabled:
+    """
+    Normalize the config's `enable_ws` setting into a per-stream FtWsEnabled dict.
+    Supports both a plain boolean (historic behavior - enables/disables all streams)
+    and a dict for per-stream control (e.g. `{"ohlcv": true, "orderbook": false}`).
+    Streams omitted from the dict default to enabled (True).
+    :param enable_ws: The raw `exchange.enable_ws` config value.
+    :return: FtWsEnabled dict with explicit `ohlcv` and `orderbook` keys.
+    """
+    if isinstance(enable_ws, bool):
+        return {"ohlcv": enable_ws, "orderbook": enable_ws}
+    return {
+        "ohlcv": enable_ws.get("ohlcv", True),
+        "orderbook": enable_ws.get("orderbook", True),
+    }
 
 
 def date_minus_candles(timeframe: str, candle_count: int, date: datetime | None = None) -> datetime:
