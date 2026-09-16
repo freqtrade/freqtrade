@@ -24,9 +24,12 @@ class ExchangeWS:
     # Timeout for the get orderbook snapshot round trip to the websocket thread.
     ob_snapshot_timeout = 1.0
 
-    def __init__(self, config: Config, ccxt_object: ccxt.Exchange) -> None:
+    def __init__(
+        self, config: Config, ccxt_object: ccxt.Exchange, orderbook_depth: int | None = None
+    ) -> None:
         self.config = config
         self._ccxt_object = ccxt_object
+        self._orderbook_depth = orderbook_depth
         self._background_tasks: set[asyncio.Task] = set()
         self._state_lock = RLock()
         self._loop_ready = Event()
@@ -333,7 +336,7 @@ class ExchangeWS:
     async def _continuously_async_watch_orderbook(self, pair: str) -> None:
         try:
             while pair in self._ob_watching:
-                await self._ccxt_object.watch_order_book(pair)
+                await self._ccxt_object.watch_order_book(pair, self._orderbook_depth)
                 # watch_order_book returns on every applied frame - record the time so
                 # get_orderbook callers can tell whether the feed is still alive.
                 with self._state_lock:

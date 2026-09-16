@@ -158,6 +158,7 @@ class Exchange(LoggingMixin):
         "l2_limit_range_required": True,  # Allow Empty L2 limit (kucoin)
         "l2_limit_upper": None,  # Upper limit for L2 limit
         "orderbook_max_age": 5,
+        "ws_orderbook_depth": None,
         "mark_ohlcv_price": "mark",
         "mark_ohlcv_timeframe": "1h",
         "funding_fee_timeframe": "1h",
@@ -303,7 +304,9 @@ class Exchange(LoggingMixin):
             self._has_watch_ohlcv or self._has_watch_orderbook
         ):
             self._ws_async = self._init_ccxt(exchange_conf, False, ccxt_async_config)
-            self._exchange_ws = ExchangeWS(self._config, self._ws_async)
+            self._exchange_ws = ExchangeWS(
+                self._config, self._ws_async, self._ft_has["ws_orderbook_depth"]
+            )
 
         logger.info(f'Using Exchange "{self.name}"')
         self.required_candle_call_count = 1
@@ -2293,11 +2296,18 @@ class Exchange(LoggingMixin):
             self._ft_has["l2_limit_upper"],
         )
 
-        if self._has_watch_orderbook and self._exchange_ws:
-            self._exchange_ws.schedule_orderbook(pair)
+        # Effective limit or 100 (limit could be None from a user call).
+        limit_eff = limit1 or limit or 100
+        # The stream only carries "ws_orderbook_depth" levels. Asking it for more would
+        # fall back to REST on every single call while still paying for the subscription.
+        ws_depth = self._ft_has["ws_orderbook_depth"]
 
-            # Effective limit or 100 (limit could be None from a user call).
-            limit_eff = limit1 or limit or 100
+        if (
+            self._has_watch_orderbook
+            and self._exchange_ws
+            and (ws_depth is None or limit_eff <= ws_depth)
+        ):
+            self._exchange_ws.schedule_orderbook(pair)
 
             ob = self._exchange_ws.get_orderbook(pair, limit_eff)
             # ccxt.pro creates the orderbook object as soon as watching starts, but it's

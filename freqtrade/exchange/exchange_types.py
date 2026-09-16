@@ -54,6 +54,9 @@ class FtHas(TypedDict, total=False):
     l2_limit_upper: int | None
     # Max age (seconds) of a websocket-cached orderbook before it's considered stale
     orderbook_max_age: int
+    # Depth the websocket orderbook is subscribed at, which is also the highest "limit"
+    # it may answer.
+    ws_orderbook_depth: int | None
     # fetch_orders
     fetch_orders_limit_minutes: int | None
     # Futures

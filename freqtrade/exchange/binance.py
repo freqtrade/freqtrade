@@ -44,6 +44,7 @@ class Binance(Exchange):
         "trades_has_history": True,
         "fetch_orders_limit_minutes": None,
         "l2_limit_range": [5, 10, 20, 50, 100, 500, 1000],
+        "ws_orderbook_depth": 100,
         "ws_enabled": {"ohlcv": True, "orderbook": True},
         "has_delisting": True,
         # Demo trading
