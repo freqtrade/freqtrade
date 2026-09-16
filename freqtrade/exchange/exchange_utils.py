@@ -159,7 +159,7 @@ def list_available_exchanges(all_exchanges: bool) -> list[ValidExchangesType]:
     return exchanges_valid
 
 
-def resolve_ws_enabled(enable_ws: bool | dict[str, bool]) -> FtWsEnabled:
+def resolve_ws_enabled(enable_ws: bool | FtWsEnabled | dict[str, bool]) -> FtWsEnabled:
     """
     Normalize the config's `enable_ws` setting into a per-stream FtWsEnabled dict.
     Supports both a plain boolean (historic behavior - enables/disables all streams)
