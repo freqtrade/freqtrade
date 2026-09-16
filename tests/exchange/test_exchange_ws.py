@@ -709,7 +709,7 @@ async def test_exchangews_watch_orderbook(mocker, time_machine, caplog):
 
     mocker.patch("freqtrade.exchange.exchange_ws.ExchangeWS._start_forever")
 
-    exchange_ws = ExchangeWS(config, ccxt_object)
+    exchange_ws = ExchangeWS(config, ccxt_object, 50)
     patch_eventloop_threading(exchange_ws)
     try:
         assert exchange_ws._ob_watching == set()
@@ -732,6 +732,8 @@ async def test_exchangews_watch_orderbook(mocker, time_machine, caplog):
         )
         watched_pairs = {c.args[0] for c in ccxt_object.watch_order_book.call_args_list}
         assert watched_pairs == {"ETH/BTC", "XRP/BTC"}
+        # Subscribed at the configured depth - the stream carries no more than that.
+        assert all(c.args[1] == 50 for c in ccxt_object.watch_order_book.call_args_list)
 
         # Each applied frame records a refresh time, so the feed reads as fresh.
         assert await wait_for_condition(

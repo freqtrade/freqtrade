@@ -122,18 +122,19 @@ class TestCCXTExchangeWs:
         assert ob["asks"][0][0] <= ob["asks"][-1][0]
 
         # Force the "websocket book too shallow" path to exercise the REST fallback
-        # against the live exchange. The stream depth differs per exchange.
-        mocker.patch.object(
+        # against the live exchange. The request stays within the subscribed depth, so
+        # the websocket path is entered and only then rejected on the book's length.
+        m_ws = mocker.patch.object(
             exch._exchange_ws,
             "get_orderbook",
             return_value=exch._exchange_ws.get_orderbook(pair, 2),
         )
         caplog.clear()
-        # The requested depth is capped to what the exchange's REST endpoint supports.
-        deep = exch.fetch_l2_order_book(pair, 100_000)
-        assert deep is not None
+        shallow = exch.fetch_l2_order_book(pair, limit)
+        assert shallow is not None
+        assert m_ws.call_count == 1
         assert m_rest.call_count == 1
-        assert log_has_re(r"Websocket orderbook for .* only has 2/.* entries.*", caplog)
+        assert log_has_re(rf"Websocket orderbook for .* only has 2/{limit} entries.*", caplog)
         # REST answered - with more entries than the (mocked) websocket book holds.
-        assert len(deep["bids"]) > 2
-        assert len(deep["asks"]) > 2
+        assert len(shallow["bids"]) > 2
+        assert len(shallow["asks"]) > 2

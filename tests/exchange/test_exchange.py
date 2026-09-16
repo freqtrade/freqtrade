@@ -3633,20 +3633,30 @@ def test_fetch_l2_order_book_ws_stale_fallback(default_conf, mocker, order_book_
     assert api_mock.fetch_l2_order_book.call_count == 1
     exchange._ft_has["l2_limit_range"] = [5, 10, 20, 50, 100, 500, 1000]
 
+    # Past the depth the stream is subscribed at (binance: 100) the websocket could
+    # never answer - don't subscribe and don't copy the book just to discard it.
+    caplog.clear()
+    ws_mock.reset_mock()
+    order_book = exchange.fetch_l2_order_book("ETH/BTC", limit=500)
+    assert order_book != ws_ob
+    assert ws_mock.schedule_orderbook.call_count == 0
+    assert ws_mock.get_orderbook.call_count == 0
+    assert api_mock.fetch_l2_order_book.call_count == 2
+
     # Stale feed (stuck websocket) -> warn and fall back to REST.
     caplog.clear()
     ws_mock.orderbook_is_fresh.return_value = False
     order_book = exchange.fetch_l2_order_book("ETH/BTC", limit=10)
     assert "bids" in order_book
     assert "asks" in order_book
-    assert api_mock.fetch_l2_order_book.call_count == 2
+    assert api_mock.fetch_l2_order_book.call_count == 3
     assert log_has_re(r"Websocket orderbook for ETH/BTC is stale .* falling back to REST", caplog)
 
     # Throttled via log_once - a stuck feed must not warn on every single call.
     # The message is still emitted at debug level, so assert on the warning records only.
     caplog.clear()
     order_book = exchange.fetch_l2_order_book("ETH/BTC", limit=10)
-    assert api_mock.fetch_l2_order_book.call_count == 3
+    assert api_mock.fetch_l2_order_book.call_count == 4
     assert not [
         r for r in caplog.records if r.levelno == logging.WARNING and "is stale" in r.getMessage()
     ]
