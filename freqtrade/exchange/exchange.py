@@ -110,6 +110,7 @@ from freqtrade.misc import (
     safe_value_fallback,
     safe_value_nested,
 )
+from freqtrade.mixins import LoggingMixin
 from freqtrade.util import FtTTLCache, PeriodicCache, dt_from_ts, dt_now
 from freqtrade.util.datetime_helpers import dt_humanize_delta, dt_ts, format_ms_time
 
@@ -119,7 +120,7 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T")
 
 
-class Exchange:
+class Exchange(LoggingMixin):
     # Parameters to add directly to buy/sell calls (like agreeing to trading agreement)
     _params: dict = {}
 
@@ -195,6 +196,8 @@ class Exchange:
         it does basic validation whether the specified exchange and pairs are valid.
         :return: None
         """
+        # Throttle repeated warnings (e.g. a stale websocket orderbook) to once per period.
+        LoggingMixin.__init__(self, logger, refresh_period=300)
         self._api: ccxt.Exchange
         self._api_async: ccxt_pro.Exchange
         self._ws_async: ccxt_pro.Exchange = None
@@ -2303,9 +2306,11 @@ class Exchange:
             ob_max_age = self._ft_has["orderbook_max_age"]
             if ob.get("bids") and ob.get("asks"):
                 if not self._exchange_ws.orderbook_is_fresh(pair, ob_max_age):
-                    logger.warning(
+                    # Throttled - a stuck feed would otherwise warn on every single call.
+                    self.log_once(
                         f"Websocket orderbook for {pair} is stale (no update within "
-                        f"{ob_max_age}s) - falling back to REST."
+                        f"{ob_max_age}s) - falling back to REST.",
+                        logger.warning,
                     )
                 elif len(ob["bids"]) < limit_eff or len(ob["asks"]) < limit_eff:
                     # The websocket book isn't as deep as the REST response would be.

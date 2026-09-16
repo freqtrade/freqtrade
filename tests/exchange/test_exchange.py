@@ -3642,6 +3642,15 @@ def test_fetch_l2_order_book_ws_stale_fallback(default_conf, mocker, order_book_
     assert api_mock.fetch_l2_order_book.call_count == 2
     assert log_has_re(r"Websocket orderbook for ETH/BTC is stale .* falling back to REST", caplog)
 
+    # Throttled via log_once - a stuck feed must not warn on every single call.
+    # The message is still emitted at debug level, so assert on the warning records only.
+    caplog.clear()
+    order_book = exchange.fetch_l2_order_book("ETH/BTC", limit=10)
+    assert api_mock.fetch_l2_order_book.call_count == 3
+    assert not [
+        r for r in caplog.records if r.levelno == logging.WARNING and "is stale" in r.getMessage()
+    ]
+
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_fetch_l2_order_book_exception(default_conf, mocker, exchange_name):
