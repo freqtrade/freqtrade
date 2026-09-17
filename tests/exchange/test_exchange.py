@@ -4856,6 +4856,7 @@ def test_get_valid_pair_combination(default_conf, mocker, markets):
         _load_async_markets=MagicMock(),
         validate_timeframes=MagicMock(),
         validate_pricing=MagicMock(),
+        validate_trading_mode_and_margin_mode=MagicMock(),
         markets=PropertyMock(return_value=markets),
     )
     ex = Exchange(default_conf)
@@ -4864,12 +4865,28 @@ def test_get_valid_pair_combination(default_conf, mocker, markets):
     assert next(ex.get_valid_pair_combination("BTC", "ETH")) == "ETH/BTC"
     multicombs = list(ex.get_valid_pair_combination("ETH", "USDT"))
     assert len(multicombs) == 2
-    assert "ETH/USDT" in multicombs
-    assert "ETH/USDT:USDT" in multicombs
+    # Spot mode yields the spot pair first.
+    assert multicombs == ["ETH/USDT", "ETH/USDT:USDT"]
 
     with pytest.raises(ValueError, match=r"Could not combine.* to get a valid pair."):
         for _x in ex.get_valid_pair_combination("NOPAIR", "ETH"):
             pass
+
+    default_conf["trading_mode"] = "futures"
+    default_conf["margin_mode"] = "isolated"
+    ex = Exchange(default_conf)
+
+    # Futures mode prefers the futures pair
+    assert list(ex.get_valid_pair_combination("ETH", "USDT")) == ["ETH/USDT:USDT", "ETH/USDT"]
+    # Pairs without a futures listing still resolve.
+    assert next(ex.get_valid_pair_combination("ETH", "BTC")) == "ETH/BTC"
+
+    default_conf["trading_mode"] = "margin"
+    default_conf["margin_mode"] = "cross"
+    ex = Exchange(default_conf)
+
+    # Margin markets use spot naming
+    assert list(ex.get_valid_pair_combination("ETH", "USDT")) == ["ETH/USDT", "ETH/USDT:USDT"]
 
 
 @pytest.mark.parametrize(
