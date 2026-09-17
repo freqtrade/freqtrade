@@ -805,13 +805,15 @@ class Exchange:
     def get_valid_pair_combination(self, curr_1: str, curr_2: str) -> Generator[str, None, None]:
         """
         Get valid pair combination of curr_1 and curr_2 by trying both combinations.
+        Candidates matching the bot's trading mode are yielded first.
         """
+        spot_pairs = (f"{curr_1}/{curr_2}", f"{curr_2}/{curr_1}")
+        futures_pairs = (f"{curr_1}/{curr_2}:{curr_2}", f"{curr_2}/{curr_1}:{curr_1}")
         yielded = False
         for pair in (
-            f"{curr_1}/{curr_2}",
-            f"{curr_2}/{curr_1}",
-            f"{curr_1}/{curr_2}:{curr_2}",
-            f"{curr_2}/{curr_1}:{curr_1}",
+            (*futures_pairs, *spot_pairs)
+            if self.trading_mode == TradingMode.FUTURES
+            else (*spot_pairs, *futures_pairs)
         ):
             if pair in self.markets and self.markets[pair].get("active"):
                 yielded = True
