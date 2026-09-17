@@ -25,7 +25,7 @@ The following attributes / properties are available for each individual trade - 
 | `close_rate_requested` | float | The close rate that was requested. |
 | `safe_close_rate` | float | Close rate or `close_rate_requested` or 0.0 if neither is available. Only makes sense once the trade is closed. |
 | `stake_amount` | float | Amount in Stake (or Quote) currency. |
-| `max_stake_amount` | float | Maximum stake amount that was used in this trade (sum of all filled Entry orders). |
+| `max_stake_amount` | float | Maximum stake amount that was used in this trade (sum of all filled Entry orders). Also the base for the total relative profit of a trade. |
 | `amount` | float | Amount in Asset / Base currency that is currently owned. Will be 0.0 until the initial order fills. |
 | `amount_requested` | float | Amount that was originally requested for this trade as part of the first entry order. |
 | `open_date` | datetime | Timestamp when trade was opened **use `open_date_utc` instead** |
