@@ -2182,6 +2182,7 @@ Storing big junks of data may lead to unintended side-effects, like a database b
 <li><code>trade.get_custom_data(key='something', default=0)</code> - Returns the actual value given in the type provided.</li>
 <li><code>trade.get_custom_data_entry(key='something')</code> - Returns the entry - including metadata. The value is accessible via <code>.value</code> property.</li>
 <li><code>trade.set_custom_data(key='something', value={'some': 'value'})</code> - set or update the corresponding key for this trade. Value must be serializable - and we recommend to keep the stored data relatively small.</li>
+<li><code>trade.delete_custom_data(key='something')</code> - delete the corresponding key for this trade. Without a key, all custom data of this trade is deleted.</li>
 </ul>
 <p>"value" can be any type (both in setting and receiving) - but must be json serializable.</p>
 </details>
