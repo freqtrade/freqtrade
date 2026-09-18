@@ -13,6 +13,7 @@ class FtHas(TypedDict, total=False):
 
     # Stoploss on exchange
     stoploss_on_exchange: bool
+    native_trailing_stoploss: bool
     stop_price_param: str
     stop_price_prop: Literal["stopPrice", "stopLossPrice"]
     stop_price_type_field: str
