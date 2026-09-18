@@ -96,6 +96,7 @@ The above is a simple example - there are simpler ways to retrieve trade data li
     * `trade.get_custom_data(key='something', default=0)` - Returns the actual value given in the type provided.
     * `trade.get_custom_data_entry(key='something')` - Returns the entry - including metadata. The value is accessible via `.value` property.
     * `trade.set_custom_data(key='something', value={'some': 'value'})` - set or update the corresponding key for this trade. Value must be serializable - and we recommend to keep the stored data relatively small.
+    * `trade.delete_custom_data(key='something')` - delete the corresponding key for this trade. Without a key, all custom data of this trade is deleted.
 
     "value" can be any type (both in setting and receiving) - but must be json serializable.
 
