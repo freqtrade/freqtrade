@@ -1593,22 +1593,78 @@ class FreqtradeBot(LoggingMixin):
                     return True
         return False
 
-    def create_stoploss_order(self, trade: Trade, stop_price: float) -> bool:
+    def _use_native_trailing_stoploss(self, trade: Trade) -> bool:
+        positive_trailing = self.strategy.trailing_stop_positive
+        return bool(
+            self.strategy.order_types.get("stoploss_on_exchange_native_trailing", False)
+            and trade.is_stop_loss_trailing
+            and positive_trailing is not None
+            and trade.stop_loss_pct is not None
+            and isclose(abs(trade.stop_loss_pct), positive_trailing)
+        )
+
+    def _get_native_trailing_stoploss_callback(self, trade: Trade) -> float | None:
+        if not self._use_native_trailing_stoploss(trade):
+            return None
+        positive_trailing = self.strategy.trailing_stop_positive
+        if positive_trailing is None:
+            return None
+        if self.config["dry_run"]:
+            self.log_once(
+                "Native trailing stoploss is not submitted in dry-run mode. "
+                "Using the regular simulated stoploss on exchange.",
+                logger.info,
+            )
+            return None
+        try:
+            return self.exchange.get_native_trailing_stoploss_callback(
+                pair=trade.pair,
+                trailing_ratio=positive_trailing,
+                side=trade.exit_side,
+                leverage=trade.leverage,
+            )
+        except InvalidOrderException as exception:
+            self.log_once(
+                f"Native trailing stoploss is unavailable for {trade.pair}: {exception} "
+                "Keeping the regular stoploss on exchange.",
+                logger.warning,
+            )
+            return None
+
+    def create_stoploss_order(
+        self, trade: Trade, stop_price: float, force_regular: bool = False
+    ) -> bool:
         """
         Abstracts creating stoploss orders from the logic.
         Handles errors and updates the trade database object.
         Force-sells the pair (using EmergencySell reason) in case of Problems creating the order.
         :return: True if the order succeeded, and False in case of problems.
         """
+        native_callback = (
+            None if force_regular else self._get_native_trailing_stoploss_callback(trade)
+        )
+        using_native_trailing = native_callback is not None
+        positive_trailing = self.strategy.trailing_stop_positive
         try:
-            stoploss_order = self.exchange.create_stoploss(
-                pair=trade.pair,
-                amount=trade.amount,
-                stop_price=stop_price,
-                order_types=self.strategy.order_types,
-                side=trade.exit_side,
-                leverage=trade.leverage,
-            )
+            if using_native_trailing and positive_trailing is not None:
+                stoploss_order = self.exchange.create_native_trailing_stoploss(
+                    pair=trade.pair,
+                    amount=trade.amount,
+                    stop_price=stop_price,
+                    trailing_ratio=positive_trailing,
+                    order_types=self.strategy.order_types,
+                    side=trade.exit_side,
+                    leverage=trade.leverage,
+                )
+            else:
+                stoploss_order = self.exchange.create_stoploss(
+                    pair=trade.pair,
+                    amount=trade.amount,
+                    stop_price=stop_price,
+                    order_types=self.strategy.order_types,
+                    side=trade.exit_side,
+                    leverage=trade.leverage,
+                )
 
             order_obj = Order.parse_from_ccxt_object(
                 stoploss_order, trade.pair, "stoploss", trade.amount, stop_price
@@ -1616,16 +1672,43 @@ class FreqtradeBot(LoggingMixin):
             trade.orders.append(order_obj)
             return True
         except InsufficientFundsError as e:
+            if using_native_trailing:
+                logger.warning(
+                    f"Unable to place native trailing stoploss for {trade.pair}: {e}. "
+                    "Restoring the regular stoploss on exchange."
+                )
+                return self.create_stoploss_order(trade, stop_price, force_regular=True)
             logger.warning(f"Unable to place stoploss order {e}.")
             # Try to figure out what went wrong
             self.handle_insufficient_funds(trade)
 
         except InvalidOrderException as e:
+            if using_native_trailing:
+                logger.warning(
+                    f"Unable to place native trailing stoploss for {trade.pair}: {e}. "
+                    "Restoring the regular stoploss on exchange."
+                )
+                return self.create_stoploss_order(trade, stop_price, force_regular=True)
             logger.error(f"Unable to place a stoploss order on exchange. {e}")
             logger.warning("Exiting the trade forcefully")
             self.emergency_exit(trade, stop_price)
 
-        except ExchangeError:
+        except OperationalException as e:
+            if using_native_trailing:
+                logger.warning(
+                    f"Unable to place native trailing stoploss for {trade.pair}: {e}. "
+                    "Restoring the regular stoploss on exchange."
+                )
+                return self.create_stoploss_order(trade, stop_price, force_regular=True)
+            raise
+
+        except ExchangeError as e:
+            if using_native_trailing:
+                logger.warning(
+                    f"Unable to place native trailing stoploss for {trade.pair}: {e}. "
+                    "Restoring the regular stoploss on exchange."
+                )
+                return self.create_stoploss_order(trade, stop_price, force_regular=True)
             logger.exception("Unable to place a stoploss order on exchange.")
         return False
 
@@ -1734,17 +1817,25 @@ class FreqtradeBot(LoggingMixin):
         :param order: Current on exchange stoploss order
         :return: None
         """
+        if self.exchange.is_native_trailing_stoploss(order):
+            return
+
         stoploss_norm = self.exchange.price_to_precision(
             trade.pair,
             trade.stoploss_or_liquidation,
             rounding_mode=ROUND_DOWN if trade.is_short else ROUND_UP,
         )
 
-        if self.exchange.stoploss_adjust(stoploss_norm, order, side=trade.exit_side):
+        activate_native_trailing = self._get_native_trailing_stoploss_callback(trade) is not None
+        if activate_native_trailing or self.exchange.stoploss_adjust(
+            stoploss_norm, order, side=trade.exit_side
+        ):
             # we check if the update is necessary
             update_beat = self.strategy.order_types.get("stoploss_on_exchange_interval", 60)
             upd_req = datetime.now(UTC) - timedelta(seconds=update_beat)
-            if trade.stoploss_last_update_utc and upd_req >= trade.stoploss_last_update_utc:
+            if activate_native_trailing or (
+                trade.stoploss_last_update_utc and upd_req >= trade.stoploss_last_update_utc
+            ):
                 # cancelling the current stoploss on exchange first
                 logger.info(
                     f"Cancelling current stoploss on exchange for pair {trade.pair} "
@@ -1755,6 +1846,12 @@ class FreqtradeBot(LoggingMixin):
                 if not trade.is_open:
                     logger.warning(
                         f"Trade {trade} is closed, not creating trailing stoploss order."
+                    )
+                    return
+                if activate_native_trailing and trade.has_open_sl_orders:
+                    logger.warning(
+                        f"Current stoploss order for {trade.pair} is still open. "
+                        "Skipping replacement to avoid duplicate stoploss orders."
                     )
                     return
 
