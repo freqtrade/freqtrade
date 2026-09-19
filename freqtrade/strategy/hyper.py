@@ -24,7 +24,8 @@ logger = logging.getLogger(__name__)
 SpaceParams = dict[str, BaseParameter]
 AllSpaceParams = dict[str, SpaceParams]
 
-SpaceApiInput = dict[str, dict[str, Any]]
+# Parameter values, grouped by space - as loaded from a file or provided via the API
+SpaceParamValues = dict[str, dict[str, Any]]
 
 
 class HyperStrategyMixin:
@@ -43,8 +44,8 @@ class HyperStrategyMixin:
 
         params = self.load_params_from_file()
         params = params.get("params", {})
-        self._ft_params_from_file: dict = params
-        self.__ft_params_from_api: SpaceApiInput = {}
+        self._ft_params_from_file: SpaceParamValues = params
+        self.__ft_params_from_api: SpaceParamValues = {}
         # Init/loading of parameters is done as part of ft_bot_start().
 
     def _ft_copy_parameters(self) -> None:
@@ -112,16 +113,22 @@ class HyperStrategyMixin:
         * Parameter defaults
         """
         self._ft_hyper_params = detect_all_parameters(self)
+        used_params = self.ft_used_params
 
         for space in self._ft_hyper_params:
             params_values = deep_merge_dicts(
-                self._ft_params_from_file.get(space, {}),
-                deepcopy(getattr(self, f"{space}_params", {})),
-            )
-            params_values = deep_merge_dicts(
-                self.__ft_params_from_api.get(space, {}), params_values
+                used_params.get(space, {}), deepcopy(getattr(self, f"{space}_params", {}))
             )
             self._ft_set_param(self._ft_hyper_params[space], params_values, space, hyperopt)
+
+    @property
+    def ft_used_params(self) -> SpaceParamValues:
+        """
+        Parameters used by this strategy, by space.
+        Parameters from the parameter file, with API overrides applied on top.
+        Does not contain parameter defaults or values from the `<space>_params` attributes.
+        """
+        return deep_merge_dicts(self.__ft_params_from_api, deepcopy(self._ft_params_from_file))
 
     def ft_set_api_params(self, params: list[dict[str, Any]] | None) -> None:
         """

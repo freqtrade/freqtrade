@@ -135,7 +135,10 @@ def __run_backtest_bg(
                     strategy_files={
                         s.get_strategy_name(): s.__file__ for s in cachedBt.strategylist
                     },
-                    strategy_params=strategy_params,
+                    # Store the used parameters if the API provided overrides
+                    strategy_params=(
+                        {strategy_name: strat.ft_used_params} if strategy_params else None
+                    ),
                 )
                 cachedBt.results["metadata"][strategy_name]["filename"] = str(fn.stem)
                 cachedBt.results["metadata"][strategy_name]["strategy"] = strategy_name
