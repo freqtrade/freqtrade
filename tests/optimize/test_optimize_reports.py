@@ -358,6 +358,61 @@ def test_store_backtest_results_real(tmp_path, caplog):
     assert fn == "backtest-result-2024_01_01_15_05_25.zip"
 
 
+def test_store_backtest_results_strategy_params(tmp_path):
+    data = {"metadata": {}, "strategy": {}, "strategy_comparison": []}
+    config = {"exportdirectory": tmp_path, "original_config": {}}
+    strategy_test_dir = Path(__file__).parent.parent / "strategy" / "strats"
+    shutil.copy(strategy_test_dir / "strategy_test_v3.py", tmp_path)
+    strategy_files = {"DefStrat": str(tmp_path / "strategy_test_v3.py")}
+    params_file = tmp_path / "strategy_test_v3.json"
+
+    def stored_params(dtappendix):
+        with ZipFile(tmp_path / f"backtest-result-{dtappendix}.zip") as zipf:
+            return json.loads(zipf.read(f"backtest-result-{dtappendix}_DefStrat.json"))
+
+    # No parameter file on disk - used parameters must still be stored
+    store_backtest_results(
+        config,
+        data,
+        "2024_01_01_15_05_25",
+        strategy_files=strategy_files,
+        strategy_params={"DefStrat": {"buy": {"rsi_period": 21}}},
+    )
+    params = stored_params("2024_01_01_15_05_25")
+    assert params["params"] == {"buy": {"rsi_period": 21}}
+    assert params["strategy_name"] == "DefStrat"
+    assert params["ft_stratparam_v"] == 1
+
+    params_file.write_text('{"strategy_name": "DefStrat", "params": {"sell": {"x": 1}}}')
+
+    # Used parameters take precedence over the parameter file
+    store_backtest_results(
+        config,
+        data,
+        "2024_01_01_15_05_26",
+        strategy_files=strategy_files,
+        strategy_params={"DefStrat": {"buy": {"rsi_period": 21}, "sell": {"x": 99}}},
+    )
+    assert stored_params("2024_01_01_15_05_26")["params"] == {
+        "buy": {"rsi_period": 21},
+        "sell": {"x": 99},
+    }
+
+    # Parameters of other strategies are ignored
+    store_backtest_results(
+        config,
+        data,
+        "2024_01_01_15_05_27",
+        strategy_files=strategy_files,
+        strategy_params={"OtherStrat": {"buy": {"rsi_period": 21}}},
+    )
+    # Without used parameters, the parameter file is copied verbatim
+    with ZipFile(tmp_path / "backtest-result-2024_01_01_15_05_27.zip") as zipf:
+        assert zipf.read("backtest-result-2024_01_01_15_05_27_DefStrat.json") == (
+            params_file.read_bytes()
+        )
+
+
 def test_write_read_backtest_candles(tmp_path):
     candle_dict = {"DefStrat": {"UNITTEST/BTC": pd.DataFrame()}}
     bt_results = {"metadata": {}, "strategy": {}, "strategy_comparison": []}
