@@ -108,7 +108,7 @@ class HyperStrategyMixin:
         if filename.is_file():
             logger.info(f"Loading parameters from file {filename}")
             try:
-                params = HyperoptTools.load_params(filename)
+                params = HyperoptTools.load_params_from_file(filename)
                 if params.get("strategy_name") != self.__class__.__name__:
                     raise OperationalException("Invalid parameter file provided.")
                 return params
