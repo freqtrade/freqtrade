@@ -524,7 +524,7 @@ def load_file_from_zip(zip_path: Path, filename: str) -> bytes:
                 with zipf.open(filename) as file:
                     return file.read()
             except KeyError:
-                logger.error(f"File {filename} not found in zip: {zip_path}")
+                # Not logged - callers decide whether a missing file is an error.
                 raise ValueError(f"File {filename} not found in zip: {zip_path}") from None
     except FileNotFoundError:
         raise ValueError(f"Zip file {zip_path} not found.")
