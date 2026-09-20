@@ -479,6 +479,7 @@ def api_backtest_pair_history(
         )
     timerange = payload.timerange
     if not timerange:
+        # backtest_start_ts are in the backtest output files since 2 years.
         timerange = f"{bt_result['backtest_start_ts']}-{bt_result['backtest_end_ts']}"
 
     config_loc = deepcopy(config)
@@ -492,7 +493,7 @@ def api_backtest_pair_history(
         handleExchangePayload(
             ExchangeModePayloadMixin(
                 exchange=bt_config.get("exchange", {}).get("name"),
-                trading_mode=bt_config.get("trading_mode"),
+                trading_mode=bt_config.get("trading_mode", "spot"),
                 margin_mode=bt_config.get("margin_mode"),
             ),
             config_loc,
