@@ -3,7 +3,8 @@ usage: freqtrade backtesting-show [-h] [-v] [--no-color] [--logfile FILE] [-V]
                                   [-c PATH] [-d PATH] [--userdir PATH]
                                   [--backtest-filename PATH]
                                   [--backtest-directory PATH]
-                                  [--show-pair-list]
+                                  [--show-pair-list] [--show-params]
+                                  [--export-params]
                                   [--breakdown {day,week,month,year,weekday} [{day,week,month,year,weekday} ...]]
 
 options:
@@ -18,6 +19,9 @@ options:
                         Directory to use for backtest results. Example:
                         `--export-directory=user_data/backtest_results/`.
   --show-pair-list      Show backtesting pairlist sorted by profit.
+  --show-params         Show the parameters stored in the backtest result.
+  --export-params       Export the parameters stored in the backtest result to
+                        the strategy's parameter file.
   --breakdown {day,week,month,year,weekday} [{day,week,month,year,weekday} ...]
                         Show backtesting breakdown per [day, week, month,
                         year, weekday].
