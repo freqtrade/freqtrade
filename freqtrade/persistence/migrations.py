@@ -1,6 +1,7 @@
 import logging
 
 from sqlalchemy import Engine, inspect, select, text, update
+from sqlalchemy.sql import quoted_name
 
 from freqtrade.exceptions import OperationalException
 from freqtrade.persistence.trade_model import Order, Trade
@@ -93,12 +94,18 @@ def set_sequence_ids(
 
 def drop_index_on_table(engine, inspector, table_bak_name):
     with engine.begin() as connection:
-        # drop indexes on backup table in new session
+        # drop indexes on backup table in new session. Use SQLAlchemy's
+        # `quoted_name` so the identifier quoting matches the dialect's
+        # expectations: MySQL wants backticks, PostgreSQL and SQLite want
+        # double quotes. The previous hard-coded double quotes would either
+        # fail (MySQL) or be parsed as string literals (SQLite in strict mode).
+        quoted_table = quoted_name(table_bak_name, quote=True)
         for index in inspector.get_indexes(table_bak_name):
+            quoted_index = quoted_name(index["name"], quote=True)
             if engine.name == "mysql":
-                connection.execute(text(f'drop index "{index["name"]}" on {table_bak_name}'))
+                connection.execute(text(f"drop index {quoted_index} on {quoted_table}"))
             else:
-                connection.execute(text(f'drop index "{index["name"]}"'))
+                connection.execute(text(f"drop index {quoted_index}"))
 
 
 def migrate_trades_and_orders_table(
