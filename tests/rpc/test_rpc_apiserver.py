@@ -4125,6 +4125,93 @@ def test_api_markets_webserver(botclient):
     assert "binance_spot" in ApiBG.exchanges
 
 
+def test_api_backtest_pair_history(botclient, tmp_path: Path, mocker):
+    ftbot, client = botclient
+    ftbot.config["user_data_dir"] = tmp_path
+    ftbot.config["runmode"] = RunMode.WEBSERVER
+    bt_results_base = tmp_path / "backtest_results"
+    bt_results_base.mkdir()
+    from freqtrade.optimize.optimize_reports import store_backtest_results
+
+    orig_file = Path(__file__).parent.parent / "strategy" / "strats" / "strategy_test_v3.py"
+    # Mark the archived strategy, to tell it apart from the one in the strategy directory.
+    strategy_file = bt_results_base.parent / "strategy_test_v3.py"
+    strategy_file.write_text(
+        orig_file.read_text().replace(
+            'dataframe["adx"] = ta.ADX(dataframe)',
+            'dataframe["adx"] = ta.ADX(dataframe)\n        dataframe["from_zip"] = 1',
+        )
+    )
+    meta = {
+        "run_id": "testrun",
+        "backtest_start_time": 1515628800,
+        "timeframe": "5m",
+        # 2018-01-11 - 2018-01-12
+        "backtest_start_ts": 1515628800,
+        "backtest_end_ts": 1515715200,
+    }
+    dtappendix = f"2018_01_12_00_00_{len(list(bt_results_base.glob('*.zip'))):02d}"
+    store_backtest_results(
+        {"exportdirectory": bt_results_base, "original_config": {}},
+        {"metadata": {CURRENT_TEST_STRATEGY: meta}, "strategy": {}, "strategy_comparison": []},
+        dtappendix,
+        strategy_files={CURRENT_TEST_STRATEGY: str(strategy_file)},
+        strategy_params={CURRENT_TEST_STRATEGY: {"buy": {"buy_rsi": 21}}},
+    )
+    fn = f"backtest-result-{dtappendix}"
+
+    url = f"{BASE_URI}/backtest/history/{fn}/{CURRENT_TEST_STRATEGY}/pair_history"
+
+    observed_param_values = []
+    original_set_param = HyperStrategyMixin._ft_set_param
+
+    def ft_set_param_spy(self, params, param_values, space, hyperopt=False):
+        observed_param_values.append((space, dict(param_values)))
+        return original_set_param(self, params, param_values, space, hyperopt)
+
+    mocker.patch.object(HyperStrategyMixin, "_ft_set_param", new=ft_set_param_spy)
+
+    rc = client_post(client, url, data={"pair": "UNITTEST/BTC", "columns": ["rsi", "buy_rsi"]})
+    assert_response(rc, 200)
+    result = rc.json()
+    assert result["strategy"] == CURRENT_TEST_STRATEGY
+    # Timeframe and timerange default to the ones the backtest ran with
+    assert result["timeframe"] == "5m"
+    assert result["length"] == 289
+    # The strategy stored in the zip is used, not the one in the strategy directory
+    assert "from_zip" in result["all_columns"]
+    # Parameters stored in the zip are used, too
+    assert any(
+        space == "buy" and param_values.get("buy_rsi") == 21
+        for space, param_values in observed_param_values
+    )
+
+    # Explicit timerange overrides the backtest timerange
+    rc = client_post(
+        client, url, data={"pair": "UNITTEST/BTC", "timerange": "20180111-20180111T1200"}
+    )
+    assert_response(rc, 200)
+    assert rc.json()["length"] == 145
+
+    # Nonexistent file - fails "is_file_in_dir" check
+    rc = client_post(
+        client,
+        f"{BASE_URI}/backtest/history/randomFile/{CURRENT_TEST_STRATEGY}/pair_history",
+        data={"pair": "UNITTEST/BTC"},
+    )
+    assert_response(rc, 404)
+    assert rc.json()["detail"] == "File not found."
+
+    # Strategy not part of this backtest
+    rc = client_post(
+        client,
+        f"{BASE_URI}/backtest/history/{fn}/OtherStrategy/pair_history",
+        data={"pair": "UNITTEST/BTC"},
+    )
+    assert_response(rc, 404)
+    assert "OtherStrategy not found" in rc.json()["detail"]
+
+
 _STRATEGY_VALIDATOR = get_args(StrategyName)[1]
 
 
