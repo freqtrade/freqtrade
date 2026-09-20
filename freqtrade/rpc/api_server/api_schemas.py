@@ -749,6 +749,13 @@ class BacktestMarketChange(BaseModel):
     data: list[list[Any]]
 
 
+class BacktestPairHistoryRequest(BaseModel):
+    pair: str
+    columns: list[str] | None = None
+    # Defaults to the timerange the backtest ran on
+    timerange: str | None = None
+
+
 class LookaheadAnalysisRequest(BaseModel):
     strategy: StrategyName
     timeframe: str | None = None
