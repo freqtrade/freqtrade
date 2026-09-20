@@ -105,8 +105,12 @@ class JsonDataHandler(IDataHandler):
         :param trading_mode: Trading mode to use (used to determine the filename)
         """
         filename = self._pair_trades_filename(self._datadir, pair, trading_mode)
-        # Convert StringDtype columns to object to avoid NaN serialization issues
-        for col in data.select_dtypes(include="string").columns:
+        # Normalise both pd.StringDtype (`string`) and plain `object` columns so
+        # missing values serialise as `null` instead of NaN, which rapidjson
+        # rejects with ValueError. The previous loop only covered `string`,
+        # leaving object-dtype text columns like legacy `id`/`type`/`side`
+        # writing out as `NaN` and breaking downstream loads.
+        for col in data.select_dtypes(include=["string", "object"]).columns:
             data[col] = data[col].astype(object).where(data[col].notna(), other=None)
         trades = data.values.tolist()
         misc.file_dump_json(filename, trades, is_zip=self._use_zip)
