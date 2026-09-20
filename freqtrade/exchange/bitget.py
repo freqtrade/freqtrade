@@ -129,9 +129,17 @@ class Bitget(Exchange):
                 except ccxt.DDoSProtection as e:
                     raise DDosProtection(e) from e
                 except (ccxt.OperationFailed, ccxt.ExchangeError) as e:
-                    raise TemporaryError(
-                        f"Could not get order due to {e.__class__.__name__}. Message: {e}"
-                    ) from e
+                    # Bitget returns an OperationFailed/ExchangeError when a
+                    # historical account lacks the new planType field. Treat
+                    # that as a no-match for this params2 and fall through to
+                    # the next combination instead of bubbling up; only raise
+                    # when the entire fallback chain has been exhausted.
+                    logger.info(
+                        "Bitget stoploss fetch with params %s failed (%s); trying fallback",
+                        params2,
+                        e.__class__.__name__,
+                    )
+                    break
                 except ccxt.BaseError as e:
                     raise OperationalException(e) from e
         raise RetryableOrderError(f"StoplossOrder not found (pair: {pair} id: {order_id}).")
