@@ -10,7 +10,7 @@ from collections import deque
 from datetime import UTC, datetime
 from typing import Any
 
-from pandas import DataFrame, Timedelta, Timestamp, to_timedelta
+from pandas import DataFrame, Timedelta, Timestamp
 
 from freqtrade.configuration import TimeRange
 from freqtrade.constants import (
@@ -221,8 +221,14 @@ class DataProvider:
         existing_df, _ = self.__producer_pairs_df[producer_name][pair_key]
 
         # CHECK FOR MISSING CANDLES
-        # Convert the timeframe to a timedelta for pandas
-        timeframe_delta: Timedelta = to_timedelta(timeframe)
+        # Convert the timeframe to a fixed-duration Timedelta. We go through
+        # `timeframe_to_seconds` because pandas `to_timedelta` only accepts
+        # fixed-length units (ns/us/ms/s/m/h/D/W) and rejects calendar-style
+        # codes like "1M", "3M", "1y" with ValueError — which would break the
+        # calendar-timeframe path used by some external producers.
+        timeframe_delta: Timedelta = Timedelta(
+            seconds=timeframe_to_seconds(timeframe)
+        )
         local_last: Timestamp = existing_df.iloc[-1]["date"]  # We want the last date from our copy
         # We want the first date from the incoming
         incoming_first: Timestamp = dataframe.iloc[0]["date"]
