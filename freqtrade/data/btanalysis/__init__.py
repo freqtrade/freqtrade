@@ -5,6 +5,7 @@ from .bt_fileutils import (
     delete_backtest_result,
     extract_trades_of_period,
     find_existing_backtest_stats,
+    get_backtest_filename,
     get_backtest_market_change,
     get_backtest_result,
     get_backtest_resultlist,
