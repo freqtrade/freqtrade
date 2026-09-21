@@ -133,6 +133,7 @@ class HyperStrategyMixin:
     def ft_set_api_params(self, params: list[dict[str, Any]] | None) -> None:
         """
         Store API-provided parameter overrides for the next ft_load_hyper_params() call.
+        :raises: DependencyException if an override does not match a loadable parameter.
         """
         self.__ft_params_from_api = {}
         if not params:
@@ -148,26 +149,22 @@ class HyperStrategyMixin:
             name = param_data.get("name", None)
             param_type = param_data.get("param_type", None)
             value = param_data.get("value", None)
-
-            base_warning = "Skipping strategy parameter override"
+            base_warning = "Invalid strategy parameter override:"
 
             if not name or not param_type:
-                logger.warning(f"{base_warning} with missing name or param_type.")
-                continue
+                raise DependencyException(f"{base_warning} missing name or param_type.")
 
             strategy_param = strategy_parameters.get(name)
             if strategy_param is None:
-                logger.warning(f"{base_warning} unknown strategy parameter override '{name}'.")
-                continue
+                raise DependencyException(f"{base_warning} '{name}' is not a strategy parameter.")
             if strategy_param.param_type != param_type:
-                logger.warning(f"{base_warning} '{name}' due to mismatched type '{param_type}'.")
-                continue
+                raise DependencyException(
+                    f"{base_warning} '{name}' is a {strategy_param.param_type}, not a {param_type}."
+                )
             if not strategy_param.load:
-                logger.warning(f"{base_warning} '{name}' because it is disabled.")
-                continue
+                raise DependencyException(f"{base_warning} '{name}' is not loaded (load=False).")
             if not strategy_param.space or strategy_param.space not in self._ft_hyper_params:
-                logger.warning(f"{base_warning} '{name}' without a valid space.")
-                continue
+                raise DependencyException(f"{base_warning} '{name}' has no valid space.")
 
             grouped_values[strategy_param.space][name] = value
 
