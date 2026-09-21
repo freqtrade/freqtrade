@@ -198,7 +198,7 @@ def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame
     stoch = ta.STOCHF(dataframe)
     dataframe['fastd'] = stoch['fastd']
     dataframe['fastk'] = stoch['fastk']
-    dataframe['bb_lower'] = ta.BBANDS(dataframe, nbdevup=2, nbdevdn=2)['lowerband']
+    dataframe['bb_lower'] = ta.BBANDS(dataframe, timeperiod=20, nbdevup=2, nbdevdn=2)['lowerband']
     dataframe['sma'] = ta.SMA(dataframe, timeperiod=40)
     dataframe['tema'] = ta.TEMA(dataframe, timeperiod=9)
     dataframe['mfi'] = ta.MFI(dataframe)
