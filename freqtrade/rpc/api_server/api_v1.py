@@ -121,6 +121,8 @@ def plot_config(
     config=Depends(get_config),
     rpc: RPC | None = Depends(get_rpc_optional),
 ):
+    verify_strategy(strategy)
+
     if not strategy:
         if not rpc:
             raise RPCException("Strategy is mandatory in webserver mode.")
