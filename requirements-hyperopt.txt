@@ -2,7 +2,7 @@
 -r requirements.txt
 
 # Required for hyperopt
-scikit-learn==1.9.0
+scikit-learn==1.9.1
 filelock==3.32.6
 optuna==5.0.0
 cmaes==0.13.1
