@@ -10,6 +10,7 @@ from datetime import UTC, datetime, timedelta
 from io import BytesIO
 from pathlib import Path
 from unittest.mock import ANY, MagicMock, PropertyMock, patch
+from urllib.parse import urlencode
 from zipfile import ZipFile
 
 import pandas as pd
@@ -18,6 +19,7 @@ import rapidjson
 import uvicorn
 from fastapi import FastAPI, WebSocketDisconnect
 from fastapi.exceptions import HTTPException
+from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 from requests.auth import _basic_auth_str
 from sqlalchemy import select
@@ -3973,3 +3975,92 @@ def test_api_markets_webserver(botclient):
 
     assert "hyperliquid_spot" in ApiBG.exchanges
     assert "binance_spot" in ApiBG.exchanges
+
+
+_BASE64_STRATEGY = "xx:cHJpbnQoImhlbGxvIHdvcmxkIik="
+
+# Endpoints accepting a strategy name, mapped to the remaining arguments they require.
+# Those arguments must be valid - anything missing is rejected by pydantic before
+# verify_strategy() runs, which would make the test below pass for the wrong reason.
+_STRATEGY_ENDPOINTS = {
+    ("GET", "/plot_config"): {},
+    ("GET", "/strategy/{strategy}"): {},
+    ("GET", "/pair_history"): {
+        "pair": "UNITTEST/BTC",
+        "timeframe": "5m",
+        "timerange": "20180111-20180112",
+    },
+    ("POST", "/pair_history"): {
+        "pair": "UNITTEST/BTC",
+        "timeframe": "5m",
+        "timerange": "20180111-20180112",
+    },
+    ("POST", "/backtest"): {"enable_protections": False},
+    ("POST", "/lookahead_analysis"): {},
+    ("POST", "/recursive_analysis"): {},
+}
+
+# These accept a strategy name as well, but only ever use it as a key into an already
+# stored backtest result - they never reach StrategyResolver, so there is nothing to
+# inject. Listed explicitly to keep the check consistent.
+_STRATEGY_ENDPOINTS_NO_RESOLVE = {
+    ("GET", "/backtest/history/result"),
+    ("GET", "/backtest/history/{file}/{strategy}/wallet"),
+    ("PATCH", "/backtest/history/{file}"),
+}
+
+
+def _iter_api_routes(routes):
+    """Walk the route tree - included routers are wrapped, so recurse into them."""
+    for route in routes:
+        if isinstance(route, APIRoute):
+            yield route
+        else:
+            yield from _iter_api_routes(
+                getattr(route, "routes", None)
+                or getattr(getattr(route, "original_router", None), "routes", [])
+            )
+
+
+def test_api_strategy_endpoints_known(botclient):
+    """All endpoints taking a strategy argument are known"""
+    _ftbot, client = botclient
+
+    # Find routes through fastAPI introspection.
+    found: set[tuple[str, str]] = set()
+    for route in _iter_api_routes(client.app.routes):
+        params = {f.name for f in (*route.dependant.path_params, *route.dependant.query_params)}
+        for body_param in route.dependant.body_params:
+            params.update(getattr(body_param.field_info.annotation, "model_fields", {}))
+        if "strategy" in params:
+            found.update((m, route.path) for m in route.methods if m not in ("HEAD", "OPTIONS"))
+
+    known = set(_STRATEGY_ENDPOINTS) | _STRATEGY_ENDPOINTS_NO_RESOLVE
+    assert found == known, (
+        f"Unlisted strategy endpoint(s): {sorted(found - known)}. Add a verify_strategy() "
+        f"call and list them in _STRATEGY_ENDPOINTS - or in _STRATEGY_ENDPOINTS_NO_RESOLVE "
+        f"if they never load a strategy. Gone: {sorted(known - found)}"
+    )
+
+
+@pytest.mark.parametrize("method,path", sorted(_STRATEGY_ENDPOINTS))
+def test_api_strategy_base64_rejected(botclient, tmp_path, method, path):
+    """Test that base64 encoded strategies are rejected on endpoints taking a strategy."""
+    ftbot, client = botclient
+    ftbot.config["user_data_dir"] = tmp_path
+    ftbot.config["runmode"] = RunMode.WEBSERVER
+    ApiBG.analysis_running = False
+
+    url = f"{BASE_URI}{path}".replace("{strategy}", _BASE64_STRATEGY)
+    args = _STRATEGY_ENDPOINTS[(method, path)]
+    if method == "GET":
+        params = dict(args)
+        if "{strategy}" not in path:
+            params["strategy"] = _BASE64_STRATEGY
+        rc = client_get(client, f"{url}?{urlencode(params)}")
+    else:
+        sender = client_patch if method == "PATCH" else client_post
+        rc = sender(client, url, data={**args, "strategy": _BASE64_STRATEGY})
+
+    assert_response(rc, 422)
+    assert rc.json()["detail"] == "base64 encoded strategies are not allowed."
