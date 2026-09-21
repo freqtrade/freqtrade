@@ -2613,13 +2613,6 @@ def test_api_pair_history(botclient, tmp_path, mocker):
             "strategy": CURRENT_TEST_STRATEGY,
             "strategy_params": [
                 {"name": "buy_rsi", "space": "buy", "param_type": "IntParameter", "value": 21},
-                {"name": "buy_plusdi", "space": "buy", "param_type": "IntParameter", "value": 99},
-                {
-                    "name": "sell_minusdi",
-                    "space": "sell",
-                    "param_type": "DecimalParameter",
-                    "value": 0.7,
-                },
             ],
         },
     )
@@ -2628,6 +2621,24 @@ def test_api_pair_history(botclient, tmp_path, mocker):
         space == "buy" and param_values.get("buy_rsi") == 21
         for space, param_values in observed_param_values
     )
+
+    # Invalid overrides are rejected, not silently skipped
+    rc = client_post(
+        client,
+        f"{BASE_URI}/pair_history",
+        data={
+            "pair": "UNITTEST/BTC",
+            "timeframe": timeframe,
+            "timerange": "20180111-20180112",
+            "strategy": CURRENT_TEST_STRATEGY,
+            "strategy_params": [
+                # buy_plusdi is a RealParameter
+                {"name": "buy_plusdi", "space": "buy", "param_type": "IntParameter", "value": 99},
+            ],
+        },
+    )
+    assert_response(rc, 502)
+    assert "Invalid strategy parameter override: 'buy_plusdi'" in rc.json()["detail"]
 
     # No strategy
     rc = client_post(
@@ -3361,13 +3372,6 @@ def test_api_backtesting(botclient, mocker, fee, caplog, tmp_path):
             "enable_protections": False,
             "strategy_params": [
                 {"name": "buy_rsi", "space": "buy", "param_type": "IntParameter", "value": 22},
-                {"name": "buy_plusdi", "space": "buy", "param_type": "IntParameter", "value": 99},
-                {
-                    "name": "sell_minusdi",
-                    "space": "sell",
-                    "param_type": "DecimalParameter",
-                    "value": 0.7,
-                },
             ],
         }
         rc = client_post(client, f"{BASE_URI}/backtest", data=data)
@@ -3455,6 +3459,30 @@ def test_api_backtesting(botclient, mocker, fee, caplog, tmp_path):
         rc = client_post(client, f"{BASE_URI}/backtest", data=data)
         assert log_has("Backtesting caused an error: DeadBeef", caplog)
 
+        rc = client_get(client, f"{BASE_URI}/backtest")
+        assert_response(rc)
+        result = rc.json()
+        assert result["status"] == "error"
+        assert "Backtest failed" in result["status_msg"]
+
+        # Invalid parameter overrides fail the backtest instead of being skipped
+        data["stake_amount"] = 103
+        data["strategy_params"] = [
+            # sell_minusdi has load=False
+            {
+                "name": "sell_minusdi",
+                "space": "sell",
+                "param_type": "DecimalParameter",
+                "value": 0.7,
+            }
+        ]
+        rc = client_post(client, f"{BASE_URI}/backtest", data=data)
+        assert_response(rc)
+        assert log_has(
+            "Backtesting caused an error: Invalid strategy parameter override: "
+            "'sell_minusdi' is not loaded (load=False).",
+            caplog,
+        )
         rc = client_get(client, f"{BASE_URI}/backtest")
         assert_response(rc)
         result = rc.json()

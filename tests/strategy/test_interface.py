@@ -1140,6 +1140,46 @@ def test_auto_hyperopt_interface(default_conf):
     del strategy.__class__.enter_rsi
 
 
+def test_ft_set_api_params(default_conf):
+    default_conf.update({"strategy": "HyperoptableStrategy"})
+    strategy = StrategyResolver.load_strategy(default_conf)
+
+    strategy.ft_set_api_params(
+        [{"name": "sell_rsi", "space": "sell", "param_type": "IntParameter", "value": 60}]
+    )
+    assert strategy.ft_used_params == {"sell": {"sell_rsi": 60}}
+    strategy.ft_load_hyper_params(False)
+    assert strategy.sell_rsi.value == 60
+
+    strategy.ft_set_api_params(None)
+    assert strategy.ft_used_params == {}
+    strategy.ft_load_hyper_params(False)
+    assert strategy.sell_rsi.value == strategy.sell_params["sell_rsi"]
+
+    base = "Invalid strategy parameter override: "
+    invalid = [
+        ({"param_type": "IntParameter", "value": 1}, "missing name or param_type"),
+        ({"name": "sell_rsi", "value": 1}, "missing name or param_type"),
+        (
+            {"name": "sell_rsii", "param_type": "IntParameter", "value": 1},
+            "'sell_rsii' is not a strategy parameter",
+        ),
+        (
+            {"name": "sell_rsi", "param_type": "RealParameter", "value": 1},
+            "'sell_rsi' is a IntParameter, not a RealParameter",
+        ),
+        (
+            {"name": "sell_minusdi", "param_type": "DecimalParameter", "value": 0.7},
+            r"'sell_minusdi' is not loaded \(load=False\)",
+        ),
+    ]
+    for param, message in invalid:
+        with pytest.raises(DependencyException, match=base + message):
+            strategy.ft_set_api_params([param])
+        # Nothing is kept from a rejected call
+        assert strategy.ft_used_params == {}
+
+
 def test_auto_hyperopt_interface_loadparams(default_conf, mocker, caplog):
     default_conf.update({"strategy": "HyperoptableStrategy"})
     del default_conf["stoploss"]
