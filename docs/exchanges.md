@@ -45,12 +45,13 @@ In case of problems related to rate-limits (usually DDOS Exceptions in your logs
     "ccxt_config": {"enableRateLimit": true},
     "ccxt_async_config": {
         "enableRateLimit": true,
-        "rateLimit": 3100
+        "rateLimit": 9000
     },
 ```
 
 This configuration enables kraken, as well as rate-limiting to avoid bans from the exchange.
-`"rateLimit": 3100` defines a wait-event of 3.1s between each call. This can also be completely disabled by setting `"enableRateLimit"` to false.
+`"rateLimit": 9000` permits enough time between requests to avoid hitting the rate limit when downloading trade history. Please read [kraken API documentation](https://support.kraken.com/hc/en-us/articles/360001114451-Rate-limits) for more details.
+This can also be completely disabled by setting `"enableRateLimit"` to false.
 
 !!! Note
     Optimal settings for rate-limiting depend on the exchange and the size of the whitelist, so an ideal parameter will vary on many other settings.
