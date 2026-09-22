@@ -3472,6 +3472,51 @@ def test_refresh_latest_ohlcv_funding_rate(mocker, default_conf_usdt, caplog) ->
         assert (df["open"] == df["funding_rate"]).all()
 
 
+@pytest.mark.parametrize("drop_incomplete", [None, True, False])
+def test_refresh_latest_ohlcv_funding_rate_never_dropped(
+    mocker, default_conf_usdt, time_machine, drop_incomplete
+) -> None:
+    """Funding rates are final as soon as they're returned - no caller may force the last
+    one to be dropped, even when it falls into the currently forming candle."""
+    ohlcv = generate_test_data_raw("1h", 24, "2025-01-02 12:00:00+00:00")
+    funding_data = [{"timestamp": x[0], "fundingRate": x[1]} for x in ohlcv]
+    # Mid-candle of the last entry - a regular candle type would be dropped here.
+    time_machine.move_to("2025-01-03 11:30:00+00:00", tick=False)
+
+    exchange = get_patched_exchange(mocker, default_conf_usdt)
+    exchange._api_async.fetch_funding_rate_history = AsyncMock(return_value=funding_data)
+
+    pair = ("XRP/USDT:USDT", "1h", CandleType.FUNDING_RATE)
+    res = exchange.refresh_latest_ohlcv([pair], cache=False, drop_incomplete=drop_incomplete)
+
+    assert len(res[pair]) == len(ohlcv)
+
+
+@pytest.mark.parametrize(
+    "candle_type,partial_candle,drop_incomplete,expected",
+    [
+        (CandleType.SPOT, True, None, True),
+        (CandleType.SPOT, False, None, False),
+        (CandleType.SPOT, False, True, True),
+        (CandleType.SPOT, True, False, False),
+        (CandleType.FUTURES, True, None, True),
+        (CandleType.MARK, True, None, True),
+        # funding_rates are always final - neither the exchange setting nor the caller applies.
+        (CandleType.FUNDING_RATE, True, None, False),
+        (CandleType.FUNDING_RATE, False, None, False),
+        (CandleType.FUNDING_RATE, True, True, False),
+        (CandleType.FUNDING_RATE, False, True, False),
+    ],
+)
+def test_drop_incomplete_candle(
+    mocker, default_conf_usdt, candle_type, partial_candle, drop_incomplete, expected
+) -> None:
+    exchange = get_patched_exchange(mocker, default_conf_usdt)
+    exchange._ohlcv_partial_candle = partial_candle
+
+    assert exchange._drop_incomplete_candle(candle_type, drop_incomplete) is expected
+
+
 def test_refresh_latest_ohlcv_funding_rate_schema(mocker, default_conf_usdt, testdatadir) -> None:
     """Live funding rate dataframes must be schema-identical to disk-loaded ones,
     including after a cache merge - otherwise strategies break mid-session."""

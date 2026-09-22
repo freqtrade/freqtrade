@@ -2686,16 +2686,12 @@ class Exchange:
                 )
             )
         logger.debug(f"Downloaded data for {pair} from ccxt with length {len(data)}.")
-        # funding_rates are always complete, so never need to be dropped.
-        drop_incomplete = (
-            self._ohlcv_partial_candle if candle_type != CandleType.FUNDING_RATE else False
-        )
         return ohlcv_to_dataframe(
             data,
             timeframe,
             pair,
             fill_missing=False,
-            drop_incomplete=drop_incomplete,
+            drop_incomplete=self._drop_incomplete_candle(candle_type),
             candle_type=candle_type,
         )
 
@@ -2748,8 +2744,7 @@ class Exchange:
             timeframe,
             candle_type,
             data,
-            # funding_rates are always complete, so never need to be dropped.
-            self._ohlcv_partial_candle if candle_type != CandleType.FUNDING_RATE else False,
+            self._drop_incomplete_candle(candle_type),
         )
 
     def _try_build_from_websocket(
@@ -2896,6 +2891,20 @@ class Exchange:
 
         return input_coroutines, cached_pairs
 
+    def _drop_incomplete_candle(
+        self, candle_type: CandleType, drop_incomplete: bool | None = None
+    ) -> bool:
+        """
+        Decide whether the last candle of a response is a candidate for dropping.
+        :param candle_type: Candle type of the response
+        :param drop_incomplete: Caller override. None defers to the exchange's
+            `ohlcv_partial_candle` setting.
+        """
+        if candle_type in (CandleType.FUNDING_RATE,):
+            # Never incomplete - there's nothing to drop, whatever the caller asked for.
+            return False
+        return self._ohlcv_partial_candle if drop_incomplete is None else drop_incomplete
+
     def _process_ohlcv_df(
         self,
         pair: str,
@@ -2985,7 +2994,8 @@ class Exchange:
         :param since_ms: time since when to download, in milliseconds
         :param cache: Assign result to _klines. Useful for one-off downloads like for pairlists
         :param drop_incomplete: Control candle dropping.
-            Specifying None defaults to _ohlcv_partial_candle
+            Specifying None defaults to _ohlcv_partial_candle.
+            Candle types that are always final (e.g. funding_rate) ignore this.
         :return: Dict of [{(pair, timeframe): Dataframe}]
         """
         logger.debug("Refreshing candle (OHLCV) data for %d pairs", len(pair_list))
@@ -3010,7 +3020,9 @@ class Exchange:
                     continue
                 # Deconstruct tuple (has 5 elements)
                 pair, timeframe, c_type, ticks, drop_hint = res
-                drop_incomplete_ = drop_hint if drop_incomplete is None else drop_incomplete
+                drop_incomplete_ = self._drop_incomplete_candle(
+                    c_type, drop_hint if drop_incomplete is None else drop_incomplete
+                )
                 ohlcv_df = self._process_ohlcv_df(
                     pair, timeframe, c_type, ticks, cache, drop_incomplete_, fetch_start_ms
                 )
@@ -3182,15 +3194,14 @@ class Exchange:
                     data = sorted(data, key=lambda x: x[0])
             except IndexError:
                 logger.exception("Error loading %s. Result was %s.", pair, data)
-                return pair, timeframe, candle_type, [], self._ohlcv_partial_candle
+                return pair, timeframe, candle_type, [], self._drop_incomplete_candle(candle_type)
             logger.debug("Done fetching pair %s, %s interval %s...", pair, candle_type, timeframe)
             return (
                 pair,
                 timeframe,
                 candle_type,
                 data,
-                # funding_rates are always complete, so never need to be dropped.
-                self._ohlcv_partial_candle if candle_type != CandleType.FUNDING_RATE else False,
+                self._drop_incomplete_candle(candle_type),
             )
 
         except ccxt.NotSupported as e:
