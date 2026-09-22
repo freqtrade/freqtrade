@@ -139,6 +139,29 @@ def test_get_full_model_path(mocker, freqai_conf, model):
     assert model_path.is_dir() is True
 
 
+@pytest.mark.parametrize(
+    "identifier,valid",
+    [
+        ("unique-id", True),
+        ("my_model.v2", True),
+        ("sub/dir", True),
+        ("../../../tmp/escaped", False),
+        ("..", False),
+        ("/etc/passwd", False),
+    ],
+)
+def test_get_full_models_path_stays_within_user_data(freqai_conf, identifier, valid):
+    freqai_conf["freqai"]["identifier"] = identifier
+    models_dir = Path(freqai_conf["user_data_dir"]) / "models"
+
+    if valid:
+        path = FreqaiDataKitchen.get_full_models_path(None, freqai_conf)
+        assert path.resolve().is_relative_to(models_dir.resolve())
+    else:
+        with pytest.raises(OperationalException, match="Invalid freqai identifier"):
+            FreqaiDataKitchen.get_full_models_path(None, freqai_conf)
+
+
 def test_get_pair_data_for_features_with_prealoaded_data(mocker, freqai_conf):
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
