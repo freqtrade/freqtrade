@@ -29,9 +29,10 @@ from freqtrade.rpc.api_server.api_schemas import (
     BacktestMetadataUpdate,
     BacktestRequest,
     BacktestResponse,
+    StrategyName,
     WalletHistoryResponse,
 )
-from freqtrade.rpc.api_server.deps import get_config, verify_strategy
+from freqtrade.rpc.api_server.deps import get_config
 from freqtrade.rpc.api_server.webserver_bgwork import ApiBG
 from freqtrade.rpc.rpc import RPCException
 from freqtrade.util import dt_now
@@ -159,8 +160,6 @@ async def api_start_backtest(
     """Start backtesting if not done so already"""
     if ApiBG.analysis_running:
         raise RPCException("Bot Background task already running")
-
-    verify_strategy(bt_settings.strategy)
 
     btconfig = deepcopy(config)
     btconfig["runmode"] = RunMode.BACKTEST
@@ -315,7 +314,7 @@ def api_backtest_history(config=Depends(get_config)):
 
 
 @router.get("/backtest/history/result", response_model=BacktestResponse)
-def api_backtest_history_result(filename: str, strategy: str, config=Depends(get_config)):
+def api_backtest_history_result(filename: str, strategy: StrategyName, config=Depends(get_config)):
     # Get backtest result history, read from metadata files
     bt_results_base: Path = config["user_data_dir"] / "backtest_results"
     for ext in [".zip", ".json"]:
@@ -408,7 +407,7 @@ def api_get_backtest_market_change(file: str, config=Depends(get_config)):
     response_model=WalletHistoryResponse,
     tags=["webserver", "backtest"],
 )
-def api_get_backtest_wallet(file: str, strategy: str, config=Depends(get_config)):
+def api_get_backtest_wallet(file: str, strategy: StrategyName, config=Depends(get_config)):
     bt_results_base: Path = config["user_data_dir"] / "backtest_results"
     file_abs = (bt_results_base / file).with_suffix(".zip")
     # Ensure file is in backtest_results directory

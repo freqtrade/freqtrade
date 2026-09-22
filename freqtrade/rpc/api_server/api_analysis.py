@@ -18,7 +18,7 @@ from freqtrade.rpc.api_server.api_schemas import (
     RecursiveAnalysisRequest,
     RecursiveAnalysisResponse,
 )
-from freqtrade.rpc.api_server.deps import get_config, verify_strategy
+from freqtrade.rpc.api_server.deps import get_config
 from freqtrade.rpc.api_server.webserver_bgwork import ApiBG
 from freqtrade.util import get_progress_tracker
 
@@ -121,8 +121,6 @@ def api_start_recursive_analysis(
     if ApiBG.analysis_running:
         raise HTTPException(status_code=400, detail="Analysis is already running.")
 
-    verify_strategy(payload.strategy)
-
     config_loc = deepcopy(config)
     config_loc["runmode"] = RunMode.UTIL_NO_EXCHANGE
     settings = dict(payload)
@@ -207,8 +205,6 @@ def api_start_lookahead_analysis(
 ):
     if ApiBG.analysis_running:
         raise HTTPException(status_code=400, detail="Analysis is already running.")
-
-    verify_strategy(payload.strategy)
 
     config_loc = deepcopy(config)
     config_loc["runmode"] = RunMode.UTIL_NO_EXCHANGE

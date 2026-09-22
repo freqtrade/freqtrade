@@ -1,12 +1,38 @@
 from datetime import date, datetime
 from typing import Annotated, Any, Literal
 
-from pydantic import AwareDatetime, BaseModel, Field, RootModel, SerializeAsAny, model_validator
+from pydantic import (
+    AfterValidator,
+    AwareDatetime,
+    BaseModel,
+    Field,
+    RootModel,
+    SerializeAsAny,
+    model_validator,
+)
+from pydantic_core import PydanticCustomError
 
 from freqtrade.constants import DL_DATA_TIMEFRAMES, IntOrInf
 from freqtrade.enums import MarginMode, OrderTypeValues, SignalDirection, TradingMode
 from freqtrade.ft_types import AnnotationType, ValidExchangesType
 from freqtrade.rpc.api_server.webserver_bgwork import JOB_CATEGORIES, ProgressTask
+
+
+def _no_base64_strategy(value: str) -> str:
+    """
+    Reject `StrategyName:base64` strategy names.
+    This is a security measure to prevent potential attacks using base64 encoded strategies.
+    Embedding a strategy as base64 is a config-file convenience
+    (see docs/strategy-advanced.md) - an API caller must never be able to supply one.
+    """
+    if ":" in value:
+        raise PydanticCustomError("strategy_name", "base64 encoded strategies are not allowed.")
+    return value
+
+
+# A strategy name as accepted from an API caller. Every request parameter or payload
+# field carrying a strategy name must use this instead of a plain `str`.
+StrategyName = Annotated[str, AfterValidator(_no_base64_strategy)]
 
 
 class ExchangeModePayloadMixin(BaseModel):
@@ -599,7 +625,7 @@ class PairCandlesRequest(BaseModel):
 
 class PairHistoryRequest(PairCandlesRequest, ExchangeModePayloadMixin):
     timerange: str
-    strategy: str | None = None
+    strategy: StrategyName | None = None
     freqaimodel: str | None = None
     live_mode: bool = False
 
@@ -633,7 +659,7 @@ class BacktestFreqAIInputs(BaseModel):
 
 
 class BacktestRequest(BaseModel):
-    strategy: str
+    strategy: StrategyName
     timeframe: str | None = None
     timeframe_detail: str | None = None
     timerange: str | None = None
@@ -671,7 +697,7 @@ class BacktestHistoryEntry(BaseModel):
 
 
 class BacktestMetadataUpdate(BaseModel):
-    strategy: str
+    strategy: StrategyName
     notes: str = ""
 
 
@@ -682,7 +708,7 @@ class BacktestMarketChange(BaseModel):
 
 
 class LookaheadAnalysisRequest(BaseModel):
-    strategy: str
+    strategy: StrategyName
     timeframe: str | None = None
     timerange: str | None = None
     minimum_trade_amount: int = 10
@@ -707,7 +733,7 @@ class LookaheadAnalysisResponse(BaseModel):
 
 
 class RecursiveAnalysisRequest(BaseModel):
-    strategy: str
+    strategy: StrategyName
     timeframe: str | None = None
     timerange: str | None = None
     startup_candle: list[int] | None = None
