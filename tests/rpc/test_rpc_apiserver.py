@@ -2552,7 +2552,7 @@ def test_api_pair_history(botclient, tmp_path, mocker):
         },
     )
     assert_response(rc, 422)
-    assert rc.json()["detail"] == "base64 encoded strategies are not allowed."
+    assert rc.json()["detail"][0]["msg"] == "base64 encoded strategies are not allowed."
 
     # Disallow base64 strategies
     rc = client_get(
@@ -2561,7 +2561,7 @@ def test_api_pair_history(botclient, tmp_path, mocker):
         f"&timerange=20200111-20200112&strategy={base64_dummy}",
     )
     assert_response(rc, 422)
-    assert rc.json()["detail"] == "base64 encoded strategies are not allowed."
+    assert rc.json()["detail"][0]["msg"] == "base64 encoded strategies are not allowed."
 
 
 def test_api_pair_history_live_mode(botclient, tmp_path, mocker):
@@ -2749,6 +2749,7 @@ def test_api_strategy(botclient, tmp_path, mocker):
     # Disallow base64 strategies
     rc = client_get(client, f"{BASE_URI}/strategy/xx:cHJpbnQoImhlbGxvIHdvcmxkIik=")
     assert_response(rc, 422)
+    assert rc.json()["detail"][0]["msg"] == "base64 encoded strategies are not allowed."
     mocker.patch(
         "freqtrade.resolvers.strategy_resolver.StrategyResolver._load_strategy",
         side_effect=Exception("Test"),
