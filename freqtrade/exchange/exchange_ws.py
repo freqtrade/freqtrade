@@ -244,8 +244,13 @@ class ExchangeWS:
                 with self._state_lock:
                     if (pair, timeframe, candle_type) not in self._klines_watching:
                         break
-                start = dt_ts()
-                data = await self._ccxt_object.watch_ohlcv(pair, timeframe)
+                try:
+                    start = dt_ts()
+                    data = await self._ccxt_object.watch_ohlcv(pair, timeframe)
+                except ccxt.UnsubscribeError:
+                    logger.debug(f"Retrying watch_ohlcv for {pair}, {timeframe} after unsubscribe")
+                    await asyncio.sleep(0.1)
+                    continue
                 with self._state_lock:
                     self._klines_last_refresh[(pair, timeframe, candle_type)] = dt_ts()
                 logger.debug(

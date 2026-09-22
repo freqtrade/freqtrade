@@ -6,7 +6,7 @@ from time import sleep
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from ccxt import NotSupported
+from ccxt import NotSupported, UnsubscribeError
 
 from freqtrade.enums import CandleType
 from freqtrade.exceptions import TemporaryError
@@ -238,6 +238,41 @@ async def test_exchangews_ohlcv(mocker, time_machine, caplog):
 
     finally:
         # Cleanup
+        exchange_ws.cleanup()
+
+
+async def test_exchangews_unsubscribe_error_retries_watching(mocker):
+    config = MagicMock()
+    ccxt_object = MagicMock()
+    watch_calls = 0
+    second_call = asyncio.Event()
+
+    async def watch_ohlcv(*args):
+        nonlocal watch_calls
+        watch_calls += 1
+        if watch_calls == 1:
+            raise UnsubscribeError("subscription is still being unsubscribed")
+        second_call.set()
+        await asyncio.sleep(0)
+        return []
+
+    ccxt_object.watch_ohlcv = watch_ohlcv
+    mocker.patch("freqtrade.exchange.exchange_ws.ExchangeWS._start_forever", MagicMock())
+
+    exchange_ws = ExchangeWS(config, ccxt_object)
+    paircomb = ("ETH/USDT", "1m", CandleType.SPOT)
+    exchange_ws._klines_watching.add(paircomb)
+    task = asyncio.create_task(
+        exchange_ws._continuously_async_watch_ohlcv("ETH/USDT", "1m", CandleType.SPOT)
+    )
+
+    try:
+        async with asyncio.timeout(2):
+            await second_call.wait()
+        assert paircomb in exchange_ws._klines_watching
+    finally:
+        exchange_ws._klines_watching.discard(paircomb)
+        await task
         exchange_ws.cleanup()
 
 
