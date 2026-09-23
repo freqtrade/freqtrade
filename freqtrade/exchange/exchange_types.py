@@ -27,6 +27,10 @@ class FtHas(TypedDict, total=False):
     ohlcv_has_history: bool
     ohlcv_partial_candle: bool
     ohlcv_require_since: bool
+    # Seconds after the candle close time to assume a candle is actually closed
+    ohlcv_late_candle_grace_secs: int
+    # Maximum seconds a pair with missing candles may go unqueried
+    ohlcv_max_poll_interval_secs: int
     ohlcv_volume_currency: str
     ohlcv_candle_limit_per_timeframe: dict[str, int]
     always_require_api_keys: bool

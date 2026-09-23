@@ -2581,6 +2581,89 @@ def test___now_is_time_to_refresh(default_conf, mocker, exchange_name, time_mach
     assert exchange._now_is_time_to_refresh(pair, "1d", candle_type) is True
 
 
+@pytest.mark.parametrize("exchange_name", EXCHANGES)
+def test___now_is_time_to_refresh_no_new_candle(default_conf, mocker, exchange_name, time_machine):
+    """Exchange did not return the last completed candle for an already queried pair."""
+    exchange = get_patched_exchange(mocker, default_conf, exchange=exchange_name)
+    pair = "BTC/USDT"
+    candle_type = CandleType.SPOT
+    pair_key = (pair, "5m", candle_type)
+    start_dt = datetime(2023, 12, 1, 0, 10, 0, tzinfo=UTC)
+
+    # Only the just-closed candle (0:05) is missing - it may be published late.
+    time_machine.move_to(start_dt + timedelta(seconds=5), tick=False)
+    exchange._pairs_last_refresh_time[pair_key] = dt_ts(start_dt - timedelta(minutes=10))
+    exchange._pairs_last_poll_time[pair_key] = dt_ts(start_dt + timedelta(seconds=5))
+    assert exchange._now_is_time_to_refresh(pair, "5m", candle_type) is True
+
+    # ... including once the grace period ended - only from then on can it be considered final.
+    time_machine.move_to(
+        start_dt + timedelta(seconds=exchange._ohlcv_late_candle_grace_ms / 1000), tick=False
+    )
+    assert exchange._now_is_time_to_refresh(pair, "5m", candle_type) is True
+
+    exchange._pairs_last_poll_time[pair_key] = dt_ts()
+    assert exchange._now_is_time_to_refresh(pair, "5m", candle_type) is False
+
+    # More than one candle is missing - the exchange has no data for this pair (e.g. bitvavo
+    # omitting candles without trades). Don't query again within this candle.
+    time_machine.move_to(start_dt + timedelta(seconds=5), tick=False)
+    exchange._pairs_last_refresh_time[pair_key] = dt_ts(start_dt - timedelta(hours=2))
+    assert exchange._now_is_time_to_refresh(pair, "5m", candle_type) is False
+
+    # The maximum poll interval never applies on short timeframes - the next candle is due first.
+    time_machine.move_to(start_dt + timedelta(minutes=4), tick=False)
+    assert exchange._now_is_time_to_refresh(pair, "5m", candle_type) is False
+
+    # ... but do query once the next candle opened.
+    time_machine.move_to(start_dt + timedelta(minutes=5), tick=False)
+    assert exchange._now_is_time_to_refresh(pair, "5m", candle_type) is True
+
+    # On long timeframes, waiting for the next candle would leave an exchange that lags behind
+    # unnoticed for hours - re-check every `ohlcv_max_poll_interval_secs` instead.
+    candle_open = datetime(2023, 12, 1, tzinfo=UTC)
+    pair_key_1d = (pair, "1d", candle_type)
+    exchange._pairs_last_refresh_time[pair_key_1d] = dt_ts(candle_open - timedelta(days=3))
+    last_poll = candle_open + timedelta(seconds=30)
+    exchange._pairs_last_poll_time[pair_key_1d] = dt_ts(last_poll)
+    max_poll = timedelta(milliseconds=exchange._ohlcv_max_poll_interval_ms)
+
+    # Past the grace period, but within the maximum poll interval - nothing more to expect.
+    time_machine.move_to(last_poll + timedelta(milliseconds=1), tick=False)
+    assert exchange._now_is_time_to_refresh(pair, "1d", candle_type) is False
+    time_machine.move_to(last_poll + max_poll - timedelta(milliseconds=1), tick=False)
+    assert exchange._now_is_time_to_refresh(pair, "1d", candle_type) is False
+
+    # ... once it elapsed, query again without waiting for the next candle.
+    time_machine.move_to(last_poll + max_poll, tick=False)
+    assert exchange._now_is_time_to_refresh(pair, "1d", candle_type) is True
+
+    # A grace period at or above the timeframe is capped at half a candle - so it can neither
+    # withhold candles for a full candle nor keep polling at throttle cadence all candle long.
+    exchange._ohlcv_late_candle_grace_ms = 90_000
+    assert exchange._ohlcv_candle_grace_ms("1m") == 30_000
+    assert exchange._ohlcv_candle_grace_ms("5m") == 90_000
+
+    pair_key_1m = (pair, "1m", candle_type)
+    curr_candle = dt_ts(start_dt)
+    last_candle = dt_ts(start_dt - timedelta(minutes=1))
+    # The just-closed candle becomes final after half a candle - not a full candle late.
+    fetch_start = dt_ts(start_dt + timedelta(seconds=29))
+    assert exchange._candle_is_final(last_candle, "1m", curr_candle, fetch_start) is False
+    fetch_start = dt_ts(start_dt + timedelta(seconds=30))
+    assert exchange._candle_is_final(last_candle, "1m", curr_candle, fetch_start) is True
+
+    # Polling for a pair with missing candles also stops after half a candle.
+    exchange._pairs_last_refresh_time[pair_key_1m] = dt_ts(start_dt - timedelta(hours=2))
+    time_machine.move_to(start_dt + timedelta(seconds=29), tick=False)
+    exchange._pairs_last_poll_time[pair_key_1m] = dt_ts()
+    assert exchange._now_is_time_to_refresh(pair, "1m", candle_type) is True
+
+    time_machine.move_to(start_dt + timedelta(seconds=31), tick=False)
+    exchange._pairs_last_poll_time[pair_key_1m] = dt_ts()
+    assert exchange._now_is_time_to_refresh(pair, "1m", candle_type) is False
+
+
 @pytest.mark.parametrize("candle_type", ["mark", "spot", "futures"])
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
 def test_get_historic_ohlcv(default_conf, mocker, caplog, exchange_name, candle_type):
@@ -3012,21 +3095,22 @@ def test_refresh_latest_ohlcv_cache(mocker, default_conf, candle_type, time_mach
     assert len(res[pair2]) == 99
     assert exchange._pairs_last_refresh_time[pair1] == ohlcv[-2][0]
 
-    # Move time 1 candle further but result didn't change yet
+    # Move time 1 candle further but result didn't change yet.
+    # The last candle of the response is complete now (the exchange did not return a candle
+    # for the currently forming one) - so it must be kept instead of being dropped.
     time_machine.move_to(start + timedelta(hours=101))
     res = exchange.refresh_latest_ohlcv(pairs)
     assert exchange._api_async.fetch_ohlcv.call_count == 2
     assert len(res) == 2
-    assert len(res[pair1]) == 99
-    assert len(res[pair2]) == 99
+    assert len(res[pair1]) == 100
+    assert len(res[pair2]) == 100
     assert res[pair2].at[0, "open"]
-    assert exchange._pairs_last_refresh_time[pair1] == ohlcv[-2][0]
+    assert exchange._pairs_last_refresh_time[pair1] == ohlcv[-1][0]
     refresh_pior = exchange._pairs_last_refresh_time[pair1]
 
     # New candle on exchange - return 100 candles - but skip one candle so we actually get 2 candles
     # in one go
     new_startdate = (start + timedelta(hours=2)).strftime("%Y-%m-%d %H:%M")
-    # mocker.patch(f"{EXMS}.ohlcv_candle_limit", return_value=100)
     ohlcv = generate_test_data_raw("1h", 100, new_startdate)
     exchange._api_async.fetch_ohlcv = AsyncMock(return_value=ohlcv)
     res = exchange.refresh_latest_ohlcv(pairs)
@@ -3051,7 +3135,8 @@ def test_refresh_latest_ohlcv_cache(mocker, default_conf, candle_type, time_mach
     assert res[pair2].at[0, "open"]
 
     # Move to distant future (so a 1 call would cause a hole in the data)
-    time_machine.move_to(start + timedelta(hours=2000))
+    # Move by 20s to skip grace period.
+    time_machine.move_to(start + timedelta(hours=2000, seconds=20))
     ohlcv = generate_test_data_raw("1h", 100, start + timedelta(hours=1900))
     exchange._api_async.fetch_ohlcv = AsyncMock(return_value=ohlcv)
     res = exchange.refresh_latest_ohlcv(pairs)
@@ -3059,9 +3144,215 @@ def test_refresh_latest_ohlcv_cache(mocker, default_conf, candle_type, time_mach
     assert exchange._api_async.fetch_ohlcv.call_count == 2
     assert len(res) == 2
     # Cache eviction - new data.
-    assert len(res[pair1]) == 99
-    assert len(res[pair2]) == 99
+    assert len(res[pair1]) == 100
+    assert len(res[pair2]) == 100
     assert res[pair2].at[0, "open"]
+
+
+def test_refresh_latest_ohlcv_no_empty_candles(mocker, default_conf, time_machine, caplog) -> None:
+    """
+    Exchanges omitting candles without trades may not return a candle for the currently
+    forming interval of an inactive pair. Such pairs are re-queried until the grace period
+    of the just-closed candle is over - not on every iteration throughout the candle.
+    A response that yields no candle to cache must not make the pair look uncached,
+    which would evict and re-download it.
+    """
+    start = datetime(2026, 8, 1, 0, 0, 0, 0, tzinfo=UTC)
+    ohlcv = generate_test_data_raw("5m", 100, start.strftime("%Y-%m-%d"))
+    last_candle = start + timedelta(minutes=495)
+    curr_candle = start + timedelta(minutes=500)
+    pair = ("IOTA/EUR", "5m", CandleType.SPOT)
+
+    # The very first refresh of this pair lands within the grace period of the just-closed
+    # candle - which the exchange did not follow up with a new one.
+    time_machine.move_to(curr_candle + timedelta(seconds=3), tick=False)
+    exchange = get_patched_exchange(mocker, default_conf)
+    exchange._set_startup_candle_count(default_conf)
+    mocker.patch(f"{EXMS}.ohlcv_candle_limit", return_value=100)
+    exchange._api_async.fetch_ohlcv = AsyncMock(return_value=ohlcv)
+    exchange.refresh_latest_ohlcv([pair])
+    # The provisional candle is withheld - the ones below it are cached nonetheless.
+    assert exchange._pairs_last_refresh_time[pair] == dt_ts(last_candle - timedelta(minutes=5))
+
+    # Pair went quiet - the response won't change from here on.
+    exchange._api_async.fetch_ohlcv.reset_mock()
+    # 10 minutes worth of bot iterations at 5s throttle
+    for _ in range(120):
+        time_machine.shift(timedelta(seconds=5))
+        exchange.refresh_latest_ohlcv([pair])
+
+    # Once per candle the pair is polled through the grace period, then served from cache.
+    assert exchange._api_async.fetch_ohlcv.call_count == 8
+    # The last candle the exchange did return must be part of the dataframe.
+    assert exchange.klines(pair).iloc[-1]["date"] == last_candle
+
+    # A newly listed pair only has the currently forming candle - nothing is kept from that
+    # response, but it must not be re-queried until the next candle either.
+    new_candle = start + timedelta(minutes=515)
+    pair_new = ("XRP/EUR", "5m", CandleType.SPOT)
+    time_machine.move_to(new_candle, tick=False)
+    exchange._api_async.fetch_ohlcv = AsyncMock(
+        return_value=[[dt_ts(new_candle), 1.0, 2.0, 0.5, 1.5, 100.0]]
+    )
+    for _ in range(12):
+        time_machine.shift(timedelta(seconds=5))
+        exchange.refresh_latest_ohlcv([pair_new])
+    assert exchange._api_async.fetch_ohlcv.call_count == 1
+
+    # Neither pair may ever have had its cache evicted.
+    assert "Time jump detected" not in caplog.text
+
+
+def test_refresh_latest_ohlcv_late_candle(mocker, default_conf, time_machine) -> None:
+    """
+    The just-closed candle is published by the exchange with a few seconds delay - it must be
+    picked up within the grace period instead of only with the next candle.
+    """
+    start = datetime(2026, 8, 1, 0, 0, 0, 0, tzinfo=UTC)
+    ohlcv = generate_test_data_raw("5m", 100, start.strftime("%Y-%m-%d"))
+    # Open date of the candle forming while the below iterations run.
+    curr_candle = start + timedelta(minutes=500)
+    publish_at = curr_candle + timedelta(seconds=8)
+    pair = ("IOTA/EUR", "5m", CandleType.SPOT)
+
+    time_machine.move_to(curr_candle - timedelta(minutes=4, seconds=30), tick=False)
+    exchange = get_patched_exchange(mocker, default_conf)
+    exchange._set_startup_candle_count(default_conf)
+    mocker.patch(f"{EXMS}.ohlcv_candle_limit", return_value=100)
+
+    async def fetch_ohlcv(*args, **kwargs):
+        # The last candle is only published from `publish_at` onwards.
+        return ohlcv if dt_ts() >= dt_ts(publish_at) else ohlcv[:-1]
+
+    exchange._api_async.fetch_ohlcv = fetch_ohlcv
+    exchange.refresh_latest_ohlcv([pair])
+    # The last candle of the response is complete - it must not be dropped.
+    assert exchange.klines(pair).iloc[-1]["date"] == start + timedelta(minutes=490)
+
+    # Iterate through the first 20s of the new candle.
+    for i in range(1, 5):
+        time_machine.move_to(curr_candle + timedelta(seconds=5 * i), tick=False)
+        exchange.refresh_latest_ohlcv([pair])
+
+    assert exchange.klines(pair).iloc[-1]["date"] == start + timedelta(minutes=495)
+
+    # Without a grace period, the late candle is only picked up with the next candle.
+    exchange._ohlcv_late_candle_grace_ms = 0
+    exchange._klines.clear()
+    exchange._pairs_last_refresh_time.clear()
+    exchange._pairs_last_poll_time.clear()
+    time_machine.move_to(curr_candle - timedelta(minutes=4, seconds=30), tick=False)
+    exchange.refresh_latest_ohlcv([pair])
+    for i in range(1, 5):
+        time_machine.move_to(curr_candle + timedelta(seconds=5 * i), tick=False)
+        exchange.refresh_latest_ohlcv([pair])
+    assert exchange.klines(pair).iloc[-1]["date"] == start + timedelta(minutes=490)
+
+
+def test_refresh_latest_ohlcv_candle_rollover(mocker, default_conf, time_machine) -> None:
+    """
+    A response fetched right before a candle closed may only be processed after the close
+    (e.g. due to slower pairs in the same batch). The forming candle it contains is a partial
+    snapshot and must be evaluated against the fetch time - not the processing time.
+    A response containing a newer candle proves the one before it closed - that one stays final.
+    """
+    start = datetime(2026, 8, 1, 0, 0, 0, 0, tzinfo=UTC)
+    ohlcv = generate_test_data_raw("5m", 101, start.strftime("%Y-%m-%d"))
+    # Open date of the candle forming at fetch time - the last candle of the stale response.
+    forming_candle = start + timedelta(minutes=495)
+    curr_candle = start + timedelta(minutes=500)
+    pair = ("IOTA/EUR", "5m", CandleType.SPOT)
+    # Pair for which the exchange issued the new candle already.
+    pair_new = ("XRP/EUR", "5m", CandleType.SPOT)
+
+    time_machine.move_to(curr_candle - timedelta(seconds=1), tick=False)
+    exchange = get_patched_exchange(mocker, default_conf)
+    exchange._set_startup_candle_count(default_conf)
+    mocker.patch(f"{EXMS}.ohlcv_candle_limit", return_value=100)
+
+    async def fetch_ohlcv(pair_, *args, **kwargs):
+        # Processing of the response is delayed past the candle close.
+        time_machine.move_to(curr_candle + timedelta(seconds=2), tick=False)
+        return ohlcv[1:] if pair_ == pair_new[0] else ohlcv[:-1]
+
+    exchange._api_async.fetch_ohlcv = fetch_ohlcv
+    exchange.refresh_latest_ohlcv([pair, pair_new])
+
+    # The partial snapshot of the then-forming candle must be dropped, not kept as complete.
+    assert exchange.klines(pair).iloc[-1]["date"] == forming_candle - timedelta(minutes=5)
+    assert exchange._pairs_last_refresh_time[pair] == dt_ts(forming_candle - timedelta(minutes=5))
+
+    # The newer candle proves the previous one closed - it must be kept, and is final.
+    assert exchange.klines(pair_new).iloc[-1]["date"] == forming_candle
+    assert exchange._pairs_last_refresh_time[pair_new] == dt_ts(forming_candle)
+
+    # The next iteration re-polls the stale pair (only), while the pair with the final candle is
+    # served from cache. The candle is still provisional, so it stays withheld.
+    exchange._api_async.fetch_ohlcv = AsyncMock(return_value=ohlcv[:-1])
+    time_machine.move_to(curr_candle + timedelta(seconds=5), tick=False)
+    exchange.refresh_latest_ohlcv([pair, pair_new])
+    assert exchange._api_async.fetch_ohlcv.call_count == 1
+    assert exchange.klines(pair).iloc[-1]["date"] == forming_candle - timedelta(minutes=5)
+
+    # Once the grace period is over, the now-complete candle is picked up.
+    time_machine.move_to(curr_candle + timedelta(seconds=16), tick=False)
+    exchange._api_async.fetch_ohlcv.reset_mock()
+    exchange.refresh_latest_ohlcv([pair, pair_new])
+    assert exchange._api_async.fetch_ohlcv.call_count == 1
+    assert exchange.klines(pair).iloc[-1]["date"] == forming_candle
+
+
+def test_refresh_latest_ohlcv_provisional_candle(mocker, default_conf, time_machine) -> None:
+    """
+    The exchange did not issue a new candle yet - the just-closed candle may still be updated
+    and must not be considered final before the grace period passed.
+    Consumers must never see the provisional version of it.
+    """
+    start = datetime(2026, 8, 1, 0, 0, 0, 0, tzinfo=UTC)
+    ohlcv = generate_test_data_raw("5m", 100, start.strftime("%Y-%m-%d"))
+    # Open date of the last candle the exchange returns, and of the next (never issued) one.
+    last_candle = start + timedelta(minutes=495)
+    curr_candle = start + timedelta(minutes=500)
+    pair = ("IOTA/EUR", "5m", CandleType.SPOT)
+
+    time_machine.move_to(last_candle + timedelta(seconds=30), tick=False)
+    exchange = get_patched_exchange(mocker, default_conf)
+    exchange._set_startup_candle_count(default_conf)
+    mocker.patch(f"{EXMS}.ohlcv_candle_limit", return_value=100)
+
+    # The exchange keeps updating the volume of the last candle for a few seconds.
+    volume = ohlcv[-1][5]
+
+    async def fetch_ohlcv(*args, **kwargs):
+        resp = deepcopy(ohlcv)
+        if dt_ts() >= dt_ts(curr_candle + timedelta(seconds=8)):
+            resp[-1][5] = volume * 2
+        return resp
+
+    exchange._api_async.fetch_ohlcv = fetch_ohlcv
+    exchange.refresh_latest_ohlcv([pair])
+
+    # Just after the candle closed - it's still provisional, so it must be withheld.
+    time_machine.move_to(curr_candle + timedelta(seconds=1), tick=False)
+    exchange.refresh_latest_ohlcv([pair])
+    assert exchange.klines(pair).iloc[-1]["date"] == last_candle - timedelta(minutes=5)
+    assert exchange.klines(pair).iloc[-1]["volume"] != volume * 2
+    assert exchange._pairs_last_refresh_time[pair] != dt_ts(last_candle)
+
+    # Still within the grace period - the candle stays withheld while it may change.
+    for secs in (5, 10):
+        time_machine.move_to(curr_candle + timedelta(seconds=secs), tick=False)
+        exchange.refresh_latest_ohlcv([pair])
+        assert exchange.klines(pair).iloc[-1]["date"] == last_candle - timedelta(minutes=5)
+        assert exchange.klines(pair).iloc[-1]["volume"] != volume * 2
+
+    # Once the grace period is over, the candle is final - and is only ever published with
+    # the updated volume, never with the provisional one.
+    time_machine.move_to(curr_candle + timedelta(seconds=16), tick=False)
+    exchange.refresh_latest_ohlcv([pair])
+    assert exchange.klines(pair).iloc[-1]["date"] == last_candle
+    assert exchange.klines(pair).iloc[-1]["volume"] == volume * 2
+    assert exchange._pairs_last_refresh_time[pair] == dt_ts(last_candle)
 
 
 def test_refresh_ohlcv_with_cache(mocker, default_conf, time_machine) -> None:
@@ -3181,6 +3472,51 @@ def test_refresh_latest_ohlcv_funding_rate(mocker, default_conf_usdt, caplog) ->
         assert (df["open"] == df["funding_rate"]).all()
 
 
+@pytest.mark.parametrize("drop_incomplete", [None, True, False])
+def test_refresh_latest_ohlcv_funding_rate_never_dropped(
+    mocker, default_conf_usdt, time_machine, drop_incomplete
+) -> None:
+    """Funding rates are final as soon as they're returned - no caller may force the last
+    one to be dropped, even when it falls into the currently forming candle."""
+    ohlcv = generate_test_data_raw("1h", 24, "2025-01-02 12:00:00+00:00")
+    funding_data = [{"timestamp": x[0], "fundingRate": x[1]} for x in ohlcv]
+    # Mid-candle of the last entry - a regular candle type would be dropped here.
+    time_machine.move_to("2025-01-03 11:30:00+00:00", tick=False)
+
+    exchange = get_patched_exchange(mocker, default_conf_usdt)
+    exchange._api_async.fetch_funding_rate_history = AsyncMock(return_value=funding_data)
+
+    pair = ("XRP/USDT:USDT", "1h", CandleType.FUNDING_RATE)
+    res = exchange.refresh_latest_ohlcv([pair], cache=False, drop_incomplete=drop_incomplete)
+
+    assert len(res[pair]) == len(ohlcv)
+
+
+@pytest.mark.parametrize(
+    "candle_type,partial_candle,drop_incomplete,expected",
+    [
+        (CandleType.SPOT, True, None, True),
+        (CandleType.SPOT, False, None, False),
+        (CandleType.SPOT, False, True, True),
+        (CandleType.SPOT, True, False, False),
+        (CandleType.FUTURES, True, None, True),
+        (CandleType.MARK, True, None, True),
+        # funding_rates are always final - neither the exchange setting nor the caller applies.
+        (CandleType.FUNDING_RATE, True, None, False),
+        (CandleType.FUNDING_RATE, False, None, False),
+        (CandleType.FUNDING_RATE, True, True, False),
+        (CandleType.FUNDING_RATE, False, True, False),
+    ],
+)
+def test_drop_incomplete_candle(
+    mocker, default_conf_usdt, candle_type, partial_candle, drop_incomplete, expected
+) -> None:
+    exchange = get_patched_exchange(mocker, default_conf_usdt)
+    exchange._ohlcv_partial_candle = partial_candle
+
+    assert exchange._drop_incomplete_candle(candle_type, drop_incomplete) is expected
+
+
 def test_refresh_latest_ohlcv_funding_rate_schema(mocker, default_conf_usdt, testdatadir) -> None:
     """Live funding rate dataframes must be schema-identical to disk-loaded ones,
     including after a cache merge - otherwise strategies break mid-session."""
@@ -3266,14 +3602,18 @@ async def test__fetch_open_interest_history_missing_side(default_conf, mocker):
     assert df["open_interest_amount"].isna().tolist() == [False, True, False]
 
 
-def test_refresh_latest_ohlcv_open_interest(mocker, default_conf_usdt) -> None:
+def test_refresh_latest_ohlcv_open_interest(mocker, default_conf_usdt, time_machine) -> None:
     """Open interest goes through its own endpoint and keeps its own columns."""
-    ohlcv = generate_test_data_raw("1h", 24, "2025-01-02 12:00:00+00:00")
+    start = datetime(2025, 1, 2, 12, 0, 0, tzinfo=UTC)
+    ohlcv = generate_test_data_raw("1h", 24, start)
     oi_data = [
         {"timestamp": x[0], "openInterestAmount": x[1], "openInterestValue": x[4]} for x in ohlcv
     ]
+    # Mid-way through the last returned candle - it's still forming, so it must be dropped.
+    time_machine.move_to(start + timedelta(hours=23, minutes=30), tick=False)
 
     exchange = get_patched_exchange(mocker, default_conf_usdt)
+    exchange._set_startup_candle_count(default_conf_usdt)
     exchange._api_async.fetch_ohlcv = AsyncMock(return_value=ohlcv)
     exchange._api_async.fetch_open_interest_history = AsyncMock(return_value=oi_data)
 
@@ -3288,10 +3628,13 @@ def test_refresh_latest_ohlcv_open_interest(mocker, default_conf_usdt) -> None:
     # The last record is the still-updating period and is dropped as incomplete
     assert len(df) == len(ohlcv) - 1
 
-    # Second refresh goes through the concat/clean cache-merge path
+    # Once the next candle opened, the formerly incomplete candle is final and gets merged in
+    # through the concat/clean cache-merge path.
+    time_machine.move_to(start + timedelta(hours=24, minutes=5), tick=False)
     second = exchange.refresh_latest_ohlcv([pair_tf], cache=True)[pair_tf]
+    assert exchange._api_async.fetch_open_interest_history.call_count == 2
     assert list(second.columns) == list(df.columns)
-    assert len(second) == len(df)
+    assert len(second) == len(ohlcv)
 
 
 @pytest.mark.parametrize("exchange_name", [e for e in EXCHANGES if e not in ["okx"]])

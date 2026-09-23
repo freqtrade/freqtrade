@@ -140,6 +140,11 @@ class Exchange:
         "ohlcv_has_history": True,  # Some exchanges (Kraken) don't provide history via ohlcv
         "ohlcv_partial_candle": True,
         "ohlcv_require_since": False,
+        # Seconds after the candle close time to assume a candle is actually closed
+        "ohlcv_late_candle_grace_secs": 15,
+        # Maximum seconds a pair with missing candles may go unqueried. Keeps pairs on long
+        # timeframes from being skipped for a whole candle when the exchange lags behind.
+        "ohlcv_max_poll_interval_secs": 30 * 60,
         "download_data_parallel_quick": True,
         "always_require_api_keys": False,  # purge API keys for Dry-run. Must default to false.
         # Check https://github.com/ccxt/ccxt/issues/10767 for removal of ohlcv_volume_currency
@@ -229,6 +234,8 @@ class Exchange:
 
         # Holds last candle refreshed time of each pair
         self._pairs_last_refresh_time: dict[PairWithTimeframe, int] = {}
+        # Holds the time each pair was last queried from the exchange
+        self._pairs_last_poll_time: dict[PairWithTimeframe, int] = {}
         # Timestamp of last markets refresh
         self._last_markets_refresh: int = 0
 
@@ -265,6 +272,8 @@ class Exchange:
 
         # Assign this directly for easy access
         self._ohlcv_partial_candle = self._ft_has["ohlcv_partial_candle"]
+        self._ohlcv_late_candle_grace_ms = self._ft_has["ohlcv_late_candle_grace_secs"] * 1000
+        self._ohlcv_max_poll_interval_ms = self._ft_has["ohlcv_max_poll_interval_secs"] * 1000
 
         # Initialize ccxt objects
         ccxt_config = self._ccxt_config
@@ -2677,16 +2686,12 @@ class Exchange:
                 )
             )
         logger.debug(f"Downloaded data for {pair} from ccxt with length {len(data)}.")
-        # funding_rates are always complete, so never need to be dropped.
-        drop_incomplete = (
-            self._ohlcv_partial_candle if candle_type != CandleType.FUNDING_RATE else False
-        )
         return ohlcv_to_dataframe(
             data,
             timeframe,
             pair,
             fill_missing=False,
-            drop_incomplete=drop_incomplete,
+            drop_incomplete=self._drop_incomplete_candle(candle_type),
             candle_type=candle_type,
         )
 
@@ -2739,8 +2744,7 @@ class Exchange:
             timeframe,
             candle_type,
             data,
-            # funding_rates are always complete, so never need to be dropped.
-            self._ohlcv_partial_candle if candle_type != CandleType.FUNDING_RATE else False,
+            self._drop_incomplete_candle(candle_type),
         )
 
     def _try_build_from_websocket(
@@ -2887,6 +2891,20 @@ class Exchange:
 
         return input_coroutines, cached_pairs
 
+    def _drop_incomplete_candle(
+        self, candle_type: CandleType, drop_incomplete: bool | None = None
+    ) -> bool:
+        """
+        Decide whether the last candle of a response is a candidate for dropping.
+        :param candle_type: Candle type of the response
+        :param drop_incomplete: Caller override. None defers to the exchange's
+            `ohlcv_partial_candle` setting.
+        """
+        if candle_type in (CandleType.FUNDING_RATE,):
+            # Never incomplete - there's nothing to drop, whatever the caller asked for.
+            return False
+        return self._ohlcv_partial_candle if drop_incomplete is None else drop_incomplete
+
     def _process_ohlcv_df(
         self,
         pair: str,
@@ -2895,11 +2913,38 @@ class Exchange:
         ticks: list[list],
         cache: bool,
         drop_incomplete: bool,
+        fetch_start_ms: int,
     ) -> DataFrame:
-        # keeping last candle time as last refreshed time of the pair
-        if ticks and cache:
-            idx = -2 if drop_incomplete and len(ticks) > 1 else -1
-            self._pairs_last_refresh_time[(pair, timeframe, c_type)] = ticks[idx][0]
+        # Open date of the candle that was forming when the fetch started.
+        # Judged against the fetch time, not the processing time - a batch may finish
+        # processing after a candle boundary
+        curr_candle_date = dt_ts(timeframe_to_prev_date(timeframe, dt_from_ts(fetch_start_ms)))
+        # Whether the newest completed candle of the response can be relied upon.
+        candles_final = bool(ticks) and self._candle_is_final(
+            ticks[-1][0], timeframe, curr_candle_date, fetch_start_ms
+        )
+        # Drop the last candle if it is the currently forming one, or if it is the just-closed
+        # candle the exchange may still update - consumers must never see an incomplete candle.
+        # Exchanges omitting candles without trades can return a completed
+        # candle as last element, which shouldn't be dropped.
+        drop_incomplete_ = (
+            drop_incomplete
+            and bool(ticks)
+            and (ticks[-1][0] >= curr_candle_date or not candles_final)
+        )
+        if cache:
+            # Remember when this pair was last queried
+            self._pairs_last_poll_time[(pair, timeframe, c_type)] = fetch_start_ms
+            # keeping last candle time as last refreshed time of the pair
+            kept_ticks = ticks[:-1] if drop_incomplete_ else ticks
+            if kept_ticks:
+                # The newest candle we hold - a provisional last candle was dropped above.
+                self._pairs_last_refresh_time[(pair, timeframe, c_type)] = kept_ticks[-1][0]
+            elif ticks:
+                # The response held nothing but a dropped candle - remember the candle before
+                # it, so the pair is re-checked at candle cadence instead of on every iteration.
+                last_refresh = ticks[-1][0] - timeframe_to_msecs(timeframe)
+                self._pairs_last_refresh_time[(pair, timeframe, c_type)] = last_refresh
         has_cache = cache and (pair, timeframe, c_type) in self._klines
         # in case of existing cache, fill_missing happens after concatenation
         ohlcv_df = ohlcv_to_dataframe(
@@ -2907,7 +2952,7 @@ class Exchange:
             timeframe,
             pair=pair,
             fill_missing=not has_cache,
-            drop_incomplete=drop_incomplete,
+            drop_incomplete=drop_incomplete_,
             candle_type=c_type,
         )
         # keeping parsed dataframe in cache
@@ -2948,7 +2993,8 @@ class Exchange:
         :param since_ms: time since when to download, in milliseconds
         :param cache: Assign result to _klines. Useful for one-off downloads like for pairlists
         :param drop_incomplete: Control candle dropping.
-            Specifying None defaults to _ohlcv_partial_candle
+            Specifying None defaults to _ohlcv_partial_candle.
+            Candle types that are always final (e.g. funding_rate) ignore this.
         :return: Dict of [{(pair, timeframe): Dataframe}]
         """
         logger.debug("Refreshing candle (OHLCV) data for %d pairs", len(pair_list))
@@ -2963,6 +3009,7 @@ class Exchange:
             async def gather_coroutines(coro):
                 return await asyncio.gather(*coro, return_exceptions=True)
 
+            fetch_start_ms = dt_ts()
             with self._loop_lock:
                 results = self.loop.run_until_complete(gather_coroutines(dl_jobs_batch))
 
@@ -2972,9 +3019,11 @@ class Exchange:
                     continue
                 # Deconstruct tuple (has 5 elements)
                 pair, timeframe, c_type, ticks, drop_hint = res
-                drop_incomplete_ = drop_hint if drop_incomplete is None else drop_incomplete
+                drop_incomplete_ = self._drop_incomplete_candle(
+                    c_type, drop_hint if drop_incomplete is None else drop_incomplete
+                )
                 ohlcv_df = self._process_ohlcv_df(
-                    pair, timeframe, c_type, ticks, cache, drop_incomplete_
+                    pair, timeframe, c_type, ticks, cache, drop_incomplete_, fetch_start_ms
                 )
 
                 results_df[(pair, timeframe, c_type)] = ohlcv_df
@@ -3027,13 +3076,65 @@ class Exchange:
                 self._expiring_candle_cache[(c[1], lookback_period)][c] = val
         return candles
 
+    def _ohlcv_candle_grace_ms(self, timeframe: str) -> int:
+        """
+        Grace period after a candle close before the candle is assumed final.
+        Clamped to half a candle - a grace period at or above the timeframe would otherwise
+        withhold every candle for a full timeframe and force re-polling on every iteration.
+        """
+        return min(self._ohlcv_late_candle_grace_ms, timeframe_to_msecs(timeframe) // 2)
+
+    def _candle_is_final(
+        self, last_candle_date: int, timeframe: str, curr_candle_date: int, fetch_start_ms: int
+    ) -> bool:
+        """
+        Whether the candles of a response can be considered final.
+        The just-closed candle may still be updated by the exchange - it's only assumed to be final
+        once a newer candle was issued, or once the grace period after its close is over.
+        Judged against the fetch start time - the response can't be fresher than the request.
+        :param last_candle_date: Open date of the newest candle the exchange returned (in ms)
+        :param timeframe: timeframe of the candles
+        :param curr_candle_date: Open date of the candle forming when the fetch started (in ms)
+        :param fetch_start_ms: Time the fetch of the response was initiated (in ms)
+        """
+        if last_candle_date != (curr_candle_date - timeframe_to_msecs(timeframe)):
+            # The exchange either issued a newer candle already - or has no data for this pair
+            # since well before the last candle closed.
+            return True
+        # The just-closed candle, with no newer candle issued yet.
+        # Considered final once the grace period after its close is over.
+        return fetch_start_ms >= (curr_candle_date + self._ohlcv_candle_grace_ms(timeframe))
+
     def _now_is_time_to_refresh(self, pair: str, timeframe: str, candle_type: CandleType) -> bool:
-        # Timeframe in seconds
-        interval_in_sec = timeframe_to_msecs(timeframe)
-        plr = self._pairs_last_refresh_time.get((pair, timeframe, candle_type), 0) + interval_in_sec
+        pair_key: PairWithTimeframe = (pair, timeframe, candle_type)
+        if pair_key not in self._pairs_last_refresh_time:
+            # We don't have any candle for this pair yet.
+            return True
+        # Timeframe in milliseconds
+        interval_in_msec = timeframe_to_msecs(timeframe)
+        plr = self._pairs_last_refresh_time[pair_key] + interval_in_msec
         # current,active candle open date
         now = dt_ts(timeframe_to_prev_date(timeframe))
-        return plr < now
+        if plr >= now:
+            # The last completed candle is already cached.
+            return False
+
+        last_poll = self._pairs_last_poll_time.get(pair_key, 0)
+        if last_poll < now:
+            # Pair was not queried since the current candle opened.
+            return True
+
+        # The pair was queried within the current candle, but the exchange did not return the
+        # last completed candle. It may still be published with a slight delay - or the exchange
+        # omits candles without trades, in which case there is nothing to wait for.
+        # Keep polling until the last poll time is past the grace period.
+        if last_poll < (now + self._ohlcv_candle_grace_ms(timeframe)):
+            return True
+
+        # Beyond the grace period there's nothing more to expect within this candle.
+        # Never stay silent for longer than this, or an exchange lagging behind on a long timeframe
+        # would only be checked again once the next candle opens.
+        return dt_ts() >= (last_poll + self._ohlcv_max_poll_interval_ms)
 
     @retrier_async
     async def _async_get_candle_history(
@@ -3092,15 +3193,14 @@ class Exchange:
                     data = sorted(data, key=lambda x: x[0])
             except IndexError:
                 logger.exception("Error loading %s. Result was %s.", pair, data)
-                return pair, timeframe, candle_type, [], self._ohlcv_partial_candle
+                return pair, timeframe, candle_type, [], self._drop_incomplete_candle(candle_type)
             logger.debug("Done fetching pair %s, %s interval %s...", pair, candle_type, timeframe)
             return (
                 pair,
                 timeframe,
                 candle_type,
                 data,
-                # funding_rates are always complete, so never need to be dropped.
-                self._ohlcv_partial_candle if candle_type != CandleType.FUNDING_RATE else False,
+                self._drop_incomplete_candle(candle_type),
             )
 
         except ccxt.NotSupported as e:
