@@ -2917,8 +2917,7 @@ class Exchange:
     ) -> DataFrame:
         # Open date of the candle that was forming when the fetch started.
         # Judged against the fetch time, not the processing time - a batch may finish
-        # processing after a candle boundary the fetch preceded, which must not
-        # reclassify the forming candle of the response as complete.
+        # processing after a candle boundary
         curr_candle_date = dt_ts(timeframe_to_prev_date(timeframe, dt_from_ts(fetch_start_ms)))
         # Whether the newest completed candle of the response can be relied upon.
         candles_final = bool(ticks) and self._candle_is_final(
