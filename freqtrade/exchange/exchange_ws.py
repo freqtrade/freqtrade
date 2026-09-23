@@ -176,7 +176,7 @@ class ExchangeWS:
                 timeframe_s = timeframe_to_seconds(timeframe)
                 last_refresh = self._klines_last_request.get(p, 0)
                 if last_refresh > 0 and (dt_ts() - last_refresh) > ((timeframe_s + 20) * 1000):
-                    logger.info(f"Removing {p} from websocket watchlist.")
+                    logger.info(f"Removing {p} from OHLCV watchlist.")
                     self._klines_watching.discard(p)
                     # Pop history to avoid getting stale data
                     self._pop_history(p)
@@ -213,7 +213,7 @@ class ExchangeWS:
                 self._background_tasks.add(task)
             task.add_done_callback(
                 partial(
-                    self._continuous_stopped,
+                    self._ohlcv_stopped,
                     pair=pair,
                     timeframe=timeframe,
                     candle_type=candle_type,
@@ -272,7 +272,7 @@ class ExchangeWS:
     async def _unwatch_ohlcv(self, pair: str, timeframe: str, candle_type: CandleType) -> None:
         if self._stopping:
             # Unsubscribing from a connection that's going away is pointless.
-            logger.debug("Shutting down - skipping unwatch for %s, %s", pair, timeframe)
+            logger.debug("Shutting down - skipping OHLCV unwatch for %s, %s", pair, timeframe)
             return
         try:
             if self.exchange_has("unWatchOHLCVForSymbols"):
@@ -287,7 +287,7 @@ class ExchangeWS:
         except ccxt.NetworkError as e:
             # Network errors are common on shutdown so we can ignore them.
             # It's a network error - which most likely means that the connection is already closed.
-            logger.debug("Network error during unwatch for %s, %s: %s", pair, timeframe, e)
+            logger.debug("Network error during OHLCV unwatch for %s, %s: %s", pair, timeframe, e)
         except Exception:
             logger.exception(f"Exception in _unwatch_ohlcv for {pair}, {timeframe},")
 
@@ -313,7 +313,7 @@ class ExchangeWS:
         except Exception:
             logger.exception(f"Exception in _unwatch_orderbook for {pair}")
 
-    def _continuous_stopped(
+    def _ohlcv_stopped(
         self, task: asyncio.Task, pair: str, timeframe: str, candle_type: CandleType
     ) -> None:
         with self._state_lock:
@@ -327,7 +327,9 @@ class ExchangeWS:
                     result = str(result1)
         except Exception:
             result = "error"
-            logger.exception(f"Unhandled exception in watch task callback for {pair}, {timeframe}")
+            logger.exception(
+                f"Unhandled exception in ohlcv watch task callback for {pair}, {timeframe}"
+            )
         finally:
             logger.info(f"{pair}, {timeframe}, {candle_type} - Task finished - {result}")
             if not self._stopping and hasattr(self, "_loop") and not self._loop.is_closed():

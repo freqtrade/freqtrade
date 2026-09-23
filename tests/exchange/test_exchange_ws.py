@@ -759,7 +759,7 @@ async def test_exchangews_watch_orderbook(mocker, time_machine, caplog):
         exchange_ws.cleanup()
 
 
-def test_exchangews_continuous_stopped_task_exception(mocker, caplog):
+def test_exchangews_ohlcv_stopped_task_exception(mocker, caplog):
     config = MagicMock()
     ccxt_object = MagicMock()
     ccxt_object.ohlcvs = {
@@ -798,14 +798,14 @@ def test_exchangews_continuous_stopped_task_exception(mocker, caplog):
         side_effect=side_effect,
     )
 
-    exchange_ws._continuous_stopped(task, "ETH/USDT", "1m", CandleType.SPOT)
+    exchange_ws._ohlcv_stopped(task, "ETH/USDT", "1m", CandleType.SPOT)
 
     assert task not in exchange_ws._background_tasks
     assert paircomb not in exchange_ws._klines_scheduled
     assert paircomb not in exchange_ws._klines_last_refresh
     assert ccxt_object.ohlcvs["ETH/USDT"].get("1m") is None
     assert run_threadsafe.call_count == 1
-    assert log_has_re("Unhandled exception in watch task callback for ETH/USDT, 1m", caplog)
+    assert log_has_re("Unhandled exception in ohlcv watch task callback for ETH/USDT, 1m", caplog)
 
     exchange_ws.cleanup()
 
@@ -834,7 +834,7 @@ def test_exchangews_continuous_stopped_no_unwatch_while_stopping(mocker):
     task = MagicMock()
     task.cancelled.return_value = True
 
-    exchange_ws._continuous_stopped(task, "ETH/USDT", "1m", CandleType.SPOT)
+    exchange_ws._ohlcv_stopped(task, "ETH/USDT", "1m", CandleType.SPOT)
 
     # No unwatch scheduled - it would re-open the session we're closing.
     assert run_threadsafe.call_count == 0
@@ -855,4 +855,4 @@ async def test_exchangews_unwatch_while_stopping(mocker, caplog):
     await exchange_ws._unwatch_ohlcv("ETH/BTC", "1m", CandleType.SPOT)
 
     assert ccxt_object.un_watch_ohlcv_for_symbols.call_count == 0
-    assert log_has_re("Shutting down - skipping unwatch for ETH/BTC, 1m", caplog)
+    assert log_has_re("Shutting down - skipping OHLCV unwatch for ETH/BTC, 1m", caplog)
