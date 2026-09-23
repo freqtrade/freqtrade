@@ -2879,6 +2879,11 @@ A current list of these can be found in the "Home" section of this documentation
 <span class="w">    </span><span class="c1">// ... </span>
 </code></pre></div>
 <h3 id="setting-rate-limits">Setting rate limits<a class="headerlink" href="#setting-rate-limits" title="Permanent link">&para;</a></h3>
+<div class="admonition warning">
+<p class="admonition-title">Don't change rate limits</p>
+<p>We recommend to not set rateLimit explicitly, but let ccxt handle this.<br />
+Messing with rate limits manually will change the ccxt ratelimit behavior and usually has a negative impact on the performance and reliability of your trading bot.</p>
+</div>
 <p>Usually, rate limits set by CCXT are reliable and work well.
 In case of problems related to rate-limits (usually DDOS Exceptions in your logs), it's easy to change rateLimit settings to other values.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">"exchange"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -2893,11 +2898,6 @@ In case of problems related to rate-limits (usually DDOS Exceptions in your logs
 </code></pre></div>
 <p>This configuration enables kraken, as well as rate-limiting to avoid bans from the exchange.
 <code>"rateLimit": 3100</code> defines a wait-event of 3.1s between each call. This can also be completely disabled by setting <code>"enableRateLimit"</code> to false.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Optimal settings for rate-limiting depend on the exchange and the size of the whitelist, so an ideal parameter will vary on many other settings.
-We try to provide sensible defaults per exchange where possible, if you encounter bans please make sure that <code>"enableRateLimit"</code> is enabled and increase the <code>"rateLimit"</code> parameter step by step.</p>
-</div>
 <h2 id="binance">Binance<a class="headerlink" href="#binance" title="Permanent link">&para;</a></h2>
 <div class="admonition warning">
 <p class="admonition-title">Server location and geo-ip restrictions</p>
