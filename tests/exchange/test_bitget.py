@@ -220,7 +220,7 @@ def test__lev_prep_bitget(default_conf, mocker):
 
     assert api_mock.set_margin_mode.call_count == 1
     assert api_mock.set_leverage.call_count == 1
-    api_mock.set_leverage.assert_called_with(symbol="BTC/USDC:USDC", leverage=3.2)
+    api_mock.set_leverage.assert_called_with(symbol="BTC/USDC:USDC", leverage=3.2, params={})
 
     api_mock.reset_mock()
 
@@ -228,7 +228,7 @@ def test__lev_prep_bitget(default_conf, mocker):
 
     assert api_mock.set_margin_mode.call_count == 1
     assert api_mock.set_leverage.call_count == 1
-    api_mock.set_leverage.assert_called_with(symbol="BTC/USDC:USDC", leverage=19.99)
+    api_mock.set_leverage.assert_called_with(symbol="BTC/USDC:USDC", leverage=19.99, params={})
 
 
 def test_check_delisting_time_bitget(default_conf_usdt, mocker):
