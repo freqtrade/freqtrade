@@ -2,13 +2,19 @@ from copy import deepcopy
 from datetime import timedelta
 from unittest.mock import MagicMock, PropertyMock
 
+import ccxt
 import pytest
 
 from freqtrade.enums import CandleType, MarginMode, RunMode, TradingMode
-from freqtrade.exceptions import InvalidOrderException, OperationalException, RetryableOrderError
+from freqtrade.exceptions import (
+    InvalidOrderException,
+    OperationalException,
+    RetryableOrderError,
+    TemporaryError,
+)
 from freqtrade.exchange.common import API_RETRY_COUNT
 from freqtrade.util import dt_now, dt_ts, dt_utc
-from tests.conftest import EXMS, get_patched_exchange
+from tests.conftest import EXMS, get_patched_exchange, log_has_re
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
 
 
@@ -173,6 +179,47 @@ def test_additional_exchange_init_bitget(default_conf, mocker):
     )
 
 
+def test_additional_exchange_init_bitget_hedge_mode(default_conf_usdt, mocker, caplog):
+    default_conf_usdt["dry_run"] = False
+    default_conf_usdt["trading_mode"] = TradingMode.FUTURES
+    default_conf_usdt["margin_mode"] = MarginMode.ISOLATED
+    api_mock = MagicMock()
+    api_mock.set_position_mode = MagicMock(
+        side_effect=ccxt.ExchangeError(
+            'bitget {"code":"40731","msg":"This product does not support copy trading",'
+            '"requestTime":1758357063000,"data":null}'
+        )
+    )
+    api_mock.fetch_leverage = MagicMock(return_value={"info": {"posMode": "hedge_mode"}})
+
+    exchange = get_patched_exchange(mocker, default_conf_usdt, exchange="bitget", api_mock=api_mock)
+    assert exchange.hedge_mode is True
+    assert api_mock.fetch_leverage.call_count == 1
+    assert log_has_re(r"Bitget: Account is locked to hedge mode.*", caplog)
+
+    # Account in one-way mode - the original error is raised
+    api_mock.fetch_leverage = MagicMock(return_value={"info": {"posMode": "one_way_mode"}})
+    with pytest.raises(TemporaryError, match=r".*This product does not support copy trading.*"):
+        get_patched_exchange(mocker, default_conf_usdt, exchange="bitget", api_mock=api_mock)
+
+
+@pytest.mark.parametrize("hedge_mode", [True, False])
+def test__get_params_bitget(default_conf, mocker, hedge_mode):
+    default_conf["trading_mode"] = TradingMode.FUTURES
+    default_conf["margin_mode"] = MarginMode.ISOLATED
+    exchange = get_patched_exchange(mocker, default_conf, exchange="bitget")
+    exchange.hedge_mode = hedge_mode
+
+    hedged = {"hedged": True} if hedge_mode else {}
+    assert exchange._get_params("buy", "limit", 3, False) == {"marginMode": "isolated", **hedged}
+    assert exchange._get_params("sell", "limit", 3, True) == {
+        "marginMode": "isolated",
+        "reduceOnly": True,
+        **hedged,
+    }
+    assert exchange._get_stop_params("sell", "limit", 20) == {"stopLossPrice": 20, **hedged}
+
+
 def test_dry_run_liquidation_price_cross_bitget(default_conf, mocker):
     default_conf["dry_run"] = True
     default_conf["trading_mode"] = TradingMode.FUTURES
@@ -229,6 +276,16 @@ def test__lev_prep_bitget(default_conf, mocker):
     assert api_mock.set_margin_mode.call_count == 1
     assert api_mock.set_leverage.call_count == 1
     api_mock.set_leverage.assert_called_with(symbol="BTC/USDC:USDC", leverage=19.99, params={})
+
+    # Hedge mode - leverage is set per position side
+    exchange.hedge_mode = True
+    for side, hold_side in (("buy", "long"), ("sell", "short")):
+        api_mock.reset_mock()
+        exchange._lev_prep("BTC/USDC:USDC", 5, side)
+        assert api_mock.set_margin_mode.call_count == 1
+        api_mock.set_leverage.assert_called_once_with(
+            symbol="BTC/USDC:USDC", leverage=5, params={"holdSide": hold_side}
+        )
 
 
 def test_check_delisting_time_bitget(default_conf_usdt, mocker):
