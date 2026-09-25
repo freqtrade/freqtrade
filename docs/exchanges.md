@@ -383,6 +383,11 @@ Futures trading on bitget is supported for isolated futures mode.
 
 On startup, freqtrade will set the position mode to "One-way Mode" for the whole (sub)account. This avoids making this call over and over again (slowing down bot operations), but means that manual changes to this setting may result in exceptions and errors.
 
+!!! Note "Hedge Mode"
+    Some accounts (e.g. copy-trading lead trader accounts) are locked to "Hedge Mode" and can't be switched to "One-way Mode".
+    Freqtrade will try to detect this on startup and place orders in hedge mode instead - still holding at most one position per pair.  
+    Support for this mode is _best-effort_ - and changing the position mode while the bot is running is not supported, neither is configuring hedge mode manually.
+
 ## Hyperliquid
 
 !!! Tip "Stoploss on Exchange"
