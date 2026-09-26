@@ -3964,6 +3964,7 @@ class Exchange:
         leverage: float,
         pair: str | None = None,
         accept_fail: bool = False,
+        params: dict | None = None,
     ):
         """
         Set's the leverage before making a trade, in order to not
@@ -3976,7 +3977,7 @@ class Exchange:
             # Rounding for binance ...
             leverage = floor(leverage)
         try:
-            res = self._api.set_leverage(symbol=pair, leverage=leverage)
+            res = self._api.set_leverage(symbol=pair, leverage=leverage, params=params or {})
             self._log_exchange_response("set_leverage", res)
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
@@ -4264,7 +4265,9 @@ class Exchange:
         else:
             positions = self.fetch_positions(pair)
             if len(positions) > 0:
-                pos = positions[0]
+                # Hedge mode accounts may return a position per side.
+                side = "short" if is_short else "long"
+                pos = next((p for p in positions if p.get("side") == side), positions[0])
                 liquidation_price = pos["liquidationPrice"]
 
         if liquidation_price is not None:

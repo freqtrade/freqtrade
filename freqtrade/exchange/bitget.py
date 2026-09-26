@@ -56,6 +56,9 @@ class Bitget(Exchange):
         # (TradingMode.FUTURES, MarginMode.CROSS),
     ]
 
+    # Set on startup if the account can't be switched to one-way mode
+    hedge_mode = False
+
     def ohlcv_candle_limit(
         self, timeframe: str, candle_type: CandleType, since_ms: int | None = None
     ) -> int:
@@ -167,8 +170,20 @@ class Bitget(Exchange):
         """
         try:
             if not self._config["dry_run"] and self.trading_mode == TradingMode.FUTURES:
-                position_mode = self._api.set_position_mode(False)
-                self._log_exchange_response("set_position_mode", position_mode)
+                try:
+                    position_mode = self._api.set_position_mode(False)
+                    self._log_exchange_response("set_position_mode", position_mode)
+                except ccxt.ExchangeError:
+                    # Some accounts (e.g. copy-trading lead trader accounts) are locked to
+                    # hedge mode and reject switching to one-way mode.
+                    if not self._account_in_hedge_mode():
+                        raise
+                    self.hedge_mode = True
+                    logger.warning(
+                        "Bitget: Account is locked to hedge mode. Freqtrade will continue in "
+                        "hedge mode - but will only hold one position per pair. "
+                        "Support for hedge mode is best-effort."
+                    )
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.OperationFailed, ccxt.ExchangeError) as e:
@@ -177,6 +192,33 @@ class Bitget(Exchange):
             ) from e
         except ccxt.BaseError as e:
             raise OperationalException(e) from e
+
+    def _account_in_hedge_mode(self) -> bool:
+        """
+        Check the account's position mode.
+        Position mode is account wide, but can only be queried through a market.
+        """
+        markets = self.get_markets(
+            quote_currencies=[self._config["stake_currency"]], futures_only=True, active_only=True
+        )
+        if not markets:
+            return False
+        res = self._api.fetch_leverage(next(iter(markets)))
+        self._log_exchange_response("fetch_leverage", res)
+        return res.get("info", {}).get("posMode") == "hedge_mode"
+
+    def _lev_prep(self, pair: str, leverage: float, side: BuySell, accept_fail: bool = False):
+        if self.hedge_mode and self.trading_mode == TradingMode.FUTURES:
+            # Isolated leverage in hedge mode is set per position side.
+            self.set_margin_mode(pair, self.margin_mode, accept_fail)
+            self._set_leverage(
+                leverage,
+                pair,
+                accept_fail,
+                params={"holdSide": "long" if side == "buy" else "short"},
+            )
+        else:
+            super()._lev_prep(pair, leverage, side, accept_fail)
 
     def _get_params(
         self,
@@ -195,6 +237,14 @@ class Bitget(Exchange):
         )
         if self.trading_mode == TradingMode.FUTURES and self.margin_mode:
             params["marginMode"] = self.margin_mode.value.lower()
+        if self.hedge_mode:
+            params["hedged"] = True
+        return params
+
+    def _get_stop_params(self, side: BuySell, ordertype: str, stop_price: float) -> dict:
+        params = super()._get_stop_params(side, ordertype, stop_price)
+        if self.hedge_mode:
+            params["hedged"] = True
         return params
 
     def dry_run_liquidation_price(
