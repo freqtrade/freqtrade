@@ -72,7 +72,7 @@ class PyTorchTransformerModel(nn.Module):
         if add_positional_encoding:
             x = self.positional_encoding(x)
         x = self.transformer(x, mask=mask)
-        x = x.reshape(-1, 1, self.time_window * x.shape[-1])
+        x = x.reshape(-1, self.time_window * x.shape[-1])
         x = self.output_net(x)
         return x
 
