@@ -79,6 +79,49 @@ The bot cannot do these every 5 seconds (at each iteration), otherwise it would 
 So this parameter will tell the bot how often it should update the stoploss order. The default value is 60 (1 minute).
 This same logic will reapply a stoploss order on the exchange should you cancel it accidentally.
 
+### stoploss_on_exchange_native_trailing
+
+Binance Spot and Binance Futures can use an exchange-native trailing stop after the configured
+positive trailing offset has been reached. Enable it in `order_types`:
+
+``` python
+order_types = {
+    "entry": "limit",
+    "exit": "limit",
+    "stoploss": "market",
+    "stoploss_on_exchange": True,
+    "stoploss_on_exchange_native_trailing": True,
+}
+```
+
+This mode also requires `trailing_stop`, `trailing_stop_positive`, and
+`trailing_only_offset_is_reached` to be enabled. It cannot be combined with `use_custom_stoploss`.
+
+Freqtrade initially places the configured regular stoploss on the exchange. Once the positive
+trailing offset is detected, it cancels that order and replaces it with a native Binance trailing
+order. Binance Spot receives a `trailingDelta`; Binance Futures receives a
+`TRAILING_STOP_MARKET` order with `callbackRate`. The configured `trailing_stop_positive` ratio is
+converted to the exchange price distance. On Spot, `0.001` means `0.1%` (10 BIPS). On Futures,
+Freqtrade divides the ratio by the trade leverage, matching the way Freqtrade calculates its stop
+price. For example, `0.01` at 10x leverage becomes a `0.1%` Binance callback.
+
+Binance Futures only accepts callbacks from `0.1%` to `10%`. Binance Spot validates the requested
+BIPS against the symbol's `TRAILING_DELTA` filter and requires `order_types["stoploss"] = "market"`.
+If the configured distance cannot be represented by Binance, Freqtrade keeps managing the regular
+stoploss on exchange. If creation of the native order fails after the handover has started,
+Freqtrade immediately attempts to restore the regular exchange stoploss.
+
+After the replacement, price tracking and triggering happen on Binance and the order is no longer
+periodically cancelled and recreated by Freqtrade. Detection of the initial positive offset still
+depends on the Freqtrade bot loop, and there is a short cancel-and-replace interval during the
+handover.
+
+!!! Warning "Exchange-native behavior"
+    Native trailing orders are not reproduced by backtesting. In dry-run mode, Freqtrade keeps
+    using its regular simulated stoploss instead of pretending to place a native Binance order.
+    Validate strategy behavior in dry-run, then validate the native order on testnet before using
+    a small live position and verifying the order directly on Binance.
+
 ### stoploss_price_type
 
 !!! Warning "Only applies to futures"
@@ -114,6 +157,7 @@ order_types = {
     "emergency_exit": "market",
     "stoploss": "market",
     "stoploss_on_exchange": True,
+    "stoploss_on_exchange_native_trailing": False,
     "stoploss_on_exchange_interval": 60,
     "stoploss_on_exchange_limit_ratio": 0.99
 }

@@ -481,6 +481,15 @@ CONF_SCHEMA = {
                     "description": "Whether to place stop loss on the exchange.",
                     "type": "boolean",
                 },
+                "stoploss_on_exchange_native_trailing": {
+                    "description": (
+                        "Whether to replace the initial exchange stop loss with an "
+                        "exchange-native trailing stop after the positive trailing offset "
+                        "has been reached."
+                    ),
+                    "type": "boolean",
+                    "default": False,
+                },
                 "stoploss_price_type": {
                     "description": "Price type for stop loss (e.g., last, mark, index).",
                     "type": "string",

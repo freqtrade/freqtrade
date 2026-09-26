@@ -874,6 +874,29 @@ class Exchange:
             "stoploss_on_exchange", False
         ):
             raise ConfigurationError(f"On exchange stoploss is not supported for {self.name}.")
+        if order_types.get("stoploss_on_exchange_native_trailing"):
+            if not order_types.get("stoploss_on_exchange"):
+                raise ConfigurationError(
+                    "Native trailing stoploss requires stoploss_on_exchange to be enabled."
+                )
+            if not self._ft_has.get("native_trailing_stoploss", False):
+                raise ConfigurationError(
+                    f"Native trailing stoploss is not supported for {self.name}."
+                )
+            if not self._config.get("trailing_stop") or not self._config.get(
+                "trailing_stop_positive"
+            ):
+                raise ConfigurationError(
+                    "Native trailing stoploss requires trailing_stop and trailing_stop_positive."
+                )
+            if not self._config.get("trailing_only_offset_is_reached"):
+                raise ConfigurationError(
+                    "Native trailing stoploss requires trailing_only_offset_is_reached."
+                )
+            if self._config.get("use_custom_stoploss"):
+                raise ConfigurationError(
+                    "Native trailing stoploss cannot be combined with use_custom_stoploss."
+                )
         if self.trading_mode == TradingMode.FUTURES:
             price_mapping = self._ft_has.get("stop_price_type_value_mapping", {}).keys()
             if (
@@ -1582,6 +1605,33 @@ class Exchange:
             (side == "sell" and stop_loss > float(order[price_param]))
             or (side == "buy" and stop_loss < float(order[price_param]))
         )
+
+    def is_native_trailing_stoploss(self, order: CcxtOrder) -> bool:
+        """Return whether an exchange order is an exchange-native trailing stop."""
+        return False
+
+    def get_native_trailing_stoploss_callback(
+        self,
+        pair: str,
+        trailing_ratio: float,
+        side: BuySell,
+        leverage: float,
+    ) -> float:
+        """Return the exchange callback percentage for a native trailing stoploss."""
+        raise OperationalException(f"Native trailing stoploss is not implemented for {self.name}.")
+
+    def create_native_trailing_stoploss(
+        self,
+        pair: str,
+        amount: float,
+        stop_price: float,
+        trailing_ratio: float,
+        side: BuySell,
+        leverage: float,
+        order_types: dict,
+    ) -> CcxtOrder:
+        """Create an exchange-native trailing stoploss when supported by the exchange."""
+        raise OperationalException(f"Native trailing stoploss is not implemented for {self.name}.")
 
     def _get_stop_order_type(self, user_order_type) -> tuple[str, str]:
         available_order_Types: dict[str, str] = self._ft_has["stoploss_order_types"]

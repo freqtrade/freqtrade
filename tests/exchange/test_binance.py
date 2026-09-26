@@ -9,7 +9,12 @@ import pytest
 
 from freqtrade.data.converter.trade_converter import trades_dict_to_list
 from freqtrade.enums import CandleType, MarginMode, RunMode, TradingMode
-from freqtrade.exceptions import DependencyException, InvalidOrderException, OperationalException
+from freqtrade.exceptions import (
+    ConfigurationError,
+    DependencyException,
+    InvalidOrderException,
+    OperationalException,
+)
 from freqtrade.exchange.exchange_utils_timeframe import timeframe_to_seconds
 from freqtrade.persistence import Trade
 from freqtrade.util.datetime_helpers import dt_from_ts, dt_ts, dt_utc
@@ -160,6 +165,195 @@ def test_create_stoploss_order_dry_run_binance(default_conf, mocker):
     assert order["price"] == 217.8
     assert order["stopPrice"] == 220
     assert order["amount"] == 1
+
+
+@pytest.mark.parametrize(
+    "trademode,expected_type,expected_params",
+    [
+        (
+            TradingMode.SPOT,
+            "stop_loss",
+            {"trailingPercent": 0.1},
+        ),
+        (
+            TradingMode.FUTURES,
+            "market",
+            {"trailingPercent": 0.1, "reduceOnly": True, "workingType": "MARK_PRICE"},
+        ),
+    ],
+)
+def test_create_native_trailing_stoploss_binance(
+    default_conf, mocker, trademode, expected_type, expected_params
+):
+    api_mock = MagicMock()
+    api_mock.create_order.return_value = {
+        "id": "native-trailing-1",
+        "type": "trailing_stop_market" if trademode == TradingMode.FUTURES else "stop_loss",
+        "info": {"trailingDelta": 10} if trademode == TradingMode.SPOT else {},
+    }
+    default_conf.update(
+        {
+            "dry_run": False,
+            "margin_mode": MarginMode.ISOLATED,
+            "trading_mode": trademode,
+        }
+    )
+    mocker.patch(f"{EXMS}.amount_to_precision", lambda s, x, y: y)
+
+    exchange = get_patched_exchange(mocker, default_conf, api_mock, "binance")
+    if trademode == TradingMode.SPOT:
+        exchange.markets["ETH/BTC"].setdefault("info", {})["filters"] = [
+            {
+                "filterType": "TRAILING_DELTA",
+                "minTrailingAboveDelta": "10",
+                "maxTrailingAboveDelta": "2000",
+                "minTrailingBelowDelta": "10",
+                "maxTrailingBelowDelta": "2000",
+            }
+        ]
+    order = exchange.create_native_trailing_stoploss(
+        pair="ETH/BTC",
+        amount=1,
+        stop_price=220,
+        trailing_ratio=0.001,
+        side="sell",
+        leverage=1.0,
+        order_types={"stoploss_price_type": "mark"},
+    )
+
+    assert order["id"] == "native-trailing-1"
+    api_mock.create_order.assert_called_once_with(
+        symbol="ETH/BTC",
+        type=expected_type,
+        side="sell",
+        amount=1,
+        price=None,
+        params=expected_params,
+    )
+    assert exchange.is_native_trailing_stoploss(order)
+
+
+def test_is_native_trailing_stoploss_binance_futures_parsed_order(default_conf, mocker):
+    default_conf.update(
+        {
+            "margin_mode": MarginMode.ISOLATED,
+            "trading_mode": TradingMode.FUTURES,
+        }
+    )
+    exchange = get_patched_exchange(mocker, default_conf, exchange="binance")
+
+    assert exchange.is_native_trailing_stoploss(
+        {
+            "id": "algo-1",
+            "type": "market",
+            "stopPrice": None,
+            "info": {"orderType": "TRAILING_STOP_MARKET"},
+        }
+    )
+
+
+def test_create_native_trailing_stoploss_binance_invalid_callback(default_conf, mocker):
+    default_conf.update(
+        {
+            "dry_run": False,
+            "margin_mode": MarginMode.ISOLATED,
+            "trading_mode": TradingMode.FUTURES,
+        }
+    )
+    exchange = get_patched_exchange(mocker, default_conf, MagicMock(), "binance")
+
+    with pytest.raises(InvalidOrderException, match=r"between 0\.1% and 10%"):
+        exchange.create_native_trailing_stoploss(
+            pair="ETH/USDT:USDT",
+            amount=1,
+            stop_price=220,
+            trailing_ratio=0.0005,
+            side="sell",
+            leverage=1.0,
+            order_types={},
+        )
+
+
+def test_validate_native_trailing_stoploss_binance(default_conf, mocker):
+    exchange = get_patched_exchange(mocker, default_conf, exchange="binance")
+    order_types = {
+        "stoploss_on_exchange": True,
+        "stoploss_on_exchange_native_trailing": True,
+        "stoploss": "market",
+    }
+    exchange._config.update(
+        {
+            "trailing_stop": True,
+            "trailing_stop_positive": 0.001,
+            "trailing_only_offset_is_reached": True,
+            "use_custom_stoploss": False,
+        }
+    )
+
+    exchange.validate_stop_ordertypes(order_types)
+
+    exchange._config["use_custom_stoploss"] = True
+    with pytest.raises(ConfigurationError, match="cannot be combined"):
+        exchange.validate_stop_ordertypes(order_types)
+
+
+def test_native_trailing_stoploss_binance_futures_adjusts_for_leverage(default_conf, mocker):
+    default_conf.update(
+        {
+            "margin_mode": MarginMode.ISOLATED,
+            "trading_mode": TradingMode.FUTURES,
+            "trailing_stop": True,
+            "trailing_stop_positive": 0.01,
+            "trailing_only_offset_is_reached": True,
+        }
+    )
+    exchange = get_patched_exchange(mocker, default_conf, exchange="binance")
+
+    assert exchange.get_native_trailing_stoploss_callback(
+        "ETH/USDT:USDT", 0.01, "sell", 10
+    ) == pytest.approx(0.1)
+
+    with pytest.raises(InvalidOrderException, match=r"after leverage adjustment"):
+        exchange.get_native_trailing_stoploss_callback("ETH/USDT:USDT", 0.001, "sell", 10)
+
+
+def test_validate_native_trailing_stoploss_binance_spot_requires_market(default_conf, mocker):
+    default_conf.update(
+        {
+            "trailing_stop": True,
+            "trailing_stop_positive": 0.001,
+            "trailing_only_offset_is_reached": True,
+        }
+    )
+    exchange = get_patched_exchange(mocker, default_conf, exchange="binance")
+
+    with pytest.raises(ConfigurationError, match="requires stoploss order type 'market'"):
+        exchange.validate_stop_ordertypes(
+            {
+                "stoploss": "limit",
+                "stoploss_on_exchange": True,
+                "stoploss_on_exchange_native_trailing": True,
+            }
+        )
+
+
+def test_native_trailing_stoploss_binance_spot_validates_symbol_filter(default_conf, mocker):
+    exchange = get_patched_exchange(mocker, default_conf, exchange="binance")
+    exchange.markets["ETH/BTC"].setdefault("info", {})["filters"] = [
+        {
+            "filterType": "TRAILING_DELTA",
+            "minTrailingAboveDelta": "20",
+            "maxTrailingAboveDelta": "1000",
+            "minTrailingBelowDelta": "10",
+            "maxTrailingBelowDelta": "500",
+        }
+    ]
+
+    assert exchange.get_native_trailing_stoploss_callback(
+        "ETH/BTC", 0.00101, "sell", 1
+    ) == pytest.approx(0.11)
+    with pytest.raises(InvalidOrderException, match="between 20 and 1000 BIPS"):
+        exchange.get_native_trailing_stoploss_callback("ETH/BTC", 0.001, "buy", 1)
 
 
 @pytest.mark.parametrize(

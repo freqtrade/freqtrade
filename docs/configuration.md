@@ -514,7 +514,10 @@ stoploss "on exchange" which means stoploss order would be placed immediately on
 
 If this is configured, the following 4 values (`entry`, `exit`, `stoploss` and `stoploss_on_exchange`) need to be present, otherwise, the bot will fail to start.
 
-For information on (`emergency_exit`,`force_exit`, `force_entry`, `stoploss_on_exchange`,`stoploss_on_exchange_interval`,`stoploss_on_exchange_limit_ratio`) please see stop loss documentation [stop loss on exchange](stoploss.md)
+For information on (`emergency_exit`,`force_exit`, `force_entry`, `stoploss_on_exchange`,
+`stoploss_on_exchange_native_trailing`, `stoploss_on_exchange_interval`,
+`stoploss_on_exchange_limit_ratio`) please see stop loss documentation
+[stop loss on exchange](stoploss.md).
 
 Syntax for Strategy:
 
@@ -527,6 +530,7 @@ order_types = {
     "force_exit": "market",
     "stoploss": "market",
     "stoploss_on_exchange": False,
+    "stoploss_on_exchange_native_trailing": False,
     "stoploss_on_exchange_interval": 60,
     "stoploss_on_exchange_limit_ratio": 0.99,
 }
@@ -543,6 +547,7 @@ Configuration:
     "force_exit": "market",
     "stoploss": "market",
     "stoploss_on_exchange": false,
+    "stoploss_on_exchange_native_trailing": false,
     "stoploss_on_exchange_interval": 60
 }
 ```

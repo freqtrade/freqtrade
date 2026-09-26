@@ -2,14 +2,23 @@
 
 import logging
 from datetime import UTC, datetime
+from decimal import ROUND_CEILING, Decimal
 from pathlib import Path
 
 import ccxt
 from pandas import DataFrame
 
 from freqtrade.candle_columns import get_candle_columns
+from freqtrade.constants import BuySell
 from freqtrade.enums import TRADE_MODES, CandleType, MarginMode, PriceType, RunMode, TradingMode
-from freqtrade.exceptions import DDosProtection, OperationalException, TemporaryError
+from freqtrade.exceptions import (
+    ConfigurationError,
+    DDosProtection,
+    InsufficientFundsError,
+    InvalidOrderException,
+    OperationalException,
+    TemporaryError,
+)
 from freqtrade.exchange import Exchange
 from freqtrade.exchange.binance_public_data import (
     concat_safe,
@@ -17,7 +26,7 @@ from freqtrade.exchange.binance_public_data import (
     download_archive_trades,
 )
 from freqtrade.exchange.common import retrier
-from freqtrade.exchange.exchange_types import FtHas, Tickers
+from freqtrade.exchange.exchange_types import CcxtOrder, FtHas, Tickers
 from freqtrade.exchange.exchange_utils_timeframe import timeframe_to_msecs
 from freqtrade.misc import deep_merge_dicts, json_load
 from freqtrade.util import FtTTLCache
@@ -34,6 +43,7 @@ class Binance(Exchange):
 
     _ft_has: FtHas = {
         "stoploss_on_exchange": True,
+        "native_trailing_stoploss": True,
         "stop_price_param": "stopPrice",
         "stop_price_prop": "stopPrice",
         "stoploss_order_types": {"limit": "stop_loss_limit"},
@@ -88,6 +98,175 @@ class Binance(Exchange):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._spot_delist_schedule_cache: FtTTLCache = FtTTLCache(maxsize=100, ttl=300)
+
+    def is_native_trailing_stoploss(self, order: CcxtOrder) -> bool:
+        order_type = str(order.get("type") or "").lower()
+        info = order.get("info") or {}
+        original_type = str(
+            info.get("origType")
+            or info.get("orderType")
+            or info.get("type")
+            or info.get("strategyType")
+            or ""
+        ).lower()
+        return (
+            order_type in ("trailing_stop", "trailing_stop_market")
+            or original_type in ("trailing_stop", "trailing_stop_market")
+            or "trailingDelta" in info
+        )
+
+    def validate_stop_ordertypes(self, order_types: dict) -> None:
+        super().validate_stop_ordertypes(order_types)
+        if (
+            order_types.get("stoploss_on_exchange_native_trailing")
+            and self.trading_mode == TradingMode.SPOT
+            and order_types.get("stoploss") != "market"
+        ):
+            raise ConfigurationError(
+                "Binance Spot native trailing stoploss requires stoploss order type 'market'."
+            )
+
+    def get_native_trailing_stoploss_callback(
+        self,
+        pair: str,
+        trailing_ratio: float,
+        side: BuySell,
+        leverage: float,
+    ) -> float:
+        """Return the CCXT trailingPercent value accepted by Binance for this trade."""
+        if trailing_ratio <= 0:
+            raise InvalidOrderException("Native trailing stoploss ratio must be greater than 0.")
+
+        if self.trading_mode == TradingMode.FUTURES:
+            if leverage <= 0:
+                raise InvalidOrderException(
+                    "Native trailing stoploss leverage must be greater than 0."
+                )
+            trailing_percent = trailing_ratio / leverage * 100
+            if not 0.1 <= trailing_percent <= 10:
+                raise InvalidOrderException(
+                    "Binance Futures native trailing callback rate must be between 0.1% and 10% "
+                    "after leverage adjustment."
+                )
+            return trailing_percent
+
+        trailing_bips = int(
+            (Decimal(str(trailing_ratio)) * Decimal(10000)).to_integral_value(
+                rounding=ROUND_CEILING
+            )
+        )
+        market = self.markets.get(pair) or {}
+        trailing_filter = next(
+            (
+                item
+                for item in (market.get("info") or {}).get("filters", [])
+                if item.get("filterType") == "TRAILING_DELTA"
+            ),
+            None,
+        )
+        if trailing_filter is None:
+            raise InvalidOrderException(f"Binance TRAILING_DELTA filter is unavailable for {pair}.")
+
+        try:
+            if side == "sell":
+                min_delta = int(trailing_filter["minTrailingBelowDelta"])
+                max_delta = int(trailing_filter["maxTrailingBelowDelta"])
+            else:
+                min_delta = int(trailing_filter["minTrailingAboveDelta"])
+                max_delta = int(trailing_filter["maxTrailingAboveDelta"])
+        except (KeyError, TypeError, ValueError) as exception:
+            raise InvalidOrderException(
+                f"Binance TRAILING_DELTA filter is invalid for {pair}."
+            ) from exception
+
+        if not min_delta <= trailing_bips <= max_delta:
+            raise InvalidOrderException(
+                f"Binance Spot native trailing delta for {pair} must be between "
+                f"{min_delta} and {max_delta} BIPS for side {side}."
+            )
+        return trailing_bips / 100
+
+    @retrier(retries=0)
+    def create_native_trailing_stoploss(
+        self,
+        pair: str,
+        amount: float,
+        stop_price: float,
+        trailing_ratio: float,
+        side: BuySell,
+        leverage: float,
+        order_types: dict,
+    ) -> CcxtOrder:
+        """Create a Binance-native trailing stop through CCXT."""
+        trailing_percent = self.get_native_trailing_stoploss_callback(
+            pair, trailing_ratio, side, leverage
+        )
+
+        ordertype = "market" if self.trading_mode == TradingMode.FUTURES else "stop_loss"
+        params = self._params.copy()
+        params["trailingPercent"] = trailing_percent
+
+        if self.trading_mode == TradingMode.FUTURES:
+            params["reduceOnly"] = True
+            if "stoploss_price_type" in order_types and "stop_price_type_field" in self._ft_has:
+                price_type = self._ft_has["stop_price_type_value_mapping"][
+                    order_types.get("stoploss_price_type", PriceType.LAST)
+                ]
+                params[self._ft_has["stop_price_type_field"]] = price_type
+
+        if self._config["dry_run"]:
+            dry_order = self.create_dry_run_order(
+                pair,
+                "trailing_stop_market",
+                side,
+                amount,
+                stop_price,
+                leverage,
+                params=params,
+                stop_loss=True,
+                stop_price=stop_price,
+            )
+            dry_order["info"].update(
+                {"type": "TRAILING_STOP_MARKET", "trailingPercent": trailing_percent}
+            )
+            return dry_order
+
+        amount = self.amount_to_precision(pair, self._amount_to_contracts(pair, amount))
+        self._lev_prep(pair, leverage, side, accept_fail=True)
+        try:
+            order = self._api.create_order(
+                symbol=pair,
+                type=ordertype,
+                side=side,
+                amount=amount,
+                price=None,
+                params=params,
+            )
+            self._log_exchange_response("create_native_trailing_stoploss_order", order)
+            order = self._order_contracts_to_amount(order)
+            logger.info(
+                f"Native trailing stoploss order added for {pair}. "
+                f"callback rate: {trailing_percent}%."
+            )
+            return order
+        except ccxt.InsufficientFunds as e:
+            raise InsufficientFundsError(
+                f"Insufficient funds to create native trailing stoploss {side} order on "
+                f"{pair}. Message: {e}"
+            ) from e
+        except (ccxt.InvalidOrder, ccxt.BadRequest, ccxt.OperationRejected) as e:
+            raise InvalidOrderException(
+                f"Could not create native trailing stoploss {side} order on {pair}. Message: {e}"
+            ) from e
+        except ccxt.DDoSProtection as e:
+            raise DDosProtection(e) from e
+        except (ccxt.OperationFailed, ccxt.ExchangeError) as e:
+            raise TemporaryError(
+                f"Could not place native trailing stoploss due to "
+                f"{e.__class__.__name__}. Message: {e}"
+            ) from e
+        except ccxt.BaseError as e:
+            raise OperationalException(e) from e
 
     def get_proxy_coin(self) -> str:
         """
