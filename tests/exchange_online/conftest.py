@@ -882,6 +882,6 @@ def exchange_ws(request, exchange_conf, exchange_mode, class_mocker):
         pytest.skip("Exchange does not support futures.")
 
     if not exchange._exchange_ws:
-        pytest.skip("Exchange does not support watch_ohlcv.")
+        pytest.skip("Exchange does not have websocket support enabled.")
     yield exchange, name, pair
     exchange.close()
