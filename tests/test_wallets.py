@@ -322,6 +322,34 @@ def test_sync_wallet_futures_live(mocker, default_conf):
             "side": "short",
             "percentage": None,
         },
+        {
+            # Cross position without liquidation price - binance reports collateral 0
+            "id": None,
+            "symbol": "WLD/USDT:USDT",
+            "contracts": 5.0,
+            "contractSize": 1.0,
+            "unrealizedPnl": 0.2365,
+            "leverage": 5.0,
+            "liquidationPrice": None,
+            "collateral": 0.0,
+            "notional": 11.978,
+            "markPrice": 2.3956,
+            "entryPrice": 2.3483,
+            "timestamp": 1722062678998,
+            "initialMargin": 2.3956,
+            "initialMarginPercentage": 0.2,
+            "maintenanceMargin": None,
+            "maintenanceMarginPercentage": None,
+            "marginRatio": None,
+            "datetime": "2024-07-27T06:44:38.998Z",
+            "marginMode": "cross",
+            "marginType": "cross",
+            "side": "long",
+            "hedged": False,
+            "percentage": 9.87,
+            "stopLossPrice": None,
+            "takeProfitPrice": None,
+        },
     ]
     mocker.patch.multiple(
         EXMS,
@@ -336,18 +364,20 @@ def test_sync_wallet_futures_live(mocker, default_conf):
     freqtrade = get_patched_freqtradebot(mocker, default_conf)
 
     assert len(freqtrade.wallets._wallets) == 1
-    assert len(freqtrade.wallets._positions) == 2
+    assert len(freqtrade.wallets._positions) == 3
 
     assert "USDT" in freqtrade.wallets._wallets
     assert "ETH/USDT:USDT" in freqtrade.wallets._positions
     assert freqtrade.wallets._last_wallet_refresh is not None
     assert freqtrade.wallets.get_owned("ETH/USDT:USDT", "ETH") == 1000
     assert freqtrade.wallets.get_owned("SOL/USDT:USDT", "SOL") == 0
+    assert freqtrade.wallets.get_owned("WLD/USDT:USDT", "WLD") == 5.0
+    assert freqtrade.wallets._positions["WLD/USDT:USDT"].collateral == 2.3956
 
     # Remove ETH/USDT:USDT position
     del mock_result[0]
     freqtrade.wallets.update()
-    assert len(freqtrade.wallets._positions) == 1
+    assert len(freqtrade.wallets._positions) == 2
     assert "ETH/USDT:USDT" not in freqtrade.wallets._positions
 
 

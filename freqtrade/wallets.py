@@ -201,7 +201,7 @@ class Wallets:
         _parsed_positions = {}
         for position in positions:
             symbol = position["symbol"]
-            if position["side"] is None or position["collateral"] == 0.0:
+            if position["side"] is None or not position["contracts"]:
                 # Position is not open ...
                 continue
             size = self._exchange._contracts_to_amount(symbol, position["contracts"])
