@@ -103,8 +103,9 @@ The resulting dataframe has three columns:
     Check which of the two columns actually carries data for your exchange and pairs before relying on it in a strategy.
 
 !!! Note "Limited history"
-    Exchanges keep far less open interest history than candle history - Binance for example only serves the last 30 days.
+    Exchanges often keep far less open interest history than candle history - Binance for example only serves the last 30 days, while Bybit has the full history available.
     Downloads reaching further back will silently return no data for the missing period.
+    You can use `freqtrade list-data --show-timerange` to see the exact timerange of the downloaded data.
 
 Exchanges that don't provide open interest history reject the download with an explicit error, and a running bot whose strategy requests open interest on such an exchange refuses to start.
 
