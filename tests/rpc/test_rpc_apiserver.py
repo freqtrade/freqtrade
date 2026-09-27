@@ -3665,6 +3665,13 @@ def test_channel_reader_handles_freqtrade_exception(botclient):
 
 
 def test_api_ws_send_msg(default_conf, mocker, caplog):
+
+    def wait_for_waiter(waiter, timeout: float = 0.5):
+        for _ in range(int(timeout / 0.01)):
+            if waiter.done():
+                return
+            time.sleep(0.01)
+
     try:
         caplog.set_level(logging.DEBUG)
 
@@ -3692,11 +3699,16 @@ def test_api_ws_send_msg(default_conf, mocker, caplog):
             test_message = {"type": "status", "data": "test"}
             first_waiter = apiserver._message_stream._waiter
             apiserver.send_msg(test_message)
+            # Publishing from a foreign thread is handed over to the server's event loop
+            wait_for_waiter(first_waiter)
             assert first_waiter.result()[0] == test_message
 
             second_waiter = apiserver._message_stream._waiter
-            apiserver.send_msg(test_message)
             assert first_waiter != second_waiter
+            test_message2 = {"type": "status", "data": "test2"}
+            apiserver.send_msg(test_message2)
+            wait_for_waiter(second_waiter)
+            assert second_waiter.result()[0] == test_message2
 
     finally:
         ApiServer.shutdown()
