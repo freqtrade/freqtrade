@@ -136,9 +136,9 @@ def test_bot_cleanup(mocker, default_conf_usdt, caplog) -> None:
     assert coo_mock.call_count == 1
 
 
-def test_bot_cleanup_db_errors(mocker, default_conf_usdt, caplog) -> None:
+def test_bot_cleanup_db_errors(mocker, default_conf_usdt, caplog, monkeypatch) -> None:
     mocker.patch("freqtrade.freqtradebot.Trade.commit", side_effect=OperationalException())
-    mocker.patch(
+    check_mock = mocker.patch(
         "freqtrade.freqtradebot.FreqtradeBot.check_for_open_trades",
         side_effect=OperationalException(),
     )
@@ -147,6 +147,17 @@ def test_bot_cleanup_db_errors(mocker, default_conf_usdt, caplog) -> None:
     freqtrade.emc.shutdown = MagicMock()
     freqtrade.cleanup()
     assert freqtrade.emc.shutdown.call_count == 1
+    assert check_mock.call_count == 1
+    assert log_has_re(r"Exception during cleanup: OperationalException.*", caplog)
+
+    # Startup failed before init_db() - Trade.session doesn't exist.
+    caplog.clear()
+    check_mock.reset_mock()
+    monkeypatch.delattr(Trade, "session")
+    freqtrade.cleanup()
+    assert check_mock.call_count == 0
+    assert not log_has_re(r"Exception during cleanup.*", caplog)
+    assert not log_has_re(r"Error during cleanup.*", caplog)
 
 
 @pytest.mark.parametrize("runmode", [RunMode.DRY_RUN, RunMode.LIVE])

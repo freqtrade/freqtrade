@@ -234,10 +234,12 @@ class FreqtradeBot(LoggingMixin):
         try:
             # Wrap db activities in shutdown to avoid problems if database is gone,
             # and raises further exceptions.
-            if self.config.get("cancel_open_orders_on_exit"):
-                self.cancel_all_open_orders()
+            # Trade.session is missing if startup failed before init_db().
+            if hasattr(Trade, "session"):
+                if self.config.get("cancel_open_orders_on_exit"):
+                    self.cancel_all_open_orders()
 
-            self.check_for_open_trades()
+                self.check_for_open_trades()
         except Exception as e:
             logger.warning(f"Exception during cleanup: {e.__class__.__name__} {e}")
 
