@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 from freqtrade.enums import RPCMessageType
 from freqtrade.rpc import RPCManager
 from freqtrade.rpc.api_server.webserver import ApiServer
-from tests.conftest import get_patched_freqtradebot, log_has, log_has_re
+from tests.conftest import get_patched_freqtradebot, log_has
 
 
 def test__init__(mocker, default_conf) -> None:
@@ -301,25 +301,38 @@ def test_cleanup_delivers_pending_messages(mocker, default_conf, caplog) -> None
 def test_cleanup_timeout(mocker, default_conf, caplog) -> None:
     default_conf["telegram"]["enabled"] = True
     mocker.patch("freqtrade.rpc.telegram.Telegram._init")
-    mocker.patch("freqtrade.rpc.telegram.Telegram.cleanup")
+    cleanup_mock = mocker.patch("freqtrade.rpc.telegram.Telegram.cleanup")
+    sending = threading.Event()
     release = threading.Event()
-    mocker.patch("freqtrade.rpc.telegram.Telegram.send_msg", side_effect=lambda m: release.wait(5))
+    send_mock = mocker.patch(
+        "freqtrade.rpc.telegram.Telegram.send_msg",
+        side_effect=lambda m: (sending.set(), release.wait(5)),
+    )
     rpc_manager = RPCManager(get_patched_freqtradebot(mocker, default_conf))
 
     rpc_manager.send_msg({"type": RPCMessageType.STATUS, "status": "test"})
     rpc_manager.send_msg({"type": RPCMessageType.STATUS, "status": "test2"})
-    # Simulate a worker which doesn't finish in time
+    assert sending.wait(5)
+    # Simulate a worker which doesn't finish within either timeout
     worker = rpc_manager._workers["telegram"]
-    worker_mock = MagicMock(is_alive=MagicMock(return_value=True))
+    worker_mock = MagicMock(is_alive=worker.is_alive)
     rpc_manager._workers["telegram"] = worker_mock
     rpc_manager.cleanup()
 
-    assert worker_mock.join.call_count == 1
-    assert 9 < worker_mock.join.call_args[1]["timeout"] <= 10
-    assert log_has_re(r"RPC module telegram did not finish sending \d+ pending messages\.", caplog)
+    assert worker_mock.join.call_count == 2
+    assert 9 < worker_mock.join.call_args_list[0][1]["timeout"] <= 10
+    assert worker_mock.join.call_args_list[1][1]["timeout"] == 10
+    assert log_has(
+        "RPC module telegram did not finish sending pending messages - discarding 1 messages.",
+        caplog,
+    )
+    assert log_has("RPC module telegram is still sending - cleaning up anyway.", caplog)
+    assert cleanup_mock.call_count == 1
     release.set()
     worker.join(5)
     assert not worker.is_alive()
+    # "test2" was discarded
+    assert send_mock.call_count == 1
 
 
 def test_send_msg_queue_warning(mocker, default_conf, caplog) -> None:
