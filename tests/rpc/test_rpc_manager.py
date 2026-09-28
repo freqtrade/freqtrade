@@ -88,6 +88,7 @@ def test_send_msg_telegram_error(mocker, default_conf, caplog) -> None:
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     rpc_manager = RPCManager(freqtradebot)
     rpc_manager.send_msg({"type": RPCMessageType.STATUS, "status": "test"})
+    rpc_manager.flush()
 
     assert log_has("Sending rpc message: {'type': status, 'status': 'test'}", caplog)
     assert log_has("Exception occurred within RPC module telegram", caplog)
@@ -105,6 +106,7 @@ def test_process_msg_queue(mocker, default_conf, caplog) -> None:
     queue.append("Test message")
     queue.append("Test message 2")
     rpc_manager.process_msg_queue(queue)
+    rpc_manager.flush()
 
     assert log_has("Sending rpc strategy_msg: Test message", caplog)
     assert log_has("Sending rpc strategy_msg: Test message 2", caplog)
@@ -118,6 +120,7 @@ def test_send_msg_telegram_enabled(mocker, default_conf, caplog) -> None:
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     rpc_manager = RPCManager(freqtradebot)
     rpc_manager.send_msg({"type": RPCMessageType.STATUS, "status": "test"})
+    rpc_manager.flush()
 
     assert log_has("Sending rpc message: {'type': status, 'status': 'test'}", caplog)
     assert telegram_mock.call_count == 1
@@ -155,6 +158,7 @@ def test_send_msg_webhook_CustomMessagetype(mocker, default_conf, caplog) -> Non
 
     assert "webhook" in [mod.name for mod in rpc_manager.registered_modules]
     rpc_manager.send_msg({"type": RPCMessageType.STARTUP, "status": "TestMessage"})
+    rpc_manager.flush()
     assert log_has("Message type 'startup' not implemented by handler webhook.", caplog)
 
 
@@ -166,6 +170,7 @@ def test_startupmessages_telegram_enabled(mocker, default_conf) -> None:
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
     rpc_manager = RPCManager(freqtradebot)
     rpc_manager.startup_messages(default_conf, freqtradebot.pairlists, freqtradebot.protections)
+    rpc_manager.flush()
 
     assert telegram_mock.call_count == 3
     assert "*Exchange:* `binance`" in telegram_mock.call_args_list[1][0][0]["status"]
@@ -179,6 +184,7 @@ def test_startupmessages_telegram_enabled(mocker, default_conf) -> None:
     freqtradebot = get_patched_freqtradebot(mocker, default_conf)
 
     rpc_manager.startup_messages(default_conf, freqtradebot.pairlists, freqtradebot.protections)
+    rpc_manager.flush()
     assert telegram_mock.call_count == 4
     assert "Dry run is enabled." in telegram_mock.call_args_list[0][0][0]["status"]
     assert "StoplossGuard" in telegram_mock.call_args_list[-1][0][0]["status"]
