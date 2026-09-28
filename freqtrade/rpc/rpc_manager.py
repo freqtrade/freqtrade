@@ -5,7 +5,7 @@ This module contains class to manage RPC communications (Telegram, API, ...)
 import logging
 import time
 from collections import deque
-from queue import Queue
+from queue import Empty, Queue
 from threading import Thread
 
 from freqtrade.constants import Config
@@ -118,10 +118,28 @@ class RPCManager:
         for q in self._queues.values():
             q.join()
 
+    @staticmethod
+    def _discard_pending(q: "Queue[RPCSendMsg | None]") -> int:
+        """
+        Remove all pending messages from the queue, leaving only the stop sentinel.
+        :return: Number of discarded messages
+        """
+        discarded = 0
+        while True:
+            try:
+                msg = q.get_nowait()
+            except Empty:
+                break
+            q.task_done()
+            discarded += msg is not None
+        q.put(None)
+        return discarded
+
     def _stop_workers(self) -> None:
         """
         Stop all worker threads after delivering pending messages.
-        Waits at most 10 seconds in total.
+        Waits at most 10 seconds in total for pending messages - afterwards, remaining
+        messages are discarded and the message currently being sent gets another 10 seconds.
         """
         for q in self._queues.values():
             q.put(None)
@@ -129,10 +147,15 @@ class RPCManager:
         for name, worker in self._workers.items():
             worker.join(timeout=max(deadline - time.monotonic(), 0))
             if worker.is_alive():
+                discarded = self._discard_pending(self._queues[name])
                 logger.warning(
-                    f"RPC module {name} did not finish sending "
-                    f"{self._queues[name].qsize()} pending messages."
+                    f"RPC module {name} did not finish sending pending messages - "
+                    f"discarding {discarded} messages."
                 )
+                # Give the current message a chance to finish before the module is torn down.
+                worker.join(timeout=10)
+                if worker.is_alive():
+                    logger.warning(f"RPC module {name} is still sending - cleaning up anyway.")
         self._queues = {}
         self._workers = {}
 
