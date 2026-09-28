@@ -123,6 +123,8 @@ class ApiServer(RPCHandler):
     _config: Config = {}
     # websocket message stuff
     _message_stream: MessageStream | None = None
+    # Publishing to the message stream is cheap - no need for a worker thread.
+    _use_queue = False
 
     def __new__(cls, *args, **kwargs):
         """
