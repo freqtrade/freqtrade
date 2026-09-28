@@ -87,7 +87,7 @@ jobs:
       run: |
         pytest --random-order --cov=freqtrade --cov=freqtrade_client --cov-config=.coveragerc
 
-    - uses: codecov/codecov-action@0b35c9ecc4f0529d0eb674914510c22f85b196b4 # v7.1.0
+    - uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
       if: (runner.os == 'Linux' && matrix.python-version == '3.14' && matrix.os == 'ubuntu-24.04')
       with:
         fail_ci_if_error: true
