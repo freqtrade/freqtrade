@@ -104,7 +104,7 @@ class RPCManager:
         if q := self._queues.get(mod.name):
             # Shallow copy - handlers may modify the message, and it's shared across threads.
             q.put(msg.copy())
-            if (size := q.qsize()) % 100 == 0:
+            if (size := q.qsize()) > 0 and size % 100 == 0:
                 # Warn if a queue has 100 messages pending
                 logger.warning(f"RPC module {mod.name} is slow - {size} messages pending.")
         else:
