@@ -44,6 +44,7 @@ def can_run_model(model: str) -> None:
         ("XGBoostRFRegressor", False, False, False, True, False, 0, 0),
         ("PyTorchMLPRegressor", False, False, False, False, False, 0, 0),
         ("PyTorchTransformerRegressor", False, False, False, False, False, 0, 0),
+        ("PyTorchTransformerClassifier", False, False, False, False, False, 0, 0),
         ("ReinforcementLearner", False, True, False, True, False, 0, 0),
         ("ReinforcementLearner_multiproc", False, False, False, True, False, 0, 0),
         ("ReinforcementLearner_test_3ac", False, False, False, False, False, 0, 0),
