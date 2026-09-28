@@ -18,7 +18,7 @@ httpx>=0.24.1
 humanize==4.16.0
 cachetools==7.2.0
 requests==2.34.2
-urllib3==2.7.0
+urllib3==2.8.0
 certifi==2026.6.17
 jsonschema==4.26.0
 tabulate==0.10.0
