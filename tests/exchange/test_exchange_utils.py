@@ -80,13 +80,13 @@ def test_check_exchange(default_conf, caplog) -> None:
     caplog.clear()
 
     # Test a 'bad' exchange, which known to have serious problems
-    default_conf.get("exchange").update({"name": "bitmex"})
+    default_conf.get("exchange").update({"name": "poloniex"})
     with pytest.raises(OperationalException, match=r"Exchange .* will not work with Freqtrade\..*"):
         check_exchange(default_conf)
     caplog.clear()
 
     # Test a 'bad' exchange with check_for_bad=False
-    default_conf.get("exchange").update({"name": "bitmex"})
+    default_conf.get("exchange").update({"name": "poloniex"})
     assert check_exchange(default_conf, False)
     assert log_has_re(
         r"Exchange .* is known to the ccxt library, available for the bot, "
