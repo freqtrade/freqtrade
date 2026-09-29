@@ -539,14 +539,6 @@ EXCHANGES: dict[str, TestExchangeOnlineSetup] = {
         "leverage_tiers_public": True,
         "leverage_in_spot_market": True,
     },
-    "coinex": {
-        "pair": "BTC/USDT",
-        "stake_currency": "USDT",
-        "hasQuoteVolume": False,
-        "timeframe": "1h",
-        "candle_count": 1000,
-        "orderbook_max_entries": 50,
-    },
     "htx": {
         "pair": "ETH/BTC",
         "stake_currency": "BTC",
