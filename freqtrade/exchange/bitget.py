@@ -202,6 +202,7 @@ class Bitget(Exchange):
             quote_currencies=[self._config["stake_currency"]], futures_only=True, active_only=True
         )
         if not markets:
+            logger.warning("No markets found for the configured stake currency.")
             return False
         res = self._api.fetch_leverage(next(iter(markets)))
         self._log_exchange_response("fetch_leverage", res)
