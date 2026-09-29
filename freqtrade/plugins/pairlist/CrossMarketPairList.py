@@ -51,8 +51,8 @@ class CrossMarketPairList(IPairList):
 
     def get_base_list(self) -> list[str]:
         target_mode = self._target_mode
-        spot_only = True if target_mode == "spot" else False
-        futures_only = True if target_mode == "futures" else False
+        spot_only = target_mode == "spot"
+        futures_only = target_mode == "futures"
         bases = [
             v.get("base", "")
             for _, v in self._exchange.get_markets(
@@ -84,7 +84,7 @@ class CrossMarketPairList(IPairList):
                 k
                 for k in self._exchange.get_markets(
                     quote_currencies=[self._stake_currency], tradable_only=True, active_only=True
-                ).keys()
+                )
             ]
 
             _pairlist = self.verify_blacklist(_pairlist, logger.info)
@@ -119,13 +119,12 @@ class CrossMarketPairList(IPairList):
                         break
 
                     # Avoid false positive since there are KAVA and AVA pairs, which aren't related
-                    if prefix != "K":
-                        # Check in case of 1000PEPE needs to be changed into PEPE for example
-                        if base.startswith(prefix):
-                            temp_base = base.removeprefix(prefix)
-                            found_in_bases = temp_base in bases
-                            if found_in_bases:
-                                break
+                    # Check in case of 1000PEPE needs to be changed into PEPE for example
+                    if prefix != "K" and base.startswith(prefix):
+                        temp_base = base.removeprefix(prefix)
+                        found_in_bases = temp_base in bases
+                        if found_in_bases:
+                            break
             if found_in_bases:
                 whitelisted_pairlist.append(pair)
                 filtered_pairlist.remove(pair)

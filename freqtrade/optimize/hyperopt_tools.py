@@ -84,13 +84,18 @@ class HyperoptTools:
             )
 
     @staticmethod
-    def load_params(filename: Path) -> dict[str, Any]:
+    def load_params(data: bytes | str) -> dict[str, Any]:
+        """
+        Load parameters from the raw content of a parameter file
+        """
+        return rapidjson.loads(data, number_mode=HYPER_PARAMS_FILE_FORMAT)
+
+    @staticmethod
+    def load_params_from_file(filename: Path) -> dict[str, Any]:
         """
         Load parameters from file
         """
-        with filename.open("r") as f:
-            params = rapidjson.load(f, number_mode=HYPER_PARAMS_FILE_FORMAT)
-        return params
+        return HyperoptTools.load_params(filename.read_text())
 
     @staticmethod
     def try_export_params(config: Config, strategy_name: str, params: dict):
@@ -396,7 +401,7 @@ class HyperoptTools:
         ]
         perc_multi = 100
 
-        param_metrics = [("params_dict." + param) for param in results[0]["params_dict"].keys()]
+        param_metrics = [("params_dict." + param) for param in results[0]["params_dict"]]
         trials = trials[base_metrics + param_metrics]
 
         base_columns = [

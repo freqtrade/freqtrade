@@ -115,9 +115,8 @@ def convert_trades_to_ohlcv(
     for pair in pairs:
         trades = data_handler_trades.trades_load(pair, trading_mode)
         for timeframe in timeframes:
-            if erase:
-                if data_handler_ohlcv.ohlcv_purge(pair, timeframe, candle_type=candle_type):
-                    logger.info(f"Deleting existing data for pair {pair}, interval {timeframe}.")
+            if erase and data_handler_ohlcv.ohlcv_purge(pair, timeframe, candle_type=candle_type):
+                logger.info(f"Deleting existing data for pair {pair}, interval {timeframe}.")
             try:
                 ohlcv = trades_to_ohlcv(trades, timeframe)
                 # Store ohlcv

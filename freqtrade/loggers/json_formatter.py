@@ -59,11 +59,10 @@ class JsonFormatter(logging.Formatter):
 
         message_dict = self.formatMessageDict(record)
 
-        if record.exc_info:
-            # Cache the traceback text to avoid converting it multiple times
-            # (it's constant anyway)
-            if not record.exc_text:
-                record.exc_text = self.formatException(record.exc_info)
+        # Cache the traceback text to avoid converting it multiple times
+        # (it's constant anyway)
+        if record.exc_info and not record.exc_text:
+            record.exc_text = self.formatException(record.exc_info)
 
         if record.exc_text:
             message_dict["exc_info"] = record.exc_text

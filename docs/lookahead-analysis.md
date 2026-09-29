@@ -54,7 +54,7 @@ It will start with a backtest of all pairs to generate a baseline for indicators
 After this initial backtest runs, it will look if the `minimum-trade-amount` is met and if not cancel the lookahead-analysis for this strategy.  
 If this happens, use a wider timerange to get more trades for the analysis, or use a timerange where more trades occur.
 
-After setting the baseline it will then do additional backtest runs for every entry and exit separately.  
+After setting the baseline it will then do additional backtest runs for every entry and exit separately, with a pairlist of length 1.  
 When these verification backtests complete, it will compare both dataframes (baseline and sliced) for any difference in columns' value and report the bias.
 After all signals have been verified or falsified a result table will be generated for the user to see.
 
@@ -104,7 +104,10 @@ This would lead to a false-negative, i.e. the strategy will be reported as non-b
 Please don't use any options like enabling position stacking as this will distort the number of checked signals.
 If you decide to do so, then make doubly sure that you won't ever run out of `max_open_trades` slots,
 and that you have enough capital in the backtest wallet configuration.
-- limit orders in combination with `custom_entry_price()` and `custom_exit_price()` callbacks can cause late / delayed entries and exists, causing false positives.
+- `lookahead-analysis` assumes that backtesting a single pair behaves identically to backtesting the full pairlist, as the verification runs use a pairlist containing only the pair being verified.
+Strategies that behave differently depending on the pairlist will therefore be reported as biased (false positive) - for example a `leverage()` or `custom_stake_amount()` callback using `len(self.dp.current_whitelist())`, or `populate_*` methods that rank against other pairs.
+This applies to every strategy method, not just the ones listed here.
+- limit orders in combination with `custom_entry_price()` and `custom_exit_price()` callbacks can cause late / delayed entries and exits, causing false positives.
 To avoid this - market orders are forced for this command. This implicitly means that `custom_entry_price()` and `custom_exit_price()` callbacks are not called.
 Using `--lookahead-allow-limit-orders` will skip the override and use your configured order types - however has shown to eventually produce false positives.
 - In the results table, the `biased_indicators` column

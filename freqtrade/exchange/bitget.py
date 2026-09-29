@@ -166,10 +166,9 @@ class Bitget(Exchange):
         Must be overridden in child methods if required.
         """
         try:
-            if not self._config["dry_run"]:
-                if self.trading_mode == TradingMode.FUTURES:
-                    position_mode = self._api.set_position_mode(False)
-                    self._log_exchange_response("set_position_mode", position_mode)
+            if not self._config["dry_run"] and self.trading_mode == TradingMode.FUTURES:
+                position_mode = self._api.set_position_mode(False)
+                self._log_exchange_response("set_position_mode", position_mode)
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.OperationFailed, ccxt.ExchangeError) as e:

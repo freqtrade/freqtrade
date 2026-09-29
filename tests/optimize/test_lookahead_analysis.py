@@ -137,6 +137,9 @@ def test_lookahead_helper_start(lookahead_conf, mocker, caplog) -> None:
     assert text_table_mock.call_count == 1
     assert log_has_re("Forced order_types to market orders.", caplog)
     assert single_mock.call_args_list[0][0][0]["order_types"]["entry"] == "market"
+    assert single_mock.call_args_list[0][0][0]["order_types"]["exit"] == "market"
+    assert single_mock.call_args_list[0][0][0]["entry_pricing"]["price_side"] == "other"
+    assert single_mock.call_args_list[0][0][0]["exit_pricing"]["price_side"] == "other"
 
     single_mock.reset_mock()
     text_table_mock.reset_mock()
@@ -147,6 +150,7 @@ def test_lookahead_helper_start(lookahead_conf, mocker, caplog) -> None:
     assert text_table_mock.call_count == 1
     assert log_has_re("Using configured order_types, skipping order_types override.", caplog)
     assert "order_types" not in single_mock.call_args_list[0][0][0]
+    assert "price_side" not in single_mock.call_args_list[0][0][0]["exit_pricing"]
 
 
 @pytest.mark.parametrize(

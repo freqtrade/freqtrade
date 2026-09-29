@@ -113,9 +113,7 @@ def test_bybit_fetch_orders(default_conf, mocker, limit_order):
     )
 
     def exchange_has(value):
-        if value == "fetchOrders":
-            return False
-        return True
+        return value != "fetchOrders"
 
     mocker.patch(f"{EXMS}.exchange_has", side_effect=exchange_has)
     start_time = datetime.now(UTC) - timedelta(days=20)

@@ -25,7 +25,7 @@ def setup_optimize_configuration(args: dict[str, Any], method: RunMode) -> dict[
         RunMode.BACKTEST: "backtesting",
         RunMode.HYPEROPT: "hyperoptimization",
     }
-    if method in no_unlimited_runmodes.keys():
+    if method in no_unlimited_runmodes:
         wallet_size = get_dry_run_wallet(config) * config["tradable_balance_ratio"]
         # tradable_balance_ratio
         if (

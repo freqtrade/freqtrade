@@ -219,6 +219,18 @@ def trim_dataframes(
     return processed
 
 
+def count_total_order_book(bids: list, asks: list) -> tuple[float, float]:
+    """
+    Calculate the total size of bids and asks in the order book and return them as a tuple.
+    :param bids: List of bid levels in the order book containing [price, size].
+    :param asks: List of ask levels in the order book containing [price, size].
+    :return: A tuple containing the total size of bids and asks in the order book.
+    """
+    order_book_bids = np.nansum(np.asarray([level[1] for level in bids], dtype=float))
+    order_book_asks = np.nansum(np.asarray([level[1] for level in asks], dtype=float))
+    return order_book_bids, order_book_asks
+
+
 def order_book_to_dataframe(bids: list, asks: list) -> DataFrame:
     """
     Gets order book list, returns dataframe with below format per suggested by creslin

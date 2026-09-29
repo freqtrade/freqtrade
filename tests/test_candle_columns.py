@@ -27,11 +27,13 @@ def test_default_dataframe_columns_reexport():
         (CandleType.INDEX, OHLCV_COLUMNS),
         (CandleType.PREMIUMINDEX, OHLCV_COLUMNS),
         (CandleType.FUNDING_RATE, ["date", "funding_rate"]),
+        (CandleType.OPEN_INTEREST, ["date", "open_interest_amount", "open_interest_value"]),
         # DataProvider and informative pairs pass plain strings / None for spot
         ("", OHLCV_COLUMNS),
         (None, OHLCV_COLUMNS),
         ("mark", OHLCV_COLUMNS),
         ("funding_rate", ["date", "funding_rate"]),
+        ("open_interest", ["date", "open_interest_amount", "open_interest_value"]),
     ],
 )
 def test_get_candle_columns(candle_type, expected):
@@ -50,6 +52,10 @@ def test_get_candle_dtypes():
         "volume": "float",
     }
     assert get_candle_dtypes(CandleType.FUNDING_RATE) == {"funding_rate": "float"}
+    assert get_candle_dtypes(CandleType.OPEN_INTEREST) == {
+        "open_interest_amount": "float",
+        "open_interest_value": "float",
+    }
     # date is never cast
     assert "date" not in get_candle_dtypes(CandleType.SPOT)
 
@@ -63,6 +69,10 @@ def test_get_candle_agg_dict():
         "volume": "max",
     }
     assert get_candle_agg_dict(CandleType.FUNDING_RATE) == {"funding_rate": "first"}
+    assert get_candle_agg_dict(CandleType.OPEN_INTEREST) == {
+        "open_interest_amount": "first",
+        "open_interest_value": "first",
+    }
     # Callers must not be able to mutate the shared default
     get_candle_agg_dict(CandleType.SPOT)["open"] = "last"
     assert get_candle_agg_dict(CandleType.SPOT)["open"] == "first"
@@ -74,6 +84,7 @@ def test_candle_type_is_ohlcv():
     assert candle_type_is_ohlcv("")
     assert candle_type_is_ohlcv(None)
     assert not candle_type_is_ohlcv(CandleType.FUNDING_RATE)
+    assert not candle_type_is_ohlcv(CandleType.OPEN_INTEREST)
 
 
 def test_all_candle_value_columns():
@@ -84,5 +95,7 @@ def test_all_candle_value_columns():
         "close",
         "volume",
         "funding_rate",
+        "open_interest_amount",
+        "open_interest_value",
     }
     assert "date" not in ALL_CANDLE_VALUE_COLUMNS

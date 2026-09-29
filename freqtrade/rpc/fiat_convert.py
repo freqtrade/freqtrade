@@ -87,7 +87,7 @@ class CryptoToFiatConverter(LoggingMixin, metaclass=SingletonMeta):
                 return None
         found = [x for x in self._coinlistings if x["symbol"].lower() == crypto_symbol]
 
-        if crypto_symbol in coingecko_mapping.keys():
+        if crypto_symbol in coingecko_mapping:
             found = [x for x in self._coinlistings if x["id"] == coingecko_mapping[crypto_symbol]]
 
         if len(found) == 1:

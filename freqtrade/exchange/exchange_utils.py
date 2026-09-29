@@ -342,7 +342,7 @@ def price_to_precision(
             precision = FtPrecise(price_precision)
             price_str = FtPrecise(price)
             missing = price_str % precision
-            if not missing == FtPrecise("0"):
+            if missing != FtPrecise("0"):
                 if rounding_mode == ROUND_UP:
                     res = price_str - missing + precision
                 elif rounding_mode == ROUND_DOWN:

@@ -51,7 +51,7 @@ jobs:
         persist-credentials: false
 
     - name: Install uv and Python 🐍
-      uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+      uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
       with:
         activate-environment: true
         enable-cache: true # zizmor: ignore[cache-poisoning] - this job is not used for release builds
@@ -87,7 +87,7 @@ jobs:
       run: |
         pytest --random-order --cov=freqtrade --cov=freqtrade_client --cov-config=.coveragerc
 
-    - uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+    - uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
       if: (runner.os == 'Linux' && matrix.python-version == '3.14' && matrix.os == 'ubuntu-24.04')
       with:
         fail_ci_if_error: true
@@ -194,7 +194,7 @@ jobs:
         persist-credentials: false
 
     - name: Install uv and Python 🐍
-      uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+      uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
       with:
         activate-environment: true
         python-version: "3.13"
@@ -233,7 +233,7 @@ jobs:
         ./tests/test_docs.sh
 
     - name: Install uv and Python 🐍
-      uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+      uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
       with:
         activate-environment: true
         python-version: "3.13"
@@ -266,7 +266,7 @@ jobs:
         persist-credentials: false
 
     - name: Install uv and Python 🐍
-      uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+      uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
       with:
         activate-environment: true
         enable-cache: true # zizmor: ignore[cache-poisoning] - this job is not used for release builds
@@ -325,7 +325,7 @@ jobs:
     steps:
 
     - name: Decide whether the needed jobs succeeded or failed
-      uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe  # v1.2.2
+      uses: re-actors/alls-green@b5b5b37504aa4183270bd3d855c52a67f212be35  # v1.3.0
       with:
         jobs: ${{ toJSON(needs) }}
 
@@ -334,7 +334,7 @@ jobs:
         persist-credentials: false
 
     - name: Install uv and Python 🐍
-      uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+      uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
       with:
         activate-environment: true
         python-version: "${{ matrix.python-version }}"
@@ -428,7 +428,7 @@ jobs:
      build,
     ]
     if: (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'release') && github.repository == 'freqtrade/freqtrade'
-    uses: ./.github/workflows/docker-build.yml
+    uses: $/.github/workflows/docker-build.yml
     permissions:
       packages: write # Needed to push package versions
       contents: read
@@ -440,7 +440,7 @@ jobs:
 
   packages-cleanup:
     name: "Docker Package Cleanup"
-    uses: ./.github/workflows/packages-cleanup.yml
+    uses: $/.github/workflows/packages-cleanup.yml
     # Only run on push, schedule, or release events
     if: (github.event_name == 'push' || github.event_name == 'schedule') && github.repository == 'freqtrade/freqtrade'
     permissions:

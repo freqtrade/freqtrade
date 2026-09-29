@@ -263,9 +263,8 @@ def _download_pair_history(
     data_handler = get_datahandler(datadir, data_handler=data_handler)
 
     try:
-        if erase:
-            if data_handler.ohlcv_purge(pair, timeframe, candle_type=candle_type):
-                logger.info(f"Deleting existing data for pair {pair}, {timeframe}, {candle_type}.")
+        if erase and data_handler.ohlcv_purge(pair, timeframe, candle_type=candle_type):
+            logger.info(f"Deleting existing data for pair {pair}, {timeframe}, {candle_type}.")
 
         data, since_ms, until_ms = _load_cached_data_for_updating(
             pair,
@@ -501,9 +500,8 @@ def _download_all_pairs_history_parallel(
     """
     candles: dict[PairWithTimeframe, DataFrame] = {}
     since: int | None = None
-    if timerange:
-        if timerange.starttype == "date":
-            since = timerange.startts * 1000
+    if timerange and timerange.starttype == "date":
+        since = timerange.startts * 1000
 
     candle_limit = exchange.ohlcv_candle_limit(timeframe, candle_type)
     one_call_min_time_dt = dt_ts(date_minus_candles(timeframe, candle_limit))
@@ -633,9 +631,8 @@ def refresh_backtest_trades_data(
                 logger.info(f"Skipping pair {pair}...")
                 continue
 
-            if erase:
-                if data_handler.trades_purge(pair, trading_mode):
-                    logger.info(f"Deleting existing data for pair {pair}.")
+            if erase and data_handler.trades_purge(pair, trading_mode):
+                logger.info(f"Deleting existing data for pair {pair}.")
 
             logger.info(f"Downloading trades for pair {pair}.")
             try:
@@ -742,7 +739,7 @@ def download_data(
         p
         for p in exchange.get_markets(
             tradable_only=True, active_only=not config.get("include_inactive")
-        ).keys()
+        )
     ]
 
     expanded_pairs = dynamic_expand_pairlist(config, available_pairs)

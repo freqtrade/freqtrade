@@ -9,11 +9,11 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, TypedDict
 
+import cloudpickle
 import numpy as np
 import pandas as pd
 import psutil
 import rapidjson
-from joblib.externals import cloudpickle
 from numpy.typing import NDArray
 from pandas import DataFrame
 from pandas.api.types import is_numeric_dtype
@@ -205,11 +205,13 @@ class FreqaiDataDrawer:
     @staticmethod
     def _ensure_date_pred_dtype(df: DataFrame) -> None:
         """
-        Convert an object dtype date_pred column to datetime. Pandas refuses to merge on
-        object dtype dates, so predictions written by older versions must be converted.
+        Normalize the date_pred column to UTC datetimes. Pandas refuses to merge on object
+        dtype dates, or tz-naive against a tz-aware columns, so predictions written by
+        older versions must be converted. Naive dates are assumed to be UTC - which is
+        what freqtrade itself always writes.
         :param df: DataFrame = frame carrying a date_pred column, converted in place
         """
-        if df["date_pred"].dtype.kind != "M":
+        if df["date_pred"].dtype.kind != "M" or str(df["date_pred"].dt.tz) != "UTC":
             df["date_pred"] = pd.to_datetime(df["date_pred"], utc=True).dt.as_unit("ms")
 
     def _repair_historic_predictions(self, pair: str, pair_df: DataFrame) -> DataFrame:
@@ -578,13 +580,11 @@ class FreqaiDataDrawer:
                     sorted(delete_dict[coin]["timestamps"].items())
                 )
                 num_delete = len(sorted_dict) - num_keep
-                deleted = 0
-                for v in sorted_dict.values():
+                for deleted, v in enumerate(sorted_dict.values()):
                     if deleted >= num_delete:
                         break
                     logger.info(f"Freqai purging old model file {v}")
                     shutil.rmtree(v)
-                    deleted += 1
 
     def save_metadata(self, dk: FreqaiDataKitchen) -> None:
         """

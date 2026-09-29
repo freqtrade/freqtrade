@@ -12,6 +12,7 @@ from freqtrade.data.converter import (
     convert_ohlcv_format,
     convert_trades_format,
     convert_trades_to_ohlcv,
+    count_total_order_book,
     ohlcv_fill_up_missing_data,
     ohlcv_to_dataframe,
     order_book_to_dataframe,
@@ -597,7 +598,7 @@ def test_convert_trades_to_ohlcv(testdatadir, tmp_path, caplog):
     assert log_has(msg, caplog)
 
 
-def test_order_book_to_dataframe():
+def test_count_total_order_book():
     bids = [
         [100.0, 5.0],
         [99.5, 3.0],
@@ -608,6 +609,14 @@ def test_order_book_to_dataframe():
         [101.0, 6.0],
         [101.5, 1.0],
     ]
+
+    total_bids, total_asks = count_total_order_book(bids, asks)
+
+    assert isinstance(total_bids, float)
+    assert isinstance(total_asks, float)
+
+    assert total_bids == 10.0
+    assert total_asks == 11.0
 
     result = order_book_to_dataframe(bids, asks)
 
@@ -627,9 +636,17 @@ def test_order_book_to_dataframe():
     assert result["a_sum"].tolist() == [4.0, 10.0, 11.0]
 
 
-def test_order_book_to_dataframe_empty():
+def test_count_total_order_book_empty():
     bids = []
     asks = []
+
+    total_bids, total_asks = count_total_order_book(bids, asks)
+
+    assert isinstance(total_bids, float)
+    assert isinstance(total_asks, float)
+
+    assert total_bids == 0.0
+    assert total_asks == 0.0
 
     result = order_book_to_dataframe(bids, asks)
 
@@ -652,6 +669,14 @@ def test_order_book_to_dataframe_unequal_lengths():
         [100.5, 4.0],
         [101.0, 6.0],
     ]
+
+    total_bids, total_asks = count_total_order_book(bids, asks)
+
+    assert isinstance(total_bids, float)
+    assert isinstance(total_asks, float)
+
+    assert total_bids == 11.0
+    assert total_asks == 10.0
 
     result = order_book_to_dataframe(bids, asks)
 

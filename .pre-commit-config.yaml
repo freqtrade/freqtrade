@@ -22,16 +22,16 @@ repos:
         additional_dependencies:
           - types-cachetools==7.0.0.20260713
           - types-filelock==3.2.7
-          - types-requests==2.33.0.20260712
+          - types-requests==2.33.0.20260906
           - types-tabulate==0.10.0.20260508
           - types-python-dateutil==2.9.0.20260807
           - scipy-stubs==1.17.1.5
-          - SQLAlchemy==2.0.52
+          - SQLAlchemy==2.0.54
         # stages: [push]
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
     # Ruff version.
-    rev: 'v0.16.4'
+    rev: 'v0.16.9'
     hooks:
       - id: ruff
       - id: ruff-format
@@ -70,6 +70,6 @@ repos:
 
   # Ensure github actions remain safe
   - repo: https://github.com/woodruffw/zizmor-pre-commit
-    rev: v1.29.0
+    rev: v1.30.1
     hooks:
     - id: zizmor

@@ -382,6 +382,11 @@ The output will show the last entry from the Exchange as well as the current UTC
 If the day shows the same day, then the last candle can be assumed as incomplete and should be dropped (leave the setting `"ohlcv_partial_candle"` from the exchange-class untouched / True). Otherwise, set `"ohlcv_partial_candle"` to `False` to not drop Candles (shown in the example above).
 Another way is to run this command multiple times in a row and observe if the volume is changing (while the date remains the same).
 
+Some exchanges omit candles for intervals without trades instead of returning zero-volume candles.
+For such exchanges, the response of an inactive pair contains no candle for the currently forming interval - freqtrade detects this and re-queries these pairs at candle cadence.
+As long as the exchange did not issue a newer candle, a candle that just closed may still be published late or updated. It is therefore only treated as final once `ohlcv_late_candle_grace_secs` seconds (defaults to 15, capped at half the timeframe) passed since it closed - until then it is withheld from REST polling, so strategies never see an incomplete candle.
+Raise this value for exchanges that are known to publish or update candles later than this - which would however be very rare and strange.
+
 ### Update binance cached leverage tiers
 
 Updating leveraged tiers should be done regularly - and requires an authenticated account with futures enabled.

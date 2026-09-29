@@ -12,5 +12,5 @@ def test_talib_bollingerbands_near_zero_values():
             {"close": 0.000014},
         ]
     )
-    bollinger = ta.BBANDS(inputs, matype=0, timeperiod=2)
+    bollinger = ta.BBANDS(inputs, timeperiod=2, matype=0)
     assert bollinger["upperband"][3] != bollinger["middleband"][3]

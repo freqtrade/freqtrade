@@ -9,6 +9,7 @@ from copy import deepcopy
 from datetime import UTC, datetime, timedelta
 from io import BytesIO
 from pathlib import Path
+from typing import get_args
 from unittest.mock import ANY, MagicMock, PropertyMock, patch
 from zipfile import ZipFile
 
@@ -18,6 +19,7 @@ import rapidjson
 import uvicorn
 from fastapi import FastAPI, WebSocketDisconnect
 from fastapi.exceptions import HTTPException
+from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 from requests.auth import _basic_auth_str
 from sqlalchemy import select
@@ -36,6 +38,7 @@ from freqtrade.persistence import CustomDataWrapper, Trade
 from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server import ApiServer
 from freqtrade.rpc.api_server.api_auth import create_token, get_user_from_token
+from freqtrade.rpc.api_server.api_schemas import StrategyName
 from freqtrade.rpc.api_server.uvicorn_threaded import UvicornServer
 from freqtrade.rpc.api_server.webserver_bgwork import ApiBG
 from freqtrade.util.datetime_helpers import format_date
@@ -698,7 +701,17 @@ def test_api_show_config(botclient):
     assert "unfilledtimeout" in response
     assert "version" in response
     assert "api_version" in response
+    assert "proxy_coin" not in response
     assert 2.1 <= response["api_version"] < 3.0
+
+    # proxy_coin is only set when available
+    ftbot.config["proxy_coin"] = "BNFCR"
+    ftbot.config["trading_mode"] = "futures"
+    ftbot.config["margin_mode"] = "cross"
+
+    rc = client_get(client, f"{BASE_URI}/show_config")
+    response1 = rc.json()
+    assert response1["proxy_coin"] == "BNFCR"
 
 
 def test_api_daily(botclient, mocker, ticker, fee, markets):
@@ -2540,7 +2553,7 @@ def test_api_pair_history(botclient, tmp_path, mocker):
         },
     )
     assert_response(rc, 422)
-    assert rc.json()["detail"] == "base64 encoded strategies are not allowed."
+    assert rc.json()["detail"][0]["msg"] == "base64 encoded strategies are not allowed."
 
     # Disallow base64 strategies
     rc = client_get(
@@ -2549,7 +2562,7 @@ def test_api_pair_history(botclient, tmp_path, mocker):
         f"&timerange=20200111-20200112&strategy={base64_dummy}",
     )
     assert_response(rc, 422)
-    assert rc.json()["detail"] == "base64 encoded strategies are not allowed."
+    assert rc.json()["detail"][0]["msg"] == "base64 encoded strategies are not allowed."
 
 
 def test_api_pair_history_live_mode(botclient, tmp_path, mocker):
@@ -2737,6 +2750,7 @@ def test_api_strategy(botclient, tmp_path, mocker):
     # Disallow base64 strategies
     rc = client_get(client, f"{BASE_URI}/strategy/xx:cHJpbnQoImhlbGxvIHdvcmxkIik=")
     assert_response(rc, 422)
+    assert rc.json()["detail"][0]["msg"] == "base64 encoded strategies are not allowed."
     mocker.patch(
         "freqtrade.resolvers.strategy_resolver.StrategyResolver._load_strategy",
         side_effect=Exception("Test"),
@@ -3963,3 +3977,72 @@ def test_api_markets_webserver(botclient):
 
     assert "hyperliquid_spot" in ApiBG.exchanges
     assert "binance_spot" in ApiBG.exchanges
+
+
+_STRATEGY_VALIDATOR = get_args(StrategyName)[1]
+
+
+def _iter_api_routes(routes):
+    """Walk the route tree - included routers are wrapped, so recurse into them."""
+    for route in routes:
+        if isinstance(route, APIRoute):
+            yield route
+        else:
+            yield from _iter_api_routes(
+                getattr(route, "routes", None)
+                or getattr(getattr(route, "original_router", None), "routes", [])
+            )
+
+
+def _iter_dependants(dependant):
+    """An endpoint's own parameters, plus those of every sub-dependency."""
+    yield dependant
+    for sub in dependant.dependencies:
+        yield from _iter_dependants(sub)
+
+
+def _uses_strategy_name(annotation) -> bool:
+    """Whether `annotation` carries the StrategyName validator - also inside `| None`."""
+    if annotation is _STRATEGY_VALIDATOR:
+        return True
+    return any(_uses_strategy_name(arg) for arg in get_args(annotation))
+
+
+def _untyped_strategy(name, annotation, metadata=(), seen=frozenset()) -> bool:
+    """Whether this parameter - or a payload model nested in it - takes a plain strategy."""
+    if name == "strategy":
+        # pydantic keeps the validator in `metadata` for a required field,
+        # but inside the annotation itself for an optional one.
+        return not (_uses_strategy_name(annotation) or _STRATEGY_VALIDATOR in metadata)
+    if (fields := getattr(annotation, "model_fields", None)) and annotation not in seen:
+        seen = seen | {annotation}
+        return any(_untyped_strategy(n, f.annotation, f.metadata, seen) for n, f in fields.items())
+    return any(_untyped_strategy(name, arg, (), seen) for arg in get_args(annotation))
+
+
+def test_api_strategy_name_typed(botclient):
+    """
+    Every strategy name the API accepts must be a StrategyName, never a plain str - a
+    plain one lets a caller smuggle in a base64 encoded strategy. Covers path, query,
+    header, cookie and body parameters, nested payload models and sub-dependencies.
+    A strategy arriving under some other parameter name is not seen.
+    """
+    _ftbot, client = botclient
+
+    untyped = {
+        route.path
+        for route in _iter_api_routes(client.app.routes)
+        for dep in _iter_dependants(route.dependant)
+        for f in (
+            *dep.path_params,
+            *dep.query_params,
+            *dep.header_params,
+            *dep.cookie_params,
+            *dep.body_params,
+        )
+        if _untyped_strategy(f.name, f.field_info.annotation, f.field_info.metadata)
+    }
+    assert not untyped, (
+        f"Unvalidated strategy name on {sorted(untyped)} - annotate the parameter or "
+        f"payload field with StrategyName."
+    )

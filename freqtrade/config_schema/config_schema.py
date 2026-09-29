@@ -236,6 +236,18 @@ CONF_SCHEMA = {
             "type": "number",
             "minimum": 0.0,
             "maximum": 0.99,
+            "default": 0.05,
+        },
+        "liquidation_warn_ratio": {
+            "description": (
+                "Notify when the distance to a position's liquidation stop falls below this "
+                "fraction of the price move that would use up its margin - with the default of "
+                "0.2, once the stop is less than 2% away at 10x leverage. Set to 0 to disable."
+            ),
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 0.99,
+            "default": 0.2,
         },
         "backtest_breakdown": {
             "description": "Breakdown configuration for backtesting.",
@@ -670,6 +682,12 @@ CONF_SCHEMA = {
                         },
                         "protection_trigger_global": {
                             "description": "Telegram setting for global protection triggers.",
+                            "type": "string",
+                            "enum": TELEGRAM_SETTING_OPTIONS,
+                            "default": "on",
+                        },
+                        "liquidation_warning": {
+                            "description": "Telegram setting for liquidation warnings.",
                             "type": "string",
                             "enum": TELEGRAM_SETTING_OPTIONS,
                             "default": "on",

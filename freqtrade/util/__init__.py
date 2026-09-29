@@ -23,6 +23,7 @@ from freqtrade.util.formatters import (
     round_value,
 )
 from freqtrade.util.ft_precise import FtPrecise
+from freqtrade.util.ft_scheduler import FtScheduler
 from freqtrade.util.ft_ttlcache import FtTTLCache
 from freqtrade.util.measure_time import MeasureTime
 from freqtrade.util.periodic_cache import PeriodicCache
@@ -51,6 +52,7 @@ __all__ = [
     "format_pct",
     "get_dry_run_wallet",
     "FtPrecise",
+    "FtScheduler",
     "PeriodicCache",
     "shorten_date",
     "decimals_per_coin",

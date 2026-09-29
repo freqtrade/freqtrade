@@ -201,7 +201,7 @@ class Wallets:
         _parsed_positions = {}
         for position in positions:
             symbol = position["symbol"]
-            if position["side"] is None or position["collateral"] == 0.0:
+            if position["side"] is None or not position["contracts"]:
                 # Position is not open ...
                 continue
             size = self._exchange._contracts_to_amount(symbol, position["contracts"])
@@ -281,9 +281,7 @@ class Wallets:
                 return False
             wallet_amount = position.position
 
-        if wallet_amount >= trade.amount:
-            return True
-        return False
+        return wallet_amount >= trade.amount
 
     def check_exit_amount(self, trade: Trade) -> bool:
         """

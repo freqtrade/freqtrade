@@ -330,7 +330,7 @@ class ApiServer(RPCHandler):
             host=rest_ip,
             use_colors=False,
             log_config=None,
-            access_log=True if verbosity != "error" else False,
+            access_log=verbosity != "error",
             ws_ping_interval=None,  # We do this explicitly ourselves
         )
         try:

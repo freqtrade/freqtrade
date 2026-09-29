@@ -24,6 +24,8 @@
     "ignore_buying_expired_candle_after": 300,
     "trading_mode": "spot",
     "margin_mode": "",
+    "liquidation_buffer": 0.05,
+    "liquidation_warn_ratio": 0.2,
     "minimal_roi": {
         "40": 0.0,
         "30": 0.01,
@@ -166,6 +168,7 @@
             "exit_cancel": "on",
             "protection_trigger": "off",
             "protection_trigger_global": "on",
+            "liquidation_warning": "on",
             "show_candle": "off"
         },
         "reload": true,

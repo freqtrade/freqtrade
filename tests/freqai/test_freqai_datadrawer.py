@@ -564,10 +564,17 @@ def test_append_model_predictions_candle_alignment(
         ]
 
 
-def test_attach_return_values_object_date_dtype(mocker, freqai_conf):
+@pytest.mark.parametrize(
+    "make_date_pred",
+    [
+        pytest.param(lambda dates: dates.astype(object), id="object"),
+        pytest.param(lambda dates: dates.tz_localize(None), id="tz-naive"),
+    ],
+)
+def test_attach_return_values_bad_date_dtype(mocker, freqai_conf, make_date_pred):
     """
-    Predictions restored from disk (written by older versions) can carry an object dtype
-    date column - it must still merge onto the strategy dataframe.
+    Predictions restored from disk (written by older versions) can carry an object dtype or
+    a tz-naive date column - both must still merge onto the strategy dataframe.
     """
     strategy = get_patched_freqai_strategy(mocker, freqai_conf)
     exchange = get_patched_exchange(mocker, freqai_conf)
@@ -580,7 +587,7 @@ def test_attach_return_values_object_date_dtype(mocker, freqai_conf):
 
     freqai.dd.model_return_values[pair] = pd.DataFrame(
         {
-            "date_pred": dates.astype(object),
+            "date_pred": make_date_pred(dates),
             "&-s_close": range(6, 11),
             "do_predict": [1] * 5,
         }
@@ -615,7 +622,7 @@ def test_attach_return_values_to_return_dataframe(mocker, freqai_conf):
     freqai.dk = FreqaiDataKitchen(freqai_conf)
 
     pair = "BTC/USD"
-    dates = pd.date_range(start="2023-09-01", periods=5, freq="D")
+    dates = pd.date_range(start="2023-09-01", periods=5, freq="D", tz="UTC")
 
     # Prediction buffer: always 0-indexed (as produced by reset_index in the drawer)
     freqai.dd.model_return_values[pair] = pd.DataFrame(

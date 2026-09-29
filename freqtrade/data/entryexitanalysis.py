@@ -63,10 +63,7 @@ def _analyze_candles_and_indicators(
                 trades_red["signal_date"] = pd.to_datetime(trades_red["signal_date"], utc=True)
                 trades_red.set_index("signal_date", inplace=True)
 
-                try:
-                    trades_red = pd.merge(trades_red, trades_inds, on="signal_date", how="outer")
-                except Exception as e:
-                    raise e
+                trades_red = pd.merge(trades_red, trades_inds, on="signal_date", how="outer")
         return trades_red
     else:
         return pd.DataFrame()
@@ -350,7 +347,7 @@ def process_entry_exit_reasons(config: Config):
         except ValueError as e:
             raise ConfigurationError(e) from e
 
-        for strategy_name in backtest_stats["strategy"].keys():
+        for strategy_name in backtest_stats["strategy"]:
             trades = load_backtest_data(
                 config["exportdirectory"], strategy_name, config["exportfilename"]
             )

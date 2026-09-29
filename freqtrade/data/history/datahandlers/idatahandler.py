@@ -517,18 +517,16 @@ class IDataHandler(ABC):
         :param timerange: Timerange specified for start and end dates
         """
 
-        if timerange.starttype == "date":
-            if pairdata.iloc[0]["date"] > timerange.startdt:
-                logger.warning(
-                    f"{pair}, {candle_type}, {timeframe}, "
-                    f"data starts at {pairdata.iloc[0]['date']:%Y-%m-%d %H:%M:%S}"
-                )
-        if timerange.stoptype == "date":
-            if pairdata.iloc[-1]["date"] < timerange.stopdt:
-                logger.warning(
-                    f"{pair}, {candle_type}, {timeframe}, "
-                    f"data ends at {pairdata.iloc[-1]['date']:%Y-%m-%d %H:%M:%S}"
-                )
+        if timerange.starttype == "date" and pairdata.iloc[0]["date"] > timerange.startdt:
+            logger.warning(
+                f"{pair}, {candle_type}, {timeframe}, "
+                f"data starts at {pairdata.iloc[0]['date']:%Y-%m-%d %H:%M:%S}"
+            )
+        if timerange.stoptype == "date" and pairdata.iloc[-1]["date"] < timerange.stopdt:
+            logger.warning(
+                f"{pair}, {candle_type}, {timeframe}, "
+                f"data ends at {pairdata.iloc[-1]['date']:%Y-%m-%d %H:%M:%S}"
+            )
 
     def rename_futures_data(
         self, pair: str, new_pair: str, timeframe: str, candle_type: CandleType

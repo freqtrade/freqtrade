@@ -93,7 +93,7 @@ class HyperStrategyMixin:
         """
         self._ft_hyper_params = detect_all_parameters(self)
 
-        for space in self._ft_hyper_params.keys():
+        for space in self._ft_hyper_params:
             params_values = deep_merge_dicts(
                 self._ft_params_from_file.get(space, {}), getattr(self, f"{space}_params", {})
             )
@@ -108,7 +108,7 @@ class HyperStrategyMixin:
         if filename.is_file():
             logger.info(f"Loading parameters from file {filename}")
             try:
-                params = HyperoptTools.load_params(filename)
+                params = HyperoptTools.load_params_from_file(filename)
                 if params.get("strategy_name") != self.__class__.__name__:
                     raise OperationalException("Invalid parameter file provided.")
                 return params

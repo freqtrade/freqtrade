@@ -136,6 +136,7 @@ Example configuration showing the different settings:
         "exit_fill": "off",
         "protection_trigger": "off",
         "protection_trigger_global": "on",
+        "liquidation_warning": "on",
         "strategy_msg": "off",
         "show_candle": "off"
     },
@@ -149,6 +150,7 @@ Example configuration showing the different settings:
     Exit messages (`exit` and `exit_fill`) can be further controlled at individual exit reasons level, with the specific exit reason as the key. the default for all exit reasons is `on` - but can be configured via special `*` key - which will act as a wildcard for all exit reasons that are not explicitly defined.
 * `*_fill` notifications are off by default and must be explicitly enabled.  
 * `protection_trigger` notifications are sent when a protection triggers and `protection_trigger_global` notifications trigger when global protections are triggered.  
+* `liquidation_warning` notifications are sent when an open position approaches its liquidation stop - see [liquidation warnings](leverage.md#liquidation-warnings).  
 * `strategy_msg` - Receive notifications from the strategy, sent via `self.dp.send_msg()` from the strategy [more details](strategy-customization.md#send-notification).  
 * `show_candle` - show candle values as part of entry/exit messages. Only possible values are `"ohlc"` or `"off"`.  
 * `balance_dust_level` will define what the `/balance` command takes as "dust" - Currencies with a balance below this will be shown.  

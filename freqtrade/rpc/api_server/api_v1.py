@@ -18,6 +18,7 @@ from freqtrade.rpc.api_server.api_schemas import (
     Ping,
     PlotConfig,
     ShowConfig,
+    StrategyName,
     StrategyResponse,
     SysInfo,
     Version,
@@ -27,7 +28,6 @@ from freqtrade.rpc.api_server.deps import (
     get_exchange,
     get_rpc,
     get_rpc_optional,
-    verify_strategy,
 )
 from freqtrade.rpc.rpc import RPCException
 
@@ -96,7 +96,9 @@ def version():
     return {"version": __version__}
 
 
-@router.get("/show_config", response_model=ShowConfig, tags=["Info"])
+@router.get(
+    "/show_config", response_model=ShowConfig, tags=["Info"], response_model_exclude_unset=True
+)
 def show_config(rpc: RPC | None = Depends(get_rpc_optional), config=Depends(get_config)):
     state: State | str = ""
     strategy_version = None
@@ -115,7 +117,7 @@ def logs(limit: int | None = None):
 
 @router.get("/plot_config", response_model=PlotConfig, tags=["Candle data"])
 def plot_config(
-    strategy: str | None = None,
+    strategy: StrategyName | None = None,
     config=Depends(get_config),
     rpc: RPC | None = Depends(get_rpc_optional),
 ):
@@ -158,10 +160,10 @@ def markets(
 
 @router.get("/strategy/{strategy}", response_model=StrategyResponse, tags=["Strategy"])
 def get_strategy(
-    strategy: str, config=Depends(get_config), rpc: RPC | None = Depends(get_rpc_optional)
+    strategy: StrategyName,
+    config=Depends(get_config),
+    rpc: RPC | None = Depends(get_rpc_optional),
 ):
-    verify_strategy(strategy)
-
     if not rpc or config["runmode"] == RunMode.WEBSERVER:
         # webserver mode
         config_ = deepcopy(config)

@@ -47,7 +47,7 @@ jobs:
 
   packages-cleanup:
     name: "Docker Package Cleanup"
-    uses: ./.github/workflows/packages-cleanup.yml
+    uses: $/.github/workflows/packages-cleanup.yml
     # Only run on push, schedule, or release events
     if: (github.event_name == 'push' || github.event_name == 'schedule') && github.repository == 'freqtrade/freqtrade'
     permissions:

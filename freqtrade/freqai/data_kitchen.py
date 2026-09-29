@@ -19,6 +19,7 @@ from freqtrade.constants import DOCS_LINK, ORDERFLOW_ADDED_COLUMNS, Config
 from freqtrade.data.converter import reduce_dataframe_footprint
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
+from freqtrade.misc import is_path_in_dir
 from freqtrade.strategy import merge_informative_pair
 from freqtrade.strategy.interface import IStrategy
 
@@ -959,7 +960,14 @@ class FreqaiDataKitchen:
         :param config: Configuration dictionary
         """
         freqai_config: dict[str, Any] = config["freqai"]
-        return Path(config["user_data_dir"] / "models" / str(freqai_config.get("identifier")))
+        identifier = str(freqai_config.get("identifier"))
+        models_dir = Path(config["user_data_dir"] / "models")
+        full_path = models_dir / identifier
+        if not is_path_in_dir(full_path, models_dir):
+            raise OperationalException(
+                f"Invalid freqai identifier '{identifier}' - it must stay within {models_dir}."
+            )
+        return full_path
 
     def remove_special_chars_from_feature_names(self, dataframe: pd.DataFrame) -> pd.DataFrame:
         """

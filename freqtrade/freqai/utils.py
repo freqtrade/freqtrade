@@ -36,7 +36,7 @@ def download_all_data_for_training(dp: DataProvider, config: Config) -> None:
         p
         for p in dp._exchange.get_markets(
             tradable_only=True, active_only=not config.get("include_inactive")
-        ).keys()
+        )
     ]
 
     all_pairs = dynamic_expand_pairlist(config, markets)
@@ -116,9 +116,7 @@ def plot_feature_importance(
             # CatBoost is no longer actively supported since 2025.12
             # However users can still use it in their custom models
             feature_importance = mdl.get_feature_importance()
-        elif "lightgbm.sklearn" in str(mdl.__class__):
-            feature_importance = mdl.feature_importances_
-        elif "xgb" in str(mdl.__class__):
+        elif "lightgbm.sklearn" in str(mdl.__class__) or "xgb" in str(mdl.__class__):
             feature_importance = mdl.feature_importances_
         else:
             logger.info("Model type does not support generating feature importances.")

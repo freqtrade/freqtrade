@@ -1,5 +1,5 @@
 # pragma pylint: disable=missing-docstring, protected-access, invalid-name
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 from math import isnan, nan
 from unittest.mock import MagicMock
 
@@ -30,6 +30,7 @@ from freqtrade.exchange import (
 )
 from freqtrade.exchange.check_exchange import check_exchange
 from freqtrade.exchange.exchange_utils import _exchange_has_helper
+from freqtrade.util import dt_from_ts, dt_now, dt_utc
 from tests.conftest import log_has_re
 
 
@@ -79,13 +80,13 @@ def test_check_exchange(default_conf, caplog) -> None:
     caplog.clear()
 
     # Test a 'bad' exchange, which known to have serious problems
-    default_conf.get("exchange").update({"name": "bitmex"})
+    default_conf.get("exchange").update({"name": "poloniex"})
     with pytest.raises(OperationalException, match=r"Exchange .* will not work with Freqtrade\..*"):
         check_exchange(default_conf)
     caplog.clear()
 
     # Test a 'bad' exchange with check_for_bad=False
-    default_conf.get("exchange").update({"name": "bitmex"})
+    default_conf.get("exchange").update({"name": "poloniex"})
     assert check_exchange(default_conf, False)
     assert log_has_re(
         r"Exchange .* is known to the ccxt library, available for the bot, "
@@ -119,7 +120,7 @@ def test_check_exchange(default_conf, caplog) -> None:
 
 
 def test_date_minus_candles():
-    date = datetime(2019, 8, 12, 13, 25, 0, tzinfo=UTC)
+    date = dt_utc(2019, 8, 12, 13, 25, 0)
 
     assert date_minus_candles("5m", 3, date) == date - timedelta(minutes=15)
     assert date_minus_candles("5m", 5, date) == date - timedelta(minutes=25)
@@ -169,59 +170,70 @@ def test_timeframe_to_resample_freq(timeframe, expected):
 
 def test_timeframe_to_prev_date():
     # 2019-08-12 13:22:08
-    date = datetime.fromtimestamp(1565616128, tz=UTC)
+    date = dt_utc(2019, 8, 12, 13, 22, 8)
 
     tf_list = [
         # 5m -> 2019-08-12 13:20:00
-        ("5m", datetime(2019, 8, 12, 13, 20, 0, tzinfo=UTC)),
+        ("5m", dt_utc(2019, 8, 12, 13, 20, 0)),
         # 10m -> 2019-08-12 13:20:00
-        ("10m", datetime(2019, 8, 12, 13, 20, 0, tzinfo=UTC)),
+        ("10m", dt_utc(2019, 8, 12, 13, 20, 0)),
         # 1h -> 2019-08-12 13:00:00
-        ("1h", datetime(2019, 8, 12, 13, 00, 0, tzinfo=UTC)),
+        ("1h", dt_utc(2019, 8, 12, 13, 00, 0)),
         # 2h -> 2019-08-12 12:00:00
-        ("2h", datetime(2019, 8, 12, 12, 00, 0, tzinfo=UTC)),
+        ("2h", dt_utc(2019, 8, 12, 12, 00, 0)),
         # 4h -> 2019-08-12 12:00:00
-        ("4h", datetime(2019, 8, 12, 12, 00, 0, tzinfo=UTC)),
+        ("4h", dt_utc(2019, 8, 12, 12, 00, 0)),
         # 1d -> 2019-08-12 00:00:00
-        ("1d", datetime(2019, 8, 12, 00, 00, 0, tzinfo=UTC)),
+        ("1d", dt_utc(2019, 8, 12, 00, 00, 0)),
+        # 1w -> 2019-08-12 00:00:00
+        ("1w", dt_utc(2019, 8, 12, 00, 00, 0)),
+        # 1M -> 2019-08-01 00:00:00
+        ("1M", dt_utc(2019, 8, 1, 00, 00, 0)),
+        # 1y -> 2019-01-01 00:00:00
+        ("1y", dt_utc(2019, 1, 1, 00, 00, 0)),
     ]
     for interval, result in tf_list:
         assert timeframe_to_prev_date(interval, date) == result
 
-    date = datetime.now(tz=UTC)
+    date = dt_now()
     assert timeframe_to_prev_date("5m") < date
     # Does not round
-    time = datetime(2019, 8, 12, 13, 20, 0, tzinfo=UTC)
+    time = dt_utc(2019, 8, 12, 13, 20, 0)
     assert timeframe_to_prev_date("5m", time) == time
-    time = datetime(2019, 8, 12, 13, 0, 0, tzinfo=UTC)
+    time = dt_utc(2019, 8, 12, 13, 0, 0)
     assert timeframe_to_prev_date("1h", time) == time
 
 
 def test_timeframe_to_next_date():
     # 2019-08-12 13:22:08
-    date = datetime.fromtimestamp(1565616128, tz=UTC)
+    date = dt_from_ts(1565616128)
     tf_list = [
         # 5m -> 2019-08-12 13:25:00
-        ("5m", datetime(2019, 8, 12, 13, 25, 0, tzinfo=UTC)),
+        ("5m", dt_utc(2019, 8, 12, 13, 25, 0)),
         # 10m -> 2019-08-12 13:30:00
-        ("10m", datetime(2019, 8, 12, 13, 30, 0, tzinfo=UTC)),
+        ("10m", dt_utc(2019, 8, 12, 13, 30, 0)),
         # 1h -> 2019-08-12 14:00:00
-        ("1h", datetime(2019, 8, 12, 14, 00, 0, tzinfo=UTC)),
+        ("1h", dt_utc(2019, 8, 12, 14, 00, 0)),
         # 2h -> 2019-08-12 14:00:00
-        ("2h", datetime(2019, 8, 12, 14, 00, 0, tzinfo=UTC)),
+        ("2h", dt_utc(2019, 8, 12, 14, 00, 0)),
         # 4h -> 2019-08-12 14:00:00
-        ("4h", datetime(2019, 8, 12, 16, 00, 0, tzinfo=UTC)),
+        ("4h", dt_utc(2019, 8, 12, 16, 00, 0)),
         # 1d -> 2019-08-13 00:00:00
-        ("1d", datetime(2019, 8, 13, 0, 0, 0, tzinfo=UTC)),
+        ("1d", dt_utc(2019, 8, 13, 0, 0, 0)),
+        # 1w -> 2019-08-19 00:00:00
+        ("1w", dt_utc(2019, 8, 19, 0, 0, 0)),
+        # 1M -> 2019-09-01 00:00:00
+        ("1M", dt_utc(2019, 9, 1, 0, 0, 0)),
+        # 1y -> 2020-01-01 00:00:00
+        ("1y", dt_utc(2020, 1, 1, 0, 0, 0)),
     ]
-
     for interval, result in tf_list:
         assert timeframe_to_next_date(interval, date) == result
 
-    date = datetime.now(tz=UTC)
+    date = dt_now()
     assert timeframe_to_next_date("5m") > date
 
-    date = datetime(2019, 8, 12, 13, 30, 0, tzinfo=UTC)
+    date = dt_utc(2019, 8, 12, 13, 30, 0)
     assert timeframe_to_next_date("5m", date) == date + timedelta(minutes=5)
 
 

@@ -97,6 +97,18 @@ def is_file_in_dir(file: Path, directory: Path) -> bool:
     return file.is_file() and file.parent.samefile(directory)
 
 
+def is_path_in_dir(path: Path, directory: Path) -> bool:
+    """
+    Helper function to check if path is within directory - neither has to exist.
+    :param path: Path to check
+    :param directory: Directory to check against
+        When used in the API, this parameter cannot be user controlled (outside of the config)
+        to avoid security issues.
+    :return: True if path is within directory, False otherwise
+    """
+    return path.resolve().is_relative_to(directory.resolve())
+
+
 def pair_to_filename(pair: str) -> str:
     for ch in ["/", " ", ".", "@", "$", "+", ":"]:
         pair = pair.replace(ch, "_")

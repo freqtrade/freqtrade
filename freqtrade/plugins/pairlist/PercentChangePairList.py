@@ -144,7 +144,7 @@ class PercentChangePairList(IPairList):
                 k
                 for k in self._exchange.get_markets(
                     quote_currencies=[self._stake_currency], tradable_only=True, active_only=True
-                ).keys()
+                )
             ]
 
             # No point in testing for blacklisted pairs...
@@ -228,10 +228,8 @@ class PercentChangePairList(IPairList):
         candles = self.fetch_candles_for_lookback_period(filtered_tickers)
 
         for i, p in enumerate(filtered_tickers):
-            pair_candles = (
-                candles[(p["symbol"], self._lookback_timeframe, self._def_candletype)]
-                if (p["symbol"], self._lookback_timeframe, self._def_candletype) in candles
-                else None
+            pair_candles = candles.get(
+                (p["symbol"], self._lookback_timeframe, self._def_candletype), None
             )
 
             # in case of candle data calculate typical price and change for candle
@@ -256,9 +254,7 @@ class PercentChangePairList(IPairList):
         valid_tickers: list[SymbolWithPercentage] = []
         for p in filtered_tickers:
             # Filter out assets
-            if self._validate_pair(
-                p["symbol"], tickers[p["symbol"]] if p["symbol"] in tickers else None
-            ):
+            if self._validate_pair(p["symbol"], tickers.get(p["symbol"], None)):
                 p["percentage"] = tickers[p["symbol"]]["percentage"]
                 valid_tickers.append(p)
         return valid_tickers

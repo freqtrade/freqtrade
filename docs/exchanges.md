@@ -34,6 +34,10 @@ A exchange configuration for "binance" would look as follows:
 
 ### Setting rate limits
 
+!!! Warning "Don't change rate limits"
+    We recommend to not set rateLimit explicitly, but let ccxt handle this.  
+    Messing with rate limits manually will change the ccxt ratelimit behavior and usually has a negative impact on the performance and reliability of your trading bot.
+
 Usually, rate limits set by CCXT are reliable and work well.
 In case of problems related to rate-limits (usually DDOS Exceptions in your logs), it's easy to change rateLimit settings to other values.
 
@@ -51,10 +55,6 @@ In case of problems related to rate-limits (usually DDOS Exceptions in your logs
 
 This configuration enables kraken, as well as rate-limiting to avoid bans from the exchange.
 `"rateLimit": 3100` defines a wait-event of 3.1s between each call. This can also be completely disabled by setting `"enableRateLimit"` to false.
-
-!!! Note
-    Optimal settings for rate-limiting depend on the exchange and the size of the whitelist, so an ideal parameter will vary on many other settings.
-    We try to provide sensible defaults per exchange where possible, if you encounter bans please make sure that `"enableRateLimit"` is enabled and increase the `"rateLimit"` parameter step by step.
 
 ## Binance
 

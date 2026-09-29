@@ -38,11 +38,10 @@ def strategy_safe_wrapper(f: F, message: str = "", default_retval=None, supress_
     @wraps(f)
     def wrapper(*args, **kwargs):
         try:
-            if not (getattr(f, "__qualname__", "")).startswith("IStrategy."):
-                # Don't deep-copy if the function is not implemented in the user strategy.``
-                if "trade" in kwargs:
-                    # Protect accidental modifications from within the strategy
-                    kwargs["trade"] = deepcopy(kwargs["trade"])
+            if not (getattr(f, "__qualname__", "")).startswith("IStrategy.") and "trade" in kwargs:
+                # Protect accidental modifications from within the strategy
+                # but don't deep-copy if the function is not implemented in the user strategy.
+                kwargs["trade"] = deepcopy(kwargs["trade"])
             return f(*args, **kwargs)
         except ValueError as error:
             traceback = __format_traceback(error)

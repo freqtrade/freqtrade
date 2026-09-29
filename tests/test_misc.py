@@ -18,6 +18,7 @@ from freqtrade.misc import (
     file_dump_json,
     file_load_json,
     is_file_in_dir,
+    is_path_in_dir,
     json_to_dataframe,
     pair_to_filename,
     parse_db_uri_for_logging,
@@ -100,6 +101,18 @@ def test_is_file_in_dir(tmp_path):
 
     file_path2 = tmp_path / "../../test2.txt"
     assert is_file_in_dir(file_path2, tmp_path) is False
+
+
+def test_is_path_in_dir(tmp_path):
+    # Neither path has to exist
+    assert is_path_in_dir(tmp_path / "models" / "an-id", tmp_path / "models") is True
+    assert is_path_in_dir(tmp_path / "models" / "sub" / "id", tmp_path / "models") is True
+    # The directory itself counts as within
+    assert is_path_in_dir(tmp_path / "models", tmp_path / "models") is True
+
+    assert is_path_in_dir(tmp_path / "models" / "..", tmp_path / "models") is False
+    assert is_path_in_dir(tmp_path / "models" / "../../escaped", tmp_path / "models") is False
+    assert is_path_in_dir(Path("/etc/passwd"), tmp_path / "models") is False
 
 
 @pytest.mark.parametrize(

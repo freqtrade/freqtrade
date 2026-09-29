@@ -68,7 +68,7 @@ def start_convert_trades(args: dict[str, Any]) -> None:
         p
         for p in exchange.get_markets(
             tradable_only=True, active_only=not config.get("include_inactive")
-        ).keys()
+        )
     ]
 
     expanded_pairs = dynamic_expand_pairlist(config, available_pairs)

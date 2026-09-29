@@ -54,6 +54,7 @@ class Binance(Exchange):
     _ft_has_futures: FtHas = {
         "ohlcv_candle_limit": 499,
         "funding_fee_candle_limit": 1000,
+        "open_interest_candle_limit": 500,
         "stoploss_order_types": {"limit": "stop", "market": "stop_market"},
         "stoploss_blocks_assets": False,  # Stoploss orders do not block assets
         "stoploss_query_requires_stop_flag": True,
@@ -526,15 +527,14 @@ class Binance(Exchange):
         :return: int: delisting time None if not delisting
         """
 
-        if not pair or not self._config["runmode"] == RunMode.LIVE:
+        if not pair or self._config["runmode"] != RunMode.LIVE:
             # Endpoint only works in live mode as it requires API keys
             return None
 
         cache = self._spot_delist_schedule_cache
 
-        if not refresh:
-            if delist_time := cache.get(pair, None):
-                return delist_time
+        if not refresh and (delist_time := cache.get(pair, None)):
+            return delist_time
 
         delist_schedule = self._get_spot_delist_schedule()
 

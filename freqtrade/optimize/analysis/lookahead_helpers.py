@@ -162,6 +162,10 @@ class LookaheadAnalysisSubFunctions:
                 "stoploss": "market",
                 "stoploss_on_exchange": False,
             }
+            # Adjust Pricing to not fail when order types are forced to market orders
+            config["entry_pricing"] = {**config.get("entry_pricing", {}), "price_side": "other"}
+            config["exit_pricing"] = {**config.get("exit_pricing", {}), "price_side": "other"}
+
         else:
             logger.info("Using configured order_types, skipping order_types override.")
 

@@ -422,7 +422,7 @@ def test_hyperliquid_dry_run_liquidation_price(default_conf, markets_hip3, mocke
     )
 
     for position in positions:
-        is_short = True if position["side"] == "short" else False
+        is_short = position["side"] == "short"
         liq_price_returned = position["liquidationPrice"]
         liq_price_calculated = exchange.dry_run_liquidation_price(
             position["symbol"],

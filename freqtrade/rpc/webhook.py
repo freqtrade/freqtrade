@@ -71,6 +71,7 @@ class Webhook(RPCHandler):
         elif msg["type"] in (
             RPCMessageType.PROTECTION_TRIGGER,
             RPCMessageType.PROTECTION_TRIGGER_GLOBAL,
+            RPCMessageType.LIQUIDATION_WARNING,
             RPCMessageType.WHITELIST,
             RPCMessageType.ANALYZED_DF,
             RPCMessageType.NEW_CANDLE,

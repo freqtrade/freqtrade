@@ -384,9 +384,7 @@ def test_gen_pairlist_from_tickers(mocker, rpl_config, tickers):
     # The generator returns BTC ETH and TKN - filtering the first ensures removing pairs
     # in this step ain't problematic.
     def _validate_pair(pair, ticker):
-        if pair == "BTC/USDT":
-            return False
-        return True
+        return pair != "BTC/USDT"
 
     remote_pairlist._validate_pair = _validate_pair
 

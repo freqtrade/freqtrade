@@ -3,8 +3,9 @@
 -r requirements-plot.txt
 
 # Required for freqai
-scikit-learn==1.9.0
-joblib==1.5.3
+scikit-learn==1.9.1
+joblib==1.6.0
+cloudpickle==3.1.2
 lightgbm==4.7.0
 xgboost==3.2.0
 tensorboard==2.21.0

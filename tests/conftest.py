@@ -222,6 +222,7 @@ def patch_exchange(
 ) -> None:
     mocker.patch(f"{EXMS}.validate_config", MagicMock())
     mocker.patch(f"{EXMS}.validate_timeframes", MagicMock())
+    mocker.patch(f"{EXMS}.check_time_offset", MagicMock())
     mocker.patch(f"{EXMS}.id", PropertyMock(return_value=exchange))
     mocker.patch(f"{EXMS}.name", PropertyMock(return_value=exchange.title()))
     mocker.patch(f"{EXMS}.precisionMode", PropertyMock(return_value=2))
