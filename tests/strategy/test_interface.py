@@ -1172,12 +1172,32 @@ def test_ft_set_api_params(default_conf):
             {"name": "sell_minusdi", "param_type": "DecimalParameter", "value": 0.7},
             r"'sell_minusdi' is not loaded \(load=False\)",
         ),
+        (
+            {"name": "protection_enabled", "param_type": "BooleanParameter", "value": "yes"},
+            r"'protection_enabled' must be one of \[True, False\]",
+        ),
+        (
+            {"name": "protection_enabled", "param_type": "BooleanParameter", "value": None},
+            r"'protection_enabled' must be one of \[True, False\]",
+        ),
     ]
     for param, message in invalid:
         with pytest.raises(DependencyException, match=base + message):
             strategy.ft_set_api_params([param])
         # Nothing is kept from a rejected call
         assert strategy.ft_used_params == {}
+
+    strategy.ft_set_api_params(
+        [
+            {
+                "name": "protection_enabled",
+                "space": "protection",
+                "param_type": "BooleanParameter",
+                "value": False,
+            }
+        ]
+    )
+    assert strategy.ft_used_params == {"protection": {"protection_enabled": False}}
 
 
 def test_auto_hyperopt_interface_loadparams(default_conf, mocker, caplog):
