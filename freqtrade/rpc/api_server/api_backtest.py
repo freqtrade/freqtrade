@@ -179,8 +179,6 @@ async def api_start_backtest(
     btconfig["runmode"] = RunMode.BACKTEST
     remove_exchange_credentials(btconfig["exchange"], True)
     settings = bt_settings.model_dump(mode="python")
-    if settings.get("freqai", None) is not None:
-        settings["freqai"] = dict(settings["freqai"])
     strategy_params: list[dict[str, Any]] | None = settings.pop("strategy_params", None)
     # Pydantic models will contain all keys, but non-provided ones are None
 
