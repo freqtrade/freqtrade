@@ -2025,7 +2025,7 @@ def test_backtesting_show(mocker, testdatadir, capsys):
     assert "Pairs for Strategy" in out
 
 
-def test_backtesting_show_params(mocker, tmp_path, user_dir, capsys):
+def test_backtesting_show_params(mocker, tmp_path, user_dir, capsys, caplog):
     from freqtrade.optimize.optimize_reports import store_backtest_results
 
     mocker.patch("freqtrade.optimize.optimize_reports.show_backtest_results")
@@ -2072,6 +2072,26 @@ def test_backtesting_show_params(mocker, tmp_path, user_dir, capsys):
     assert exported["strategy_name"] == "StrategyTestV3"
     assert exported["params"] == {"buy": {"buy_rsi": 21}}
     assert exported["ft_stratparam_v"] == 1
+
+    # A result without stored parameters says so, instead of showing nothing
+    params_file.unlink()
+    no_params_dir = tmp_path / "no_params"
+    no_params_dir.mkdir()
+    store_backtest_results(
+        {"exportdirectory": no_params_dir, "original_config": {}},
+        {"metadata": {}, "strategy": {"StrategyTestV3": {}}, "strategy_comparison": []},
+        "2024_01_01_15_05_25",
+        strategy_files={"StrategyTestV3": str(strategy_file)},
+    )
+    pargs = get_args(
+        ["backtesting-show", "--export-directory", str(no_params_dir), "--show-params"]
+    )
+    pargs["config"] = None
+    start_backtesting_show(pargs)
+
+    out, _err = capsys.readouterr()
+    assert "STRATEGY PARAMETERS FOR" not in out
+    assert log_has("No parameters stored for StrategyTestV3.", caplog)
 
 
 def test_start_convert_db(fee, tmp_path):

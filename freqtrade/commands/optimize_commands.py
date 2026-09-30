@@ -92,6 +92,9 @@ def start_backtesting_show(args: dict[str, Any]) -> None:
     if show_params or export_params:
         for strategy_name in results["strategy"]:
             params = get_backtest_strategy_params(filename, strategy_name)
+            if not params:
+                logger.warning(f"No parameters stored for {strategy_name}.")
+                continue
             if show_params:
                 show_backtest_params(strategy_name, params.get("params", {}))
             if export_params:
@@ -104,9 +107,6 @@ def _export_backtest_params(config: Config, strategy_name: str, params: dict[str
     """
     from freqtrade.optimize.hyperopt_tools import HyperoptTools
 
-    if not params:
-        logger.warning(f"No parameters stored for {strategy_name}, not exporting.")
-        return
     fn = HyperoptTools.get_strategy_filename(config, strategy_name)
     if not fn:
         logger.warning(f"Strategy {strategy_name} not found, not exporting parameter file.")
