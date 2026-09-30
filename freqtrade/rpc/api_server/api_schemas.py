@@ -625,7 +625,7 @@ class DecimalParameterInput(__StrategyParameterInput):
 
 class BooleanParameterInput(__StrategyParameterInput):
     param_type: Literal["BooleanParameter"]
-    value: bool | None
+    value: bool
 
 
 class CategoricalParameterInput(__StrategyParameterInput):

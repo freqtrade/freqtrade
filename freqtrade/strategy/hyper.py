@@ -14,7 +14,7 @@ from freqtrade.constants import Config
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.misc import deep_merge_dicts
 from freqtrade.optimize.hyperopt_tools import HyperoptTools
-from freqtrade.strategy.parameters import BaseParameter
+from freqtrade.strategy.parameters import BaseParameter, CategoricalParameter
 
 
 logger = logging.getLogger(__name__)
@@ -165,6 +165,13 @@ class HyperStrategyMixin:
                 raise DependencyException(f"{base_warning} '{name}' is not loaded (load=False).")
             if not strategy_param.space or strategy_param.space not in self._ft_hyper_params:
                 raise DependencyException(f"{base_warning} '{name}' has no valid space.")
+            if (
+                isinstance(strategy_param, CategoricalParameter)
+                and value not in strategy_param.opt_range
+            ):
+                raise DependencyException(
+                    f"{base_warning} '{name}' must be one of {strategy_param.opt_range}."
+                )
 
             grouped_values[strategy_param.space][name] = value
 
