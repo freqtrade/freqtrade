@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from freqtrade.constants import Config
-from freqtrade.exceptions import DependencyException, OperationalException
+from freqtrade.exceptions import ConfigurationError, DependencyException, OperationalException
 from freqtrade.misc import deep_merge_dicts
 from freqtrade.optimize.hyperopt_tools import HyperoptTools
 from freqtrade.strategy.parameters import BaseParameter, CategoricalParameter, NumericParameter
@@ -133,7 +133,7 @@ class HyperStrategyMixin:
     def ft_set_api_params(self, params: list[dict[str, Any]] | None) -> None:
         """
         Store API-provided parameter overrides for the next ft_load_hyper_params() call.
-        :raises: DependencyException if an override does not match a loadable parameter.
+        :raises: ConfigurationError if an override does not match a loadable parameter.
         """
         self.__ft_params_from_api = {}
         if not params:
@@ -152,24 +152,24 @@ class HyperStrategyMixin:
             base_warning = "Invalid strategy parameter override:"
 
             if not name or not param_type:
-                raise DependencyException(f"{base_warning} missing name or param_type.")
+                raise ConfigurationError(f"{base_warning} missing name or param_type.")
 
             strategy_param = strategy_parameters.get(name)
             if strategy_param is None:
-                raise DependencyException(f"{base_warning} '{name}' is not a strategy parameter.")
+                raise ConfigurationError(f"{base_warning} '{name}' is not a strategy parameter.")
             if strategy_param.param_type != param_type:
-                raise DependencyException(
+                raise ConfigurationError(
                     f"{base_warning} '{name}' is a {strategy_param.param_type}, not a {param_type}."
                 )
             if not strategy_param.load:
-                raise DependencyException(f"{base_warning} '{name}' is not loaded (load=False).")
+                raise ConfigurationError(f"{base_warning} '{name}' is not loaded (load=False).")
             if not strategy_param.space or strategy_param.space not in self._ft_hyper_params:
-                raise DependencyException(f"{base_warning} '{name}' has no valid space.")
+                raise ConfigurationError(f"{base_warning} '{name}' has no valid space.")
             if (
                 isinstance(strategy_param, CategoricalParameter)
                 and value not in strategy_param.opt_range
             ):
-                raise DependencyException(
+                raise ConfigurationError(
                     f"{base_warning} '{name}' must be one of {strategy_param.opt_range}."
                 )
             if (

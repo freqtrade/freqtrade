@@ -504,6 +504,8 @@ def api_backtest_pair_history(
             return RPC._rpc_analysed_history_full(
                 config_loc, payload.pair, timeframe, exchange, payload.columns, False
             )
+    except ConfigurationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.exception("Error in api_backtest_pair_history")
         raise HTTPException(status_code=502, detail=str(e))
