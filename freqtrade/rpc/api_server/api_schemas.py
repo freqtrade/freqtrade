@@ -555,54 +555,6 @@ class FreqAIModelListResponse(BaseModel):
     freqaimodels: list[str]
 
 
-class __StrategyParameter(BaseModel):
-    param_type: str
-    name: str
-    space: str
-    load: bool
-    optimize: bool
-
-
-class IntParameter(__StrategyParameter):
-    param_type: Literal["IntParameter"]
-    value: int
-    low: int
-    high: int
-
-
-class RealParameter(__StrategyParameter):
-    param_type: Literal["RealParameter"]
-    value: float
-    low: float
-    high: float
-
-
-class DecimalParameter(__StrategyParameter):
-    param_type: Literal["DecimalParameter"]
-    value: float
-    low: float
-    high: float
-    decimals: int
-
-
-class BooleanParameter(__StrategyParameter):
-    param_type: Literal["BooleanParameter"]
-    value: bool | None
-    opt_range: list[bool]
-
-
-class CategoricalParameter(__StrategyParameter):
-    param_type: Literal["CategoricalParameter"]
-    value: Any
-    opt_range: list[Any]
-
-
-AllParameters = Annotated[
-    BooleanParameter | CategoricalParameter | DecimalParameter | IntParameter | RealParameter,
-    Field(discriminator="param_type"),
-]
-
-
 class __StrategyParameterInput(BaseModel):
     name: str
     space: str
@@ -639,6 +591,44 @@ StrategyParameterInput = Annotated[
     | DecimalParameterInput
     | IntParameterInput
     | RealParameterInput,
+    Field(discriminator="param_type"),
+]
+
+
+class __StrategyParameter(BaseModel):
+    load: bool
+    optimize: bool
+
+
+class IntParameter(IntParameterInput, __StrategyParameter):
+    low: int
+    high: int
+
+
+class RealParameter(RealParameterInput, __StrategyParameter):
+    low: float
+    high: float
+
+
+class DecimalParameter(DecimalParameterInput, __StrategyParameter):
+    low: float
+    high: float
+    decimals: int
+
+
+class BooleanParameter(__StrategyParameterInput, __StrategyParameter):
+    param_type: Literal["BooleanParameter"]
+    # Parameters without a default have no value
+    value: bool | None
+    opt_range: list[bool]
+
+
+class CategoricalParameter(CategoricalParameterInput, __StrategyParameter):
+    opt_range: list[Any]
+
+
+AllParameters = Annotated[
+    BooleanParameter | CategoricalParameter | DecimalParameter | IntParameter | RealParameter,
     Field(discriminator="param_type"),
 ]
 
