@@ -15,7 +15,12 @@ from freqtrade.constants import CUSTOM_TAG_MAX_LENGTH
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import load_data
 from freqtrade.enums import ExitCheckTuple, ExitType, SignalDirection
-from freqtrade.exceptions import DependencyException, OperationalException, StrategyError
+from freqtrade.exceptions import (
+    ConfigurationError,
+    DependencyException,
+    OperationalException,
+    StrategyError,
+)
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.strategy.hyper import detect_all_parameters
@@ -1182,7 +1187,7 @@ def test_ft_set_api_params(default_conf, caplog):
         ),
     ]
     for param, message in invalid:
-        with pytest.raises(DependencyException, match=base + message):
+        with pytest.raises(ConfigurationError, match=base + message):
             strategy.ft_set_api_params([param])
         # Nothing is kept from a rejected call
         assert strategy.ft_used_params == {}

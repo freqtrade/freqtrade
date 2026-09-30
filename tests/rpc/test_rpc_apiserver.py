@@ -2637,7 +2637,7 @@ def test_api_pair_history(botclient, tmp_path, mocker):
             ],
         },
     )
-    assert_response(rc, 502)
+    assert_response(rc, 400)
     assert "Invalid strategy parameter override: 'buy_plusdi'" in rc.json()["detail"]
 
     # No strategy
@@ -3479,7 +3479,8 @@ def test_api_backtesting(botclient, mocker, fee, caplog, tmp_path):
         rc = client_post(client, f"{BASE_URI}/backtest", data=data)
         assert_response(rc)
         assert log_has(
-            "Backtesting caused an error: Invalid strategy parameter override: "
+            "Backtesting encountered a configuration Error: "
+            "Invalid strategy parameter override: "
             "'sell_minusdi' is not loaded (load=False).",
             caplog,
         )
@@ -4238,6 +4239,10 @@ def test_api_backtest_pair_history(botclient, tmp_path: Path, mocker):
     )
     assert_response(rc, 404)
     assert "OtherStrategy not found" in rc.json()["detail"]
+
+    # Invalid timerange is a client error
+    rc = client_post(client, url, data={"pair": "UNITTEST/BTC", "timerange": "2018-01-11"})
+    assert_response(rc, 400)
 
 
 _STRATEGY_VALIDATOR = get_args(StrategyName)[1]
