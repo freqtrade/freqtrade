@@ -39,7 +39,7 @@ from freqtrade.rpc.api_server.api_schemas import (
     StrategyName,
     WalletHistoryResponse,
 )
-from freqtrade.rpc.api_server.deps import get_config, get_exchange, verify_strategy
+from freqtrade.rpc.api_server.deps import get_config, get_exchange
 from freqtrade.rpc.api_server.webserver_bgwork import ApiBG
 from freqtrade.rpc.rpc import RPC, RPCException
 from freqtrade.util import dt_now
@@ -452,7 +452,7 @@ def api_get_backtest_wallet(file: str, strategy: StrategyName, config=Depends(ge
 )
 def api_backtest_pair_history(
     file: str,
-    strategy: str,
+    strategy: StrategyName,
     payload: BacktestPairHistoryRequest,
     config=Depends(get_config),
 ):
@@ -461,7 +461,6 @@ def api_backtest_pair_history(
     Contrary to /pair_history, this uses the strategy as it was at the time of the backtest,
     instead of the current version in the strategy directory.
     """
-    verify_strategy(strategy)
     bt_results_base: Path = config["user_data_dir"] / "backtest_results"
     file_abs = (bt_results_base / file).with_suffix(".zip")
     # Ensure file is in backtest_results directory
