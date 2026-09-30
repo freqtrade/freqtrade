@@ -1140,7 +1140,7 @@ def test_auto_hyperopt_interface(default_conf):
     del strategy.__class__.enter_rsi
 
 
-def test_ft_set_api_params(default_conf):
+def test_ft_set_api_params(default_conf, caplog):
     default_conf.update({"strategy": "HyperoptableStrategy"})
     strategy = StrategyResolver.load_strategy(default_conf)
 
@@ -1198,6 +1198,16 @@ def test_ft_set_api_params(default_conf):
         ]
     )
     assert strategy.ft_used_params == {"protection": {"protection_enabled": False}}
+
+    # Values outside of the parameter range are applied, but warned about
+    strategy.ft_set_api_params(
+        [{"name": "sell_rsi", "space": "sell", "param_type": "IntParameter", "value": 10000}]
+    )
+    assert strategy.ft_used_params == {"sell": {"sell_rsi": 10000}}
+    assert log_has(
+        "Strategy parameter override 'sell_rsi' (10000) is outside of its range (50 - 100).",
+        caplog,
+    )
 
 
 def test_auto_hyperopt_interface_loadparams(default_conf, mocker, caplog):

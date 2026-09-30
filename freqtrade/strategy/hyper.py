@@ -14,7 +14,7 @@ from freqtrade.constants import Config
 from freqtrade.exceptions import DependencyException, OperationalException
 from freqtrade.misc import deep_merge_dicts
 from freqtrade.optimize.hyperopt_tools import HyperoptTools
-from freqtrade.strategy.parameters import BaseParameter, CategoricalParameter
+from freqtrade.strategy.parameters import BaseParameter, CategoricalParameter, NumericParameter
 
 
 logger = logging.getLogger(__name__)
@@ -171,6 +171,15 @@ class HyperStrategyMixin:
             ):
                 raise DependencyException(
                     f"{base_warning} '{name}' must be one of {strategy_param.opt_range}."
+                )
+            if (
+                isinstance(strategy_param, NumericParameter)
+                and value is not None
+                and not strategy_param.low <= value <= strategy_param.high
+            ):
+                logger.warning(
+                    f"Strategy parameter override '{name}' ({value}) is outside of its range "
+                    f"({strategy_param.low} - {strategy_param.high})."
                 )
 
             grouped_values[strategy_param.space][name] = value
