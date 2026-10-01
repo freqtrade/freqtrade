@@ -1,8 +1,10 @@
 # pragma pylint: disable=missing-docstring, C0103
 import logging
 import math
+import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from textwrap import dedent
 from unittest.mock import MagicMock
 
 import pytest
@@ -1103,7 +1105,7 @@ def test_auto_hyperopt_interface(default_conf):
 
     spaces = detect_all_parameters(strategy.__class__)
     assert "buy" in spaces
-    assert spaces["buy"]["sell_rsi"] == strategy.sell_rsi
+    assert spaces["buy"]["sell_rsi"] == strategy.__class__.sell_rsi
     del strategy.__class__.sell_rsi
 
     strategy.__class__.exit22_rsi = IntParameter([0, 10], default=5)
@@ -1184,6 +1186,50 @@ def test_auto_hyperopt_interface_loadparams(default_conf, mocker, caplog):
 
     StrategyResolver.load_strategy(default_conf)
     assert log_has("Invalid parameter file format.", caplog)
+
+
+def test_auto_hyperopt_params_shared_base_class(default_conf, tmp_path):
+    # Parameters defined on a base class in a separate module must not leak between strategies.
+    # The base module is imported via sys.modules - so its class is not re-created per load.
+    (tmp_path / "ft_shared_base.py").write_text(
+        dedent("""
+    from freqtrade.strategy import IStrategy, IntParameter
+    class SharedBase(IStrategy):
+        buy_params = {}
+        buy_rsi = IntParameter(10, 50, default=30, space='buy')
+        def populate_indicators(self, dataframe, metadata): return dataframe
+        def populate_entry_trend(self, dataframe, metadata): return dataframe
+        def populate_exit_trend(self, dataframe, metadata): return dataframe
+    """)
+    )
+    for name in ("ChildWithParams", "ChildNoParams"):
+        (tmp_path / f"{name.lower()}.py").write_text(
+            dedent(f"""
+        from ft_shared_base import SharedBase
+        class {name}(SharedBase):
+            pass
+        """)
+        )
+    (tmp_path / "childwithparams.json").write_text(
+        '{"strategy_name": "ChildWithParams", "params": {"buy": {"buy_rsi": 40}}}'
+    )
+    default_conf["strategy_path"] = str(tmp_path)
+    try:
+        default_conf["strategy"] = "ChildWithParams"
+        strategy = StrategyResolver.load_strategy(default_conf)
+        strategy.ft_load_hyper_params()
+        assert strategy.buy_rsi.value == 40
+
+        default_conf["strategy"] = "ChildNoParams"
+        strategy = StrategyResolver.load_strategy(default_conf)
+        strategy.ft_load_hyper_params()
+        assert strategy.buy_rsi.value == 30
+
+        base_class = type(strategy).__mro__[1]
+        assert base_class.buy_rsi.value == 30
+        assert base_class.buy_params == {}
+    finally:
+        sys.modules.pop("ft_shared_base", None)
 
 
 @pytest.mark.parametrize(
