@@ -12,6 +12,7 @@ import pytest
 from freqtrade.enums import CandleType
 from freqtrade.exchange import (
     timeframe_to_minutes,
+    timeframe_to_next_date,
     timeframe_to_prev_date,
     timeframe_to_resample_freq,
 )
@@ -388,7 +389,7 @@ class TestCCXTExchange:
         timeframe = exchange_params["timeframe"]
         tf_delta = timedelta(minutes=timeframe_to_minutes(timeframe))
         pair_tf = (pair, timeframe, CandleType.OPEN_INTEREST)
-        since_date = timeframe_to_prev_date(timeframe, dt_now() - timedelta(days=history_days))
+        since_date = timeframe_to_next_date(timeframe, dt_now() - timedelta(days=history_days))
 
         res = exchange.refresh_latest_ohlcv(
             [pair_tf], since_ms=dt_ts(since_date), drop_incomplete=False
