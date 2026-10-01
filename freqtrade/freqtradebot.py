@@ -2223,10 +2223,11 @@ class FreqtradeBot(LoggingMixin):
         :raise: DependencyException: if available balance is not within 2% of the available amount.
         """
         # Update wallets to ensure amounts tied up in a stoploss is now free!
-        self.wallets.update()
         if self.trading_mode == TradingMode.FUTURES:
             # A safe exit amount isn't needed for futures, you can just exit/close the position
             return amount
+
+        self.wallets.update()
 
         trade_base_currency = self.exchange.get_pair_base_currency(pair)
         # Free + Used - open orders will eventually still be canceled.
