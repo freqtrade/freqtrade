@@ -85,6 +85,9 @@ class RPCException(Exception):
 
 
 class RPCHandler:
+    # Deliver messages from a dedicated worker thread, so slow handlers don't block the bot.
+    _use_queue: bool = True
+
     def __init__(self, rpc: "RPC", config: Config) -> None:
         """
         Initializes RPCHandlers

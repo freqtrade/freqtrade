@@ -1375,6 +1375,7 @@ async def test_telegram_forceexit_handle(
     context = MagicMock()
     context.args = ["1"]
     await telegram._force_exit(update=update, context=context)
+    freqtradebot.rpc.flush()
 
     assert msg_mock.call_count == 4
     last_msg = msg_mock.call_args_list[-2][0][0]
@@ -1445,6 +1446,7 @@ async def test_telegram_force_exit_down_handle(
     context = MagicMock()
     context.args = ["1"]
     await telegram._force_exit(update=update, context=context)
+    freqtradebot.rpc.flush()
 
     assert msg_mock.call_count == 4
 
@@ -1502,12 +1504,14 @@ async def test_forceexit_all_handle(default_conf, update, ticker, fee, mocker) -
 
     # Create some test data
     freqtradebot.enter_positions(4)
+    freqtradebot.rpc.flush()
     msg_mock.reset_mock()
 
     # /forceexit all
     context = MagicMock()
     context.args = ["all"]
     await telegram._force_exit(update=update, context=context)
+    freqtradebot.rpc.flush()
 
     # Called for each trade 2 times
     assert msg_mock.call_count == 8
