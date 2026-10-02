@@ -42,7 +42,7 @@ sdnotify==0.3.2
 fastapi==0.141.1
 pydantic==2.13.5
 uvicorn==0.53.0
-pyjwt==2.14.0
+pyjwt==2.15.0
 aiofiles==25.1.0
 psutil==7.2.2
 
