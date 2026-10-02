@@ -236,6 +236,10 @@ There are two parameter options that can help you to quickly test various ideas:
     Hyperoptable parameters cannot be used in `populate_indicators` - as hyperopt does not recalculate indicators for each epoch, so the starting value would be used in this case.
     Freqtrade will log a warning when the value of an optimized parameter is used during indicator calculation - the results of such an epoch would not correspond to the parameters shown for it. Either use the [`.range` functionality](#optimizing-an-indicator-parameter) or use `--analyze-per-epoch` in this case.
 
+!!! Note "Accessing parameter values"
+    Parameter values are loaded per strategy instance.
+    Always access them through the strategy instance (`self.buy_rsi.value`) - not through the class (`MyStrategy.buy_rsi.value`), which will always return the default value.
+
 ## Optimizing an indicator parameter
 
 Assuming you have a simple strategy in mind - a EMA cross strategy (2 Moving averages crossing) - and you'd like to find the ideal parameters for this strategy.

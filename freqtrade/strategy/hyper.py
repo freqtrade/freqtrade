@@ -6,6 +6,7 @@ This module defines a base class for auto-hyperoptable strategies.
 import logging
 from collections import defaultdict
 from collections.abc import Iterator
+from copy import deepcopy
 from pathlib import Path
 
 from freqtrade.constants import Config
@@ -35,11 +36,25 @@ class HyperStrategyMixin:
         """
         self.config = config
         self._ft_hyper_params: AllSpaceParams = {}
+        self._ft_copy_parameters()
 
         params = self.load_params_from_file()
         params = params.get("params", {})
         self._ft_params_from_file = params
         # Init/loading of parameters is done as part of ft_bot_start().
+
+    def _ft_copy_parameters(self) -> None:
+        """
+        Give this instance its own copy of all class-level parameters.
+        Parameters of a base class imported from another module are shared by every strategy
+        that inherits from it - so values set on one strategy would leak into all others.
+        """
+        for attr_name in dir(type(self)):
+            if attr_name.startswith("__"):
+                continue
+            attr = getattr(type(self), attr_name, None)
+            if isinstance(attr, BaseParameter):
+                setattr(self, attr_name, deepcopy(attr))
 
     def enumerate_parameters(self, space: str | None = None) -> Iterator[tuple[str, BaseParameter]]:
         """
@@ -95,7 +110,8 @@ class HyperStrategyMixin:
 
         for space in self._ft_hyper_params:
             params_values = deep_merge_dicts(
-                self._ft_params_from_file.get(space, {}), getattr(self, f"{space}_params", {})
+                self._ft_params_from_file.get(space, {}),
+                deepcopy(getattr(self, f"{space}_params", {})),
             )
             self._ft_set_param(self._ft_hyper_params[space], params_values, space, hyperopt)
 
