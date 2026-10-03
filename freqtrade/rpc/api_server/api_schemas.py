@@ -251,6 +251,7 @@ class OrderTypes(BaseModel):
     force_entry: OrderTypeValues | None = None
     stoploss: OrderTypeValues
     stoploss_on_exchange: bool
+    stoploss_on_exchange_native_trailing: bool | None = None
     stoploss_on_exchange_interval: int | None = None
 
 

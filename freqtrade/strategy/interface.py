@@ -97,6 +97,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         "exit": "limit",
         "stoploss": "limit",
         "stoploss_on_exchange": False,
+        "stoploss_on_exchange_native_trailing": False,
         "stoploss_on_exchange_interval": 60,
     }
 
