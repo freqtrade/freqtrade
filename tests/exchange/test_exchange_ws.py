@@ -11,7 +11,24 @@ from ccxt import NotSupported
 from freqtrade.enums import CandleType
 from freqtrade.exceptions import TemporaryError
 from freqtrade.exchange.exchange_ws import ExchangeWS
+from freqtrade.util import dt_ts
 from ft_client.test_client.test_rest_client import log_has_re
+
+
+@pytest.fixture
+def ws_loop():
+    """
+    A real event loop running in a background thread used for tests
+    """
+    loop = asyncio.new_event_loop()
+    thread = threading.Thread(target=loop.run_forever, daemon=True, name="ws_loop_test")
+    thread.start()
+    while not loop.is_running():
+        sleep(0.01)
+    yield loop
+    loop.call_soon_threadsafe(loop.stop)
+    thread.join(timeout=2)
+    loop.close()
 
 
 def test_exchangews_init(mocker):
@@ -400,7 +417,349 @@ def test_exchangews_get_ohlcv_with_refresh(mocker):
     exchange_ws.cleanup()
 
 
-def test_exchangews_continuous_stopped_task_exception(mocker, caplog):
+def test_exchangews_get_orderbook(mocker, ws_loop):
+    config = MagicMock()
+    ccxt_object = MagicMock()
+    ccxt_object.close = AsyncMock()
+    ob = {
+        "bids": [[100.0, 1.0], [99.0, 2.0]],
+        "asks": [[101.0, 1.5], [102.0, 3.0]],
+        "timestamp": 1635840000000,
+        "nonce": 7,
+    }
+    ccxt_object.orderbooks = {"ETH/USDT": ob}
+    mocker.patch("freqtrade.exchange.exchange_ws.ExchangeWS._start_forever")
+
+    exchange_ws = ExchangeWS(config, ccxt_object)
+    exchange_ws._loop = ws_loop
+
+    result = exchange_ws.get_orderbook("ETH/USDT", 10)
+    assert result["bids"] == ob["bids"]
+    assert result["asks"] == ob["asks"]
+    assert result["timestamp"] == ob["timestamp"]
+    assert result["nonce"] == ob["nonce"]
+    # Keys the cached book doesn't carry are filled in, so the shape always matches
+    # what the REST endpoint returns.
+    assert result["symbol"] == "ETH/USDT"
+    assert result["datetime"] is None
+    # A deep copy is returned - decoupled from the live cache (nested lists copied too).
+    assert result is not ob
+    assert result["bids"] is not ob["bids"]
+    # Mutating the live cache must not affect an already-returned snapshot.
+    ccxt_object.orderbooks["ETH/USDT"]["bids"][0][1] = 999
+    assert result["bids"][0][1] == 1.0
+    ccxt_object.orderbooks["ETH/USDT"]["bids"][0][1] = 1.0
+
+    # The book is truncated to the requested limit ...
+    limited = exchange_ws.get_orderbook("ETH/USDT", 1)
+    assert limited["bids"] == [[100.0, 1.0]]
+    assert limited["asks"] == [[101.0, 1.5]]
+    # ... while metadata is passed through unchanged.
+    assert limited["timestamp"] == ob["timestamp"]
+    assert limited["nonce"] == ob["nonce"]
+
+    # Requesting more than the book holds returns what's there (caller decides).
+    assert len(exchange_ws.get_orderbook("ETH/USDT", 100)["bids"]) == 2
+
+    # Unknown pair returns an empty book (caller falls back to REST).
+    empty = exchange_ws.get_orderbook("BTC/USDT", 10)
+    assert empty["bids"] == []
+    assert empty["asks"] == []
+    assert empty["symbol"] == "BTC/USDT"
+
+    # The copy runs on the websocket loop thread, not the calling thread making
+    # reads atomic with regards to ccxt's in-place updates.
+    copied_on = []
+    orig_snapshot = exchange_ws._orderbook_snapshot
+
+    async def record_thread(pair, limit):
+        copied_on.append(threading.current_thread().name)
+        return await orig_snapshot(pair, limit)
+
+    mocker.patch.object(exchange_ws, "_orderbook_snapshot", record_thread)
+    assert exchange_ws.get_orderbook("ETH/USDT", 10)["bids"] == ob["bids"]
+    assert copied_on == ["ws_loop_test"]
+
+    exchange_ws.cleanup()
+
+
+def test_exchangews_get_orderbook_fallbacks(mocker, caplog, ws_loop):
+    config = MagicMock()
+    ccxt_object = MagicMock()
+    ccxt_object.close = AsyncMock()
+    ccxt_object.orderbooks = {"ETH/USDT": {"bids": [[1, 2]], "asks": [[3, 4]]}}
+    mocker.patch("freqtrade.exchange.exchange_ws.ExchangeWS._start_forever")
+    caplog.set_level(logging.DEBUG)
+
+    exchange_ws = ExchangeWS(config, ccxt_object)
+
+    # Every failure mode returns an empty book rather than raising, so the caller falls
+    # back to REST instead of the exception escaping fetch_l2_order_book.
+
+    # No loop (startup / after shutdown).
+    assert exchange_ws.get_orderbook("ETH/USDT", 10)["bids"] == []
+    assert log_has_re("Websocket loop not available .* ETH/USDT", caplog)
+
+    exchange_ws._loop = ws_loop
+
+    # The copy itself blows up.
+    mocker.patch("freqtrade.exchange.exchange_ws.deepcopy", side_effect=RuntimeError("copy failed"))
+    assert exchange_ws.get_orderbook("ETH/USDT", 10)["bids"] == []
+    assert log_has_re("Exception while copying the websocket orderbook for ETH/USDT", caplog)
+
+    # A saturated loop doesn't answer within the timeout. The sleep is deliberately far longer
+    # than the timeout, but it's never awaited to completion due to the changed timeout below.
+    snapshot_cancelled = threading.Event()
+
+    async def slow_snapshot(pair, limit):
+        try:
+            await asyncio.sleep(5)
+        except asyncio.CancelledError:
+            snapshot_cancelled.set()
+            raise
+
+    mocker.patch.object(exchange_ws, "_orderbook_snapshot", slow_snapshot)
+    exchange_ws.ob_snapshot_timeout = 0.05
+    assert exchange_ws.get_orderbook("ETH/USDT", 10)["asks"] == []
+    assert log_has_re(r"Timed out after 0\.05s while copying .* ETH/USDT", caplog)
+    # The abandoned copy is cancelled rather than left pending on the loop.
+    assert snapshot_cancelled.wait(timeout=1)
+
+    exchange_ws.cleanup()
+
+
+def test_exchangews_orderbook_is_fresh(mocker, time_machine):
+    config = MagicMock()
+    ccxt_object = MagicMock()
+    mocker.patch("freqtrade.exchange.exchange_ws.ExchangeWS._start_forever")
+    time_machine.move_to("2024-11-01 01:00:00 +00:00", tick=False)
+
+    exchange_ws = ExchangeWS(config, ccxt_object)
+    max_age = 5
+
+    # No refresh recorded yet -> not fresh (fall back to REST).
+    assert exchange_ws.orderbook_is_fresh("ETH/BTC", max_age) is False
+
+    exchange_ws._ob_last_refresh["ETH/BTC"] = dt_ts()
+    # Just refreshed -> fresh.
+    assert exchange_ws.orderbook_is_fresh("ETH/BTC", max_age) is True
+
+    # Still within the max-age window.
+    time_machine.shift(timedelta(seconds=max_age - 1))
+    assert exchange_ws.orderbook_is_fresh("ETH/BTC", max_age) is True
+
+    # Past the max-age window -> stale (feed likely stuck).
+    time_machine.shift(timedelta(seconds=2))
+    assert exchange_ws.orderbook_is_fresh("ETH/BTC", max_age) is False
+
+    exchange_ws.cleanup()
+
+
+def test_exchangews_schedule_orderbook_loop_not_ready(mocker, caplog):
+    config = MagicMock()
+    ccxt_object = MagicMock()
+    mocker.patch("freqtrade.exchange.exchange_ws.ExchangeWS._start_forever")
+    run_threadsafe = mocker.patch("freqtrade.exchange.exchange_ws.asyncio.run_coroutine_threadsafe")
+
+    exchange_ws = ExchangeWS(config, ccxt_object)
+    exchange_ws.schedule_orderbook("ETH/BTC")
+
+    assert exchange_ws._ob_watching == set()
+    assert exchange_ws._ob_last_request == {}
+    assert run_threadsafe.call_count == 0
+    assert log_has_re("Websocket loop not ready. Could not schedule orderbook for ETH/BTC", caplog)
+
+    exchange_ws.cleanup()
+
+
+def test_exchangews_orderbook_stopped(mocker):
+    config = MagicMock()
+    ccxt_object = MagicMock()
+    mocker.patch("freqtrade.exchange.exchange_ws.ExchangeWS._start_forever")
+
+    exchange_ws = ExchangeWS(config, ccxt_object)
+
+    ccxt_object.orderbooks = {"ETH/BTC": {"bids": [], "asks": []}}
+    task = MagicMock()
+    task.cancelled.return_value = False
+    exchange_ws._background_tasks.add(task)
+    exchange_ws._ob_scheduled.add("ETH/BTC")
+    exchange_ws._ob_last_refresh["ETH/BTC"] = 1
+
+    exchange_ws._orderbook_stopped(task, "ETH/BTC")
+
+    assert task not in exchange_ws._background_tasks
+    assert "ETH/BTC" not in exchange_ws._ob_scheduled
+    # The cached book is evicted so a re-scheduled pair can't be served stale data.
+    assert ccxt_object.orderbooks == {}
+    assert exchange_ws._ob_last_refresh == {}
+
+    exchange_ws.cleanup()
+
+
+def test_exchangews_orderbook_stopped_no_unwatch_while_stopping(mocker):
+    config = MagicMock()
+    ccxt_object = MagicMock()
+    ccxt_object.orderbooks = {}
+    mocker.patch("freqtrade.exchange.exchange_ws.ExchangeWS._start_forever", MagicMock())
+
+    exchange_ws = ExchangeWS(config, ccxt_object)
+    exchange_ws._loop = MagicMock()
+    exchange_ws._loop.is_closed.return_value = False
+    exchange_ws._stopping = True
+
+    run_threadsafe = mocker.patch(
+        "freqtrade.exchange.exchange_ws.asyncio.run_coroutine_threadsafe",
+    )
+    exchange_ws._ob_scheduled.add("ETH/BTC")
+    task = MagicMock()
+    task.cancelled.return_value = True
+
+    exchange_ws._orderbook_stopped(task, "ETH/BTC")
+
+    # No unwatch scheduled - it would re-open the session we're closing.
+    assert run_threadsafe.call_count == 0
+    assert "ETH/BTC" not in exchange_ws._ob_scheduled
+
+
+@pytest.mark.parametrize(
+    "has,expected_call",
+    [
+        ({"unWatchOrderBookForSymbols": True}, "un_watch_order_book_for_symbols"),
+        ({"unWatchOrderBook": True}, "un_watch_order_book"),
+        ({}, None),
+    ],
+)
+async def test_exchangews_unwatch_orderbook(mocker, has, expected_call, caplog):
+    config = MagicMock()
+    ccxt_object = MagicMock()
+    ccxt_object.has = has
+    ccxt_object.un_watch_order_book_for_symbols = AsyncMock()
+    ccxt_object.un_watch_order_book = AsyncMock()
+    mocker.patch("freqtrade.exchange.exchange_ws.ExchangeWS._start_forever")
+    caplog.set_level(logging.DEBUG)
+
+    exchange_ws = ExchangeWS(config, ccxt_object)
+    await exchange_ws._unwatch_orderbook("ETH/BTC")
+
+    if expected_call == "un_watch_order_book_for_symbols":
+        ccxt_object.un_watch_order_book_for_symbols.assert_awaited_once_with(["ETH/BTC"])
+        assert ccxt_object.un_watch_order_book.call_count == 0
+    elif expected_call == "un_watch_order_book":
+        ccxt_object.un_watch_order_book.assert_awaited_once_with("ETH/BTC")
+        assert ccxt_object.un_watch_order_book_for_symbols.call_count == 0
+    else:
+        assert ccxt_object.un_watch_order_book.call_count == 0
+        assert ccxt_object.un_watch_order_book_for_symbols.call_count == 0
+        assert log_has_re("un_watch_order_book not supported for ETH/BTC", caplog)
+
+    # Errors must not escape - they'd end up as unhandled exceptions on the ws loop.
+    ccxt_object.has = {"unWatchOrderBook": True}
+    ccxt_object.un_watch_order_book = AsyncMock(side_effect=NotSupported("nope"))
+    await exchange_ws._unwatch_orderbook("ETH/BTC")
+
+    ccxt_object.un_watch_order_book = AsyncMock(side_effect=Exception("boom"))
+    await exchange_ws._unwatch_orderbook("ETH/BTC")
+    assert log_has_re("Exception in _unwatch_orderbook for ETH/BTC", caplog)
+
+    exchange_ws.cleanup()
+
+
+async def test_exchangews_unwatch_orderbook_while_stopping(mocker, caplog):
+    caplog.set_level(logging.DEBUG)
+    config = MagicMock()
+    ccxt_object = MagicMock()
+    ccxt_object.has = {"unWatchOrderBookForSymbols": True}
+    ccxt_object.un_watch_order_book_for_symbols = AsyncMock()
+    mocker.patch("freqtrade.exchange.exchange_ws.ExchangeWS._start_forever", MagicMock())
+
+    exchange_ws = ExchangeWS(config, ccxt_object)
+    exchange_ws._stopping = True
+
+    await exchange_ws._unwatch_orderbook("ETH/BTC")
+
+    assert ccxt_object.un_watch_order_book_for_symbols.call_count == 0
+    assert log_has_re("Shutting down - skipping orderbook unwatch for ETH/BTC", caplog)
+
+
+async def test_exchangews_watch_orderbook(mocker, time_machine, caplog):
+    config = MagicMock()
+    ccxt_object = MagicMock()
+    caplog.set_level(logging.DEBUG)
+
+    async def controlled_sleeper(*args, **kwargs):
+        # Sleep to pass control back to the event loop
+        await asyncio.sleep(0.1)
+        return MagicMock()
+
+    async def wait_for_condition(condition_func, timeout_=5.0, check_interval=0.01):
+        """Wait for a condition to be true with timeout."""
+        try:
+            async with asyncio.timeout(timeout_):
+                while True:
+                    if condition_func():
+                        return True
+                    await asyncio.sleep(check_interval)
+        except TimeoutError:
+            return False
+
+    ccxt_object.watch_order_book = AsyncMock(side_effect=controlled_sleeper)
+    ccxt_object.close = AsyncMock()
+    time_machine.move_to("2024-11-01 01:00:02 +00:00")
+
+    mocker.patch("freqtrade.exchange.exchange_ws.ExchangeWS._start_forever")
+
+    exchange_ws = ExchangeWS(config, ccxt_object, 50)
+    patch_eventloop_threading(exchange_ws)
+    try:
+        assert exchange_ws._ob_watching == set()
+        assert exchange_ws._ob_scheduled == set()
+
+        exchange_ws.schedule_orderbook("ETH/BTC")
+        exchange_ws.schedule_orderbook("XRP/BTC")
+
+        # Wait for both pairs to be watching and scheduled.
+        assert await wait_for_condition(
+            lambda: len(exchange_ws._ob_watching) == 2 and len(exchange_ws._ob_scheduled) == 2,
+            timeout_=2.0,
+        )
+        assert exchange_ws._ob_watching == {"ETH/BTC", "XRP/BTC"}
+        assert exchange_ws._ob_scheduled == {"ETH/BTC", "XRP/BTC"}
+
+        # The watch loop keeps calling watch_order_book for both pairs.
+        assert await wait_for_condition(
+            lambda: ccxt_object.watch_order_book.call_count >= 4, timeout_=3.0
+        )
+        watched_pairs = {c.args[0] for c in ccxt_object.watch_order_book.call_args_list}
+        assert watched_pairs == {"ETH/BTC", "XRP/BTC"}
+        # Subscribed at the configured depth - the stream carries no more than that.
+        assert all(c.args[1] == 50 for c in ccxt_object.watch_order_book.call_args_list)
+
+        # Each applied frame records a refresh time, so the feed reads as fresh.
+        assert await wait_for_condition(
+            lambda: exchange_ws._ob_last_refresh.keys() == {"ETH/BTC", "XRP/BTC"}, timeout_=2.0
+        )
+        assert exchange_ws.orderbook_is_fresh("ETH/BTC", 5)
+
+        # Move past the expiry window (timeout + 20s) and trigger the cleanup.
+        time_machine.shift(timedelta(seconds=exchange_ws.ob_timeout + 20))
+        exchange_ws.cleanup_expired()
+
+        # Both pairs get removed from the watchlist, and the tasks unschedule themselves.
+        assert await wait_for_condition(
+            lambda: exchange_ws._ob_watching == set() and exchange_ws._ob_scheduled == set(),
+            timeout_=2.0,
+        )
+        assert log_has_re("Removing ETH/BTC from orderbook watchlist", caplog)
+        assert log_has_re("Removing XRP/BTC from orderbook watchlist", caplog)
+        # Refresh tracking is cleaned up alongside the watchlist entry.
+        assert exchange_ws._ob_last_refresh == {}
+    finally:
+        # Cleanup
+        exchange_ws.cleanup()
+
+
+def test_exchangews_ohlcv_stopped_task_exception(mocker, caplog):
     config = MagicMock()
     ccxt_object = MagicMock()
     ccxt_object.ohlcvs = {
@@ -439,14 +798,14 @@ def test_exchangews_continuous_stopped_task_exception(mocker, caplog):
         side_effect=side_effect,
     )
 
-    exchange_ws._continuous_stopped(task, "ETH/USDT", "1m", CandleType.SPOT)
+    exchange_ws._ohlcv_stopped(task, "ETH/USDT", "1m", CandleType.SPOT)
 
     assert task not in exchange_ws._background_tasks
     assert paircomb not in exchange_ws._klines_scheduled
     assert paircomb not in exchange_ws._klines_last_refresh
     assert ccxt_object.ohlcvs["ETH/USDT"].get("1m") is None
     assert run_threadsafe.call_count == 1
-    assert log_has_re("Unhandled exception in watch task callback for ETH/USDT, 1m", caplog)
+    assert log_has_re("Unhandled exception in ohlcv watch task callback for ETH/USDT, 1m", caplog)
 
     exchange_ws.cleanup()
 
@@ -475,7 +834,7 @@ def test_exchangews_continuous_stopped_no_unwatch_while_stopping(mocker):
     task = MagicMock()
     task.cancelled.return_value = True
 
-    exchange_ws._continuous_stopped(task, "ETH/USDT", "1m", CandleType.SPOT)
+    exchange_ws._ohlcv_stopped(task, "ETH/USDT", "1m", CandleType.SPOT)
 
     # No unwatch scheduled - it would re-open the session we're closing.
     assert run_threadsafe.call_count == 0
@@ -496,4 +855,4 @@ async def test_exchangews_unwatch_while_stopping(mocker, caplog):
     await exchange_ws._unwatch_ohlcv("ETH/BTC", "1m", CandleType.SPOT)
 
     assert ccxt_object.un_watch_ohlcv_for_symbols.call_count == 0
-    assert log_has_re("Shutting down - skipping unwatch for ETH/BTC, 1m", caplog)
+    assert log_has_re("Shutting down - skipping OHLCV unwatch for ETH/BTC, 1m", caplog)

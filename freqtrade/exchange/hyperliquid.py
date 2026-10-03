@@ -42,7 +42,8 @@ class Hyperliquid(Exchange):
         "exchange_has_overrides": {"fetchTrades": False},
         "marketOrderRequiresPrice": True,
         "download_data_parallel_quick": False,
-        "ws_enabled": True,
+        # Hyperliquid's orderbook only updates every ~5 seconds
+        "ws_enabled": {"ohlcv": True, "orderbook": False},
     }
     _ft_has_futures: FtHas = {
         "stoploss_on_exchange": True,
