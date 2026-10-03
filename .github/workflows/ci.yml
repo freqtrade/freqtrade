@@ -24,7 +24,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ "ubuntu-22.04", "ubuntu-24.04", "ubuntu-26.04", "ubuntu-24.04-arm", "macos-15" , "windows-2022", "windows-2025" ]
+        os: [ "ubuntu-22.04", "ubuntu-24.04", "ubuntu-26.04", "ubuntu-24.04-arm", "macos-15" , "macos-26", "windows-2022", "windows-2025" ]
         python-version: ["3.11", "3.12", "3.13", "3.14"]
         exclude:
           - os: "ubuntu-22.04"
