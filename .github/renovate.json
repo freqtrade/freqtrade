@@ -1,0 +1,10 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "local>freqtrade/renovate-config"
+  ],
+  "timezone": "Europe/Berlin",
+  "schedule": [
+    "* 0-5 * * 1"
+  ]
+}
