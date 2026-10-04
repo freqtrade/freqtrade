@@ -16,10 +16,18 @@ jobs:
     runs-on: ubuntu-24.04
     # Only run this job for pull requests created by dependabot[bot]
     if: >
-      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      (
+        (
+          github.event.pull_request.user.login == 'dependabot[bot]' &&
+          startsWith(github.head_ref, 'dependabot/')
+        ) ||
+        (
+          github.event.pull_request.user.login == 'renovate[bot]' &&
+          startsWith(github.head_ref, 'renovate/')
+        )
+      ) &&
       github.repository == github.event.pull_request.head.repo.full_name &&
-      github.event_name == 'pull_request' &&
-      startsWith(github.head_ref, 'dependabot/')
+      github.event_name == 'pull_request'
 
     environment:
       name: dependabot-pulls
