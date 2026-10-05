@@ -178,9 +178,6 @@ exclude = [
     '^build_helpers\.py$',
     '^ft_client/build/.*$',
 ]
-plugins = [
-  "sqlalchemy.ext.mypy.plugin"
-]
 
 [[tool.mypy.overrides]]
 module = "tests.*"

@@ -2135,6 +2135,7 @@ class Trade(ModelBase, LocalTrade):
         for _, enter_tag, exit_reason, profit, profit_abs, count in mix_tag_perf:
             enter_tag = enter_tag if enter_tag is not None else "Other"
             exit_reason = exit_reason if exit_reason is not None else "Other"
+            profit = profit or 0.0
 
             if exit_reason is not None and enter_tag is not None:
                 mix_tag = enter_tag + " " + exit_reason
