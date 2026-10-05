@@ -3,6 +3,6 @@
 
 # Required for hyperopt
 scikit-learn==1.9.1
-filelock==4.0.1
+filelock==4.0.4
 optuna==5.0.0
 cmaes==0.13.1
