@@ -3,7 +3,7 @@ import logging
 import time
 from collections.abc import Callable
 from functools import wraps
-from typing import Any, TypeVar, cast, overload
+from typing import Any, cast, overload
 
 from freqtrade.exceptions import DDosProtection, RetryableOrderError, TemporaryError
 from freqtrade.mixins import LoggingMixin
@@ -157,23 +157,16 @@ def retrier_async(f):
     return wrapper
 
 
-F = TypeVar("F", bound=Callable[..., Any])
-
-
 # Type shenanigans
 @overload
-def retrier(_func: F) -> F: ...
+def retrier[F: Callable[..., Any]](_func: F, *, retries: int = API_RETRY_COUNT) -> F: ...
 
 
 @overload
-def retrier(_func: F, *, retries=API_RETRY_COUNT) -> F: ...
+def retrier[F: Callable[..., Any]](*, retries: int = API_RETRY_COUNT) -> Callable[[F], F]: ...
 
 
-@overload
-def retrier(*, retries=API_RETRY_COUNT) -> Callable[[F], F]: ...
-
-
-def retrier(_func: F | None = None, *, retries=API_RETRY_COUNT):
+def retrier[F: Callable[..., Any]](_func: F | None = None, *, retries: int = API_RETRY_COUNT):
     def decorator(f: F) -> F:
         @wraps(f)
         def wrapper(*args, **kwargs):
