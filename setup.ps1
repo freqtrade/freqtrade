@@ -9,8 +9,8 @@ $VenvName = ".venv"
 $VenvDir = Join-Path $PSScriptRoot $VenvName
 
 # Supported Python minor versions (detection order: prefer newest first)
-$SupportedMinorVersions = @(14,13,12,11)
-# Build a human-readable supported versions string like "3.11, 3.12 3.13 and 3.14"
+$SupportedMinorVersions = @(14,13,12)
+# Build a human-readable supported versions string like "3.12 3.13 and 3.14"
 $asc = $SupportedMinorVersions | Sort-Object
 if ($asc.Count -eq 1) {
   $SupportedPythonVersions = "3.$($asc[0])"
@@ -193,7 +193,7 @@ function Main {
   "Starting the operations..." | Out-File $LogFilePath -Append
   "Current directory: $(Get-Location)" | Out-File $LogFilePath -Append
 
-  # Exit on lower versions than Python 3.11 or when Python executable not found
+  # Exit on lower versions than Python 3.12 or when Python executable not found
   $PythonExecutable = Find-PythonExecutable
   if ($null -eq $PythonExecutable) {
     Write-Log "No suitable Python executable found. Supported versions are: $SupportedPythonVersions. Please install one of these and ensure it's available in the system PATH." -Level 'ERROR'
