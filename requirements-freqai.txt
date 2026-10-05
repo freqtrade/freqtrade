@@ -7,6 +7,6 @@ scikit-learn==1.9.1
 joblib==1.6.0
 cloudpickle==3.1.2
 lightgbm==4.7.0
-xgboost==3.2.0
+xgboost==3.4.1
 tensorboard==2.21.0
 datasieve==0.1.9
