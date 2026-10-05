@@ -4,6 +4,10 @@
     "local>freqtrade/renovate-config"
   ],
   "timezone": "Europe/Berlin",
+  "constraints": {
+    "python": ">=3.11"
+  },
+  "constraintsFiltering": "strict",
   "schedule": [
     "* 0-5 * * 1"
   ],
