@@ -89,10 +89,13 @@ OS Specific steps are listed first, the common section below is necessary for al
         The `setup.sh` script will install these dependencies for you - assuming brew is installed on your system.
 
 === "RaspberryPi/Raspbian"
-    The following assumes the latest [Raspbian Buster lite image](https://www.raspberrypi.org/downloads/raspbian/).
+    !!! Warning "Raspberry Pi ARM Architecture"
+        We recommend to use arm64 architecture for better performance.
+
+    The following assumes the latest [Raspbian Pi OS Lite (trixie)](https://www.raspberrypi.com/software/).
     This image comes with python3.13 preinstalled, making it easy to get freqtrade up and running.
 
-    Tested using a Raspberry Pi 3 with the Raspbian Buster lite image, all updates applied.
+    Tested using a Raspberry Pi 3 with the Raspbian Pi OS Lite (trixie) image, all updates applied.
 
 
     ```bash
