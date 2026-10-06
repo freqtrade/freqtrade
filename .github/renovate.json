@@ -13,7 +13,15 @@
   ],
   "packageRules": [
     {
-      "description": "Bump scipy and scipy-stubs together.",
+      "description": "Only propose Python releases that support our minimum Python version (requires-python in pyproject.toml).",
+      "matchDatasources": ["pypi"],
+      "constraints": {
+        "python": ">=3.11"
+      },
+      "constraintsFiltering": "strict"
+    },
+    {
+      "description": "Keep scipy and scipy-stubs updates in their own PR, so both are bumped together.",
       "matchDatasources": ["pypi"],
       "matchPackageNames": ["scipy", "scipy-stubs"],
       "groupName": "scipy",
