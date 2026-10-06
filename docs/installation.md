@@ -92,10 +92,10 @@ OS Specific steps are listed first, the common section below is necessary for al
     !!! Warning "Raspberry Pi ARM Architecture"
         We recommend to use arm64 architecture for better performance.
 
-    The following assumes the latest [Raspbian Pi OS Lite (trixie)](https://www.raspberrypi.com/software/).
+    The following assumes the latest [Raspberry Pi OS Lite (trixie)](https://www.raspberrypi.com/software/).
     This image comes with python3.13 preinstalled, making it easy to get freqtrade up and running.
 
-    Tested using a Raspberry Pi 3 with the Raspbian Pi OS Lite (trixie) image, all updates applied.
+    Tested using a Raspberry Pi 3 with the Raspberry Pi OS Lite (trixie) image, all updates applied.
 
 
     ```bash
