@@ -90,7 +90,7 @@ OS Specific steps are listed first, the common section below is necessary for al
 
 === "RaspberryPi/Raspbian"
     The following assumes the latest [Raspbian Buster lite image](https://www.raspberrypi.org/downloads/raspbian/).
-    This image comes with python3.11 preinstalled, making it easy to get freqtrade up and running.
+    This image comes with python3.13 preinstalled, making it easy to get freqtrade up and running.
 
     Tested using a Raspberry Pi 3 with the Raspbian Buster lite image, all updates applied.
 
