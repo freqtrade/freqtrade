@@ -5,7 +5,7 @@
   ],
   "timezone": "Europe/Berlin",
   "constraints": {
-    "python": ">=3.11"
+    "python": ">=3.12"
   },
   "constraintsFiltering": "strict",
   "schedule": [
