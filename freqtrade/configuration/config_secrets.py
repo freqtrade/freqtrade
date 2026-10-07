@@ -21,6 +21,7 @@ _SENSITIVE_KEYS = [
     "discord.webhook_url",
     "api_server.password",
     "api_server.jwt_secret_key",
+    "api_server.ws_token",
     "webhook.url",
     "coingecko.api_key",
 ]
