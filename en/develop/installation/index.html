@@ -2733,7 +2733,7 @@ The <code>stable</code> branch contains the code of the last release (done usual
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Either <a href="https://docs.astral.sh/uv/">uv</a>, or Python3.11 or higher and the corresponding <code>pip</code> are assumed to be available. The install-script will warn you and stop if that's not the case. <code>git</code> is also needed to clone the Freqtrade repository.<br />
+<p>Either <a href="https://docs.astral.sh/uv/">uv</a>, or Python3.12 or higher and the corresponding <code>pip</code> are assumed to be available. The install-script will warn you and stop if that's not the case. <code>git</code> is also needed to clone the Freqtrade repository.<br />
 Also, python headers (<code>python&lt;yourversion&gt;-dev</code> / <code>python&lt;yourversion&gt;-devel</code>) must be available for the installation to complete successfully.</p>
 </div>
 <div class="admonition warning">
@@ -2750,7 +2750,7 @@ While native installation is possible with some manual effort, this is not suppo
 </div>
 <h3 id="install-guide">Install guide<a class="headerlink" href="#install-guide" title="Permanent link">&para;</a></h3>
 <ul>
-<li><a href="http://docs.python-guide.org/en/latest/starting/installation/">Python &gt;= 3.11</a></li>
+<li><a href="http://docs.python-guide.org/en/latest/starting/installation/">Python &gt;= 3.12</a></li>
 <li><a href="https://pip.pypa.io/en/stable/installing/">pip</a></li>
 <li><a href="https://git-scm.com/book/en/v2/Getting-Started-Installing-Git">git</a></li>
 <li><a href="https://virtualenv.pypa.io/en/stable/installation.html">virtualenv</a> (Recommended)</li>
@@ -2760,7 +2760,7 @@ While native installation is possible with some manual effort, this is not suppo
 OS Specific steps are listed first, the common section below is necessary for all systems.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Python3.11 or higher and the corresponding pip are assumed to be available.</p>
+<p>Python3.12 or higher and the corresponding pip are assumed to be available.</p>
 </div>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Debian/Ubuntu</label><label for="__tabbed_1_2">MacOS</label><label for="__tabbed_1_3">RaspberryPi/Raspbian</label></div>
 <div class="tabbed-content">
@@ -2789,9 +2789,9 @@ brew<span class="w"> </span>install<span class="w"> </span>gettext<span class="w
 <p class="admonition-title">Raspberry Pi ARM Architecture</p>
 <p>We recommend to use arm64 architecture for better performance.</p>
 </div>
-<p>The following assumes the latest <a href="https://www.raspberrypi.com/software/">Raspbian Pi OS Lite (trixie)</a>.
+<p>The following assumes the latest <a href="https://www.raspberrypi.com/software/">Raspberry Pi OS Lite (trixie)</a>.
 This image comes with python3.13 preinstalled, making it easy to get freqtrade up and running.</p>
-<p>Tested using a Raspberry Pi 3 with the Raspbian Pi OS Lite (trixie) image, all updates applied.</p>
+<p>Tested using a Raspberry Pi 3 with the Raspberry Pi OS Lite (trixie) image, all updates applied.</p>
 <div class="highlight"><pre><span></span><code>sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>python3-venv<span class="w"> </span>libatlas-base-dev<span class="w"> </span>cmake<span class="w"> </span>curl<span class="w"> </span>libffi-dev
 <span class="c1"># Use piwheels.org to speed up installation</span>
 sudo<span class="w"> </span><span class="nb">printf</span><span class="w"> </span><span class="s2">"[global]\nextra-index-url=https://www.piwheels.org/simple"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sudo<span class="w"> </span>tee<span class="w"> </span>/etc/pip.conf
@@ -2856,7 +2856,7 @@ git<span class="w"> </span>checkout<span class="w"> </span>develop
 <div class="highlight"><pre><span></span><code>** --install **
 
 With this option, the script will install the bot and most dependencies:
-You will need to have git and python3.11+ installed beforehand for this to work.
+You will need to have git and python3.12+ installed beforehand for this to work.
 
 * Mandatory software as: `ta-lib`
 * Setup your virtualenv under `.venv/`
