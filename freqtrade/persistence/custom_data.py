@@ -4,7 +4,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from typing import Any, ClassVar
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, select
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, func, select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from freqtrade.constants import DATETIME_PRINT_FORMAT
@@ -73,7 +73,7 @@ class _CustomData(ModelBase):
         if trade_id is not None:
             filters.append(_CustomData.ft_trade_id == trade_id)
         if key is not None:
-            filters.append(_CustomData.cd_key.ilike(key))
+            filters.append(func.lower(_CustomData.cd_key) == key.lower())
 
         return _CustomData.session.scalars(select(_CustomData).filter(*filters)).all()
 
@@ -116,7 +116,7 @@ class CustomDataWrapper:
         if CustomDataWrapper.use_db:
             filters = [_CustomData.ft_trade_id == trade_id]
             if key is not None:
-                filters.append(_CustomData.cd_key.ilike(key))
+                filters.append(func.lower(_CustomData.cd_key) == key.lower())
             _CustomData.session.query(_CustomData).filter(*filters).delete()
             _CustomData.session.commit()
         else:
@@ -136,7 +136,7 @@ class CustomDataWrapper:
                 _CustomData.ft_trade_id == trade_id,
             ]
             if key is not None:
-                filters.append(_CustomData.cd_key.ilike(key))
+                filters.append(func.lower(_CustomData.cd_key) == key.lower())
             filtered_custom_data = _CustomData.session.scalars(
                 select(_CustomData).filter(*filters)
             ).all()

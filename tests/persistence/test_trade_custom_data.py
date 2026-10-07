@@ -97,6 +97,42 @@ def test_trade_custom_data_delete(fee, use_db):
         enable_database_use()
 
 
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize("use_db", [True, False])
+def test_trade_custom_data_no_wildcards(fee, use_db):
+    if not use_db:
+        disable_database_use("5m")
+    Trade.reset_trades()
+    CustomDataWrapper.reset_custom_data()
+
+    create_mock_trades_usdt(fee, use_db=use_db)
+
+    trade1 = Trade.get_trades_proxy()[0]
+    if not use_db:
+        trade1.id = 1
+
+    # "_" and "%" are LIKE wildcards - keys must still match literally.
+    trade1.set_custom_data("gridXcount", 1)
+    trade1.set_custom_data("grid_count", 2)
+    trade1.set_custom_data("grid%", 3)
+    assert len(trade1.get_all_custom_data()) == 3
+    assert trade1.get_custom_data("gridXcount") == 1
+    assert trade1.get_custom_data("grid_count") == 2
+    assert trade1.get_custom_data("GRID_COUNT") == 2
+    assert trade1.get_custom_data("grid%") == 3
+    assert trade1.get_custom_data("grid_") is None
+
+    trade1.delete_custom_data("grid_count")
+    assert trade1.get_custom_data("gridXcount") == 1
+    assert trade1.get_custom_data("grid_count") is None
+    trade1.delete_custom_data("grid%")
+    assert trade1.get_custom_data("gridXcount") == 1
+    assert len(trade1.get_all_custom_data()) == 1
+
+    if not use_db:
+        enable_database_use()
+
+
 def test_trade_custom_data_strategy_compat(mocker, default_conf_usdt, fee):
     mocker.patch(f"{EXMS}.get_rate", return_value=0.50)
     mocker.patch("freqtrade.freqtradebot.FreqtradeBot.get_real_amount", return_value=None)
