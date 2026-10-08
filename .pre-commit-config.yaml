@@ -25,7 +25,7 @@ repos:
           - types-requests==2.33.0.20260906
           - types-tabulate==0.10.0.20260508
           - types-python-dateutil==2.9.0.20260807
-          - scipy-stubs==1.17.1.5
+          - scipy-stubs==1.18.1.1
           - SQLAlchemy==2.1.1
         # stages: [push]
 
