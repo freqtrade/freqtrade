@@ -23,7 +23,7 @@ time-machine==3.5.1
 nbconvert==7.17.1
 
 # mypy types
-scipy-stubs==1.17.1.5  # keep in sync with `scipy` in `requirements.txt`
+scipy-stubs==1.18.1.1  # keep in sync with `scipy` in `requirements.txt`
 types-cachetools==7.0.0.20260713
 types-filelock==3.2.7
 types-requests==2.33.0.20260906

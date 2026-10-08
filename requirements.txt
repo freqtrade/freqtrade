@@ -3,8 +3,7 @@ numpy==2.4.5; platform_machine == 'armv7l'
 pandas==3.0.6
 bottleneck==1.6.0
 numexpr==2.14.2
-scipy==1.17.1; platform_machine != 'armv7l'
-scipy==1.17.0; platform_machine == 'armv7l'
+scipy==1.18.1
 # Indicator libraries
 ft-pandas-ta==0.3.16
 ta-lib==0.8.1
