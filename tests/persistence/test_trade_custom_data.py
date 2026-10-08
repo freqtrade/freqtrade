@@ -100,6 +100,9 @@ def test_trade_custom_data_update_type(fee, use_db, initial_value, updated_value
             trade.set_custom_data("test_value", value)
             result = trade.get_custom_data("test_value")
             assert result == value
+            # Require an exact type match: bool subclasses int, so isinstance(True, int)
+            # would incorrectly accept a boolean when an integer is expected.
+            # We must make sure the type really changed to the expected type.
             assert type(result) is type(value)
 
             entry = trade.get_custom_data_entry("test_value")
