@@ -174,6 +174,7 @@ class CustomDataWrapper:
         custom_data = CustomDataWrapper.get_custom_data(trade_id=trade_id, key=key)
         if custom_data:
             data_entry = custom_data[0]
+            data_entry.cd_type = value_type
             data_entry.cd_value = value_db
             data_entry.updated_at = dt_now()
         else:
