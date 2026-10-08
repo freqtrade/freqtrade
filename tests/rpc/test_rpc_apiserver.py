@@ -920,6 +920,40 @@ def test_api_custom_data_single_trade(botclient, fee):
 
 
 @pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize("key", [None, "test_str"], ids=["empty-trade", "missing-key"])
+def test_api_custom_data_open_trades_first_trade_no_matching_data(botclient, fee, key):
+    _, client = botclient
+    create_mock_trades_usdt(fee, use_db=True)
+    open_trades = sorted(Trade.get_trades_proxy(is_open=True), key=lambda trade: trade.id)
+    first_trade, second_trade = open_trades[:2]
+
+    assert first_trade.get_all_custom_data() == []
+    if key is not None:
+        first_trade.set_custom_data("other_key", "other_value")
+        assert first_trade.get_custom_data("other_key") == "other_value"
+        assert first_trade.get_custom_data_entry(key) is None
+    second_trade.set_custom_data("test_str", "test_value")
+
+    query = f"?key={key}" if key is not None else ""
+    rc = client_get(client, f"{BASE_URI}/trades/open/custom-data{query}")
+    assert_response(rc)
+    assert rc.json() == [
+        {
+            "trade_id": second_trade.id,
+            "custom_data": [
+                {
+                    "key": "test_str",
+                    "type": "str",
+                    "value": "test_value",
+                    "created_at": ANY,
+                    "updated_at": None,
+                }
+            ],
+        }
+    ]
+
+
+@pytest.mark.usefixtures("init_persistence")
 def test_api_custom_data_multiple_open_trades(botclient, fee):
     use_db = True
     Trade.use_db = use_db
