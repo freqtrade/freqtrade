@@ -88,7 +88,7 @@ class ExternalMessageConsumer:
         self._initial_requests: list[WSRequestSchema] = [
             WSSubscribeRequest(data=self.topics),
             WSWhitelistRequest(),
-            WSAnalyzedDFRequest(),
+            WSAnalyzedDFRequest(data={"limit": self.initial_candle_limit, "pair": None}),
         ]
 
         # Specify which function to use for which RPCMessageType
