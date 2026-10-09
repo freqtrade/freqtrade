@@ -911,8 +911,8 @@ def test_api_custom_data_single_trade(botclient, fee):
 
     # CASE 3 Checking specific not existing key custom data of trade 1
     rc = client_get(client, f"{BASE_URI}/trades/1/custom-data?key=test")
-    assert_response(rc, 404)
-    assert rc.json()["detail"] == "No custom-data with key 'test' found for Trade ID: 1."
+    assert_response(rc)
+    assert rc.json() == []
 
     # CASE 4 Trying to get custom-data from not existing trade
     rc = client_get(client, f"{BASE_URI}/trades/13/custom-data")
@@ -955,6 +955,34 @@ def test_api_custom_data_open_trades_first_trade_no_matching_data(botclient, fee
 
 
 @pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize("trade_id", [1, "open"])
+def test_api_custom_data_empty(botclient, fee, trade_id):
+    _, client = botclient
+    create_mock_trades_usdt(fee, use_db=True)
+
+    rc = client_get(client, f"{BASE_URI}/trades/{trade_id}/custom-data")
+    assert_response(rc)
+    assert rc.json() == []
+
+
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize("empty_page", [False, True], ids=["no-open-trades", "past-last-page"])
+def test_api_custom_data_open_trades_empty_page(botclient, fee, empty_page):
+    _, client = botclient
+    offset = 0
+    if empty_page:
+        create_mock_trades_usdt(fee, use_db=True)
+        open_trades = Trade.get_trades_proxy(is_open=True)
+        for trade in open_trades:
+            trade.set_custom_data("test_str", "test_value")
+        offset = len(open_trades)
+
+    rc = client_get(client, f"{BASE_URI}/trades/open/custom-data?offset={offset}")
+    assert_response(rc)
+    assert rc.json() == []
+
+
+@pytest.mark.usefixtures("init_persistence")
 def test_api_custom_data_open_trades_missing_key(botclient, fee):
     _, client = botclient
     create_mock_trades_usdt(fee, use_db=True)
@@ -962,10 +990,8 @@ def test_api_custom_data_open_trades_missing_key(botclient, fee):
         trade.set_custom_data("other_key", "other_value")
 
     rc = client_get(client, f"{BASE_URI}/trades/open/custom-data?key=missing_key")
-    assert_response(rc, 404)
-    assert rc.json() == {
-        "detail": "No custom-data with key 'missing_key' found for any open trades."
-    }
+    assert_response(rc)
+    assert rc.json() == []
 
 
 @pytest.mark.usefixtures("init_persistence")
