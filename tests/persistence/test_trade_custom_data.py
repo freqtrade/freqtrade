@@ -58,6 +58,65 @@ def test_trade_custom_data(fee, use_db):
 
 
 @pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize("use_db", [True, False], ids=["database", "memory"])
+@pytest.mark.parametrize(
+    "initial_value",
+    [
+        pytest.param(1, id="from-int"),
+        pytest.param(1.0, id="from-float"),
+        pytest.param("initial", id="from-str"),
+        pytest.param(True, id="from-bool"),
+        pytest.param([1, "initial"], id="from-list"),
+        pytest.param({"initial": 1}, id="from-dict"),
+        pytest.param(None, id="from-none"),
+    ],
+)
+@pytest.mark.parametrize(
+    "updated_value",
+    [
+        pytest.param(2, id="to-int"),
+        pytest.param(3.1456, id="to-float"),
+        pytest.param("updated", id="to-str"),
+        pytest.param(False, id="to-bool"),
+        pytest.param([3.1456, {"updated": False}], id="to-list"),
+        pytest.param({"updated": [3.1456, False, None]}, id="to-dict"),
+        pytest.param(None, id="to-none"),
+    ],
+)
+def test_trade_custom_data_update_type(fee, use_db, initial_value, updated_value):
+    if not use_db:
+        disable_database_use("5m")
+
+    try:
+        Trade.reset_trades()
+        CustomDataWrapper.reset_custom_data()
+        create_mock_trades_usdt(fee, use_db=use_db)
+
+        trade = Trade.get_trades_proxy()[0]
+        if not use_db:
+            trade.id = 1
+
+        for value in (initial_value, updated_value):
+            trade.set_custom_data("test_value", value)
+            result = trade.get_custom_data("test_value")
+            assert result == value
+            # Require an exact type match: bool subclasses int, so isinstance(True, int)
+            # would incorrectly accept a boolean when an integer is expected.
+            # We must make sure the type really changed to the expected type.
+            assert type(result) is type(value)
+
+            entry = trade.get_custom_data_entry("test_value")
+            assert entry is not None
+            assert entry.cd_type == type(value).__name__
+            assert len(trade.get_all_custom_data()) == 1
+    finally:
+        if not use_db:
+            CustomDataWrapper.reset_custom_data()
+            Trade.reset_trades()
+            enable_database_use()
+
+
+@pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize("use_db", [True, False])
 def test_trade_custom_data_delete(fee, use_db):
     if not use_db:

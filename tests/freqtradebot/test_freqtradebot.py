@@ -4750,7 +4750,7 @@ def test_check_for_open_trades(mocker, default_conf_usdt, fee, is_short):
 
 @pytest.mark.parametrize("is_short", [False, True])
 @pytest.mark.usefixtures("init_persistence")
-def test_startup_update_open_orders(mocker, default_conf_usdt, fee, caplog, is_short):
+def test_startup_update_open_orders(mocker, default_conf_usdt, fee, caplog, is_short, time_machine):
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
     create_mock_trades(fee, is_short=is_short)
     mocker.patch(f"{EXMS}._dry_is_price_crossed", return_value=False)
@@ -4781,7 +4781,15 @@ def test_startup_update_open_orders(mocker, default_conf_usdt, fee, caplog, is_s
 
     mocker.patch(f"{EXMS}.fetch_order", side_effect=InvalidOrderException)
     hto_mock = mocker.patch("freqtrade.freqtradebot.FreqtradeBot.handle_cancel_order")
+    # Recent orders which are not found should be kept open.
+    caplog.clear()
+    freqtrade.startup_update_open_orders()
+    assert not log_has_re(r"Order is older than \d days.*", caplog)
+    assert hto_mock.call_count == 0
+    assert len(Order.get_open_orders()) == 3
+
     # Orders which are no longer found after X days should be assumed as canceled.
+    time_machine.move_to(dt_now() + timedelta(days=6))
     freqtrade.startup_update_open_orders()
     assert log_has_re(r"Order is older than \d days.*", caplog)
     assert hto_mock.call_count == 3

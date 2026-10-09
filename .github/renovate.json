@@ -5,20 +5,22 @@
   ],
   "timezone": "Europe/Berlin",
   "constraints": {
-    "python": ">=3.12"
+    "python": "3.12"
   },
   "constraintsFiltering": "strict",
+  "pip_requirements": {
+    "managerFilePatterns": ["/(^|/)requirements-freqai-rl\\.txt$/"]
+  },
   "schedule": [
     "* 0-5 * * 1"
   ],
   "packageRules": [
     {
-      "description": "Only propose Python releases that support our minimum Python version (requires-python in pyproject.toml).",
-      "matchDatasources": ["pypi"],
-      "constraints": {
-        "python": ">=3.11"
-      },
-      "constraintsFiltering": "strict"
+      "description": "constraints.python is our minimum supported Python version - don't bump it to the latest Python release.",
+      "matchManagers": ["renovate-config"],
+      "matchDepTypes": ["tool-constraint"],
+      "matchDepNames": ["python"],
+      "enabled": false
     },
     {
       "description": "Keep scipy and scipy-stubs updates in their own PR, so both are bumped together.",
@@ -26,6 +28,21 @@
       "matchPackageNames": ["scipy", "scipy-stubs"],
       "groupName": "scipy",
       "groupSlug": "scipy"
+    },
+    {
+      "description": "Keep scikit-learn updates in their own PR, so the freqai and hyperopt pins are bumped together.",
+      "matchDatasources": ["pypi"],
+      "matchPackageNames": ["scikit-learn"],
+      "groupName": "scikit-learn",
+      "groupSlug": "scikit-learn"
+    },
+    {
+      "description": "Keep freqai dependencies in their own PR - they can't usually be safely updated together with the rest. scikit-learn is excluded, as it's shared with hyperopt.",
+      "matchDatasources": ["pypi"],
+      "matchFileNames": ["requirements-freqai.txt", "requirements-freqai-rl.txt"],
+      "matchPackageNames": ["!scikit-learn"],
+      "groupName": "freqai",
+      "groupSlug": "freqai"
     }
   ]
 }

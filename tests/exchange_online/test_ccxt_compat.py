@@ -488,16 +488,17 @@ class TestCCXTExchange:
         candle_type = CandleType.from_string(
             exchange.get_option("mark_ohlcv_price", default=CandleType.MARK)
         )
-        pair_tf = (pair, "1h", candle_type)
+        expected_tf = "1h"
+        pair_tf = (pair, expected_tf, candle_type)
+        # Determine the open candle before fetching - otherwise the hour can roll over
+        # between the request and the assertion.
+        this_hour = timeframe_to_prev_date(expected_tf)
+        prev_hour = timeframe_to_prev_date(expected_tf, this_hour - timedelta(minutes=1))
 
         mark_ohlcv = exchange.refresh_latest_ohlcv([pair_tf], since_ms=since, drop_incomplete=False)
 
         assert isinstance(mark_ohlcv, dict)
-        expected_tf = "1h"
         mark_candles = mark_ohlcv[pair_tf]
-
-        this_hour = timeframe_to_prev_date(expected_tf)
-        prev_hour = timeframe_to_prev_date(expected_tf, this_hour - timedelta(minutes=1))
 
         # Mark price must be available for the currently open candle (as well as older candles,
         # even though the test only asserts the last two).
