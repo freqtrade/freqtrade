@@ -132,10 +132,16 @@ class Binance(Exchange):
                 self._log_exchange_response("multi_asset_margin", assets_margin)
                 msg = ""
                 if position_side.get("dualSidePosition") is True:
-                    msg += (
-                        "\nHedge Mode is not supported by freqtrade. "
-                        "Please change 'Position Mode' on your binance futures account."
-                    )
+                    if self._config.get("hedge_mode", False):
+                        logger.info(
+                            "Binance: Hedge Mode (dual side position) detected and supported "
+                            "via hedge_mode."
+                        )
+                    else:
+                        msg += (
+                            "\nHedge Mode is not supported by freqtrade. "
+                            "Please change 'Position Mode' on your binance futures account."
+                        )
                 if (
                     assets_margin.get("multiAssetsMargin") is True
                     and self.margin_mode != MarginMode.CROSS

@@ -1486,6 +1486,11 @@ class Exchange:
             params.update({"timeInForce": time_in_force.upper()})
         if reduceOnly:
             params.update({"reduceOnly": True})
+        if self._config.get("hedge_mode", False) and self.trading_mode == TradingMode.FUTURES:
+            # Hedge mode: explicitly tag the position side so the exchange can hold
+            # a long and a short for the same pair at the same time.
+            # Enter (buy/sell) -> long/short; reduceOnly reverses the side.
+            params["positionSide"] = "long" if (side == "buy") == (not reduceOnly) else "short"
         return params
 
     def _order_needs_price(self, side: BuySell, ordertype: str) -> bool:
@@ -1620,6 +1625,9 @@ class Exchange:
         params = self._params.copy()
         # Verify if stopPrice works for your exchange, else configure stop_price_param
         params.update({self._ft_has["stop_price_param"]: stop_price})
+        if self._config.get("hedge_mode", False) and self.trading_mode == TradingMode.FUTURES:
+            # Stoploss always reduces a position - derive the side to close.
+            params["positionSide"] = "long" if side == "sell" else "short"
         return params
 
     @retrier(retries=0)
@@ -4263,6 +4271,11 @@ class Exchange:
             )
         else:
             positions = self.fetch_positions(pair)
+            if self._config.get("hedge_mode", False):
+                # In hedge mode the same symbol can have two positions - pick the
+                # one matching the trade's direction.
+                target_side = "short" if is_short else "long"
+                positions = [p for p in positions if p.get("side") == target_side]
             if len(positions) > 0:
                 pos = positions[0]
                 liquidation_price = pos["liquidationPrice"]

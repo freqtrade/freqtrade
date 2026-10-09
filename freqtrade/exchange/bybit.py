@@ -88,7 +88,9 @@ class Bybit(Exchange):
         try:
             if not self._config["dry_run"]:
                 if self.trading_mode == TradingMode.FUTURES:
-                    position_mode = self._api.set_position_mode(False)
+                    position_mode = self._api.set_position_mode(
+                        self._config.get("hedge_mode", False)
+                    )
                     self._log_exchange_response("set_position_mode", position_mode)
                 is_unified = self._api.is_unified_enabled()
                 # Returns a tuple of bools, first for margin, second for Account
@@ -131,7 +133,14 @@ class Bybit(Exchange):
             time_in_force=time_in_force,
         )
         if self.trading_mode == TradingMode.FUTURES and self.margin_mode:
-            params["position_idx"] = 0
+            if self._config.get("hedge_mode", False):
+                # Map the base-class positionSide onto bybit's position_idx
+                # (0=one-way, 1=long, 2=short) and drop the unused positionSide key.
+                position_side = "long" if (side == "buy") == (not reduceOnly) else "short"
+                params["position_idx"] = 1 if position_side == "long" else 2
+                params.pop("positionSide", None)
+            else:
+                params["position_idx"] = 0
         return params
 
     def _get_stop_params(self, side: BuySell, ordertype: str, stop_price: float) -> dict:

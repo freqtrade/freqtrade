@@ -95,6 +95,14 @@ class Okx(Exchange):
                 self._log_exchange_response("fetch_accounts", accounts)
                 if len(accounts) > 0:
                     self.net_only = accounts[0].get("info", {}).get("posMode") == "net_mode"
+            if self._config.get("hedge_mode", False):
+                if self.net_only:
+                    logger.warning(
+                        "Okx: hedge_mode is enabled but the account is in 'net_mode'. "
+                        "Enable 'long/short' position mode on the OKX account for hedging."
+                    )
+                # Force long/short semantics so _get_posSide emits posSide.
+                self.net_only = False
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.OperationFailed, ccxt.ExchangeError) as e:

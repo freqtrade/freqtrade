@@ -41,7 +41,7 @@ class Wallets:
         self._is_backtest = is_backtest
         self._exchange = exchange
         self._wallets: dict[str, Wallet] = {}
-        self._positions: dict[str, PositionWallet] = {}
+        self._positions: dict[tuple[str, str], PositionWallet] = {}
         self._start_cap: dict[str, float] = {}
 
         self._stake_currency = self._exchange.get_proxy_coin()
@@ -93,6 +93,18 @@ class Wallets:
             )
         return self.get_total(self._stake_currency)
 
+    def _pos_key(self, pair: str, is_short: bool) -> tuple[str, str]:
+        """
+        Position dictionary key.
+
+        In hedge mode each symbol can hold a long and a short simultaneously, so the
+        key is the (symbol, side) tuple. In default (net) mode a symbol only ever has
+        a single position, so we key it under "long" to keep behaviour unchanged.
+        """
+        if self._config.get("hedge_mode", False):
+            return (pair, "short" if is_short else "long")
+        return (pair, "long")
+
     def get_owned(self, pair: str, base_currency: str) -> float:
         """
         Get currently owned value.
@@ -100,7 +112,9 @@ class Wallets:
         """
         if self._config.get("trading_mode", "spot") != TradingMode.FUTURES:
             return self.get_total(base_currency) or 0
-        if pos := self._positions.get(pair):
+        if self._config.get("hedge_mode", False):
+            return sum(p.position for k, p in self._positions.items() if k[0] == pair)
+        if pos := self._positions.get((pair, "long")):
             return pos.position
         return 0
 
@@ -146,7 +160,7 @@ class Wallets:
                 )
         else:
             for position in open_trades:
-                _positions[position.pair] = PositionWallet(
+                _positions[self._pos_key(position.pair, position.is_short)] = PositionWallet(
                     position.pair,
                     position=position.amount,
                     leverage=position.leverage,
@@ -211,7 +225,7 @@ class Wallets:
                 trade = Trade.get_trades_proxy(is_open=True, pair=symbol)
                 leverage = trade[0].leverage if trade else None
             unrealized_pnl = float(position.get("unrealizedPnl") or 0.0)  # type: ignore[arg-type]
-            _parsed_positions[symbol] = PositionWallet(
+            _parsed_positions[(symbol, position["side"] or "long")] = PositionWallet(
                 symbol,
                 position=size,
                 leverage=leverage,
@@ -266,7 +280,7 @@ class Wallets:
     def get_all_balances(self) -> dict[str, Wallet]:
         return self._wallets
 
-    def get_all_positions(self) -> dict[str, PositionWallet]:
+    def get_all_positions(self) -> dict[tuple[str, str], PositionWallet]:
         return self._positions
 
     def _check_exit_amount(self, trade: Trade) -> bool:
@@ -275,7 +289,7 @@ class Wallets:
             wallet_amount: float = self.get_total(trade.safe_base_currency) * (2 - 0.981)
         else:
             # wallet_amount: float = self.wallets.get_free(trade.safe_base_currency)
-            position = self._positions.get(trade.pair)
+            position = self._positions.get(self._pos_key(trade.pair, trade.is_short))
             if position is None:
                 # We don't own anything :O
                 return False

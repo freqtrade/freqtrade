@@ -1534,7 +1534,10 @@ class Backtesting:
             # position_stacking not supported for now.
             exiting_dir = "short" if LocalTrade.bt_trades_open_pp[pair][0].is_short else "long"
 
-        for t in list(LocalTrade.bt_trades_open_pp[pair]):
+        pair_open_trades = LocalTrade.bt_trades_open_pp[pair]
+        dir_has_open = any(t.is_short == (trade_dir == "short") for t in pair_open_trades)
+
+        for t in list(pair_open_trades):
             # 1. Manage currently open orders of active trades
             if self.manage_open_orders(t, current_time, row):
                 # Remove trade (initial open order never filled)
@@ -1542,14 +1545,24 @@ class Backtesting:
                 self.wallets.update()
 
         # 2. Process entries.
-        # without positionstacking, we can only have one open trade per pair.
+        # Allow at most one open trade per (pair, side). With position_stacking the same
+        # side can be stacked (DCA). In hedge mode a long and a short can coexist on the
+        # same pair; otherwise (original behaviour) only a single position per pair is
+        # allowed.
         # max_open_trades must be respected
         # don't open on the last row
         # We only open trades on the main candle, not on detail candles
+        if self._position_stacking:
+            dir_ok = True
+        elif self.config.get("hedge_mode", False):
+            dir_ok = not dir_has_open
+        else:
+            dir_ok = len(pair_open_trades) == 0
+
         if (
             can_enter
             and trade_dir is not None
-            and (self._position_stacking or len(LocalTrade.bt_trades_open_pp[pair]) == 0)
+            and dir_ok
             and not PairLocks.is_pair_locked(pair, row[DATE_IDX], trade_dir)
         ):
             if self.trade_slot_available(LocalTrade.bt_open_open_trade_count):

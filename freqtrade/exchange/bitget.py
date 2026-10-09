@@ -167,7 +167,9 @@ class Bitget(Exchange):
         """
         try:
             if not self._config["dry_run"] and self.trading_mode == TradingMode.FUTURES:
-                position_mode = self._api.set_position_mode(False)
+                position_mode = self._api.set_position_mode(
+                    self._config.get("hedge_mode", False)
+                )
                 self._log_exchange_response("set_position_mode", position_mode)
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e

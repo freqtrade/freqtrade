@@ -805,8 +805,13 @@ class FreqtradeBot(LoggingMixin):
             self.log_once("Active pair whitelist is empty.", logger.info)
             return trades_created
         # Remove pairs for currently opened trades from the whitelist
+        hedge = self.config.get("hedge_mode", False)
         for trade in Trade.get_open_trades():
             if trade.pair in whitelist:
+                if hedge:
+                    # In hedge mode opposite-side entries are allowed; direction-level
+                    # blocking is handled inside create_trade().
+                    continue
                 whitelist.remove(trade.pair)
                 logger.debug("Ignoring %s in pair whitelist", trade.pair)
 
@@ -887,6 +892,16 @@ class FreqtradeBot(LoggingMixin):
                 else:
                     self.log_once(f"Pair {pair} is currently locked.", logger.info)
                 return False
+
+            # In hedge mode, block re-entering a side that is already open for this pair
+            # unless position_stacking is enabled (DCA on the same side).
+            if (
+                self.config.get("hedge_mode", False)
+                and not self.config.get("position_stacking", False)
+            ):
+                open_for_pair = Trade.get_trades_proxy(is_open=True, pair=pair)
+                if any(t.is_short == (signal == SignalDirection.SHORT) for t in open_for_pair):
+                    return False
 
             stake_amount = self.wallets.get_trade_stake_amount(pair, self.config["max_open_trades"])
 
