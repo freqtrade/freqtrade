@@ -8,6 +8,9 @@
     "python": "3.12"
   },
   "constraintsFiltering": "strict",
+  "pip_requirements": {
+    "managerFilePatterns": ["/(^|/)requirements-freqai-rl\\.txt$/"]
+  },
   "schedule": [
     "* 0-5 * * 1"
   ],
