@@ -26,14 +26,14 @@
       "description": "Keep scipy and scipy-stubs updates in their own PR, so both are bumped together.",
       "matchDatasources": ["pypi"],
       "matchPackageNames": ["scipy", "scipy-stubs"],
-      "groupName": "scipy",
+      "groupName": "Scipy",
       "groupSlug": "scipy"
     },
     {
       "description": "Keep scikit-learn updates in their own PR, so the freqai and hyperopt pins are bumped together.",
       "matchDatasources": ["pypi"],
       "matchPackageNames": ["scikit-learn"],
-      "groupName": "scikit-learn",
+      "groupName": "Scikit-learn",
       "groupSlug": "scikit-learn"
     },
     {
@@ -41,7 +41,7 @@
       "matchDatasources": ["pypi"],
       "matchFileNames": ["requirements-freqai.txt", "requirements-freqai-rl.txt"],
       "matchPackageNames": ["!scikit-learn"],
-      "groupName": "freqai",
+      "groupName": "FreqAI dependencies",
       "groupSlug": "freqai"
     }
   ]
