@@ -601,7 +601,7 @@ class FreqtradeBot(LoggingMixin):
 
             except InvalidOrderException as e:
                 logger.warning(f"Error updating Order {order.order_id} due to {e}.")
-                if order.order_date_utc - timedelta(days=5) < datetime.now(UTC):
+                if order.order_date_utc < datetime.now(UTC) - timedelta(days=5):
                     logger.warning(
                         "Order is older than 5 days. Assuming order was fully cancelled."
                     )
