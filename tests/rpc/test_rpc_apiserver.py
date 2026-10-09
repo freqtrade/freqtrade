@@ -910,13 +910,88 @@ def test_api_custom_data_single_trade(botclient, fee):
     assert_response(rc, 200)
 
     # CASE 3 Checking specific not existing key custom data of trade 1
-    rc = client_get(client, f"{BASE_URI}/trades/1/custom-data&key=test")
-    assert_response(rc, 404)
+    rc = client_get(client, f"{BASE_URI}/trades/1/custom-data?key=test")
+    assert_response(rc)
+    assert rc.json() == []
 
     # CASE 4 Trying to get custom-data from not existing trade
     rc = client_get(client, f"{BASE_URI}/trades/13/custom-data")
     assert_response(rc, 404)
     assert rc.json()["detail"] == "No trade found for trade_id: 13"
+
+
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize("key", [None, "test_str"], ids=["empty-trade", "missing-key"])
+def test_api_custom_data_open_trades_first_trade_no_matching_data(botclient, fee, key):
+    _, client = botclient
+    create_mock_trades_usdt(fee, use_db=True)
+    open_trades = sorted(Trade.get_trades_proxy(is_open=True), key=lambda trade: trade.id)
+    first_trade, second_trade = open_trades[:2]
+
+    assert first_trade.get_all_custom_data() == []
+    if key is not None:
+        first_trade.set_custom_data("other_key", "other_value")
+        assert first_trade.get_custom_data("other_key") == "other_value"
+        assert first_trade.get_custom_data_entry(key) is None
+    second_trade.set_custom_data("test_str", "test_value")
+
+    query = f"?key={key}" if key is not None else ""
+    rc = client_get(client, f"{BASE_URI}/trades/open/custom-data{query}")
+    assert_response(rc)
+    assert rc.json() == [
+        {
+            "trade_id": second_trade.id,
+            "custom_data": [
+                {
+                    "key": "test_str",
+                    "type": "str",
+                    "value": "test_value",
+                    "created_at": ANY,
+                    "updated_at": None,
+                }
+            ],
+        }
+    ]
+
+
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize("trade_id", [1, "open"])
+def test_api_custom_data_empty(botclient, fee, trade_id):
+    _, client = botclient
+    create_mock_trades_usdt(fee, use_db=True)
+
+    rc = client_get(client, f"{BASE_URI}/trades/{trade_id}/custom-data")
+    assert_response(rc)
+    assert rc.json() == []
+
+
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize("empty_page", [False, True], ids=["no-open-trades", "past-last-page"])
+def test_api_custom_data_open_trades_empty_page(botclient, fee, empty_page):
+    _, client = botclient
+    offset = 0
+    if empty_page:
+        create_mock_trades_usdt(fee, use_db=True)
+        open_trades = Trade.get_trades_proxy(is_open=True)
+        for trade in open_trades:
+            trade.set_custom_data("test_str", "test_value")
+        offset = len(open_trades)
+
+    rc = client_get(client, f"{BASE_URI}/trades/open/custom-data?offset={offset}")
+    assert_response(rc)
+    assert rc.json() == []
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_api_custom_data_open_trades_missing_key(botclient, fee):
+    _, client = botclient
+    create_mock_trades_usdt(fee, use_db=True)
+    for trade in Trade.get_trades_proxy(is_open=True):
+        trade.set_custom_data("other_key", "other_value")
+
+    rc = client_get(client, f"{BASE_URI}/trades/open/custom-data?key=missing_key")
+    assert_response(rc)
+    assert rc.json() == []
 
 
 @pytest.mark.usefixtures("init_persistence")
