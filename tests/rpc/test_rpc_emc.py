@@ -76,6 +76,25 @@ def test_emc_init(patched_emc):
     assert patched_emc.sleep_time > 0
 
 
+@pytest.mark.parametrize("limit", [None, 500])
+def test_emc_initial_candle_limit(default_conf, mocker, limit):
+    mocker.patch.object(ExternalMessageConsumer, "start")
+    emc_config = {
+        "enabled": True,
+        "producers": [{"name": "default", "host": "null", "port": 9891, "ws_token": "x"}],
+    }
+    if limit is not None:
+        emc_config["initial_candle_limit"] = limit
+    default_conf["external_message_consumer"] = emc_config
+
+    dataprovider = DataProvider(default_conf, None, None, None)
+    emc = ExternalMessageConsumer(default_conf, dataprovider)
+
+    expected = limit if limit is not None else 1500
+    assert emc.initial_candle_limit == expected
+    assert emc._initial_requests[2].data["limit"] == expected
+
+
 # Parametrize this?
 def test_emc_handle_producer_message(patched_emc, caplog, ohlcv_history):
     test_producer = {"name": "test", "url": "ws://test", "ws_token": "test"}
@@ -83,6 +102,7 @@ def test_emc_handle_producer_message(patched_emc, caplog, ohlcv_history):
     invalid_msg = r"Invalid message .+"
 
     caplog.set_level(logging.DEBUG)
+    patched_emc.initial_candle_limit = 500
 
     # Test handle whitelist message
     whitelist_message = {"type": "whitelist", "data": ["BTC/USDT"]}
@@ -105,7 +125,7 @@ def test_emc_handle_producer_message(patched_emc, caplog, ohlcv_history):
     patched_emc.handle_producer_message(test_producer, df_message)
 
     assert log_has(f"Received message of type `analyzed_df` from `{producer_name}`", caplog)
-    assert log_has_re(r"Holes in data or no existing df,.+", caplog)
+    assert log_has_re(r"Holes in data or no existing df, requesting 500 candles .+", caplog)
 
     # Test unhandled message
     unhandled_message = {"type": "status", "data": "RUNNING"}

@@ -8,6 +8,7 @@ from freqtrade.constants import (
     BACKTEST_CACHE_AGE,
     DRY_RUN_WALLET,
     EXPORT_OPTIONS,
+    FULL_DATAFRAME_THRESHOLD,
     HYPEROPT_LOSS_BUILTIN,
     MARGIN_MODES,
     ORDERTIF_POSSIBILITIES,
@@ -1156,7 +1157,7 @@ CONF_SCHEMA = {
                 "initial_candle_limit": {
                     "description": "Initial candle limit.",
                     "type": "integer",
-                    "minimum": 0,
+                    "minimum": FULL_DATAFRAME_THRESHOLD,
                     "maximum": 1500,
                     "default": 1500,
                 },
