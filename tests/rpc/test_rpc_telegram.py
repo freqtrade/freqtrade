@@ -3022,7 +3022,9 @@ async def test_telegram_list_custom_data(default_conf_usdt, update, ticker, fee,
     context.args = ["1"]
     await telegram._list_custom_data(update=update, context=context)
     assert msg_mock.call_count == 1
-    assert "No custom-data found for Trade ID: 1." in msg_mock.call_args_list[0][0][0]
+    assert msg_mock.call_args_list[0][0][0] == (
+        "Didn't find any custom-data entries for Trade ID: `1`"
+    )
     msg_mock.reset_mock()
 
     # Add some custom data
@@ -3030,6 +3032,15 @@ async def test_telegram_list_custom_data(default_conf_usdt, update, ticker, fee,
     trade1.set_custom_data("test_int", 1)
     trade1.set_custom_data("test_dict", {"test": "dict"})
     Trade.commit()
+
+    context.args = [f"{trade1.id}", "missing_key"]
+    await telegram._list_custom_data(update=update, context=context)
+    assert msg_mock.call_count == 1
+    assert msg_mock.call_args_list[0][0][0] == (
+        f"Didn't find any custom-data entries for Trade ID: `{trade1.id}` and Key: `missing_key`."
+    )
+    msg_mock.reset_mock()
+
     context.args = [f"{trade1.id}"]
     await telegram._list_custom_data(update=update, context=context)
     assert msg_mock.call_count == 3

@@ -88,7 +88,7 @@ class ExternalMessageConsumer:
         self._initial_requests: list[WSRequestSchema] = [
             WSSubscribeRequest(data=self.topics),
             WSWhitelistRequest(),
-            WSAnalyzedDFRequest(),
+            WSAnalyzedDFRequest(data={"limit": self.initial_candle_limit, "pair": None}),
         ]
 
         # Specify which function to use for which RPCMessageType
@@ -375,7 +375,9 @@ class ExternalMessageConsumer:
             # We want an overlap in candles in case some data has changed
             n_missing += 1
             # Set to None for all candles if we missed a full df's worth of candles
-            n_missing = n_missing if n_missing < FULL_DATAFRAME_THRESHOLD else 1500
+            n_missing = (
+                n_missing if n_missing < FULL_DATAFRAME_THRESHOLD else self.initial_candle_limit
+            )
 
             logger.warning(
                 f"Holes in data or no existing df, requesting {n_missing} candles "
