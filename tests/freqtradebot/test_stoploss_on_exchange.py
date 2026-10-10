@@ -554,6 +554,256 @@ def test_create_stoploss_order_insufficient_funds(
     assert mock_insuf.call_count == 1
 
 
+@pytest.mark.usefixtures("init_persistence")
+def test_create_native_trailing_stoploss_order(mocker, default_conf_usdt):
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    freqtrade.config["dry_run"] = False
+    native_stoploss = mocker.patch.object(
+        freqtrade.exchange,
+        "create_native_trailing_stoploss",
+        return_value={"id": "native-trailing-1", "status": "open"},
+    )
+    regular_stoploss = mocker.patch.object(freqtrade.exchange, "create_stoploss")
+    native_callback = mocker.patch.object(
+        freqtrade.exchange, "get_native_trailing_stoploss_callback", return_value=0.1
+    )
+    freqtrade.strategy.order_types.update(
+        {
+            "stoploss_on_exchange": True,
+            "stoploss_on_exchange_native_trailing": True,
+        }
+    )
+    freqtrade.strategy.trailing_stop = True
+    freqtrade.strategy.trailing_stop_positive = 0.001
+    freqtrade.strategy.trailing_only_offset_is_reached = True
+
+    trade = Trade(
+        pair="ETH/USDT",
+        fee_open=0.001,
+        fee_close=0.001,
+        open_rate=100,
+        open_date=dt_now(),
+        stake_amount=100,
+        amount=1,
+        exchange="binance",
+        leverage=1,
+        is_open=True,
+    )
+    trade.adjust_stop_loss(100, -0.1, initial=True)
+    trade.adjust_stop_loss(102, 0.001)
+
+    assert freqtrade.create_stoploss_order(trade, trade.stop_loss)
+    native_stoploss.assert_called_once_with(
+        pair="ETH/USDT",
+        amount=1,
+        stop_price=trade.stop_loss,
+        trailing_ratio=0.001,
+        order_types=freqtrade.strategy.order_types,
+        side="sell",
+        leverage=1,
+    )
+    regular_stoploss.assert_not_called()
+
+    freqtrade.config["dry_run"] = True
+    assert freqtrade._get_native_trailing_stoploss_callback(trade) is None
+    native_callback.assert_called_once()
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_native_trailing_stoploss_creation_falls_back_to_regular(mocker, default_conf_usdt):
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    freqtrade.config["dry_run"] = False
+    mocker.patch.object(
+        freqtrade.exchange, "get_native_trailing_stoploss_callback", return_value=0.1
+    )
+    mocker.patch.object(
+        freqtrade.exchange,
+        "create_native_trailing_stoploss",
+        side_effect=InvalidOrderException("callback rejected"),
+    )
+    regular_stoploss = mocker.patch.object(
+        freqtrade.exchange,
+        "create_stoploss",
+        return_value={"id": "regular-stop-1", "status": "open"},
+    )
+    emergency_exit = mocker.patch.object(freqtrade, "emergency_exit")
+    freqtrade.strategy.order_types.update(
+        {
+            "stoploss_on_exchange": True,
+            "stoploss_on_exchange_native_trailing": True,
+        }
+    )
+    freqtrade.strategy.trailing_stop = True
+    freqtrade.strategy.trailing_stop_positive = 0.001
+    freqtrade.strategy.trailing_only_offset_is_reached = True
+
+    trade = Trade(
+        pair="ETH/USDT",
+        fee_open=0.001,
+        fee_close=0.001,
+        open_rate=100,
+        open_date=dt_now(),
+        stake_amount=100,
+        amount=1,
+        exchange="binance",
+        leverage=1,
+        is_open=True,
+    )
+    trade.adjust_stop_loss(100, -0.1, initial=True)
+    trade.adjust_stop_loss(102, 0.001)
+
+    assert freqtrade.create_stoploss_order(trade, trade.stop_loss)
+    regular_stoploss.assert_called_once()
+    emergency_exit.assert_not_called()
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_native_trailing_activation_bypasses_update_interval(mocker, default_conf_usdt):
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    freqtrade.config["dry_run"] = False
+    freqtrade.strategy.order_types.update(
+        {
+            "stoploss_on_exchange": True,
+            "stoploss_on_exchange_native_trailing": True,
+            "stoploss_on_exchange_interval": 60,
+        }
+    )
+    freqtrade.strategy.trailing_stop = True
+    freqtrade.strategy.trailing_stop_positive = 0.001
+    freqtrade.strategy.trailing_only_offset_is_reached = True
+
+    trade = Trade(
+        pair="ETH/USDT",
+        fee_open=0.001,
+        fee_close=0.001,
+        open_rate=100,
+        open_date=dt_now(),
+        stake_amount=100,
+        amount=1,
+        exchange="binance",
+        leverage=1,
+        is_open=True,
+    )
+    trade.adjust_stop_loss(100, -0.1, initial=True)
+    trade.adjust_stop_loss(102, 0.001)
+    trade.stoploss_last_update = dt_now()
+
+    mocker.patch.object(freqtrade.exchange, "price_to_precision", return_value=trade.stop_loss)
+    mocker.patch.object(freqtrade.exchange, "stoploss_adjust", return_value=True)
+    mocker.patch.object(freqtrade.exchange, "is_native_trailing_stoploss", return_value=False)
+    mocker.patch.object(
+        freqtrade.exchange, "get_native_trailing_stoploss_callback", return_value=0.1
+    )
+    cancel_stoploss = mocker.patch.object(freqtrade, "cancel_stoploss_on_exchange")
+    create_stoploss = mocker.patch.object(freqtrade, "create_stoploss_order", return_value=True)
+
+    freqtrade.handle_trailing_stoploss_on_exchange(trade, {"id": "regular-stop-1"})
+
+    cancel_stoploss.assert_called_once_with(trade)
+    create_stoploss.assert_called_once_with(trade=trade, stop_price=trade.stop_loss)
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_native_trailing_activation_does_not_require_regular_stop_adjustment(
+    mocker, default_conf_usdt
+):
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    freqtrade.config["dry_run"] = False
+    freqtrade.strategy.order_types.update(
+        {
+            "stoploss_on_exchange": True,
+            "stoploss_on_exchange_native_trailing": True,
+        }
+    )
+    freqtrade.strategy.trailing_stop = True
+    freqtrade.strategy.trailing_stop_positive = 0.001
+    freqtrade.strategy.trailing_only_offset_is_reached = True
+
+    trade = Trade(
+        pair="ETH/USDT",
+        fee_open=0.001,
+        fee_close=0.001,
+        open_rate=100,
+        open_date=dt_now(),
+        stake_amount=100,
+        amount=1,
+        exchange="binance",
+        leverage=1,
+        is_open=True,
+    )
+    trade.adjust_stop_loss(100, -0.1, initial=True)
+    trade.adjust_stop_loss(102, 0.001)
+
+    mocker.patch.object(freqtrade.exchange, "price_to_precision", return_value=trade.stop_loss)
+    stoploss_adjust = mocker.patch.object(freqtrade.exchange, "stoploss_adjust", return_value=False)
+    mocker.patch.object(freqtrade.exchange, "is_native_trailing_stoploss", return_value=False)
+    mocker.patch.object(
+        freqtrade.exchange, "get_native_trailing_stoploss_callback", return_value=0.1
+    )
+    cancel_stoploss = mocker.patch.object(freqtrade, "cancel_stoploss_on_exchange")
+    create_stoploss = mocker.patch.object(freqtrade, "create_stoploss_order", return_value=True)
+
+    freqtrade.handle_trailing_stoploss_on_exchange(trade, {"id": "regular-stop-1"})
+
+    stoploss_adjust.assert_not_called()
+    cancel_stoploss.assert_called_once_with(trade)
+    create_stoploss.assert_called_once_with(trade=trade, stop_price=trade.stop_loss)
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_native_trailing_activation_keeps_regular_stop_when_cancel_fails(mocker, default_conf_usdt):
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    freqtrade.config["dry_run"] = False
+    freqtrade.strategy.order_types.update(
+        {
+            "stoploss_on_exchange": True,
+            "stoploss_on_exchange_native_trailing": True,
+        }
+    )
+    freqtrade.strategy.trailing_stop = True
+    freqtrade.strategy.trailing_stop_positive = 0.001
+    freqtrade.strategy.trailing_only_offset_is_reached = True
+
+    trade = Trade(
+        pair="ETH/USDT",
+        fee_open=0.001,
+        fee_close=0.001,
+        open_rate=100,
+        open_date=dt_now(),
+        stake_amount=100,
+        amount=1,
+        exchange="binance",
+        leverage=1,
+        is_open=True,
+    )
+    trade.adjust_stop_loss(100, -0.1, initial=True)
+    trade.adjust_stop_loss(102, 0.001)
+    trade.orders.append(
+        Order(
+            ft_order_side="stoploss",
+            ft_pair=trade.pair,
+            ft_is_open=True,
+            ft_amount=trade.amount,
+            ft_price=trade.stop_loss,
+            order_id="regular-stop-1",
+            status="open",
+        )
+    )
+
+    mocker.patch.object(freqtrade.exchange, "price_to_precision", return_value=trade.stop_loss)
+    mocker.patch.object(freqtrade.exchange, "stoploss_adjust", return_value=True)
+    mocker.patch.object(freqtrade.exchange, "is_native_trailing_stoploss", return_value=False)
+    mocker.patch.object(
+        freqtrade.exchange, "get_native_trailing_stoploss_callback", return_value=0.1
+    )
+    mocker.patch.object(freqtrade, "cancel_stoploss_on_exchange", return_value=trade)
+    create_stoploss = mocker.patch.object(freqtrade, "create_stoploss_order", return_value=True)
+
+    freqtrade.handle_trailing_stoploss_on_exchange(trade, {"id": "regular-stop-1"})
+
+    create_stoploss.assert_not_called()
+
+
 @pytest.mark.parametrize(
     "is_short,bid,ask,stop_price,hang_price",
     [
