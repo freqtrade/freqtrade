@@ -18,7 +18,7 @@ from freqtrade.persistence import LocalTrade, Trade
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist, expand_pairlist
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.resolvers import PairListResolver
-from freqtrade.util import dt_now, dt_utc
+from freqtrade.util import dt_now, dt_ts, dt_utc
 from tests.conftest import (
     EXMS,
     create_mock_trades_usdt,
@@ -119,6 +119,16 @@ def whitelist_conf_agefilter(default_conf):
             "refresh_period": -1,
         },
         {"method": "AgeFilter", "min_days_listed": 2, "max_days_listed": 100},
+    ]
+    return default_conf
+
+
+@pytest.fixture
+def agefilter_config(default_conf):
+    default_conf["exchange"]["pair_whitelist"] = ["ETH/BTC"]
+    default_conf["pairlists"] = [
+        {"method": "StaticPairList"},
+        {"method": "AgeFilter", "min_days_listed": 2, "max_days_listed": 3},
     ]
     return default_conf
 
@@ -1743,6 +1753,51 @@ def test_agefilter_caching(mocker, markets, whitelist_conf_agefilter, tickers, o
         assert len(freqtrade.pairlists.whitelist) == 4
         # Called once (only for XRP/BTC)
         assert freqtrade.exchange.refresh_latest_ohlcv.call_count == 1
+
+
+def test_agefilter_rechecks_maximum_age_at_utc_midnight(mocker, agefilter_config, time_machine):
+    time_machine.move_to("2021-09-01 23:58:00+00:00", tick=False)
+    exchange = get_patched_exchange(mocker, agefilter_config)
+    pairlist_manager = PairListManager(exchange, agefilter_config)
+    candle_key = ("ETH/BTC", "1d", CandleType.SPOT)
+    candles = generate_test_data("1d", 4, "2021-08-30 00:00:00+00:00")
+    refresh = mocker.patch.object(
+        exchange, "refresh_latest_ohlcv", return_value={candle_key: candles.iloc[:2]}
+    )
+
+    pairlist_manager.refresh_pairlist()
+    assert pairlist_manager.whitelist == ["ETH/BTC"]
+    assert refresh.call_count == 1
+
+    time_machine.move_to("2021-09-01 23:59:59+00:00", tick=False)
+    pairlist_manager.refresh_pairlist()
+    assert pairlist_manager.whitelist == ["ETH/BTC"]
+    assert refresh.call_count == 1
+
+    # Expiry follows the UTC day, even when the cached result is only two minutes old.
+    time_machine.move_to("2021-09-02 00:00:00+00:00", tick=False)
+    refresh.return_value = {candle_key: candles.iloc[:3]}
+    pairlist_manager.refresh_pairlist()
+    assert pairlist_manager.whitelist == ["ETH/BTC"]
+    assert refresh.call_count == 2
+    refresh.assert_called_with([candle_key], since_ms=dt_ts(dt_utc(2021, 8, 29)), cache=False)
+
+    time_machine.move_to("2021-09-03 00:00:00+00:00", tick=False)
+    refresh.return_value = {candle_key: candles}
+    pairlist_manager.refresh_pairlist()
+    assert pairlist_manager.whitelist == []
+    assert refresh.call_count == 3
+
+    # Rejected pairs remain cached for the rest of the day.
+    pairlist_manager.refresh_pairlist()
+    assert pairlist_manager.whitelist == []
+    assert refresh.call_count == 3
+
+    # A restart must produce the same rejection with an empty cache.
+    restarted_manager = PairListManager(exchange, agefilter_config)
+    restarted_manager.refresh_pairlist()
+    assert restarted_manager.whitelist == []
+    assert refresh.call_count == 4
 
 
 def test_OffsetFilter_error(mocker, whitelist_conf) -> None:
