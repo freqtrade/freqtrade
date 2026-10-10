@@ -37,6 +37,13 @@
       "groupSlug": "scikit-learn"
     },
     {
+      "description": "Keep pyarrow updates in their own PR.",
+      "matchDatasources": ["pypi"],
+      "matchPackageNames": ["pyarrow"],
+      "groupName": "Pyarrow",
+      "groupSlug": "pyarrow"
+    },
+    {
       "description": "Keep freqai dependencies in their own PR - they can't usually be safely updated together with the rest. scikit-learn is excluded, as it's shared with hyperopt.",
       "matchDatasources": ["pypi"],
       "matchFileNames": ["requirements-freqai.txt", "requirements-freqai-rl.txt"],
