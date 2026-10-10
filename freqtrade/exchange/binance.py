@@ -419,16 +419,21 @@ class Binance(Exchange):
             not self._config["exchange"].get("only_from_ccxt", False)
             and self._can_use_data_download_fast
         ):
-            if from_id is None or not since:
-                trades = await self._api_async.fetch_trades(
-                    pair,
-                    params={
-                        self._ft_has["trades_pagination_arg"]: "0",
-                    },
-                    limit=5,
-                )
-                listing_date: int = trades[0]["timestamp"]
-                since = max(since, listing_date)
+            # Binance futures only allows fromId within the last 2 days
+            if (from_id is None or not since) and self.trading_mode == TradingMode.SPOT:
+                try:
+                    trades = await self._api_async.fetch_trades(
+                        pair,
+                        params={
+                            self._ft_has["trades_pagination_arg"]: "0",
+                        },
+                        limit=5,
+                    )
+                    if trades:
+                        listing_date: int = trades[0]["timestamp"]
+                        since = max(since, listing_date)
+                except ccxt.ExchangeError as e:
+                    logger.warning(f"Could not determine listing date for {pair}: {e}")
 
             _, res = await download_archive_trades(
                 CandleType.FUTURES if self.trading_mode == "futures" else CandleType.SPOT,
