@@ -31,6 +31,7 @@ class AgeFilter(IPairList):
         self._min_days_listed = self._pairlistconfig.get("min_days_listed", 10)
         self._max_days_listed = self._pairlistconfig.get("max_days_listed")
         self._def_candletype = self._config["candle_type_def"]
+        self._last_age_check_day = dt_now().date()
 
         candle_limit = self._exchange.ohlcv_candle_limit("1d", self._def_candletype)
         if self._min_days_listed < 1:
@@ -58,7 +59,7 @@ class AgeFilter(IPairList):
             f"{self.name} - Filtering pairs with age less than "
             f"{self._min_days_listed} {plural(self._min_days_listed, 'day')}"
         ) + (
-            (" or more than {self._max_days_listed} {plural(self._max_days_listed, 'day')}")
+            (f" or more than {self._max_days_listed} {plural(self._max_days_listed, 'day')}")
             if self._max_days_listed
             else ""
         )
@@ -90,6 +91,11 @@ class AgeFilter(IPairList):
         :param tickers: Tickers (from exchange.get_tickers). May be cached.
         :return: new allowlist
         """
+        if self._max_days_listed:
+            today = dt_now().date()
+            if today != self._last_age_check_day:
+                self._symbolsChecked.clear()
+                self._last_age_check_day = today
         needed_pairs: ListPairsWithTimeframes = [
             (p, "1d", self._def_candletype)
             for p in pairlist
