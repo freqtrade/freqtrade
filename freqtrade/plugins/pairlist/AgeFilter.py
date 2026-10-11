@@ -58,7 +58,7 @@ class AgeFilter(IPairList):
             f"{self.name} - Filtering pairs with age less than "
             f"{self._min_days_listed} {plural(self._min_days_listed, 'day')}"
         ) + (
-            (" or more than {self._max_days_listed} {plural(self._max_days_listed, 'day')}")
+            (f" or more than {self._max_days_listed} {plural(self._max_days_listed, 'day')}")
             if self._max_days_listed
             else ""
         )
