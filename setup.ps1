@@ -156,8 +156,7 @@ function Test-PythonExecutable {
       }
 
       $ParsedVersion = [version]$Version
-      $MinimumVersion = [version]"3.12"
-      if ($ParsedVersion -lt $MinimumVersion) {
+      if ($ParsedVersion.Major -ne 3 -or $SupportedMinorVersions -notcontains $ParsedVersion.Minor) {
         Write-Log "Python version $Version is not supported. Python $SupportedPythonVersions is required." -Level 'ERROR'
         return $false
       }
