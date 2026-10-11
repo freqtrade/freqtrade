@@ -150,6 +150,18 @@ function Test-PythonExecutable {
     $VersionOutput = & $PythonCmd.Source --version 2>&1
     if ($LASTEXITCODE -eq 0) {
       $Version = $VersionOutput | Select-String -Pattern "Python (\d+\.\d+\.\d+)" | ForEach-Object { $_.Matches.Groups[1].Value }
+      if ([string]::IsNullOrEmpty($Version)) {
+        Write-Log "Could not determine the Python version for executable '$PythonExecutable'." -Level 'ERROR'
+        return $false
+      }
+
+      $ParsedVersion = [version]$Version
+      $MinimumVersion = [version]"3.12"
+      if ($ParsedVersion -lt $MinimumVersion) {
+        Write-Log "Python version $Version is not supported. Python $SupportedPythonVersions is required." -Level 'ERROR'
+        return $false
+      }
+
       Write-Log "Python version $Version found using executable '$PythonExecutable'."
       return $true
     }
