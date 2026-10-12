@@ -92,6 +92,7 @@ from freqtrade.exchange.exchange_utils import (
     is_exchange_known_ccxt,
     market_is_active,
     price_to_precision,
+    resolve_ws_enabled,
 )
 from freqtrade.exchange.exchange_utils_timeframe import (
     timeframe_to_minutes,
@@ -109,6 +110,7 @@ from freqtrade.misc import (
     safe_value_fallback,
     safe_value_nested,
 )
+from freqtrade.mixins import LoggingMixin
 from freqtrade.util import FtTTLCache, PeriodicCache, dt_from_ts, dt_now
 from freqtrade.util.datetime_helpers import dt_humanize_delta, dt_ts, format_ms_time
 
@@ -118,7 +120,7 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T")
 
 
-class Exchange:
+class Exchange(LoggingMixin):
     # Parameters to add directly to buy/sell calls (like agreeing to trading agreement)
     _params: dict = {}
 
@@ -160,6 +162,8 @@ class Exchange:
         "l2_limit_range": None,
         "l2_limit_range_required": True,  # Allow Empty L2 limit (kucoin)
         "l2_limit_upper": None,  # Upper limit for L2 limit
+        "orderbook_max_age": 5,
+        "ws_orderbook_depth": None,
         "mark_ohlcv_price": "mark",
         "mark_ohlcv_timeframe": "1h",
         "funding_fee_timeframe": "1h",
@@ -173,7 +177,8 @@ class Exchange:
         "exchange_has_overrides": {},  # Dictionary overriding ccxt's "has".
         "proxy_coin_mapping": {},  # Mapping for proxy coins
         # Expected to be in the format {"fetchOHLCV": True} or {"fetchOHLCV": False}
-        "ws_enabled": False,  # Set to true for exchanges with tested websocket support
+        # Set to true per-stream for exchanges with tested websocket support
+        "ws_enabled": {"ohlcv": False, "orderbook": False},
         "has_delisting": False,  # Set to true for exchanges that have delisting pair checks
     }
     _ft_has: FtHas = {}
@@ -197,6 +202,8 @@ class Exchange:
         it does basic validation whether the specified exchange and pairs are valid.
         :return: None
         """
+        # Throttle repeated warnings (e.g. a stale websocket orderbook) to once per period.
+        LoggingMixin.__init__(self, logger, refresh_period=300)
         self._api: ccxt.Exchange
         self._api_async: ccxt_pro.Exchange
         self._ws_async: ccxt_pro.Exchange = None
@@ -290,14 +297,25 @@ class Exchange:
             exchange_conf.get("ccxt_async_config", {}), ccxt_async_config
         )
         self._api_async = self._init_ccxt(exchange_conf, False, ccxt_async_config)
-        _has_watch_ohlcv = self.exchange_has("watchOHLCV") and self._ft_has["ws_enabled"]
-        if (
-            self._config["runmode"] in TRADE_MODES
-            and exchange_conf.get("enable_ws", True)
-            and _has_watch_ohlcv
+        # User preference (config), merged per-stream with the exchange's tested capability.
+        enable_ws_user_config = resolve_ws_enabled(exchange_conf.get("enable_ws", True))
+        self._has_watch_ohlcv = (
+            self.exchange_has("watchOHLCV")
+            and self._ft_has["ws_enabled"]["ohlcv"]
+            and enable_ws_user_config["ohlcv"]
+        )
+        self._has_watch_orderbook = (
+            self.exchange_has("watchOrderBook")
+            and self._ft_has["ws_enabled"]["orderbook"]
+            and enable_ws_user_config["orderbook"]
+        )
+        if self._config["runmode"] in TRADE_MODES and (
+            self._has_watch_ohlcv or self._has_watch_orderbook
         ):
             self._ws_async = self._init_ccxt(exchange_conf, False, ccxt_async_config)
-            self._exchange_ws = ExchangeWS(self._config, self._ws_async)
+            self._exchange_ws = ExchangeWS(
+                self._config, self._ws_async, self._ft_has["ws_orderbook_depth"]
+            )
 
         logger.info(f'Using Exchange "{self.name}"')
         self.required_candle_call_count = 1
@@ -1032,6 +1050,8 @@ class Exchange:
 
         if exchange_conf.get("_ft_has_params"):
             self._ft_has = deep_merge_dicts(exchange_conf.get("_ft_has_params"), self._ft_has)
+            # A plain boolean override replaces the per-stream dict - normalize it.
+            self._ft_has["ws_enabled"] = resolve_ws_enabled(self._ft_has["ws_enabled"])
             logger.info("Overriding exchange._ft_has with config params, result: %s", self._ft_has)
 
     def get_option(self, param: str, default: Any | None = None) -> Any:
@@ -2286,6 +2306,47 @@ class Exchange:
             self._ft_has["l2_limit_range_required"],
             self._ft_has["l2_limit_upper"],
         )
+
+        # Effective limit or 100 (limit could be None from a user call).
+        limit_eff = limit1 or limit or 100
+        # The stream only carries "ws_orderbook_depth" levels. Asking it for more would
+        # fall back to REST on every single call while still paying for the subscription.
+        ws_depth = self._ft_has["ws_orderbook_depth"]
+
+        if (
+            self._has_watch_orderbook
+            and self._exchange_ws
+            and (ws_depth is None or limit_eff <= ws_depth)
+        ):
+            self._exchange_ws.schedule_orderbook(pair)
+
+            ob = self._exchange_ws.get_orderbook(pair, limit_eff)
+            # ccxt.pro creates the orderbook object as soon as watching starts, but it's
+            # empty until the initial snapshot is applied or if getting it fails.
+            # fall back to REST until then.
+            ob_max_age = self._ft_has["orderbook_max_age"]
+            if ob.get("bids") and ob.get("asks"):
+                if not self._exchange_ws.orderbook_is_fresh(pair, ob_max_age):
+                    # Throttled - a stuck feed would otherwise warn on every single call.
+                    self.log_once(
+                        f"Websocket orderbook for {pair} is stale (no update within "
+                        f"{ob_max_age}s) - falling back to REST.",
+                        logger.warning,
+                    )
+                elif len(ob["bids"]) < limit_eff or len(ob["asks"]) < limit_eff:
+                    # The websocket book isn't as deep as the REST response would be.
+                    # Returning it anyway would silently change the result of depth-based
+                    # calculations (e.g. check_depth_of_market) - use REST instead.
+                    logger.debug(
+                        "Websocket orderbook for %s only has %s/%s entries - falling back to REST.",
+                        pair,
+                        min(len(ob["bids"]), len(ob["asks"])),
+                        limit_eff,
+                    )
+                else:
+                    logger.debug("Using websocket orderbook for %s", pair)
+                    return ob
+
         try:
             return self._api.fetch_l2_order_book(pair, limit1)
         except ccxt.NotSupported as e:
@@ -2788,9 +2849,14 @@ class Exchange:
     ) -> TypeGuard[ExchangeWS]:
         """
         Check if we can use websocket for this pair.
-        Acts as typeguard for exchangeWs
+        Acts as typeguard for exchange_ws.
+        :returns: True if the websocket can be used for the given pair, timeframe, and candle type.
         """
-        return bool(exchange_ws and candle_type in (CandleType.SPOT, CandleType.FUTURES))
+        return bool(
+            exchange_ws
+            and self._has_watch_ohlcv
+            and candle_type in (CandleType.SPOT, CandleType.FUTURES)
+        )
 
     def _build_coroutine(
         self,

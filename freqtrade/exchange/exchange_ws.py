@@ -11,7 +11,7 @@ from freqtrade.enums.candletype import CandleType
 from freqtrade.exceptions import TemporaryError
 from freqtrade.exchange.common import retrier
 from freqtrade.exchange.exchange import timeframe_to_seconds
-from freqtrade.exchange.exchange_types import OHLCVResponse
+from freqtrade.exchange.exchange_types import OHLCVResponse, OrderBook
 from freqtrade.util import dt_ts, format_ms_time, format_ms_time_det
 
 
@@ -19,9 +19,17 @@ logger = logging.getLogger(__name__)
 
 
 class ExchangeWS:
-    def __init__(self, config: Config, ccxt_object: ccxt.Exchange) -> None:
+    # TODO: should either be configurable or use the main timeframe.
+    ob_timeout = 60  # 1m
+    # Timeout for the get orderbook snapshot round trip to the websocket thread.
+    ob_snapshot_timeout = 1.0
+
+    def __init__(
+        self, config: Config, ccxt_object: ccxt.Exchange, orderbook_depth: int | None = None
+    ) -> None:
         self.config = config
         self._ccxt_object = ccxt_object
+        self._orderbook_depth = orderbook_depth
         self._background_tasks: set[asyncio.Task] = set()
         self._state_lock = RLock()
         self._loop_ready = Event()
@@ -31,6 +39,15 @@ class ExchangeWS:
         self._klines_scheduled: set[PairWithTimeframe] = set()
         self._klines_last_refresh: dict[PairWithTimeframe, float] = {}
         self._klines_last_request: dict[PairWithTimeframe, float] = {}
+
+        self._ob_watching: set[str] = set()
+        self._ob_scheduled: set[str] = set()
+        self._ob_tasks: dict[str, asyncio.Task] = {}
+        self._ob_last_request: dict[str, float] = {}
+        # Timestamp (ms) of the last orderbook update received from the websocket, per pair.
+        # Used by orderbook_is_fresh() to detect a stuck feed.
+        self._ob_last_refresh: dict[str, float] = {}
+
         self._thread = Thread(name="ccxt_ws", target=self._start_forever)
         self._thread.start()
 
@@ -66,6 +83,7 @@ class ExchangeWS:
         with self._state_lock:
             self._stopping = True
             self._klines_watching.clear()
+            self._ob_watching.clear()
             tasks = list(self._background_tasks)
         if self._wait_for_loop(timeout=0.2) and not self._loop.is_closed():
             for task in tasks:
@@ -97,6 +115,9 @@ class ExchangeWS:
             # Clear the cache.
             # Not doing this will cause problems on startup with dynamic pairlists
             self._ccxt_object.ohlcvs.clear()
+            self._ccxt_object.orderbooks.clear()
+            with self._state_lock:
+                self._ob_last_refresh.clear()
         except Exception:
             logger.exception("Exception in _cleanup_async")
 
@@ -107,6 +128,16 @@ class ExchangeWS:
         with self._state_lock:
             self._ccxt_object.ohlcvs.get(paircomb[0], {}).pop(paircomb[1], None)
             self._klines_last_refresh.pop(paircomb, None)
+
+    def _pop_orderbook(self, pair: str) -> None:
+        """
+        Remove a pair's orderbook from the ccxt cache.
+        Avoids unbounded growth for pairs we no longer watch - and ensures a stale book
+        can't be served should the pair be re-scheduled later.
+        """
+        with self._state_lock:
+            self._ccxt_object.orderbooks.pop(pair, None)
+            self._ob_last_refresh.pop(pair, None)
 
     @retrier(retries=3)
     def ohlcvs(self, pair: str, timeframe: str) -> list[list]:
@@ -145,13 +176,23 @@ class ExchangeWS:
                 timeframe_s = timeframe_to_seconds(timeframe)
                 last_refresh = self._klines_last_request.get(p, 0)
                 if last_refresh > 0 and (dt_ts() - last_refresh) > ((timeframe_s + 20) * 1000):
-                    logger.info(f"Removing {p} from websocket watchlist.")
+                    logger.info(f"Removing {p} from OHLCV watchlist.")
                     self._klines_watching.discard(p)
                     # Pop history to avoid getting stale data
                     self._pop_history(p)
                     changed = True
         if changed:
             logger.info(f"Removal done: new watch list ({len(self._klines_watching)})")
+
+        with self._state_lock:
+            for pair in list(self._ob_watching):
+                last_refresh = self._ob_last_request.get(pair, 0)
+                if last_refresh > 0 and (dt_ts() - last_refresh) > ((self.ob_timeout + 20) * 1000):
+                    logger.info(f"Removing {pair} from orderbook watchlist")
+                    self._ob_watching.discard(pair)
+                    # cancel the corresponding task.
+                    if (task := self._ob_tasks.get(pair)) and not self._loop.is_closed():
+                        self._loop.call_soon_threadsafe(task.cancel)
 
     async def _schedule_while_true(self) -> None:
         # For the ones we should be watching
@@ -172,12 +213,52 @@ class ExchangeWS:
                 self._background_tasks.add(task)
             task.add_done_callback(
                 partial(
-                    self._continuous_stopped,
+                    self._ohlcv_stopped,
                     pair=pair,
                     timeframe=timeframe,
                     candle_type=candle_type,
                 )
             )
+
+        with self._state_lock:
+            ob_pairs_to_check = list(self._ob_watching)
+
+        for ob_pair in ob_pairs_to_check:
+            # Check if they're already scheduled
+            with self._state_lock:
+                if ob_pair in self._ob_scheduled:
+                    continue
+                self._ob_scheduled.add(ob_pair)
+            ob_task = asyncio.create_task(self._continuously_async_watch_orderbook(ob_pair))
+            with self._state_lock:
+                self._background_tasks.add(ob_task)
+                self._ob_tasks[ob_pair] = ob_task
+            ob_task.add_done_callback(partial(self._orderbook_stopped, pair=ob_pair))
+
+    def _orderbook_stopped(self, task: asyncio.Task, pair: str) -> None:
+        with self._state_lock:
+            self._background_tasks.discard(task)
+            if self._ob_tasks.get(pair) is task:
+                del self._ob_tasks[pair]
+        result = "done"
+        try:
+            if task.cancelled():
+                result = "cancelled"
+            else:
+                # Retrieve the result - surfaces exceptions the watch loop didn't handle,
+                # which would otherwise sit unretrieved on the task.
+                task.result()
+        except Exception:
+            result = "error"
+            logger.exception(f"Unhandled exception in orderbook watch task callback for {pair}")
+        finally:
+            logger.info(f"{pair} - Orderbook task finished - {result}")
+            if not self._stopping and hasattr(self, "_loop") and not self._loop.is_closed():
+                asyncio.run_coroutine_threadsafe(self._unwatch_orderbook(pair), loop=self._loop)
+
+            with self._state_lock:
+                self._ob_scheduled.discard(pair)
+            self._pop_orderbook(pair)
 
     def exchange_has(self, endpoint: str) -> bool:
         """
@@ -191,7 +272,7 @@ class ExchangeWS:
     async def _unwatch_ohlcv(self, pair: str, timeframe: str, candle_type: CandleType) -> None:
         if self._stopping:
             # Unsubscribing from a connection that's going away is pointless.
-            logger.debug("Shutting down - skipping unwatch for %s, %s", pair, timeframe)
+            logger.debug("Shutting down - skipping OHLCV unwatch for %s, %s", pair, timeframe)
             return
         try:
             if self.exchange_has("unWatchOHLCVForSymbols"):
@@ -206,11 +287,33 @@ class ExchangeWS:
         except ccxt.NetworkError as e:
             # Network errors are common on shutdown so we can ignore them.
             # It's a network error - which most likely means that the connection is already closed.
-            logger.debug("Network error during unwatch for %s, %s: %s", pair, timeframe, e)
+            logger.debug("Network error during OHLCV unwatch for %s, %s: %s", pair, timeframe, e)
         except Exception:
             logger.exception(f"Exception in _unwatch_ohlcv for {pair}, {timeframe},")
 
-    def _continuous_stopped(
+    async def _unwatch_orderbook(self, pair: str) -> None:
+        if self._stopping:
+            # Unsubscribing from a connection that's going away is pointless.
+            logger.debug("Shutting down - skipping orderbook unwatch for %s", pair)
+            return
+        try:
+            if self.exchange_has("unWatchOrderBookForSymbols"):
+                await self._ccxt_object.un_watch_order_book_for_symbols([pair])
+            elif self.exchange_has("unWatchOrderBook"):
+                await self._ccxt_object.un_watch_order_book(pair)
+            else:
+                logger.debug("un_watch_order_book not supported for %s", pair)
+
+        except ccxt.NotSupported as e:
+            logger.debug("un_watch_order_book not supported: %s", e)
+        except ccxt.NetworkError as e:
+            # Network errors are common on shutdown so we can ignore them.
+            # It's a network error - which most likely means that the connection is already closed.
+            logger.debug("Network error during orderbook unwatch for %s: %s", pair, e)
+        except Exception:
+            logger.exception(f"Exception in _unwatch_orderbook for {pair}")
+
+    def _ohlcv_stopped(
         self, task: asyncio.Task, pair: str, timeframe: str, candle_type: CandleType
     ) -> None:
         with self._state_lock:
@@ -224,7 +327,9 @@ class ExchangeWS:
                     result = str(result1)
         except Exception:
             result = "error"
-            logger.exception(f"Unhandled exception in watch task callback for {pair}, {timeframe}")
+            logger.exception(
+                f"Unhandled exception in ohlcv watch task callback for {pair}, {timeframe}"
+            )
         finally:
             logger.info(f"{pair}, {timeframe}, {candle_type} - Task finished - {result}")
             if not self._stopping and hasattr(self, "_loop") and not self._loop.is_closed():
@@ -235,6 +340,23 @@ class ExchangeWS:
             with self._state_lock:
                 self._klines_scheduled.discard((pair, timeframe, candle_type))
             self._pop_history((pair, timeframe, candle_type))
+
+    async def _continuously_async_watch_orderbook(self, pair: str) -> None:
+        try:
+            while pair in self._ob_watching:
+                await self._ccxt_object.watch_order_book(pair, self._orderbook_depth)
+                # watch_order_book returns on every applied frame - record the time so
+                # get_orderbook callers can tell whether the feed is still alive.
+                with self._state_lock:
+                    self._ob_last_refresh[pair] = dt_ts()
+        except ccxt.ExchangeClosedByUser:
+            logger.debug("Exchange connection closed by user")
+        except ccxt.BaseError:
+            logger.exception(f"Exception in continuously_async_watch_orderbook for {pair}")
+        finally:
+            with self._state_lock:
+                self._ob_watching.discard(pair)
+                self._ob_last_refresh.pop(pair, None)
 
     async def _continuously_async_watch_ohlcv(
         self, pair: str, timeframe: str, candle_type: CandleType
@@ -301,3 +423,87 @@ class ExchangeWS:
             f"candle_ts={format_ms_time(candle_ts)}, {drop_hint=}"
         )
         return pair, timeframe, candle_type, candles, drop_hint
+
+    def _empty_orderbook(self, pair: str) -> OrderBook:
+        return {
+            "symbol": pair,
+            "bids": [],
+            "asks": [],
+            "timestamp": None,
+            "datetime": None,
+            "nonce": None,
+        }
+
+    async def _orderbook_snapshot(self, pair: str, limit: int) -> OrderBook:
+        """
+        Copy the cached orderbook, truncated to `limit` entries per side.
+        Must run on the websocket event loop, and must not await while copying  to make
+        the snapshot atomic with regards to ccxt's updates.
+        Slicing before copying keeps this cheap, and the copy detaches
+        the [price, size] lists, which ccxt mutates in place on subsequent updates.
+        """
+        ob = self._ccxt_object.orderbooks.get(pair)
+        if ob is None:
+            return self._empty_orderbook(pair)
+        return {
+            "symbol": ob.get("symbol", pair),
+            "bids": deepcopy(ob.get("bids", [])[:limit]),
+            "asks": deepcopy(ob.get("asks", [])[:limit]),
+            "timestamp": ob.get("timestamp"),
+            "datetime": ob.get("datetime"),
+            "nonce": ob.get("nonce"),
+        }
+
+    def get_orderbook(self, pair: str, limit: int) -> OrderBook:
+        """
+        Returns a copy of the cached orderbook from ccxt's "watch" cache,
+        truncated to `limit` entries per side.
+
+        The copy is taken on the websocket thread's event loop to ensure atomicity
+        assuming ccxt applies orderbook updates synchronously within a single websocket callback.
+
+        Returns an empty orderbook if there is no cached book yet, or if the loop did not
+        respond within `ob_snapshot_timeout`, which makes the caller fall back to REST.
+        :param pair: Pair to get the orderbook for
+        :param limit: Maximum number of entries per side to return.
+        """
+        if not self._wait_for_loop(timeout=0.2) or self._loop.is_closed():
+            logger.debug("Websocket loop not available - no orderbook snapshot for %s", pair)
+            return self._empty_orderbook(pair)
+        fut = asyncio.run_coroutine_threadsafe(
+            self._orderbook_snapshot(pair, limit), loop=self._loop
+        )
+        try:
+            return fut.result(timeout=self.ob_snapshot_timeout)
+        except TimeoutError:
+            fut.cancel()
+            logger.warning(
+                f"Timed out after {self.ob_snapshot_timeout}s while copying the websocket "
+                f"orderbook for {pair} - falling back to REST."
+            )
+        except Exception:
+            logger.exception(f"Exception while copying the websocket orderbook for {pair}")
+        return self._empty_orderbook(pair)
+
+    def orderbook_is_fresh(self, pair: str, max_age: float) -> bool:
+        """
+        Whether the cached orderbook was refreshed within the last `max_age` seconds.
+        Returns False if no update arrived within that window (feed likely stuck),
+        prompting callers to fall back to REST.
+        """
+        with self._state_lock:
+            last_refresh = self._ob_last_refresh.get(pair, 0)
+        return last_refresh > 0 and (dt_ts() - last_refresh) < (max_age * 1000)
+
+    def schedule_orderbook(self, pair: str) -> None:
+        """
+        Schedule a pair to be watched for orderbook updates
+        """
+        if not self._wait_for_loop():
+            logger.warning(f"Websocket loop not ready. Could not schedule orderbook for {pair}.")
+            return
+        with self._state_lock:
+            self._ob_watching.add(pair)
+            self._ob_last_request[pair] = dt_ts()
+        asyncio.run_coroutine_threadsafe(self._schedule_while_true(), loop=self._loop)
+        self.cleanup_expired()
