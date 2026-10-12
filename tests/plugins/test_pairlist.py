@@ -18,7 +18,7 @@ from freqtrade.persistence import LocalTrade, Trade
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist, expand_pairlist
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.resolvers import PairListResolver
-from freqtrade.util import dt_now, dt_utc
+from freqtrade.util import dt_floor_day, dt_now, dt_utc
 from tests.conftest import (
     EXMS,
     create_mock_trades_usdt,
@@ -94,6 +94,15 @@ def whitelist_conf_2(default_conf):
         },
     ]
     return default_conf
+
+
+def as_daily_candles(candles: pd.DataFrame) -> pd.DataFrame:
+    """Re-date candles as completed daily candles, the last one ending today (UTC)"""
+    candles = candles.copy().reset_index(drop=True)
+    candles["date"] = pd.date_range(
+        end=dt_floor_day(dt_now()) - timedelta(days=1), periods=len(candles), freq="1D"
+    )
+    return candles
 
 
 @pytest.fixture(scope="function")
@@ -777,18 +786,23 @@ def test_VolumePairList_whitelist_gen(
     base_currency,
     whitelist_result,
     caplog,
+    time_machine,
 ) -> None:
+    time_machine.move_to("2021-09-01 05:00:00 +00:00", tick=False)
     whitelist_conf["runmode"] = "util_exchange"
     whitelist_conf["pairlists"] = pairlists
     whitelist_conf["stake_currency"] = base_currency
 
+    ohlcv_history = as_daily_candles(ohlcv_history)
     ohlcv_history_high_vola = ohlcv_history.copy()
     ohlcv_history_high_vola.loc[ohlcv_history_high_vola.index == 1, "close"] = 0.00090
 
     ohlcv_data = {
         ("ETH/BTC", "1d", CandleType.SPOT): ohlcv_history,
         ("TKN/BTC", "1d", CandleType.SPOT): ohlcv_history,
-        ("LTC/BTC", "1d", CandleType.SPOT): pd.concat([ohlcv_history, ohlcv_history]),
+        ("LTC/BTC", "1d", CandleType.SPOT): as_daily_candles(
+            pd.concat([ohlcv_history, ohlcv_history])
+        ),
         ("XRP/BTC", "1d", CandleType.SPOT): ohlcv_history,
         ("HOT/BTC", "1d", CandleType.SPOT): ohlcv_history_high_vola,
     }
@@ -1756,6 +1770,7 @@ def test_agefilter_min_days_listed_too_large(mocker, default_conf, markets, tick
 
 def test_agefilter_caching(mocker, markets, whitelist_conf_agefilter, tickers, ohlcv_history):
     with time_machine.travel("2021-09-01 05:00:00 +00:00") as t:
+        ohlcv_history = as_daily_candles(ohlcv_history)
         ohlcv_data = {
             ("ETH/BTC", "1d", CandleType.SPOT): ohlcv_history,
             ("TKN/BTC", "1d", CandleType.SPOT): ohlcv_history,
@@ -1784,34 +1799,28 @@ def test_agefilter_caching(mocker, markets, whitelist_conf_agefilter, tickers, o
             ("ETH/BTC", "1d", CandleType.SPOT): ohlcv_history,
             ("TKN/BTC", "1d", CandleType.SPOT): ohlcv_history,
             ("LTC/BTC", "1d", CandleType.SPOT): ohlcv_history,
-            ("XRP/BTC", "1d", CandleType.SPOT): ohlcv_history.iloc[[0]],
+            ("XRP/BTC", "1d", CandleType.SPOT): ohlcv_history.iloc[[-1]],
         }
         mocker.patch(f"{EXMS}.refresh_latest_ohlcv", return_value=ohlcv_data)
         freqtrade.pairlists.refresh_pairlist()
         assert len(freqtrade.pairlists.whitelist) == 3
-        assert freqtrade.exchange.refresh_latest_ohlcv.call_count == 1
+        # Only XRP/BTC is fetched, the other pairs have a known listing date
+        freqtrade.exchange.refresh_latest_ohlcv.assert_called_once()
+        assert freqtrade.exchange.refresh_latest_ohlcv.call_args[0][0] == [
+            ("XRP/BTC", "1d", CandleType.SPOT)
+        ]
 
-        # Move to next day
+        # Move to next day - XRP/BTC is now old enough, without refetching
         t.move_to("2021-09-02 01:00:00 +00:00")
         mocker.patch(f"{EXMS}.refresh_latest_ohlcv", return_value=ohlcv_data)
         freqtrade.pairlists.refresh_pairlist()
-        assert len(freqtrade.pairlists.whitelist) == 3
-        assert freqtrade.exchange.refresh_latest_ohlcv.call_count == 1
+        assert len(freqtrade.pairlists.whitelist) == 4
+        assert freqtrade.exchange.refresh_latest_ohlcv.call_count == 0
 
-        # Move another day with fresh mocks (now the pair is old enough)
         t.move_to("2021-09-03 01:00:00 +00:00")
-        # Called once for XRP/BTC
-        ohlcv_data = {
-            ("ETH/BTC", "1d", CandleType.SPOT): ohlcv_history,
-            ("TKN/BTC", "1d", CandleType.SPOT): ohlcv_history,
-            ("LTC/BTC", "1d", CandleType.SPOT): ohlcv_history,
-            ("XRP/BTC", "1d", CandleType.SPOT): ohlcv_history,
-        }
-        mocker.patch(f"{EXMS}.refresh_latest_ohlcv", return_value=ohlcv_data)
         freqtrade.pairlists.refresh_pairlist()
         assert len(freqtrade.pairlists.whitelist) == 4
-        # Called once (only for XRP/BTC)
-        assert freqtrade.exchange.refresh_latest_ohlcv.call_count == 1
+        assert freqtrade.exchange.refresh_latest_ohlcv.call_count == 0
 
 
 def test_OffsetFilter_error(mocker, whitelist_conf) -> None:
