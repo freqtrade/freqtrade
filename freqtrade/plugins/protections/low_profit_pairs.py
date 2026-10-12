@@ -30,12 +30,13 @@ class LowProfitPairs(IProtection):
             f"profit < {self._required_profit} within {self.lookback_period_str}."
         )
 
-    def _reason(self, profit: float) -> str:
+    def _reason(self, profit: float, side: LongShort) -> str:
         """
         LockReason to use
         """
+        side_str = f" for {side} trades" if self._only_per_side else ""
         return (
-            f"{profit} < {self._required_profit} in {self.lookback_period_str}, "
+            f"{profit} < {self._required_profit} in {self.lookback_period_str}{side_str}, "
             f"locking {self.unlock_reason_time_element}."
         )
 
@@ -66,9 +67,10 @@ class LowProfitPairs(IProtection):
 
         profit = sum(trade.close_profit for trade in trades_to_consider if trade.close_profit)
         if profit < self._required_profit:
+            side_str = f" ({side} trades)" if self._only_per_side else ""
             self.log_once(
-                f"Trading for {pair} stopped due to {profit:.2f} < {self._required_profit} "
-                f"within {self._lookback_period} minutes.",
+                f"Trading for {pair}{side_str} stopped due to {profit:.2f} < "
+                f"{self._required_profit} within {self._lookback_period} minutes.",
                 logger.info,
             )
             until = self.calculate_lock_end(trades_to_consider)
@@ -76,7 +78,7 @@ class LowProfitPairs(IProtection):
             return ProtectionReturn(
                 lock=True,
                 until=until,
-                reason=self._reason(profit),
+                reason=self._reason(profit, side),
                 lock_side=(side if self._only_per_side else "*"),
             )
 
