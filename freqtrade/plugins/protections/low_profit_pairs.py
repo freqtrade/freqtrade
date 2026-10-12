@@ -54,23 +54,24 @@ class LowProfitPairs(IProtection):
         #     filters.append(Trade.pair == pair)
 
         trades = Trade.get_trades_proxy(pair=pair, is_open=False, close_date=look_back_until)
+        trades_to_consider = [
+            trade
+            for trade in trades
+            if ((not self._only_per_side) or (trade.trade_direction == side))
+        ]
         # trades = Trade.get_trades(filters).all()
-        if len(trades) < self._trade_limit:
+        if not trades_to_consider or (len(trades_to_consider) < self._trade_limit):
             # Not enough trades in the relevant period
             return None
 
-        profit = sum(
-            trade.close_profit
-            for trade in trades
-            if trade.close_profit and (not self._only_per_side or trade.trade_direction == side)
-        )
+        profit = sum(trade.close_profit for trade in trades_to_consider if trade.close_profit)
         if profit < self._required_profit:
             self.log_once(
                 f"Trading for {pair} stopped due to {profit:.2f} < {self._required_profit} "
                 f"within {self._lookback_period} minutes.",
                 logger.info,
             )
-            until = self.calculate_lock_end(trades)
+            until = self.calculate_lock_end(trades_to_consider)
 
             return ProtectionReturn(
                 lock=True,
