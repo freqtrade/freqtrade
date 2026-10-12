@@ -227,7 +227,13 @@ class ExchangeWS:
             logger.exception(f"Unhandled exception in watch task callback for {pair}, {timeframe}")
         finally:
             logger.info(f"{pair}, {timeframe}, {candle_type} - Task finished - {result}")
-            if not self._stopping and hasattr(self, "_loop") and not self._loop.is_closed():
+            # A cancelled watch belongs to a closing connection, including periodic resets.
+            if (
+                not task.cancelled()
+                and not self._stopping
+                and hasattr(self, "_loop")
+                and not self._loop.is_closed()
+            ):
                 asyncio.run_coroutine_threadsafe(
                     self._unwatch_ohlcv(pair, timeframe, candle_type), loop=self._loop
                 )
