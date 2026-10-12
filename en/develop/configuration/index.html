@@ -3417,7 +3417,7 @@ In the below case, <code>max_open_trades</code> would be 3 after the merging - a
 </tr>
 <tr>
 <td><code>exchange.enable_ws</code></td>
-<td>Enable the usage of Websockets for the exchange. <br><a href="#consuming-exchange-websockets">More information</a>.<br><em>Defaults to <code>true</code>.</em> <br> <strong>Datatype:</strong> Boolean</td>
+<td>Enable the usage of Websockets for the exchange. Either a boolean to enable/disable all streams, or an object for per-stream control (e.g. <code>{"ohlcv": true, "orderbook": false}</code>). Streams omitted from the object default to enabled. <br><a href="#consuming-exchange-websockets">More information</a>.<br><em>Defaults to <code>true</code>.</em> <br> <strong>Datatype:</strong> Boolean or Dict</td>
 </tr>
 <tr>
 <td><code>exchange.markets_refresh_interval</code></td>
@@ -4155,6 +4155,16 @@ Should the websocket connection fail (or be disabled), the bot will fall back to
 <div class="highlight"><pre><span></span><code>"exchange": {
     // ...
     "enable_ws": false,
+    // ...
+}
+</code></pre></div>
+<p><code>enable_ws</code> also accepts an object for per-stream control - this lets you keep one stream while disabling another (streams omitted from the object default to enabled):</p>
+<div class="highlight"><pre><span></span><code>"exchange": {
+    // ...
+    "enable_ws": {
+        "ohlcv": true,
+        "orderbook": false
+    },
     // ...
 }
 </code></pre></div>
