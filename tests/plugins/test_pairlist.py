@@ -18,7 +18,7 @@ from freqtrade.persistence import LocalTrade, Trade
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist, expand_pairlist
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.resolvers import PairListResolver
-from freqtrade.util import dt_floor_day, dt_now, dt_utc
+from freqtrade.util import dt_floor_day, dt_now, dt_ts, dt_utc
 from tests.conftest import (
     EXMS,
     create_mock_trades_usdt,
@@ -128,6 +128,16 @@ def whitelist_conf_agefilter(default_conf):
             "refresh_period": -1,
         },
         {"method": "AgeFilter", "min_days_listed": 2, "max_days_listed": 100},
+    ]
+    return default_conf
+
+
+@pytest.fixture
+def agefilter_config(default_conf):
+    default_conf["exchange"]["pair_whitelist"] = ["ETH/BTC"]
+    default_conf["pairlists"] = [
+        {"method": "StaticPairList"},
+        {"method": "AgeFilter", "min_days_listed": 2, "max_days_listed": 3},
     ]
     return default_conf
 
@@ -1821,6 +1831,90 @@ def test_agefilter_caching(mocker, markets, whitelist_conf_agefilter, tickers, o
         freqtrade.pairlists.refresh_pairlist()
         assert len(freqtrade.pairlists.whitelist) == 4
         assert freqtrade.exchange.refresh_latest_ohlcv.call_count == 0
+
+
+def test_agefilter_tracks_age_without_refetching(mocker, agefilter_config, time_machine):
+    time_machine.move_to("2026-09-01 23:58:00+00:00", tick=False)
+    agefilter_config["exchange"]["pair_whitelist"] = ["ETH/BTC", "TKN/BTC"]
+    exchange = get_patched_exchange(mocker, agefilter_config)
+    pairlist_manager = PairListManager(exchange, agefilter_config)
+    eth_key = ("ETH/BTC", "1d", CandleType.SPOT)
+    tkn_key = ("TKN/BTC", "1d", CandleType.SPOT)
+    candles = generate_test_data("1d", 4, "2026-08-29 00:00:00+00:00")
+    refresh = mocker.patch.object(
+        exchange,
+        "refresh_latest_ohlcv",
+        # ETH/BTC listed 2 days ago (old enough), TKN/BTC 1 day ago (too young)
+        return_value={
+            eth_key: candles.iloc[1:3],
+            tkn_key: candles.iloc[2:3],
+        },
+    )
+
+    pairlist_manager.refresh_pairlist()
+    assert pairlist_manager.whitelist == ["ETH/BTC"]
+    refresh.assert_called_once_with(
+        [eth_key, tkn_key], since_ms=dt_ts(dt_utc(2026, 8, 28)), cache=False
+    )
+
+    time_machine.move_to("2026-09-01 23:59:59+00:00", tick=False)
+    pairlist_manager.refresh_pairlist()
+    assert pairlist_manager.whitelist == ["ETH/BTC"]
+    assert refresh.call_count == 1
+
+    # Ages follow the UTC day - TKN/BTC becomes old enough, ETH/BTC is at max age
+    time_machine.move_to("2026-09-02 00:00:00+00:00", tick=False)
+    pairlist_manager.refresh_pairlist()
+    assert pairlist_manager.whitelist == ["ETH/BTC", "TKN/BTC"]
+    assert refresh.call_count == 1
+
+    # ETH/BTC exceeds max_days_listed
+    time_machine.move_to("2026-09-03 00:00:00+00:00", tick=False)
+    pairlist_manager.refresh_pairlist()
+    assert pairlist_manager.whitelist == ["TKN/BTC"]
+    assert refresh.call_count == 1
+
+    # A restart produces the same result from freshly fetched candles.
+    # The fetched window only reaches back max_days_listed + 1 days.
+    refresh.return_value = {
+        eth_key: generate_test_data("1d", 4, "2026-08-30 00:00:00+00:00"),
+        tkn_key: generate_test_data("1d", 3, "2026-08-31 00:00:00+00:00"),
+    }
+    restarted_manager = PairListManager(exchange, agefilter_config)
+    restarted_manager.refresh_pairlist()
+    assert restarted_manager.whitelist == ["TKN/BTC"]
+    assert refresh.call_count == 2
+    refresh.assert_called_with([eth_key, tkn_key], since_ms=dt_ts(dt_utc(2026, 8, 30)), cache=False)
+
+
+def test_agefilter_retries_missing_data(mocker, agefilter_config, time_machine):
+    time_machine.move_to("2026-09-01 12:00:00+00:00", tick=False)
+    exchange = get_patched_exchange(mocker, agefilter_config)
+    pairlist_manager = PairListManager(exchange, agefilter_config)
+    candle_key = ("ETH/BTC", "1d", CandleType.SPOT)
+    # Failed fetch - retried on the next iteration
+    refresh = mocker.patch.object(exchange, "refresh_latest_ohlcv", return_value={})
+
+    pairlist_manager.refresh_pairlist()
+    assert pairlist_manager.whitelist == []
+    pairlist_manager.refresh_pairlist()
+    assert pairlist_manager.whitelist == []
+    assert refresh.call_count == 2
+    refresh.reset_mock()
+
+    # No completed candle yet - retried on the next UTC day
+    refresh.return_value = {candle_key: generate_test_data("1d", 0, "2026-09-01 00:00:00+00:00")}
+    pairlist_manager.refresh_pairlist()
+    pairlist_manager.refresh_pairlist()
+    assert pairlist_manager.whitelist == []
+    assert refresh.call_count == 1
+    refresh.reset_mock()
+
+    time_machine.move_to("2026-09-03 00:00:00+00:00", tick=False)
+    refresh.return_value = {candle_key: generate_test_data("1d", 2, "2026-09-01 00:00:00+00:00")}
+    pairlist_manager.refresh_pairlist()
+    assert pairlist_manager.whitelist == ["ETH/BTC"]
+    assert refresh.call_count == 1
 
 
 def test_OffsetFilter_error(mocker, whitelist_conf) -> None:
