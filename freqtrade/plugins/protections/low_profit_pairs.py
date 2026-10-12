@@ -60,7 +60,7 @@ class LowProfitPairs(IProtection):
             if ((not self._only_per_side) or (trade.trade_direction == side))
         ]
         # trades = Trade.get_trades(filters).all()
-        if len(trades_to_consider) < self._trade_limit:
+        if trades_to_consider and (len(trades_to_consider) < self._trade_limit):
             # Not enough trades in the relevant period
             return None
 
