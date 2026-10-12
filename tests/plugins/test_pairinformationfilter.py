@@ -82,6 +82,36 @@ def _get_pairinformation_test_markets() -> dict:
     return custom_markets
 
 
+@pytest.mark.parametrize(
+    "compare_value", [None, "", False, 0], ids=["none", "empty-string", "false", "zero"]
+)
+@pytest.mark.parametrize(
+    "selection_mode,expected",
+    [("whitelist", ["ETH/USDT"]), ("blacklist", ["XRP/USDT", "BTC/USDT"])],
+)
+def test_PairInformationFilter_filter_explicit_falsy_values(
+    mocker, pif_config, compare_value, selection_mode, expected
+):
+    markets = _get_pairinformation_test_markets()
+    markets["ETH/USDT"]["info"]["contractType"] = compare_value
+    # XRP has no contractType key; BTC has a different value. Neither should match.
+    pif_config["pairlists"] = [
+        {"method": "StaticPairList"},
+        {
+            "method": "PairInformationFilter",
+            "selection_mode": selection_mode,
+            "info_key": "info.contractType",
+            "info_compare_value": compare_value,
+        },
+    ]
+    exchange = get_patched_exchange(mocker, pif_config, mock_markets=markets)
+    pairlist_manager = PairListManager(exchange, pif_config)
+
+    pairlist_manager.refresh_pairlist()
+
+    assert pairlist_manager.whitelist == expected
+
+
 def test_PairInformationFilter_filter_nested_info_string_whitelist(mocker, pif_config):
     markets = _get_pairinformation_test_markets()
 
