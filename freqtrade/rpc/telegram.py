@@ -1499,6 +1499,7 @@ class Telegram(RPCHandler):
             except RPCException as e:
                 await self._send_msg(str(e))
 
+    @authorized_only
     async def _force_exit_inline(self, update: Update, _: CallbackContext) -> None:
         if update.callback_query:
             query = update.callback_query
@@ -1538,6 +1539,7 @@ class Telegram(RPCHandler):
                 logger.exception("Forcebuy error!")
                 await self._send_msg(str(e), ParseMode.HTML)
 
+    @authorized_only
     async def _force_enter_inline(self, update: Update, _: CallbackContext) -> None:
         if update.callback_query:
             query = update.callback_query
