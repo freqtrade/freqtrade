@@ -275,13 +275,16 @@ class ExchangeWS:
             logger.debug("Shutting down - skipping OHLCV unwatch for %s, %s", pair, timeframe)
             return
         try:
-            if self.exchange_has("unWatchOHLCVForSymbols"):
-                await self._ccxt_object.un_watch_ohlcv_for_symbols([[pair, timeframe]])
-            elif self.exchange_has("unWatchOHLCV"):
-                await self._ccxt_object.un_watch_ohlcv(pair, timeframe)
-            else:
-                logger.debug("un_watch_ohlcv not supported for %s, %s", pair, timeframe)
+            async with asyncio.timeout(3):
+                if self.exchange_has("unWatchOHLCVForSymbols"):
+                    await self._ccxt_object.un_watch_ohlcv_for_symbols([[pair, timeframe]])
+                elif self.exchange_has("unWatchOHLCV"):
+                    await self._ccxt_object.un_watch_ohlcv(pair, timeframe)
+                else:
+                    logger.debug("un_watch_ohlcv not supported for %s, %s", pair, timeframe)
 
+        except TimeoutError:
+            logger.warning(f"Timed out while unwatching OHLCV for {pair}, {timeframe}.")
         except ccxt.NotSupported as e:
             logger.debug("un_watch_ohlcv_for_symbols not supported: %s", e)
         except ccxt.NetworkError as e:
@@ -297,13 +300,16 @@ class ExchangeWS:
             logger.debug("Shutting down - skipping orderbook unwatch for %s", pair)
             return
         try:
-            if self.exchange_has("unWatchOrderBookForSymbols"):
-                await self._ccxt_object.un_watch_order_book_for_symbols([pair])
-            elif self.exchange_has("unWatchOrderBook"):
-                await self._ccxt_object.un_watch_order_book(pair)
-            else:
-                logger.debug("un_watch_order_book not supported for %s", pair)
+            async with asyncio.timeout(3):
+                if self.exchange_has("unWatchOrderBookForSymbols"):
+                    await self._ccxt_object.un_watch_order_book_for_symbols([pair])
+                elif self.exchange_has("unWatchOrderBook"):
+                    await self._ccxt_object.un_watch_order_book(pair)
+                else:
+                    logger.debug("un_watch_order_book not supported for %s", pair)
 
+        except TimeoutError:
+            logger.warning(f"Timed out while unwatching orderbook for {pair}.")
         except ccxt.NotSupported as e:
             logger.debug("un_watch_order_book not supported: %s", e)
         except ccxt.NetworkError as e:

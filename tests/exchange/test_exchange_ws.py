@@ -841,6 +841,22 @@ def test_exchangews_continuous_stopped_no_unwatch_while_stopping(mocker):
     assert paircomb not in exchange_ws._klines_scheduled
 
 
+async def test_exchangews_unwatch_timeout(mocker, caplog):
+    config = MagicMock()
+    ccxt_object = MagicMock()
+    ccxt_object.has = {"unWatchOHLCVForSymbols": True, "unWatchOrderBookForSymbols": True}
+    ccxt_object.un_watch_ohlcv_for_symbols = AsyncMock(side_effect=TimeoutError)
+    ccxt_object.un_watch_order_book_for_symbols = AsyncMock(side_effect=TimeoutError)
+    mocker.patch("freqtrade.exchange.exchange_ws.ExchangeWS._start_forever", MagicMock())
+
+    exchange_ws = ExchangeWS(config, ccxt_object)
+
+    await exchange_ws._unwatch_ohlcv("ETH/BTC", "1m", CandleType.SPOT)
+    assert log_has_re("Timed out while unwatching OHLCV for ETH/BTC, 1m", caplog)
+    await exchange_ws._unwatch_orderbook("ETH/BTC")
+    assert log_has_re("Timed out while unwatching orderbook for ETH/BTC", caplog)
+
+
 async def test_exchangews_unwatch_while_stopping(mocker, caplog):
     caplog.set_level(logging.DEBUG)
     config = MagicMock()
