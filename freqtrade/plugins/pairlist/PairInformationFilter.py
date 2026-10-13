@@ -85,7 +85,12 @@ class PairInformationFilter(IPairList):
         for pair in pairlist:
             market = self._exchange.markets[pair]
             value = safe_value_nested(market, self._info_key, default_missing, preserve_none=True)
-            if (value is not default_missing) and (value == self._info_compare_value):
+            # Booleans must not match numbers, even though Python considers True == 1.
+            if (
+                value is not default_missing
+                and isinstance(value, bool) == isinstance(self._info_compare_value, bool)
+                and value == self._info_compare_value
+            ):
                 whitelist_pairlist.append(pair)
             else:
                 blacklist_pairlist.append(pair)
