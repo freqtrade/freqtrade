@@ -197,8 +197,8 @@ class VolumePairList(IPairList):
                 needed_pairs, lookback_period=self._lookback_period
             )
 
+            volume_in_contracts = self._exchange.get_option("ohlcv_volume_in_contracts", False)
             for i, p in enumerate(filtered_tickers):
-                contract_size = self._exchange.markets[p["symbol"]].get("contractSize", 1.0) or 1.0
                 pair_candles = candles.get(
                     (p["symbol"], self._lookback_timeframe, self._def_candletype), None
                 )
@@ -209,9 +209,17 @@ class VolumePairList(IPairList):
                             pair_candles["high"] + pair_candles["low"] + pair_candles["close"]
                         ) / 3
 
-                        pair_candles["quoteVolume"] = (
-                            pair_candles["volume"] * pair_candles["typical_price"] * contract_size
-                        )
+                        if volume_in_contracts:
+                            contract_size = self._exchange.get_contract_size(p["symbol"]) or 1.0
+                            pair_candles["quoteVolume"] = (
+                                pair_candles["volume"]
+                                * pair_candles["typical_price"]
+                                * contract_size
+                            )
+                        else:
+                            pair_candles["quoteVolume"] = (
+                                pair_candles["volume"] * pair_candles["typical_price"]
+                            )
                     else:
                         # Exchange ohlcv data is in quote volume already.
                         pair_candles["quoteVolume"] = pair_candles["volume"]

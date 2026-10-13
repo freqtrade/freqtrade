@@ -28,6 +28,7 @@ class FtHas(TypedDict, total=False):
     ohlcv_partial_candle: bool
     ohlcv_require_since: bool
     ohlcv_volume_currency: str
+    ohlcv_volume_in_contracts: bool
     ohlcv_candle_limit_per_timeframe: dict[str, int]
     always_require_api_keys: bool
     # allow disabling of parallel download-data for specific exchanges

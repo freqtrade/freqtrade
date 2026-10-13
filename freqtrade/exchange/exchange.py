@@ -144,6 +144,7 @@ class Exchange:
         "always_require_api_keys": False,  # purge API keys for Dry-run. Must default to false.
         # Check https://github.com/ccxt/ccxt/issues/10767 for removal of ohlcv_volume_currency
         "ohlcv_volume_currency": "base",  # "base" or "quote"
+        "ohlcv_volume_in_contracts": False,
         "tickers_have_quoteVolume": True,
         "tickers_have_percentage": True,
         "tickers_have_bid_ask": True,  # bid / ask empty for fetch_tickers
