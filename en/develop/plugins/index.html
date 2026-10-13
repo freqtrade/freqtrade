@@ -3048,6 +3048,16 @@ Nested dictionaries can be accessed by using dot notation in the <code>info_key<
 <span class="w">    </span><span class="p">}</span>
 <span class="p">]</span>
 </code></pre></div>
+<p><code>info_compare_value</code> is required and accepts strings, numbers, booleans, and <code>null</code>, including <code>""</code>, <code>0</code>, and <code>false</code>.
+Use unquoted JSON <code>null</code> to match a field containing Python <code>None</code>. The quoted value <code>"null"</code> matches a string instead.</p>
+<p>For example, this filter keeps pairs whose <code>info.preListingInfo</code> field exists and contains <code>None</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"PairInformationFilter"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"selection_mode"</span><span class="p">:</span><span class="w"> </span><span class="s2">"whitelist"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"info_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"info.preListingInfo"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"info_compare_value"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
+<span class="p">}</span>
+</code></pre></div>
 <h4 id="performancefilter">PerformanceFilter<a class="headerlink" href="#performancefilter" title="Permanent link">&para;</a></h4>
 <p>Sorts pairs by past trade performance, as follows:</p>
 <ol>
