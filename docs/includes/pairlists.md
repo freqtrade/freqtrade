@@ -529,6 +529,20 @@ In this example, the resulting `PairInformationFilter` configuration will includ
 ]
 ```
 
+`info_compare_value` is required and accepts strings, numbers, booleans, and `null`, including `""`, `0`, and `false`.
+Use unquoted JSON `null` to match a field containing Python `None`. The quoted value `"null"` matches a string instead.
+
+For example, this filter keeps pairs whose `info.preListingInfo` field exists and contains `None`:
+
+``` json
+{
+    "method": "PairInformationFilter",
+    "selection_mode": "whitelist",
+    "info_key": "info.preListingInfo",
+    "info_compare_value": null
+}
+```
+
 #### PerformanceFilter
 
 Sorts pairs by past trade performance, as follows:

@@ -145,12 +145,13 @@ def round_dict(d, n):
 DictMap = dict[str, Any] | Mapping[str, Any]
 
 
-def safe_value_nested(obj: DictMap, keys: str, default_value=None):
+def safe_value_nested(obj: DictMap, keys: str, default_value=None, *, preserve_none=False):
     """
     Search a nested dict for a value.
     :param obj: dict to search in
     :param keys: dot separated keys to search for
     :param default_value: value to return if the key is not found or value is None
+    :param preserve_none: if True, will consider None as a valid value
     :return: value found in dict or default_value
      Sample:
     >>> d = { 'first' : { 'rows' : { 'pass' : 'dog', 'number' : '1' } } }
@@ -159,7 +160,11 @@ def safe_value_nested(obj: DictMap, keys: str, default_value=None):
     """
     nested_obj = obj
     for key in keys.split("."):
-        if isinstance(nested_obj, Mapping) and key in nested_obj and nested_obj[key] is not None:
+        if (
+            isinstance(nested_obj, Mapping)
+            and key in nested_obj
+            and (nested_obj[key] is not None or preserve_none)
+        ):
             nested_obj = nested_obj[key]
         else:
             return default_value

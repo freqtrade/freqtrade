@@ -82,6 +82,76 @@ def _get_pairinformation_test_markets() -> dict:
     return custom_markets
 
 
+@pytest.mark.parametrize(
+    "compare_value", [None, "", False, 0], ids=["none", "empty-string", "false", "zero"]
+)
+@pytest.mark.parametrize(
+    "selection_mode,expected",
+    [("whitelist", ["ETH/USDT"]), ("blacklist", ["XRP/USDT", "BTC/USDT"])],
+)
+def test_PairInformationFilter_filter_explicit_falsy_values(
+    mocker, pif_config, compare_value, selection_mode, expected
+):
+    markets = _get_pairinformation_test_markets()
+    markets["ETH/USDT"]["info"]["contractType"] = compare_value
+    # XRP has no contractType key; BTC has a different value. Neither should match.
+    pif_config["pairlists"] = [
+        {"method": "StaticPairList"},
+        {
+            "method": "PairInformationFilter",
+            "selection_mode": selection_mode,
+            "info_key": "info.contractType",
+            "info_compare_value": compare_value,
+        },
+    ]
+    exchange = get_patched_exchange(mocker, pif_config, mock_markets=markets)
+    pairlist_manager = PairListManager(exchange, pif_config)
+
+    pairlist_manager.refresh_pairlist()
+
+    assert pairlist_manager.whitelist == expected
+
+
+@pytest.mark.parametrize(
+    "compare_value,matching_value,nonmatching_value",
+    [
+        pytest.param(True, True, 1, id="true-vs-int"),
+        pytest.param(True, True, 1.0, id="true-vs-float"),
+        pytest.param(False, False, 0, id="false-vs-int"),
+        pytest.param(False, False, 0.0, id="false-vs-float"),
+        pytest.param(1, 1.0, True, id="int-one-vs-true"),
+        pytest.param(1.0, 1, True, id="float-one-vs-true"),
+        pytest.param(0, 0.0, False, id="int-zero-vs-false"),
+        pytest.param(0.0, 0, False, id="float-zero-vs-false"),
+    ],
+)
+@pytest.mark.parametrize(
+    "selection_mode,expected",
+    [("whitelist", ["ETH/USDT"]), ("blacklist", ["XRP/USDT", "BTC/USDT"])],
+)
+def test_PairInformationFilter_filter_boolean_numeric_comparison(
+    mocker, pif_config, compare_value, matching_value, nonmatching_value, selection_mode, expected
+):
+    markets = _get_pairinformation_test_markets()
+    markets["ETH/USDT"]["info"]["contractType"] = matching_value
+    markets["BTC/USDT"]["info"]["contractType"] = nonmatching_value
+    pif_config["pairlists"] = [
+        {"method": "StaticPairList"},
+        {
+            "method": "PairInformationFilter",
+            "selection_mode": selection_mode,
+            "info_key": "info.contractType",
+            "info_compare_value": compare_value,
+        },
+    ]
+    exchange = get_patched_exchange(mocker, pif_config, mock_markets=markets)
+    pairlist_manager = PairListManager(exchange, pif_config)
+
+    pairlist_manager.refresh_pairlist()
+
+    assert pairlist_manager.whitelist == expected
+
+
 def test_PairInformationFilter_filter_nested_info_string_whitelist(mocker, pif_config):
     markets = _get_pairinformation_test_markets()
 

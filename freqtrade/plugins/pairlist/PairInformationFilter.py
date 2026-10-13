@@ -19,14 +19,14 @@ class PairInformationFilter(IPairList):
 
         self._selection_mode: str = self._pairlistconfig.get("selection_mode", "whitelist")
         self._info_key: str = self._pairlistconfig.get("info_key", "")
-        self._info_compare_value: str = self._pairlistconfig.get("info_compare_value", "")
+        self._info_compare_value = self._pairlistconfig.get("info_compare_value")
 
         if not self._info_key:
             raise OperationalException(
                 "`info_key` not specified. Please check your configuration "
                 'for "pairlist.config.info_key"'
             )
-        if not self._info_compare_value:
+        if "info_compare_value" not in self._pairlistconfig:
             raise OperationalException(
                 "`info_compare_value` not specified. Please check your configuration "
                 'for "pairlist.config.info_compare_value"'
@@ -79,11 +79,18 @@ class PairInformationFilter(IPairList):
         whitelist_or_blacklist = self._selection_mode == "whitelist"
         whitelist_pairlist: list[str] = []
         blacklist_pairlist: list[str] = []
+        default_missing = object()
 
         # loop through and add them to either list based on the market info check
         for pair in pairlist:
             market = self._exchange.markets[pair]
-            if safe_value_nested(market, self._info_key, "") == self._info_compare_value:
+            value = safe_value_nested(market, self._info_key, default_missing, preserve_none=True)
+            # Booleans must not match numbers, even though Python considers True == 1.
+            if (
+                value is not default_missing
+                and isinstance(value, bool) == isinstance(self._info_compare_value, bool)
+                and value == self._info_compare_value
+            ):
                 whitelist_pairlist.append(pair)
             else:
                 blacklist_pairlist.append(pair)
