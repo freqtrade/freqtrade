@@ -1608,6 +1608,7 @@ async def test_force_exit_no_pair(default_conf, update, ticker, fee, mocker) -> 
     assert keyboard[1][0].callback_data == "force_exit__2 "
     update = MagicMock()
     update.callback_query = AsyncMock()
+    update.callback_query.message.chat_id = 1235
     update.callback_query.data = keyboard[1][0].callback_data
     await telegram._force_exit_inline(update, None)
     assert update.callback_query.answer.call_count == 1
