@@ -42,7 +42,6 @@ class ExchangeWS:
 
         self._ob_watching: set[str] = set()
         self._ob_scheduled: set[str] = set()
-        self._ob_tasks: dict[str, asyncio.Task] = {}
         self._ob_last_request: dict[str, float] = {}
         # Timestamp (ms) of the last orderbook update received from the websocket, per pair.
         # Used by orderbook_is_fresh() to detect a stuck feed.
@@ -190,9 +189,6 @@ class ExchangeWS:
                 if last_refresh > 0 and (dt_ts() - last_refresh) > ((self.ob_timeout + 20) * 1000):
                     logger.info(f"Removing {pair} from orderbook watchlist")
                     self._ob_watching.discard(pair)
-                    # cancel the corresponding task.
-                    if (task := self._ob_tasks.get(pair)) and not self._loop.is_closed():
-                        self._loop.call_soon_threadsafe(task.cancel)
 
     async def _schedule_while_true(self) -> None:
         # For the ones we should be watching
@@ -232,14 +228,11 @@ class ExchangeWS:
             ob_task = asyncio.create_task(self._continuously_async_watch_orderbook(ob_pair))
             with self._state_lock:
                 self._background_tasks.add(ob_task)
-                self._ob_tasks[ob_pair] = ob_task
             ob_task.add_done_callback(partial(self._orderbook_stopped, pair=ob_pair))
 
     def _orderbook_stopped(self, task: asyncio.Task, pair: str) -> None:
         with self._state_lock:
             self._background_tasks.discard(task)
-            if self._ob_tasks.get(pair) is task:
-                del self._ob_tasks[pair]
         result = "done"
         try:
             if task.cancelled():
