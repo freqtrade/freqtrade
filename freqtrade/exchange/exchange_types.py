@@ -37,6 +37,7 @@ class FtHas(TypedDict, total=False):
     # Maximum seconds a pair with missing candles may go unqueried
     ohlcv_max_poll_interval_secs: int
     ohlcv_volume_currency: str
+    ohlcv_volume_in_contracts: bool
     ohlcv_candle_limit_per_timeframe: dict[str, int]
     always_require_api_keys: bool
     # allow disabling of parallel download-data for specific exchanges

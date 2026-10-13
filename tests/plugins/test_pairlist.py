@@ -1125,6 +1125,75 @@ def test_VolumePairList_range(
         assert whitelist == volumefilter_result
 
 
+@pytest.mark.parametrize(
+    "exchange_name,expected_whitelist",
+    [
+        # Candle volume in base currency - contractSize is ignored
+        ("okx", ["ETH/USDT:USDT", "ADA/USDT:USDT"]),
+        # Candle volume in contracts - contractSize is applied
+        ("gate", ["ADA/USDT:USDT", "ETH/USDT:USDT"]),
+    ],
+    # Relies on ohlcv_volume_in_contracts being set.
+)
+def test_VolumePairList_range_contract_size(
+    mocker,
+    default_conf_usdt,
+    ohlcv_history,
+    exchange_name,
+    expected_whitelist,
+) -> None:
+    default_conf_usdt["trading_mode"] = "futures"
+    default_conf_usdt["margin_mode"] = "isolated"
+    default_conf_usdt["pairlists"] = [
+        {
+            "method": "VolumePairList",
+            "number_assets": 2,
+            "sort_key": "quoteVolume",
+            "lookback_days": 1,
+            "refresh_period": 86400,
+        }
+    ]
+
+    pair_small_contract = "ETH/USDT:USDT"
+    pair_large_contract = "ADA/USDT:USDT"
+
+    df_small_contract = ohlcv_history.copy()
+    df_small_contract["volume"] = 10.0
+    df_small_contract["open"] = 100.0
+    df_small_contract["high"] = 100.0
+    df_small_contract["low"] = 100.0
+    df_small_contract["close"] = 100.0
+
+    df_large_contract = ohlcv_history.copy()
+    df_large_contract["volume"] = 500.0
+    df_large_contract["open"] = 1.0
+    df_large_contract["high"] = 1.0
+    df_large_contract["low"] = 1.0
+    df_large_contract["close"] = 1.0
+
+    ohlcv_data = {
+        (pair_small_contract, "1d", CandleType.FUTURES): df_small_contract,
+        (pair_large_contract, "1d", CandleType.FUTURES): df_large_contract,
+    }
+
+    default_conf_usdt["exchange"]["pair_whitelist"] = [
+        pair_small_contract,
+        pair_large_contract,
+    ]
+
+    mocker.patch(f"{EXMS}.exchange_has", MagicMock(return_value=True))
+    mocker.patch(f"{EXMS}.refresh_ohlcv_with_cache", MagicMock(return_value=ohlcv_data))
+
+    exchange = get_patched_exchange(mocker, default_conf_usdt, exchange=exchange_name)
+    exchange.markets[pair_small_contract]["contractSize"] = "0.01"
+    exchange.markets[pair_large_contract]["contractSize"] = "1000.0"
+
+    pm = PairListManager(exchange, default_conf_usdt)
+    pm.refresh_pairlist()
+
+    assert pm.whitelist == expected_whitelist
+
+
 def test_PrecisionFilter_error(mocker, whitelist_conf) -> None:
     whitelist_conf["pairlists"] = [{"method": "StaticPairList"}, {"method": "PrecisionFilter"}]
     del whitelist_conf["stoploss"]

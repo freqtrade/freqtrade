@@ -49,6 +49,8 @@ class Gate(Exchange):
             PriceType.MARK: 1,
             PriceType.INDEX: 2,
         },
+        # Futures candle volume ("v") is in contracts, not base currency
+        "ohlcv_volume_in_contracts": True,
     }
 
     _supported_trading_mode_margin_pairs: list[tuple[TradingMode, MarginMode]] = [
