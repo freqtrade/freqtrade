@@ -269,6 +269,8 @@ class Exchange:
             not self._ft_has["always_require_api_keys"] and self._config.get("dry_run", False),
         )
         self.log_responses = exchange_conf.get("log_responses", False)
+        if self.log_responses:
+            logger.info("Logging of exchange responses is enabled.")
 
         # Assign this directly for easy access
         self._ohlcv_partial_candle = self._ft_has["ohlcv_partial_candle"]
