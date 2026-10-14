@@ -197,6 +197,8 @@ class Bitget(Exchange):
         """
         Check the account's position mode.
         Position mode is account wide, but can only be queried through a market.
+        Copy-trading accounts reject queries for pairs that are not enabled for copy trading,
+        so pairs are tried (whitelisted pairs first) until one succeeds.
         """
         markets = self.get_markets(
             quote_currencies=[self._config["stake_currency"]], futures_only=True, active_only=True
@@ -204,9 +206,20 @@ class Bitget(Exchange):
         if not markets:
             logger.warning("No markets found for the configured stake currency.")
             return False
-        res = self._api.fetch_leverage(next(iter(markets)))
-        self._log_exchange_response("fetch_leverage", res)
-        return res.get("info", {}).get("posMode") == "hedge_mode"
+        whitelist = self._config.get("exchange", {}).get("pair_whitelist", [])
+        pairs = [p for p in whitelist if p in markets] + [p for p in markets if p not in whitelist]
+        for pair in pairs[:10]:
+            try:
+                res = self._api.fetch_leverage(pair)
+            except ccxt.ExchangeError as e:
+                logger.warning(f"Bitget: Could not determine position mode using {pair}: {e}")
+                continue
+            self._log_exchange_response("fetch_leverage", res)
+            pos_mode = res.get("info", {}).get("posMode")
+            logger.info(f"Bitget: Position mode for {pair} is {pos_mode}.")
+            return pos_mode == "hedge_mode"
+        logger.warning("Bitget: Could not determine position mode.")
+        return False
 
     def _lev_prep(self, pair: str, leverage: float, side: BuySell, accept_fail: bool = False):
         if self.hedge_mode and self.trading_mode == TradingMode.FUTURES:
