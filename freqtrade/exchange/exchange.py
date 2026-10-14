@@ -2332,7 +2332,7 @@ class Exchange(LoggingMixin):
                     self.log_once(
                         f"Websocket orderbook for {pair} is stale (no update within "
                         f"{ob_max_age}s) - falling back to REST.",
-                        logger.warning,
+                        logger.info,
                     )
                 elif len(ob["bids"]) < limit_eff or len(ob["asks"]) < limit_eff:
                     # The websocket book isn't as deep as the REST response would be.
