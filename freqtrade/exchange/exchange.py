@@ -3831,15 +3831,13 @@ class Exchange(LoggingMixin):
             elif self.exchange_has("fetchMarketLeverageTiers"):
                 # Must fetch the leverage tiers for each market separately
                 # * This is slow(~45s) on Okx, makes ~90 api calls to load all linear swap markets
-                markets = self.markets
-
                 symbols = [
                     symbol
-                    for symbol, market in markets.items()
-                    if (
-                        self.market_is_future(market)
-                        and market["quote"] == self._config["stake_currency"]
-                    )
+                    for symbol, _ in self.get_markets(
+                        quote_currencies=[self._config["stake_currency"]],
+                        futures_only=True,
+                        active_only=True,
+                    ).items()
                 ]
 
                 tiers: dict[str, list[dict]] = {}
