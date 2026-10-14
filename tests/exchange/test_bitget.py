@@ -14,7 +14,7 @@ from freqtrade.exceptions import (
 )
 from freqtrade.exchange.common import API_RETRY_COUNT
 from freqtrade.util import dt_now, dt_ts, dt_utc
-from tests.conftest import EXMS, get_patched_exchange, log_has_re
+from tests.conftest import EXMS, get_patched_exchange, log_has, log_has_re
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
 
 
@@ -201,6 +201,26 @@ def test_additional_exchange_init_bitget_hedge_mode(default_conf_usdt, mocker, c
     api_mock.fetch_leverage = MagicMock(return_value={"info": {"posMode": "one_way_mode"}})
     with pytest.raises(TemporaryError, match=r".*This product does not support copy trading.*"):
         get_patched_exchange(mocker, default_conf_usdt, exchange="bitget", api_mock=api_mock)
+    assert log_has_re(r"Bitget: Position mode for .* is one_way_mode\.", caplog)
+
+    # Position mode query fails for all pairs - the original error is raised
+    caplog.clear()
+    api_mock.fetch_leverage = MagicMock(side_effect=ccxt.ExchangeError("bitget 40731"))
+    with pytest.raises(TemporaryError, match=r".*This product does not support copy trading.*"):
+        get_patched_exchange(mocker, default_conf_usdt, exchange="bitget", api_mock=api_mock)
+    assert log_has_re(r"Bitget: Could not determine position mode using .*", caplog)
+    assert log_has("Bitget: Could not determine position mode.", caplog)
+
+    # Failing pairs are skipped, whitelisted pairs are tried first
+    default_conf_usdt["exchange"]["pair_whitelist"] = ["NOTAPAIR/USDT:USDT", "ADA/USDT:USDT"]
+    api_mock.fetch_leverage = MagicMock(
+        side_effect=[ccxt.ExchangeError("bitget 40731"), {"info": {"posMode": "hedge_mode"}}]
+    )
+    exchange = get_patched_exchange(mocker, default_conf_usdt, exchange="bitget", api_mock=api_mock)
+    assert exchange.hedge_mode is True
+    assert api_mock.fetch_leverage.call_count == 2
+    assert api_mock.fetch_leverage.call_args_list[0][0][0] == "ADA/USDT:USDT"
+    assert api_mock.fetch_leverage.call_args_list[1][0][0] == "ETH/USDT:USDT"
 
 
 @pytest.mark.parametrize("hedge_mode", [True, False])
