@@ -1854,7 +1854,7 @@ def test_agefilter_tracks_age_without_refetching(mocker, agefilter_config, time_
     pairlist_manager.refresh_pairlist()
     assert pairlist_manager.whitelist == ["ETH/BTC"]
     refresh.assert_called_once_with(
-        [eth_key, tkn_key], since_ms=dt_ts(dt_utc(2026, 8, 28)), cache=False
+        [eth_key, tkn_key], since_ms=dt_ts(dt_utc(2026, 8, 26)), cache=False
     )
 
     time_machine.move_to("2026-09-01 23:59:59+00:00", tick=False)
@@ -1875,7 +1875,6 @@ def test_agefilter_tracks_age_without_refetching(mocker, agefilter_config, time_
     assert refresh.call_count == 1
 
     # A restart produces the same result from freshly fetched candles.
-    # The fetched window only reaches back max_days_listed + 1 days.
     refresh.return_value = {
         eth_key: generate_test_data("1d", 4, "2026-08-30 00:00:00+00:00"),
         tkn_key: generate_test_data("1d", 3, "2026-08-31 00:00:00+00:00"),
@@ -1884,7 +1883,7 @@ def test_agefilter_tracks_age_without_refetching(mocker, agefilter_config, time_
     restarted_manager.refresh_pairlist()
     assert restarted_manager.whitelist == ["TKN/BTC"]
     assert refresh.call_count == 2
-    refresh.assert_called_with([eth_key, tkn_key], since_ms=dt_ts(dt_utc(2026, 8, 30)), cache=False)
+    refresh.assert_called_with([eth_key, tkn_key], since_ms=dt_ts(dt_utc(2026, 8, 28)), cache=False)
 
 
 def test_agefilter_retries_missing_data(mocker, agefilter_config, time_machine):

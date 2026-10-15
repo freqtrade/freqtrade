@@ -97,7 +97,8 @@ class AgeFilter(IPairList):
         ]
         today = dt_floor_day(dt_now())
         if needed_pairs:
-            since_days = (self._max_days_listed or self._min_days_listed) + 1
+            # Fetch a few days beyond the limit
+            since_days = (self._max_days_listed or self._min_days_listed) + 3
             since_ms = dt_ts(today - timedelta(days=since_days))
             candles = self._exchange.refresh_latest_ohlcv(
                 needed_pairs, since_ms=since_ms, cache=False
