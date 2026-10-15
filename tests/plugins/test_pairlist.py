@@ -1885,7 +1885,7 @@ def test_agefilter_tracks_age_without_refetching(mocker, agefilter_config, time_
     refresh.assert_called_with([eth_key, tkn_key], since_ms=dt_ts(dt_utc(2026, 8, 28)), cache=False)
 
 
-def test_agefilter_retries_missing_data(mocker, agefilter_config, time_machine):
+def test_agefilter_retries_missing_data(mocker, agefilter_config, time_machine, caplog):
     time_machine.move_to("2026-09-01 12:00:00+00:00", tick=False)
     exchange = get_patched_exchange(mocker, agefilter_config)
     pairlist_manager = PairListManager(exchange, agefilter_config)
@@ -1898,6 +1898,7 @@ def test_agefilter_retries_missing_data(mocker, agefilter_config, time_machine):
     pairlist_manager.refresh_pairlist()
     assert pairlist_manager.whitelist == []
     assert refresh.call_count == 2
+    assert not log_has_re(r"Removed ETH/BTC from whitelist", caplog)
     refresh.reset_mock()
 
     # No completed candle yet - retried on the next UTC day
@@ -1906,6 +1907,7 @@ def test_agefilter_retries_missing_data(mocker, agefilter_config, time_machine):
     pairlist_manager.refresh_pairlist()
     assert pairlist_manager.whitelist == []
     assert refresh.call_count == 1
+    assert log_has_re(r"Removed ETH/BTC from whitelist, because no daily candles", caplog)
     refresh.reset_mock()
 
     time_machine.move_to("2026-09-03 00:00:00+00:00", tick=False)

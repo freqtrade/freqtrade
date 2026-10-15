@@ -127,6 +127,12 @@ class AgeFilter(IPairList):
         """
         listing_date = self._listing_dates.get(pair)
         if listing_date is None:
+            # Failed fetches are logged by the exchange
+            if pair in self._symbols_no_data:
+                self.log_once(
+                    f"Removed {pair} from whitelist, because no daily candles are available yet",
+                    logger.info,
+                )
             return False
 
         age = (today - listing_date).days
