@@ -136,15 +136,13 @@ class AgeFilter(IPairList):
             return True
 
         self.log_once(
-            (
-                f"Removed {pair} from whitelist, because age "
-                f"{age} is less than {self._min_days_listed} "
-                f"{plural(self._min_days_listed, 'day')}"
-            )
+            f"Removed {pair} from whitelist, because "
             + (
-                (f" or more than {self._max_days_listed} {plural(self._max_days_listed, 'day')}")
-                if self._max_days_listed
-                else ""
+                f"age {age} is less than {self._min_days_listed} "
+                f"{plural(self._min_days_listed, 'day')}"
+                if age < self._min_days_listed
+                else f"it has been listed for more than {self._max_days_listed} "
+                f"{plural(self._max_days_listed, 'day')}"
             ),
             logger.info,
         )
