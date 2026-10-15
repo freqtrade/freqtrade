@@ -136,20 +136,18 @@ class AgeFilter(IPairList):
             return False
 
         age = (today - listing_date).days
-        if age >= self._min_days_listed and (
-            not self._max_days_listed or age <= self._max_days_listed
-        ):
-            return True
-
-        self.log_once(
-            f"Removed {pair} from whitelist, because "
-            + (
+        if age < self._min_days_listed:
+            reason = (
                 f"age {age} is less than {self._min_days_listed} "
                 f"{plural(self._min_days_listed, 'day')}"
-                if age < self._min_days_listed
-                else f"it has been listed for more than {self._max_days_listed} "
+            )
+        elif self._max_days_listed and age > self._max_days_listed:
+            reason = (
+                f"it has been listed for more than {self._max_days_listed} "
                 f"{plural(self._max_days_listed, 'day')}"
-            ),
-            logger.info,
-        )
+            )
+        else:
+            return True
+
+        self.log_once(f"Removed {pair} from whitelist, because {reason}", logger.info)
         return False
