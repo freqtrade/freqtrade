@@ -344,18 +344,23 @@ def get_backtest_strategy_params(filename: Path, strategy_name: str) -> dict[str
     Read the parameter file stored for one strategy inside a backtest result zip.
     :param filename: Path to the backtest result zip file
     :param strategy_name: Name of the strategy to load the parameters for
-    :return: Content of the parameter file, or an empty dict if the zip contains none
+    :return: Content of the parameter file, or an empty dict if none can be loaded
     """
     from freqtrade.optimize.hyperopt_tools import HyperoptTools
 
     if filename.suffix != ".zip":
         return {}
 
+    params_file = f"{filename.stem}_{strategy_name}.json"
     try:
-        data = load_file_from_zip(filename, f"{filename.stem}_{strategy_name}.json")
+        data = load_file_from_zip(filename, params_file)
     except ValueError:
         return {}
-    return HyperoptTools.load_params(data)
+    try:
+        return HyperoptTools.load_params(data)
+    except ValueError as e:
+        logger.warning(f"Could not load parameters {params_file} from {filename}: {e}")
+        return {}
 
 
 @contextmanager

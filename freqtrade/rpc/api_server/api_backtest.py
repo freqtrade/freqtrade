@@ -506,6 +506,11 @@ def api_backtest_pair_history(
             )
     except ConfigurationError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except ValueError as e:
+        # Older results may not contain the config or the strategy.
+        raise HTTPException(
+            status_code=422, detail=f"Backtest result {file} cannot be replayed: {e}"
+        )
     except Exception as e:
         logger.exception("Error in api_backtest_pair_history")
         raise HTTPException(status_code=502, detail=str(e))
