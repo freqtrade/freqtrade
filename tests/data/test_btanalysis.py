@@ -26,7 +26,7 @@ from freqtrade.data.btanalysis import (
 from freqtrade.data.history import load_pair_history
 from freqtrade.exceptions import OperationalException
 from freqtrade.util import dt_utc
-from tests.conftest import CURRENT_TEST_STRATEGY, create_mock_trades
+from tests.conftest import CURRENT_TEST_STRATEGY, create_mock_trades, log_has_re
 from tests.conftest_trades import MOCK_TRADE_COUNT
 
 
@@ -327,7 +327,7 @@ def _store_strategy_zip(tmp_path, dtappendix, strategy_params=None):
     return tmp_path / f"backtest-result-{dtappendix}.zip"
 
 
-def test_get_backtest_strategy_params(tmp_path):
+def test_get_backtest_strategy_params(tmp_path, caplog):
     zip_file = _store_strategy_zip(
         tmp_path,
         "2024_01_01_15_05_25",
@@ -347,6 +347,12 @@ def test_get_backtest_strategy_params(tmp_path):
     # Zip without a parameter file
     zip_file = _store_strategy_zip(tmp_path, "2024_01_01_15_05_26")
     assert get_backtest_strategy_params(zip_file, "StrategyTestV3") == {}
+
+    # Corrupt parameter file
+    with ZipFile(zip_file, "a") as zipf:
+        zipf.writestr(f"{zip_file.stem}_StrategyTestV3.json", "{not json")
+    assert get_backtest_strategy_params(zip_file, "StrategyTestV3") == {}
+    assert log_has_re(r"Could not load parameters .*StrategyTestV3\.json", caplog)
 
 
 def test_backtest_strategy_dir(tmp_path, default_conf):

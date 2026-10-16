@@ -4244,6 +4244,22 @@ def test_api_backtest_pair_history(botclient, tmp_path: Path, mocker):
     rc = client_post(client, url, data={"pair": "UNITTEST/BTC", "timerange": "2018-01-11"})
     assert_response(rc, 400)
 
+    # Result without an archived strategy cannot be replayed
+    dtappendix = f"2018_01_12_00_00_{len(list(bt_results_base.glob('*.zip'))):02d}"
+    store_backtest_results(
+        {"exportdirectory": bt_results_base, "original_config": {}},
+        {"metadata": {CURRENT_TEST_STRATEGY: meta}, "strategy": {}, "strategy_comparison": []},
+        dtappendix,
+    )
+    rc = client_post(
+        client,
+        f"{BASE_URI}/backtest/history/backtest-result-{dtappendix}/{CURRENT_TEST_STRATEGY}"
+        "/pair_history",
+        data={"pair": "UNITTEST/BTC"},
+    )
+    assert_response(rc, 422)
+    assert "cannot be replayed" in rc.json()["detail"]
+
 
 _STRATEGY_VALIDATOR = get_args(StrategyName)[1]
 
