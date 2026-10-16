@@ -1,7 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "local>freqtrade/renovate-config"
+    "github>freqtrade/renovate-config"
   ],
   "timezone": "Europe/Berlin",
   "constraints": {
