@@ -14,7 +14,12 @@ from freqtrade.constants import Config
 from freqtrade.exceptions import ConfigurationError, DependencyException, OperationalException
 from freqtrade.misc import deep_merge_dicts
 from freqtrade.optimize.hyperopt_tools import HyperoptTools
-from freqtrade.strategy.parameters import BaseParameter, CategoricalParameter, NumericParameter
+from freqtrade.strategy.parameters import (
+    BaseParameter,
+    CategoricalParameter,
+    DecimalParameter,
+    NumericParameter,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -172,6 +177,9 @@ class HyperStrategyMixin:
                 raise ConfigurationError(
                     f"{base_warning} '{name}' must be one of {strategy_param.opt_range}."
                 )
+            if isinstance(strategy_param, DecimalParameter) and value is not None:
+                # Store the value the parameter will use - keeps ft_used_params accurate
+                value = round(value, strategy_param.decimals)
             if (
                 isinstance(strategy_param, NumericParameter)
                 and value is not None

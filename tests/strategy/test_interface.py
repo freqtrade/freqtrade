@@ -1214,6 +1214,22 @@ def test_ft_set_api_params(default_conf, caplog):
         caplog,
     )
 
+    # Decimal values are stored as used by the parameter
+    strategy.sell_minusdi.load = True
+    strategy.ft_set_api_params(
+        [
+            {
+                "name": "sell_minusdi",
+                "space": "sell",
+                "param_type": "DecimalParameter",
+                "value": 0.12345,
+            }
+        ]
+    )
+    assert strategy.ft_used_params == {"sell": {"sell_minusdi": 0.123}}
+    strategy.ft_load_hyper_params(False)
+    assert strategy.sell_minusdi.value == 0.123
+
 
 def test_auto_hyperopt_interface_loadparams(default_conf, mocker, caplog):
     default_conf.update({"strategy": "HyperoptableStrategy"})
