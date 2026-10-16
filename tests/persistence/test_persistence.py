@@ -2886,6 +2886,17 @@ def test_order_to_ccxt(limit_buy_order_open, limit_sell_order_usdt_open):
         # tuple 2 - amount, open_rate, stake_amount, cumulative_profit, realized_profit, rel_profit
         {
             "orders": [
+                (("buy", 3, 100), (3.0, 100.0, 300.0, 0.0, None, None)),
+                (("sell", 1, 110), (2.0, 100.0, 200.0, 10.0, 10.0, 1 / 30)),
+                (("sell", 1, 90), (1.0, 100.0, 100.0, 0.0, -10.0, 0.0)),
+                (("sell", 1, 100), (1.0, 100.0, 100.0, 0.0, 0.0, 0.0)),
+            ],
+            "end_profit": 0.0,
+            "end_profit_ratio": 0.0,
+            "fee": 0.0,
+        },
+        {
+            "orders": [
                 (("buy", 100, 10), (100.0, 10.0, 1000.0, 0.0, None, None)),
                 (("buy", 100, 15), (200.0, 12.5, 2500.0, 0.0, None, None)),
                 (("sell", 50, 12), (150.0, 12.5, 1875.0, -25.0, -25.0, -0.01)),

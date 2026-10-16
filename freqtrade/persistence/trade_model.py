@@ -1271,7 +1271,7 @@ class LocalTrade:
         max_stake_amount = FtPrecise(0.0)
         total_stake = 0.0  # Total stake after all buy orders (does not subtract!)
         avg_price = FtPrecise(0.0)
-        close_profit = 0.0
+        close_profit = None
         close_profit_abs = 0.0
         # Reset funding fees
         self.funding_fees = 0.0
@@ -1317,7 +1317,7 @@ class LocalTrade:
         self.funding_fees = total_funding_fees
         self.max_stake_amount = float(max_stake_amount) / (self.leverage or 1.0)
 
-        if close_profit:
+        if close_profit is not None:
             self.close_profit = close_profit
             self.realized_profit = close_profit_abs
             self.close_profit_abs = prof.profit_abs
