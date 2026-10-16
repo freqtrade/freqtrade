@@ -363,7 +363,7 @@ class ExternalMessageConsumer:
 
         logger.debug(f"Received {df_len} candle(s) for {key}")
 
-        # If set, reject a single candle and request the full dataframe from the Producer
+        # If set to False, reject a single candle and request the full dataframe from the Producer
         if not self._emc_config.get("cache_enabled", True) and df_len < FULL_DATAFRAME_THRESHOLD:
             self.send_producer_request(
                 producer_name,
