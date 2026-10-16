@@ -14,6 +14,9 @@
   "schedule": [
     "* 0-5 * * 1"
   ],
+  "pre-commit": {
+    "enabled": true
+  },
   "packageRules": [
     {
       "description": "constraints.python is our minimum supported Python version - don't bump it to the latest Python release.",
@@ -50,6 +53,34 @@
       "matchPackageNames": ["!scikit-learn"],
       "groupName": "FreqAI dependencies",
       "groupSlug": "freqai"
+    },
+    {
+      "description": "Group pre-commit hook updates into one PR, as pre-commit autoupdate did.",
+      "matchManagers": ["pre-commit"],
+      "matchDepTypes": ["!pre-commit-python"],
+      "groupName": "pre-commit hooks",
+      "groupSlug": "pre-commit-hooks"
+    },
+    {
+      "description": "Bump mypy additional_dependencies in the same PR as their requirements-dev.txt pin. SQLAlchemy is pinned in requirements.txt, so it stays in the main non-major batch.",
+      "matchDatasources": ["pypi"],
+      "matchDepTypes": ["pre-commit-python"],
+      "matchPackageNames": ["!SQLAlchemy", "!scipy-stubs"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "python non-major dev dependencies",
+      "groupSlug": "python-dev-minor-patch"
+    },
+    {
+      "description": "Bump ruff in one Group.",
+      "matchPackageNames": ["ruff", "/ruff-pre-commit$/"],
+      "groupName": "Ruff",
+      "groupSlug": "ruff"
+    },
+    {
+      "description": "Bump mypy in requirements-dev.txt and its pre-commit hook together.",
+      "matchPackageNames": ["mypy", "/mirrors-mypy$/"],
+      "groupName": "Mypy",
+      "groupSlug": "mypy"
     }
   ]
 }

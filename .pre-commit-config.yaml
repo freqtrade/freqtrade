@@ -18,6 +18,7 @@ repos:
     rev: "v2.4.0"
     hooks:
       - id: mypy
+        language: python
         exclude: build_helpers
         additional_dependencies:
           - types-cachetools==7.0.0.20260713
