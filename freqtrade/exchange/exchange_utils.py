@@ -309,7 +309,7 @@ def __price_to_precision_significant_digits(
         # string_to_precision is '' when we have zero precision
         below = sigfig * Decimal(string_to_precision if string_to_precision else "0")
         above = below + sigfig
-        res = above if rounding_mode == ROUND_UP else below
+        res = above if rounding_mode == ROUND_UP and below != dec else below
         precise = f"{res:f}"
     else:
         precise = "{:f}".format(
