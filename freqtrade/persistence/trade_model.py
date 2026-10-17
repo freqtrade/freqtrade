@@ -2156,7 +2156,7 @@ class Trade(ModelBase, LocalTrade):
                             resp[i] = {
                                 "mix_tag": mix_tag,
                                 "profit_ratio": profit + resp[i]["profit_ratio"],
-                                "profit_pct": round(profit + resp[i]["profit_ratio"] * 100, 2),
+                                "profit_pct": round((profit + resp[i]["profit_ratio"]) * 100, 2),
                                 "profit_abs": profit_abs + resp[i]["profit_abs"],
                                 "count": 1 + resp[i]["count"],
                             }
