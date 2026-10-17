@@ -3,9 +3,7 @@ Minimum age (days listed) pair list filter
 """
 
 import logging
-from datetime import timedelta
-
-from pandas import DataFrame
+from datetime import datetime, timedelta
 
 from freqtrade.constants import ListPairsWithTimeframes
 from freqtrade.exceptions import OperationalException
@@ -24,9 +22,11 @@ class AgeFilter(IPairList):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        # Checked symbols cache (dictionary of ticker symbol => timestamp)
-        self._symbolsChecked: dict[str, int] = {}
-        self._symbolsCheckFailed = PeriodicCache(maxsize=1000, ttl=86_400)
+        # Date of the first daily candle per pair - the listing date for young pairs,
+        # the start of the fetched window for older pairs.
+        self._listing_dates: dict[str, datetime] = {}
+        # Pairs without any completed daily candle - recheck on the next UTC day
+        self._symbols_no_data = PeriodicCache(maxsize=1000, ttl=86_400)
 
         self._min_days_listed = self._pairlistconfig.get("min_days_listed", 10)
         self._max_days_listed = self._pairlistconfig.get("max_days_listed")
@@ -93,61 +93,61 @@ class AgeFilter(IPairList):
         needed_pairs: ListPairsWithTimeframes = [
             (p, "1d", self._def_candletype)
             for p in pairlist
-            if p not in self._symbolsChecked and p not in self._symbolsCheckFailed
+            if p not in self._listing_dates and p not in self._symbols_no_data
         ]
-        if not needed_pairs:
-            # Remove pairs that have been removed before
-            return [p for p in pairlist if p not in self._symbolsCheckFailed]
+        today = dt_floor_day(dt_now())
+        if needed_pairs:
+            # Fetch a few days beyond the limit
+            since_days = (self._max_days_listed or self._min_days_listed) + 3
+            since_ms = dt_ts(today - timedelta(days=since_days))
+            candles = self._exchange.refresh_latest_ohlcv(
+                needed_pairs, since_ms=since_ms, cache=False
+            )
+            for pair, _, _ in needed_pairs:
+                daily_candles = candles.get((pair, "1d", self._def_candletype), None)
+                if daily_candles is None:
+                    # Fetch failed - retry on the next iteration
+                    continue
+                if daily_candles.empty:
+                    self._symbols_no_data[pair] = dt_ts()
+                else:
+                    self._listing_dates[pair] = daily_candles.iloc[0]["date"]
 
-        since_days = (
-            -(self._max_days_listed if self._max_days_listed else self._min_days_listed) - 1
-        )
-        since_ms = dt_ts(dt_floor_day(dt_now()) + timedelta(days=since_days))
-        candles = self._exchange.refresh_latest_ohlcv(needed_pairs, since_ms=since_ms, cache=False)
         if self._enabled:
-            for p in pairlist.copy():
-                daily_candles = candles.get((p, "1d", self._def_candletype), None)
-                if not self._validate_pair_loc(p, daily_candles):
-                    pairlist.remove(p)
+            pairlist = [p for p in pairlist if self._validate_pair_loc(p, today)]
         self.log_once(f"Validated {len(pairlist)} pairs.", logger.info)
         return pairlist
 
-    def _validate_pair_loc(self, pair: str, daily_candles: DataFrame | None) -> bool:
+    def _validate_pair_loc(self, pair: str, today: datetime) -> bool:
         """
         Validate age for the ticker
         :param pair: Pair that's currently validated
-        :param daily_candles: Downloaded daily candles
+        :param today: Start of the current UTC day
         :return: True if the pair can stay, false if it should be removed
         """
-        # Check symbol in cache
-        if pair in self._symbolsChecked:
-            return True
-
-        if daily_candles is not None:
-            if len(daily_candles) >= self._min_days_listed and (
-                not self._max_days_listed or len(daily_candles) <= self._max_days_listed
-            ):
-                # We have fetched at least the minimum required number of daily candles
-                # Add to cache, store the time we last checked this symbol
-                self._symbolsChecked[pair] = dt_ts()
-                return True
-            else:
+        listing_date = self._listing_dates.get(pair)
+        if listing_date is None:
+            # Failed fetches are logged by the exchange
+            if pair in self._symbols_no_data:
                 self.log_once(
-                    (
-                        f"Removed {pair} from whitelist, because age "
-                        f"{len(daily_candles)} is less than {self._min_days_listed} "
-                        f"{plural(self._min_days_listed, 'day')}"
-                    )
-                    + (
-                        (
-                            " or more than "
-                            f"{self._max_days_listed} {plural(self._max_days_listed, 'day')}"
-                        )
-                        if self._max_days_listed
-                        else ""
-                    ),
+                    f"Removed {pair} from whitelist, because no daily candles are available yet",
                     logger.info,
                 )
-                self._symbolsCheckFailed[pair] = dt_ts()
-                return False
+            return False
+
+        age = (today - listing_date).days
+        if age < self._min_days_listed:
+            reason = (
+                f"age {age} is less than {self._min_days_listed} "
+                f"{plural(self._min_days_listed, 'day')}"
+            )
+        elif self._max_days_listed and age > self._max_days_listed:
+            reason = (
+                f"it has been listed for more than {self._max_days_listed} "
+                f"{plural(self._max_days_listed, 'day')}"
+            )
+        else:
+            return True
+
+        self.log_once(f"Removed {pair} from whitelist, because {reason}", logger.info)
         return False
