@@ -1458,6 +1458,11 @@
           "type": "boolean",
           "default": false
         },
+        "cache_enabled": {
+          "description": "Whether the external producer cache is enabled.",
+          "type": "boolean",
+          "default": true
+        },
         "producers": {
           "description": "List of producers for the external message consumer.",
           "type": "array",
