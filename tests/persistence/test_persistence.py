@@ -1936,6 +1936,48 @@ def test_get_overall_performance(fee):
 
 @pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize(
+    "profits,expected_profit_ratio,expected_profit_pct",
+    [
+        ([0.2, 0.1], 0.3, 30.0),
+        ([0.2, -0.1], 0.1, 10.0),
+        ([0.2, -0.1, -0.1], 0.0, 0.0),
+        ([0.12345, 0.10001], 0.22346, 22.35),
+    ],
+)
+def test_get_mix_tag_performance_aggregated_profit(
+    profits, expected_profit_ratio, expected_profit_pct
+):
+    for profit in profits:
+        Trade.session.add(
+            Trade(
+                pair="BTC/USDT",
+                stake_amount=100.0,
+                amount=1.0,
+                open_rate=100.0,
+                fee_open=0.0,
+                fee_close=0.0,
+                exchange="binance",
+                is_open=False,
+                enter_tag="entry",
+                exit_reason="exit_signal",
+                close_profit=profit,
+                close_profit_abs=profit * 100,
+            )
+        )
+    Trade.commit()
+
+    res = Trade.get_mix_tag_performance(None)
+
+    assert len(res) == 1
+    assert res[0]["mix_tag"] == "entry exit_signal"
+    assert res[0]["count"] == len(profits)
+    assert res[0]["profit_ratio"] == pytest.approx(expected_profit_ratio)
+    assert res[0]["profit_pct"] == expected_profit_pct
+    assert res[0]["profit_abs"] == pytest.approx(expected_profit_ratio * 100)
+
+
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize(
     "is_short,pair,profit",
     [
         (True, "XRP/BTC", -0.00018780487),
