@@ -4166,10 +4166,11 @@ def test_api_backtest_pair_history(botclient, tmp_path: Path, mocker):
     # Mark the archived strategy, to tell it apart from the one in the strategy directory.
     strategy_file = bt_results_base.parent / "strategy_test_v3.py"
     strategy_file.write_text(
-        orig_file.read_text().replace(
+        orig_file.read_text(encoding="utf-8").replace(
             'dataframe["adx"] = ta.ADX(dataframe)',
             'dataframe["adx"] = ta.ADX(dataframe)\n        dataframe["from_zip"] = 1',
-        )
+        ),
+        encoding="utf-8",
     )
     meta = {
         "run_id": "testrun",
