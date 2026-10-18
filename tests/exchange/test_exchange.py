@@ -2451,12 +2451,12 @@ def test_get_tickers(default_conf, mocker, exchange_name, caplog):
     exchange = get_patched_exchange(mocker, default_conf, api_mock, exchange=exchange_name)
     exchange.get_tickers()
 
-    api_mock.fetch_tickers.reset_mock()
-    api_mock.fetch_bids_asks.reset_mock()
     default_conf["trading_mode"] = TradingMode.FUTURES
     default_conf["margin_mode"] = MarginMode.ISOLATED
     mocker.patch(f"{EXMS}.exchange_has", return_value=True)
     exchange = get_patched_exchange(mocker, default_conf, api_mock, exchange=exchange_name)
+    api_mock.fetch_tickers.reset_mock()
+    api_mock.fetch_bids_asks.reset_mock()
 
     exchange.get_tickers()
     assert api_mock.fetch_tickers.call_count == 1
@@ -2496,6 +2496,10 @@ def test_get_conversion_rate(default_conf_usdt, mocker, exchange_name):
     default_conf_usdt["trading_mode"] = "futures"
 
     exchange = get_patched_exchange(mocker, default_conf_usdt, api_mock, exchange=exchange_name)
+    # okx fetches tickers on init to convert leverage tiers
+    api_mock.fetch_tickers.reset_mock()
+    api_mock.fetch_tickers.side_effect = [tick, tick2]
+    exchange._fetch_tickers_cache.clear()
     # retrieve original ticker
     assert exchange.get_conversion_rate("USDT", "USDT") == 1
     assert api_mock.fetch_tickers.call_count == 0
