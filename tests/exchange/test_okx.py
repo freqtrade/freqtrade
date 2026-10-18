@@ -8,8 +8,179 @@ from freqtrade.enums import CandleType, MarginMode, TradingMode
 from freqtrade.exceptions import RetryableOrderError, TemporaryError
 from freqtrade.exchange.common import API_RETRY_COUNT
 from freqtrade.exchange.exchange import timeframe_to_minutes
-from tests.conftest import EXMS, get_patched_exchange, log_has
+from tests.conftest import EXMS, get_markets, get_patched_exchange, log_has
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
+
+
+# Real Okx data (first 3 tiers of fetch_market_leverage_tiers()).
+# minSz / maxSz are in contracts - ccxt maps them to minNotional / maxNotional unchanged.
+# Tickers and contract sizes were fetched at the same time.
+@pytest.fixture
+def okx_tickers():
+    return {
+        "ETH/USDT:USDT": {"symbol": "ETH/USDT:USDT", "last": 2409.27},
+        "ADA/USDT:USDT": {"symbol": "ADA/USDT:USDT", "last": 0.2196},
+    }
+
+
+@pytest.fixture
+def okx_leverage_tiers():
+    return {
+        "ETH/USDT:USDT": [
+            {
+                "tier": 1,
+                "symbol": "ETH/USDT:USDT",
+                "currency": "USDT",
+                "minNotional": 0.0,
+                "maxNotional": 5000.0,
+                "maintenanceMarginRate": 0.004,
+                "maxLeverage": 100.0,
+                "info": {
+                    "baseMaxLoan": "",
+                    "imr": "0.01",
+                    "instFamily": "ETH-USDT",
+                    "instId": "",
+                    "maxLever": "100",
+                    "maxSz": "5000",
+                    "minSz": "0",
+                    "mmr": "0.004",
+                    "optMgnFactor": "0",
+                    "quoteMaxLoan": "",
+                    "tier": "1",
+                    "uly": "ETH-USDT",
+                },
+            },
+            {
+                "tier": 2,
+                "symbol": "ETH/USDT:USDT",
+                "currency": "USDT",
+                "minNotional": 5000.01,
+                "maxNotional": 10000.0,
+                "maintenanceMarginRate": 0.005,
+                "maxLeverage": 66.66,
+                "info": {
+                    "baseMaxLoan": "",
+                    "imr": "0.015",
+                    "instFamily": "ETH-USDT",
+                    "instId": "",
+                    "maxLever": "66.66",
+                    "maxSz": "10000",
+                    "minSz": "5000.01",
+                    "mmr": "0.005",
+                    "optMgnFactor": "0",
+                    "quoteMaxLoan": "",
+                    "tier": "2",
+                    "uly": "ETH-USDT",
+                },
+            },
+            {
+                "tier": 3,
+                "symbol": "ETH/USDT:USDT",
+                "currency": "USDT",
+                "minNotional": 10000.01,
+                "maxNotional": 25000.0,
+                "maintenanceMarginRate": 0.0075,
+                "maxLeverage": 50.0,
+                "info": {
+                    "baseMaxLoan": "",
+                    "imr": "0.02",
+                    "instFamily": "ETH-USDT",
+                    "instId": "",
+                    "maxLever": "50",
+                    "maxSz": "25000",
+                    "minSz": "10000.01",
+                    "mmr": "0.0075",
+                    "optMgnFactor": "0",
+                    "quoteMaxLoan": "",
+                    "tier": "3",
+                    "uly": "ETH-USDT",
+                },
+            },
+        ],
+        "ADA/USDT:USDT": [
+            {
+                "tier": 1,
+                "symbol": "ADA/USDT:USDT",
+                "currency": "USDT",
+                "minNotional": 0.0,
+                "maxNotional": 2200.0,
+                "maintenanceMarginRate": 0.01,
+                "maxLeverage": 50.0,
+                "info": {
+                    "baseMaxLoan": "",
+                    "imr": "0.02",
+                    "instFamily": "ADA-USDT",
+                    "instId": "",
+                    "maxLever": "50",
+                    "maxSz": "2200",
+                    "minSz": "0",
+                    "mmr": "0.01",
+                    "optMgnFactor": "0",
+                    "quoteMaxLoan": "",
+                    "tier": "1",
+                    "uly": "ADA-USDT",
+                },
+            },
+            {
+                "tier": 2,
+                "symbol": "ADA/USDT:USDT",
+                "currency": "USDT",
+                "minNotional": 2200.1,
+                "maxNotional": 4500.0,
+                "maintenanceMarginRate": 0.015,
+                "maxLeverage": 40.0,
+                "info": {
+                    "baseMaxLoan": "",
+                    "imr": "0.025",
+                    "instFamily": "ADA-USDT",
+                    "instId": "",
+                    "maxLever": "40",
+                    "maxSz": "4500",
+                    "minSz": "2200.1",
+                    "mmr": "0.015",
+                    "optMgnFactor": "0",
+                    "quoteMaxLoan": "",
+                    "tier": "2",
+                    "uly": "ADA-USDT",
+                },
+            },
+            {
+                "tier": 3,
+                "symbol": "ADA/USDT:USDT",
+                "currency": "USDT",
+                "minNotional": 4500.1,
+                "maxNotional": 10000.0,
+                "maintenanceMarginRate": 0.03,
+                "maxLeverage": 20.0,
+                "info": {
+                    "baseMaxLoan": "",
+                    "imr": "0.05",
+                    "instFamily": "ADA-USDT",
+                    "instId": "",
+                    "maxLever": "20",
+                    "maxSz": "10000",
+                    "minSz": "4500.1",
+                    "mmr": "0.03",
+                    "optMgnFactor": "0",
+                    "quoteMaxLoan": "",
+                    "tier": "3",
+                    "uly": "ADA-USDT",
+                },
+            },
+        ],
+    }
+
+
+@pytest.fixture
+def okx_markets():
+    markets = get_markets()
+    okx_contract_sizes = {
+        "ETH/USDT:USDT": 0.1,
+        "ADA/USDT:USDT": 100.0,
+    }
+    for pair, contract_size in okx_contract_sizes.items():
+        markets[pair]["contractSize"] = contract_size
+    return markets
 
 
 def test_okx_ohlcv_candle_limit(default_conf, mocker):
@@ -50,10 +221,10 @@ def test_okx_ohlcv_candle_limit(default_conf, mocker):
 
 
 def test_get_maintenance_ratio_and_amt_okx(
-    default_conf,
-    mocker,
+    default_conf, mocker, okx_tickers, okx_leverage_tiers, okx_markets
 ):
     api_mock = MagicMock()
+    api_mock.fetch_tickers = MagicMock(return_value=okx_tickers)
     default_conf["trading_mode"] = "futures"
     default_conf["margin_mode"] = "isolated"
     default_conf["dry_run"] = False
@@ -62,141 +233,55 @@ def test_get_maintenance_ratio_and_amt_okx(
         exchange_has=MagicMock(return_value=True),
         load_leverage_tiers=MagicMock(
             return_value={
-                "ETH/USDT:USDT": [
-                    {
-                        "tier": 1,
-                        "minNotional": 0,
-                        "maxNotional": 2000,
-                        "maintenanceMarginRate": 0.01,
-                        "maxLeverage": 75,
-                        "info": {
-                            "baseMaxLoan": "",
-                            "imr": "0.013",
-                            "instId": "",
-                            "maxLever": "75",
-                            "maxSz": "2000",
-                            "minSz": "0",
-                            "mmr": "0.01",
-                            "optMgnFactor": "0",
-                            "quoteMaxLoan": "",
-                            "tier": "1",
-                            "uly": "ETH-USDT",
-                        },
-                    },
-                    {
-                        "tier": 2,
-                        "minNotional": 2001,
-                        "maxNotional": 4000,
-                        "maintenanceMarginRate": 0.015,
-                        "maxLeverage": 50,
-                        "info": {
-                            "baseMaxLoan": "",
-                            "imr": "0.02",
-                            "instId": "",
-                            "maxLever": "50",
-                            "maxSz": "4000",
-                            "minSz": "2001",
-                            "mmr": "0.015",
-                            "optMgnFactor": "0",
-                            "quoteMaxLoan": "",
-                            "tier": "2",
-                            "uly": "ETH-USDT",
-                        },
-                    },
-                    {
-                        "tier": 3,
-                        "minNotional": 4001,
-                        "maxNotional": 8000,
-                        "maintenanceMarginRate": 0.02,
-                        "maxLeverage": 20,
-                        "info": {
-                            "baseMaxLoan": "",
-                            "imr": "0.05",
-                            "instId": "",
-                            "maxLever": "20",
-                            "maxSz": "8000",
-                            "minSz": "4001",
-                            "mmr": "0.02",
-                            "optMgnFactor": "0",
-                            "quoteMaxLoan": "",
-                            "tier": "3",
-                            "uly": "ETH-USDT",
-                        },
-                    },
-                ],
-                "ADA/USDT:USDT": [
-                    {
-                        "tier": 1,
-                        "minNotional": 0,
-                        "maxNotional": 500,
-                        "maintenanceMarginRate": 0.02,
-                        "maxLeverage": 75,
-                        "info": {
-                            "baseMaxLoan": "",
-                            "imr": "0.013",
-                            "instId": "",
-                            "maxLever": "75",
-                            "maxSz": "500",
-                            "minSz": "0",
-                            "mmr": "0.01",
-                            "optMgnFactor": "0",
-                            "quoteMaxLoan": "",
-                            "tier": "1",
-                            "uly": "ADA-USDT",
-                        },
-                    },
-                    {
-                        "tier": 2,
-                        "minNotional": 501,
-                        "maxNotional": 1000,
-                        "maintenanceMarginRate": 0.025,
-                        "maxLeverage": 50,
-                        "info": {
-                            "baseMaxLoan": "",
-                            "imr": "0.02",
-                            "instId": "",
-                            "maxLever": "50",
-                            "maxSz": "1000",
-                            "minSz": "501",
-                            "mmr": "0.015",
-                            "optMgnFactor": "0",
-                            "quoteMaxLoan": "",
-                            "tier": "2",
-                            "uly": "ADA-USDT",
-                        },
-                    },
-                    {
-                        "tier": 3,
-                        "minNotional": 1001,
-                        "maxNotional": 2000,
-                        "maintenanceMarginRate": 0.03,
-                        "maxLeverage": 20,
-                        "info": {
-                            "baseMaxLoan": "",
-                            "imr": "0.05",
-                            "instId": "",
-                            "maxLever": "20",
-                            "maxSz": "2000",
-                            "minSz": "1001",
-                            "mmr": "0.02",
-                            "optMgnFactor": "0",
-                            "quoteMaxLoan": "",
-                            "tier": "3",
-                            "uly": "ADA-USDT",
-                        },
-                    },
-                ],
+                "ETH/USDT:USDT": okx_leverage_tiers["ETH/USDT:USDT"],
+                "ADA/USDT:USDT": okx_leverage_tiers["ADA/USDT:USDT"],
             }
         ),
     )
-    exchange = get_patched_exchange(mocker, default_conf, api_mock, exchange="okx")
-    assert exchange.get_maintenance_ratio_and_amt("ETH/USDT:USDT", 2000) == (0.01, None)
-    assert exchange.get_maintenance_ratio_and_amt("ETH/USDT:USDT", 2001) == (0.015, None)
-    assert exchange.get_maintenance_ratio_and_amt("ETH/USDT:USDT", 4001) == (0.02, None)
-    assert exchange.get_maintenance_ratio_and_amt("ETH/USDT:USDT", 8000) == (0.02, None)
 
-    assert exchange.get_maintenance_ratio_and_amt("ADA/USDT:USDT", 1) == (0.02, None)
-    assert exchange.get_maintenance_ratio_and_amt("ADA/USDT:USDT", 2000) == (0.03, None)
+    exchange = get_patched_exchange(
+        mocker, default_conf, api_mock, exchange="okx", mock_markets=okx_markets
+    )
+    # ETH: maxSz * 0.1 ETH * 2409.27 - tiers end at 1204635, 2409270 and 6023175 USDT
+    assert exchange.get_maintenance_ratio_and_amt("ETH/USDT:USDT", 1_000_000) == (0.004, None)
+    assert exchange.get_maintenance_ratio_and_amt("ETH/USDT:USDT", 2_000_000) == (0.005, None)
+    assert exchange.get_maintenance_ratio_and_amt("ETH/USDT:USDT", 5_000_000) == (0.0075, None)
+
+    # ADA: maxSz * 100 ADA * 0.2196 - tiers end at 48312, 98820 and 219600 USDT
+    assert exchange.get_maintenance_ratio_and_amt("ADA/USDT:USDT", 1) == (0.01, None)
+    assert exchange.get_maintenance_ratio_and_amt("ADA/USDT:USDT", 40_000) == (0.01, None)
+    assert exchange.get_maintenance_ratio_and_amt("ADA/USDT:USDT", 50_000) == (0.015, None)
+    assert exchange.get_maintenance_ratio_and_amt("ADA/USDT:USDT", 200_000) == (0.03, None)
+
+
+def test_get_max_leverage_okx_contract_tiers(
+    default_conf, mocker, okx_tickers, okx_leverage_tiers, okx_markets
+):
+    api_mock = MagicMock()
+    api_mock.fetch_tickers = MagicMock(return_value=okx_tickers)
+    default_conf["trading_mode"] = "futures"
+    default_conf["margin_mode"] = "isolated"
+    mocker.patch.multiple(
+        "freqtrade.exchange.okx.Okx",
+        exchange_has=MagicMock(return_value=True),
+        load_leverage_tiers=MagicMock(
+            return_value={
+                "ETH/USDT:USDT": okx_leverage_tiers["ETH/USDT:USDT"],
+                # No ticker available
+                "TTT/USDT:USDT": okx_leverage_tiers["ETH/USDT:USDT"],
+            }
+        ),
+    )
+    exchange = get_patched_exchange(
+        mocker, default_conf, api_mock, exchange="okx", mock_markets=okx_markets
+    )
+    # Tier 1: 5000 contracts * 0.1 ETH * 2409.27 = 1204635 USDT -> max stake 12046.35 at 100x.
+    # Used to fail with "Stake amount 12000 too high", as maxSz was taken as USDT.
+    assert exchange.get_max_leverage("ETH/USDT:USDT", 12000) == 100.0
+    assert exchange.get_max_leverage("ETH/USDT:USDT", 13000) == 66.66
+    # Last tier: 25000 contracts * 0.1 ETH * 2409.27 = 6023175 USDT
+    assert exchange.get_max_pair_stake_amount("ETH/USDT:USDT", 2409.27) == pytest.approx(6023175)
+    assert "TTT/USDT:USDT" not in exchange._leverage_tiers
 
 
 def test_get_max_pair_stake_amount_okx(default_conf, mocker, leverage_tiers):
@@ -297,7 +382,17 @@ def test_additional_exchange_init_okx(default_conf, mocker):
     )
 
 
-def test_load_leverage_tiers_okx(default_conf, mocker, markets, tmp_path, caplog, time_machine):
+def test_load_leverage_tiers_okx(
+    default_conf,
+    mocker,
+    markets,
+    tmp_path,
+    caplog,
+    time_machine,
+    okx_tickers,
+    okx_leverage_tiers,
+    okx_markets,
+):
     default_conf["datadir"] = tmp_path
     # fd_mock = mocker.patch('freqtrade.exchange.exchange.file_dump_json')
     api_mock = MagicMock()
@@ -305,164 +400,47 @@ def test_load_leverage_tiers_okx(default_conf, mocker, markets, tmp_path, caplog
         return_value={
             "fetchLeverageTiers": False,
             "fetchMarketLeverageTiers": True,
+            "fetchTickers": True,
         }
     )
+    api_mock.fetch_tickers = MagicMock(return_value=okx_tickers)
     api_mock.fetch_market_leverage_tiers = AsyncMock(
         side_effect=[
-            [
-                {
-                    "tier": 1,
-                    "minNotional": 0,
-                    "maxNotional": 500,
-                    "maintenanceMarginRate": 0.02,
-                    "maxLeverage": 75,
-                    "info": {
-                        "baseMaxLoan": "",
-                        "imr": "0.013",
-                        "instId": "",
-                        "maxLever": "75",
-                        "maxSz": "500",
-                        "minSz": "0",
-                        "mmr": "0.01",
-                        "optMgnFactor": "0",
-                        "quoteMaxLoan": "",
-                        "tier": "1",
-                        "uly": "ADA-USDT",
-                    },
-                },
-                {
-                    "tier": 2,
-                    "minNotional": 501,
-                    "maxNotional": 1000,
-                    "maintenanceMarginRate": 0.025,
-                    "maxLeverage": 50,
-                    "info": {
-                        "baseMaxLoan": "",
-                        "imr": "0.02",
-                        "instId": "",
-                        "maxLever": "50",
-                        "maxSz": "1000",
-                        "minSz": "501",
-                        "mmr": "0.015",
-                        "optMgnFactor": "0",
-                        "quoteMaxLoan": "",
-                        "tier": "2",
-                        "uly": "ADA-USDT",
-                    },
-                },
-                {
-                    "tier": 3,
-                    "minNotional": 1001,
-                    "maxNotional": 2000,
-                    "maintenanceMarginRate": 0.03,
-                    "maxLeverage": 20,
-                    "info": {
-                        "baseMaxLoan": "",
-                        "imr": "0.05",
-                        "instId": "",
-                        "maxLever": "20",
-                        "maxSz": "2000",
-                        "minSz": "1001",
-                        "mmr": "0.02",
-                        "optMgnFactor": "0",
-                        "quoteMaxLoan": "",
-                        "tier": "3",
-                        "uly": "ADA-USDT",
-                    },
-                },
-            ],
+            okx_leverage_tiers["ADA/USDT:USDT"],
             TemporaryError("this Failed"),
-            [
-                {
-                    "tier": 1,
-                    "minNotional": 0,
-                    "maxNotional": 2000,
-                    "maintenanceMarginRate": 0.01,
-                    "maxLeverage": 75,
-                    "info": {
-                        "baseMaxLoan": "",
-                        "imr": "0.013",
-                        "instId": "",
-                        "maxLever": "75",
-                        "maxSz": "2000",
-                        "minSz": "0",
-                        "mmr": "0.01",
-                        "optMgnFactor": "0",
-                        "quoteMaxLoan": "",
-                        "tier": "1",
-                        "uly": "ETH-USDT",
-                    },
-                },
-                {
-                    "tier": 2,
-                    "minNotional": 2001,
-                    "maxNotional": 4000,
-                    "maintenanceMarginRate": 0.015,
-                    "maxLeverage": 50,
-                    "info": {
-                        "baseMaxLoan": "",
-                        "imr": "0.02",
-                        "instId": "",
-                        "maxLever": "50",
-                        "maxSz": "4000",
-                        "minSz": "2001",
-                        "mmr": "0.015",
-                        "optMgnFactor": "0",
-                        "quoteMaxLoan": "",
-                        "tier": "2",
-                        "uly": "ETH-USDT",
-                    },
-                },
-                {
-                    "tier": 3,
-                    "minNotional": 4001,
-                    "maxNotional": 8000,
-                    "maintenanceMarginRate": 0.02,
-                    "maxLeverage": 20,
-                    "info": {
-                        "baseMaxLoan": "",
-                        "imr": "0.05",
-                        "instId": "",
-                        "maxLever": "20",
-                        "maxSz": "8000",
-                        "minSz": "4001",
-                        "mmr": "0.02",
-                        "optMgnFactor": "0",
-                        "quoteMaxLoan": "",
-                        "tier": "3",
-                        "uly": "ETH-USDT",
-                    },
-                },
-            ],
+            okx_leverage_tiers["ETH/USDT:USDT"],
         ]
     )
     default_conf["trading_mode"] = "futures"
     default_conf["margin_mode"] = "isolated"
     default_conf["stake_currency"] = "USDT"
-    exchange = get_patched_exchange(mocker, default_conf, api_mock, exchange="okx")
+    exchange = get_patched_exchange(
+        mocker, default_conf, api_mock, exchange="okx", mock_markets=okx_markets
+    )
     exchange.trading_mode = TradingMode.FUTURES
     exchange.margin_mode = MarginMode.ISOLATED
     exchange.markets = markets
     # Initialization of load_leverage_tiers happens as part of exchange init.
+    # Tiers are converted from contracts to quote notional (minSz * contractSize * price)
     assert exchange._leverage_tiers == {
         "ADA/USDT:USDT": [
             {
                 "minNotional": 0,
-                "maxNotional": 500,
-                "maintenanceMarginRate": 0.02,
-                "maxLeverage": 75,
-                "maintAmt": None,
-            },
-            {
-                "minNotional": 501,
-                "maxNotional": 1000,
-                "maintenanceMarginRate": 0.025,
+                "maxNotional": pytest.approx(48312),
+                "maintenanceMarginRate": 0.01,
                 "maxLeverage": 50,
                 "maintAmt": None,
             },
             {
-                "minNotional": 1001,
-                "maxNotional": 2000,
+                "minNotional": pytest.approx(48314.196),
+                "maxNotional": pytest.approx(98820),
+                "maintenanceMarginRate": 0.015,
+                "maxLeverage": 40,
+                "maintAmt": None,
+            },
+            {
+                "minNotional": pytest.approx(98822.196),
+                "maxNotional": pytest.approx(219600),
                 "maintenanceMarginRate": 0.03,
                 "maxLeverage": 20,
                 "maintAmt": None,
@@ -471,23 +449,23 @@ def test_load_leverage_tiers_okx(default_conf, mocker, markets, tmp_path, caplog
         "ETH/USDT:USDT": [
             {
                 "minNotional": 0,
-                "maxNotional": 2000,
-                "maintenanceMarginRate": 0.01,
-                "maxLeverage": 75,
+                "maxNotional": pytest.approx(1204635),
+                "maintenanceMarginRate": 0.004,
+                "maxLeverage": 100,
                 "maintAmt": None,
             },
             {
-                "minNotional": 2001,
-                "maxNotional": 4000,
-                "maintenanceMarginRate": 0.015,
+                "minNotional": pytest.approx(1204637.40927),
+                "maxNotional": pytest.approx(2409270),
+                "maintenanceMarginRate": 0.005,
+                "maxLeverage": 66.66,
+                "maintAmt": None,
+            },
+            {
+                "minNotional": pytest.approx(2409272.40927),
+                "maxNotional": pytest.approx(6023175),
+                "maintenanceMarginRate": 0.0075,
                 "maxLeverage": 50,
-                "maintAmt": None,
-            },
-            {
-                "minNotional": 4001,
-                "maxNotional": 8000,
-                "maintenanceMarginRate": 0.02,
-                "maxLeverage": 20,
                 "maintAmt": None,
             },
         ],
