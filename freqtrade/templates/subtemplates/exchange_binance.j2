@@ -1,7 +1,7 @@
 "exchange": {
-    "name": "{{ exchange_name | lower }}",
-    "api_key": "{{ exchange_api_key }}",
-    "secret": "{{ exchange_secret }}",
+    "name": {{ exchange_name | lower | tojson }},
+    "api_key": {{ exchange_api_key | default("") | tojson }},
+    "secret": {{ exchange_secret | default("") | tojson }},
     "ccxt_config": {},
     "ccxt_async_config": {},
     "pair_whitelist": [

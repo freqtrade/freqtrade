@@ -295,7 +295,12 @@ def test_store_backtest_results_real(tmp_path, caplog):
     data = {"metadata": {}, "strategy": {}, "strategy_comparison": []}
     config = {
         "exportdirectory": tmp_path,
-        "original_config": {},
+        "original_config": {
+            "external_message_consumer": {
+                "producers": [{"name": "producer", "host": "localhost", "ws_token": "test-token"}]
+            },
+            "pairlists": [{"method": "RemotePairList", "bearer_token": "test-token"}],
+        },
     }
     store_backtest_results(
         config, data, "2022_01_01_15_05_13", strategy_files={"DefStrat": "NoFile"}
@@ -336,6 +341,14 @@ def test_store_backtest_results_real(tmp_path, caplog):
         assert "backtest-result-2024_01_01_15_05_25.json" in zipf.namelist()
         assert "backtest-result-2024_01_01_15_05_25_market_change.feather" in zipf.namelist()
         assert "backtest-result-2024_01_01_15_05_25_config.json" in zipf.namelist()
+        exported_config = json.loads(zipf.read("backtest-result-2024_01_01_15_05_25_config.json"))
+        assert exported_config["external_message_consumer"]["producers"] == [
+            {"name": "producer", "host": "localhost", "ws_token": "REDACTED"}
+        ]
+        assert exported_config["pairlists"] == [
+            {"method": "RemotePairList", "bearer_token": "REDACTED"}
+        ]
+        assert config["original_config"]["pairlists"][0]["bearer_token"] == "test-token"
         # strategy file is copied to the zip file
         assert "backtest-result-2024_01_01_15_05_25_DefStrat.py" in zipf.namelist()
         # compare the content of the strategy file

@@ -8,6 +8,7 @@ from freqtrade.commands.build_config_commands import start_new_config
 from freqtrade.configuration.deploy_config import (
     ask_user_config,
     ask_user_overwrite,
+    deploy_new_config,
     validate_is_float,
     validate_is_int,
 )
@@ -34,11 +35,14 @@ def test_validate_is_int():
     assert not validate_is_int("-ee")
 
 
-@pytest.mark.parametrize("exchange", ["bybit", "binance", "kraken"])
-def test_start_new_config(mocker, caplog, exchange):
-    wt_mock = mocker.patch.object(Path, "write_text", MagicMock())
-    mocker.patch.object(Path, "exists", MagicMock(return_value=True))
-    unlink_mock = mocker.patch.object(Path, "unlink", MagicMock())
+@pytest.mark.parametrize("exchange", ["bybit", "binance", "kraken", "kucoin", "okx"])
+@pytest.mark.parametrize(
+    "credential",
+    ["sampleKey", 'quoted"secret', r"backslash\new", "line\nbreak", "secret\u79d8\u5bc6"],
+)
+def test_start_new_config(mocker, caplog, tmp_path, exchange, credential):
+    config_path = tmp_path / "config.json"
+    config_path.write_text('{"dry_run": false}')
     mocker.patch("freqtrade.configuration.deploy_config.ask_user_overwrite", return_value=True)
 
     sample_selections = {
@@ -51,32 +55,78 @@ def test_start_new_config(mocker, caplog, exchange):
         "trading_mode": "spot",
         "margin_mode": "",
         "exchange_name": exchange,
-        "exchange_api_key": "sampleKey",
-        "exchange_secret": "Samplesecret",
+        "exchange_api_key": credential,
+        "exchange_secret": credential,
+        "exchange_api_key_password": credential,
         "telegram": False,
-        "telegram_token": "asdf1244",
-        "telegram_chat_id": "1144444",
+        "telegram_token": credential,
+        "telegram_chat_id": credential,
         "api_server": False,
         "api_server_listen_addr": "127.0.0.1",
-        "api_server_username": "freqtrader",
-        "api_server_password": "MoneyMachine",
+        "api_server_username": credential,
+        "api_server_password": credential,
+        "api_server_jwt_key": credential,
+        "api_server_ws_token": credential,
     }
     mocker.patch(
         "freqtrade.configuration.deploy_config.ask_user_config", return_value=sample_selections
     )
-    args = ["new-config", "--config", "coolconfig.json"]
+    args = ["new-config", "--config", str(config_path)]
     start_new_config(get_args(args))
 
     assert log_has_re("Writing config to .*", caplog)
-    assert wt_mock.call_count == 1
-    assert unlink_mock.call_count == 1
     result = rapidjson.loads(
-        wt_mock.call_args_list[0][0][0],
+        config_path.read_text(encoding="utf-8"),
         parse_mode=rapidjson.PM_COMMENTS | rapidjson.PM_TRAILING_COMMAS,
     )
     assert result["exchange"]["name"] == exchange
-    assert result["exchange"]["api_key"] == "sampleKey"
+    assert result["exchange"]["api_key"] == credential
+    assert result["exchange"]["secret"] == credential
+    if exchange in ("kucoin", "okx"):
+        assert result["exchange"]["password"] == credential
+    assert result["telegram"]["token"] == credential
+    assert result["telegram"]["chat_id"] == credential
+    assert result["api_server"]["username"] == credential
+    assert result["api_server"]["password"] == credential
+    assert result["api_server"]["jwt_secret_key"] == credential
+    assert result["api_server"]["ws_token"] == credential
     assert result["timeframe"] == "15m"
+
+
+@pytest.mark.parametrize("exchange", ["bybit", "binance", "kraken", "kucoin", "okx"])
+def test_deploy_new_config_optional_credentials(tmp_path, exchange):
+    config_path = tmp_path / "config.json"
+    selections = {
+        "max_open_trades": "3",
+        "stake_currency": "USDT",
+        "stake_amount": '"unlimited"',
+        "dry_run": True,
+        "trading_mode": "spot",
+        "margin_mode": "",
+        "exchange_name": exchange,
+        "telegram": False,
+        "api_server": False,
+        "api_server_jwt_key": "test-jwt-key",
+        "api_server_ws_token": "test-ws-token",
+    }
+
+    deploy_new_config(config_path, selections)
+    result = rapidjson.loads(config_path.read_text(encoding="utf-8"))
+
+    assert result["dry_run"] is True
+    assert result["stake_amount"] == "unlimited"
+    assert result["max_open_trades"] == 3
+    assert result["exchange"]["api_key"] == ""
+    assert result["exchange"]["secret"] == ""
+    if exchange in ("kucoin", "okx"):
+        assert result["exchange"]["password"] == ""
+    assert result["telegram"]["token"] == ""
+    assert result["telegram"]["chat_id"] == ""
+    assert result["api_server"]["username"] == ""
+    assert result["api_server"]["password"] == ""
+    assert result["api_server"]["listen_ip_address"] == "127.0.0.1"
+    assert "timeframe" not in result
+    assert "fiat_display_currency" not in result
 
 
 def test_start_new_config_exists(mocker, caplog):
@@ -85,6 +135,22 @@ def test_start_new_config_exists(mocker, caplog):
     args = ["new-config", "--config", "coolconfig.json"]
     with pytest.raises(OperationalException, match=r"Configuration .* already exists\."):
         start_new_config(get_args(args))
+
+
+def test_start_new_config_cancelled_overwrite(mocker, tmp_path):
+    config_path = tmp_path / "config.json"
+    original_config = '{"dry_run": true}'
+    config_path.write_text(original_config)
+    mocker.patch("freqtrade.configuration.deploy_config.ask_user_overwrite", return_value=True)
+    mocker.patch(
+        "freqtrade.configuration.deploy_config.ask_user_config",
+        side_effect=OperationalException("User interrupted interactive questions."),
+    )
+
+    with pytest.raises(OperationalException, match="User interrupted interactive questions"):
+        start_new_config(get_args(["new-config", "--config", str(config_path)]))
+
+    assert config_path.read_text() == original_config
 
 
 def test_ask_user_overwrite(mocker):
