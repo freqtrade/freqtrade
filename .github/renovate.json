@@ -81,6 +81,12 @@
       "matchPackageNames": ["mypy", "/mirrors-mypy$/"],
       "groupName": "Mypy",
       "groupSlug": "mypy"
+    },
+    {
+      "description": "Keep Dockerfile.armhf updates separate.",
+      "matchFileNames": ["docker/Dockerfile.armhf"],
+      "groupName": "Dockerfile.armhf",
+      "groupSlug": "dockerfile-armhf"
     }
   ]
 }
