@@ -93,6 +93,7 @@ def test_handle_stoploss_on_exchange(
     assert trade.is_short == is_short
     assert trade.is_open
     assert trade.has_open_sl_orders is False
+    trade.funding_fee_running = -0.5
 
     assert freqtrade.handle_stoploss_on_exchange(trade) is False
     assert stoploss.call_count == 1
@@ -127,6 +128,8 @@ def test_handle_stoploss_on_exchange(
     assert len(trade.open_sl_orders) == 1
     assert trade.open_sl_orders[-1].order_id == "103_1"
     assert trade.amount == amount_before
+    # Cancelled stoploss must not consume running funding fees
+    assert trade.funding_fee_running == -0.5
 
     # Fourth case: when stoploss is set and it is hit
     # should return true as a trade actually happened
@@ -156,6 +159,11 @@ def test_handle_stoploss_on_exchange(
     assert len(trade.open_sl_orders) == 0
     assert trade.is_open is False
     assert freqtrade.strategy.order_filled.call_count == 1
+    # Filled stoploss takes the running funding fees
+    assert trade.funding_fee_running == 0.0
+    assert trade.funding_fees == -0.5
+    assert trade.select_order_by_order_id("103_1").funding_fee == -0.5
+    assert trade.select_order_by_order_id("13434334").funding_fee is None
     caplog.clear()
 
     mocker.patch.object(freqtrade.exchange, "create_stoploss", side_effect=ExchangeError())
@@ -628,6 +636,7 @@ def test_handle_stoploss_on_exchange_trailing(
     trade.is_short = is_short
     trade.is_open = True
     assert trade.has_open_sl_orders is False
+    trade.funding_fee_running = -0.5
     trade.stoploss_last_update = dt_now() - timedelta(minutes=20)
     trade.orders.append(
         Order(
@@ -715,6 +724,9 @@ def test_handle_stoploss_on_exchange_trailing(
         side=exit_side(is_short),
         leverage=1.0,
     )
+    # Cancelled (unfilled) stoploss orders must not consume the running funding fees
+    assert trade.funding_fee_running == -0.5
+    assert all(o.funding_fee is None for o in trade.orders if o.ft_order_side == "stoploss")
 
     # price fell below stoploss, so dry-run sells trade.
     mocker.patch(

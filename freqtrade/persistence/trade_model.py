@@ -919,7 +919,7 @@ class LocalTrade:
             return
 
         logger.info(f"Updating trade (id={self.id}) ...")
-        if order.ft_order_side != "stoploss" and order.funding_fee is None:
+        if order.safe_filled > 0 and order.funding_fee is None:
             order.funding_fee = (
                 self.funding_fee_running if self.funding_fee_running is not None else 0.0
             )
