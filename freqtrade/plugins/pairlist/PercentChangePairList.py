@@ -47,7 +47,11 @@ class PercentChangePairList(IPairList):
         self._max_value = self._pairlistconfig.get("max_value", None)
         self._refresh_period = self._pairlistconfig.get("refresh_period", 1800)
         self._pair_cache: FtTTLCache = FtTTLCache(maxsize=1, ttl=self._refresh_period)
-        self._sort_direction: str | None = self._pairlistconfig.get("sort_direction", "desc")
+        self._sort_direction: str = self._pairlistconfig.get("sort_direction", "desc")
+        if self._sort_direction not in ("asc", "desc"):
+            raise OperationalException(
+                "`sort_direction` not configured correctly. Supported values are `asc` and `desc`."
+            )
         self._def_candletype = self._config["candle_type_def"]
 
         self._init_lookback_config()

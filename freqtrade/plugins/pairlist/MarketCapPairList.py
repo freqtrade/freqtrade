@@ -26,6 +26,10 @@ class MarketCapPairList(IPairList):
         super().__init__(*args, **kwargs)
 
         self._mode = self._pairlistconfig.get("mode", "whitelist")
+        if self._mode not in ("whitelist", "blacklist"):
+            raise OperationalException(
+                "`mode` not configured correctly. Supported modes are `whitelist` and `blacklist`."
+            )
 
         if (self._mode == "whitelist") and ("number_assets" not in self._pairlistconfig):
             raise OperationalException(
