@@ -217,7 +217,7 @@ class MarketCapPairList(IPairList):
             data.sort(key=lambda d: float(d.get("market_cap") or 0.0), reverse=True)
 
             if data:
-                marketcap_list = [row["symbol"] for row in data]
+                marketcap_list = list(dict.fromkeys(row["symbol"] for row in data))
                 self._marketcap_cache["marketcap"] = marketcap_list
 
         if marketcap_list:
