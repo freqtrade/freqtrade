@@ -41,7 +41,7 @@ def test_PairInformationFilter_validation(mocker, pif_config, missing_key, error
     ]
     exchange = get_patched_exchange(mocker, pif_config)
 
-    with pytest.raises(OperationalException, match=error_msg):
+    with pytest.raises(OperationalException, match=rf"^PairInformationFilter: {error_msg}"):
         if missing_key == "selection_mode":
             pif_config["pairlists"][0]["selection_mode"] = "invalid_mode"
         else:

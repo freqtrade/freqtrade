@@ -329,7 +329,7 @@ def test_refresh_pairlist_dynamic(mocker, shitcoinmarkets, tickers, whitelist_co
     whitelist_conf["pairlists"] = [{"method": "VolumePairList"}]
     with pytest.raises(
         OperationalException,
-        match=r"`number_assets` not specified. Please check your configuration "
+        match=r"^VolumePairList: `number_assets` not specified\. Please check your configuration "
         r'for "pairlist.config.number_assets"',
     ):
         PairListManager(freqtrade.exchange, whitelist_conf, MagicMock())
@@ -1087,8 +1087,8 @@ def test_VolumePairList_range(
     if volumefilter_result == "default_refresh_too_short":
         with pytest.raises(
             OperationalException,
-            match=r"Refresh period of [0-9]+ seconds is smaller than one timeframe "
-            r"of [0-9]+.*\. Please adjust refresh_period to at least [0-9]+ "
+            match=r"^VolumePairList: Refresh period of [0-9]+ seconds is smaller than one "
+            r"timeframe of [0-9]+.*\. Please adjust refresh_period to at least [0-9]+ "
             r"and restart the bot\.",
         ):
             freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
@@ -2996,7 +2996,7 @@ def test_MarketCapPairList_invalid_mode(mocker, default_conf_usdt, mode):
 
     with pytest.raises(
         OperationalException,
-        match=r"`mode` not configured correctly\. "
+        match=r"^MarketCapPairList: `mode` not configured correctly\. "
         r"Supported modes are `whitelist` and `blacklist`\.",
     ):
         PairListManager(exchange, default_conf_usdt)
@@ -3007,7 +3007,9 @@ def test_MarketCapPairList_invalid_mode(mocker, default_conf_usdt, mode):
 def test_MarketCapPairList_exceptions(mocker, default_conf_usdt, caplog):
     exchange = get_patched_exchange(mocker, default_conf_usdt)
     default_conf_usdt["pairlists"] = [{"method": "MarketCapPairList"}]
-    with pytest.raises(OperationalException, match=r"`number_assets` not specified.*"):
+    with pytest.raises(
+        OperationalException, match=r"^MarketCapPairList: `number_assets` not specified.*"
+    ):
         # No number_assets
         PairListManager(exchange, default_conf_usdt)
 
@@ -3034,7 +3036,8 @@ def test_MarketCapPairList_exceptions(mocker, default_conf_usdt, caplog):
         }
     ]
     with pytest.raises(
-        OperationalException, match=r"Category layer250 not in coingecko category list\."
+        OperationalException,
+        match=r"^MarketCapPairList: Category layer250 not in coingecko category list\.",
     ):
         PairListManager(exchange, default_conf_usdt)
 
@@ -3163,7 +3166,7 @@ def test_CrossMarketPairList_invalid_pairs_exist_on(mocker, default_conf_usdt, p
 
     with pytest.raises(
         OperationalException,
-        match=r"`pairs_exist_on` not configured correctly\. "
+        match=r"^CrossMarketPairList: `pairs_exist_on` not configured correctly\. "
         r"Supported values are `current_market_only` and `both_markets`\.",
     ):
         PairListManager(exchange, default_conf_usdt)

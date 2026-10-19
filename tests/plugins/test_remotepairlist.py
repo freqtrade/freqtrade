@@ -131,7 +131,7 @@ def test_remote_pairlist_init_no_pairlist_url(mocker, rpl_config):
     get_patched_exchange(mocker, rpl_config)
     with pytest.raises(
         OperationalException,
-        match=r"`pairlist_url` not specified."
+        match=r"^RemotePairList: `pairlist_url` not specified."
         r' Please check your configuration for "pairlist.config.pairlist_url"',
     ):
         get_patched_freqtradebot(mocker, rpl_config)
@@ -188,7 +188,8 @@ def test_remote_pairlist_init_wrong_mode(mocker, rpl_config):
 
     with pytest.raises(
         OperationalException,
-        match=r'`mode` not configured correctly. Supported Modes are "whitelist","blacklist"',
+        match=r"^RemotePairList: `mode` not configured correctly. "
+        r"Supported Modes are 'whitelist','blacklist'",
     ):
         get_patched_freqtradebot(mocker, rpl_config)
 
@@ -223,7 +224,8 @@ def test_remote_pairlist_init_wrong_proc_mode(mocker, rpl_config):
     get_patched_exchange(mocker, rpl_config)
     with pytest.raises(
         OperationalException,
-        match=r'`processing_mode` not configured correctly. Supported Modes are "filter","append"',
+        match=r"^RemotePairList: `processing_mode` not configured correctly. "
+        r"Supported Modes are 'filter','append'",
     ):
         get_patched_freqtradebot(mocker, rpl_config)
 
