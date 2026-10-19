@@ -26,8 +26,8 @@ nbconvert==7.17.1
 scipy-stubs==1.18.1.1  # keep in sync with `scipy` in `requirements.txt`
 types-cachetools==7.0.0.20260713
 types-filelock==3.2.7
-types-requests==2.33.0.20260906
-types-tabulate==0.10.0.20260508
+types-requests==2.33.0.20261006
+types-tabulate==0.10.0.20261006
 types-python-dateutil==2.9.0.20260807
 pip-audit==2.10.1
 # For build step in CI
