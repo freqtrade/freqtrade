@@ -217,11 +217,7 @@ class MarketCapPairList(IPairList):
             data.sort(key=lambda d: float(d.get("market_cap") or 0.0), reverse=True)
 
             if data:
-                marketcap_list = []
-                for row in data:
-                    symbol = row["symbol"]
-                    if symbol not in marketcap_list:
-                        marketcap_list.append(symbol)
+                marketcap_list = self.get_unique_marketcap_list(data)
                 self._marketcap_cache["marketcap"] = marketcap_list
 
         if marketcap_list:
@@ -251,3 +247,11 @@ class MarketCapPairList(IPairList):
 
         # If no pairs are found, return the original pairlist
         return filtered_pairlist
+
+    def get_unique_marketcap_list(self, data: list[dict]) -> list[str]:
+        unique_symbols = []
+        for row in data:
+            symbol = row["symbol"]
+            if symbol not in unique_symbols:
+                unique_symbols.append(symbol)
+        return unique_symbols
