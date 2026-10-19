@@ -123,7 +123,7 @@ class PercentChangePairList(IPairList):
             "sort_direction": {
                 "type": "option",
                 "default": "desc",
-                "options": ["", "asc", "desc"],
+                "options": ["asc", "desc"],
                 "description": "Sort pairlist",
                 "help": "Sort Pairlist ascending or descending by rate of change.",
             },

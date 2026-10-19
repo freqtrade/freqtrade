@@ -149,6 +149,40 @@ def test_volume_change_pair_list_init_wrong_config(mocker, rpl_config):
         get_patched_freqtradebot(mocker, rpl_config)
 
 
+@pytest.mark.parametrize(
+    "sort_direction",
+    [
+        pytest.param("descending", id="invalid-string"),
+        pytest.param("DESC", id="wrong-case"),
+        pytest.param("", id="empty-string"),
+        pytest.param(None, id="null"),
+        pytest.param(True, id="true"),
+        pytest.param(False, id="false"),
+        pytest.param(1, id="integer"),
+        pytest.param(1.5, id="float"),
+        pytest.param([], id="list"),
+        pytest.param({}, id="dict"),
+    ],
+)
+def test_volume_change_pair_list_init_invalid_sort_direction(mocker, rpl_config, sort_direction):
+    rpl_config["pairlists"] = [
+        {
+            "method": "PercentChangePairList",
+            "number_assets": 2,
+            "sort_direction": sort_direction,
+        }
+    ]
+    mocker.patch(f"{EXMS}.exchange_has", return_value=True)
+    exchange = get_patched_exchange(mocker, rpl_config)
+
+    with pytest.raises(
+        OperationalException,
+        match=r"`sort_direction` not configured correctly\. "
+        r"Supported values are `asc` and `desc`\.",
+    ):
+        PairListManager(exchange, rpl_config)
+
+
 def test_gen_pairlist_with_valid_change_pair_list_config(mocker, rpl_config, tickers, time_machine):
     rpl_config["pairlists"] = [
         {

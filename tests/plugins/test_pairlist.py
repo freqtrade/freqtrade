@@ -2964,6 +2964,46 @@ def test_MarketCapPairList_filter_special_no_pair_from_coingecko(
     assert pm.whitelist == []
 
 
+@pytest.mark.parametrize(
+    "mode",
+    [
+        pytest.param("whitelits", id="typo"),
+        pytest.param("WHITELIST", id="uppercase"),
+        pytest.param("", id="empty"),
+        pytest.param(None, id="null"),
+        pytest.param(True, id="true"),
+        pytest.param(False, id="false"),
+        pytest.param(0, id="integer"),
+        pytest.param(1.5, id="float"),
+        pytest.param([], id="list"),
+        pytest.param({}, id="object"),
+    ],
+)
+def test_MarketCapPairList_invalid_mode(mocker, default_conf_usdt, mode):
+    default_conf_usdt["pairlists"] = [
+        {
+            "method": "MarketCapPairList",
+            "number_assets": 2,
+            "mode": mode,
+            "categories": ["layer-1"],
+        }
+    ]
+    exchange = get_patched_exchange(mocker, default_conf_usdt)
+    categories_mock = mocker.patch(
+        "freqtrade.plugins.pairlist.MarketCapPairList.FtCoinGeckoApi.get_coins_categories_list",
+        return_value=[{"category_id": "layer-1"}],
+    )
+
+    with pytest.raises(
+        OperationalException,
+        match=r"`mode` not configured correctly\. "
+        r"Supported modes are `whitelist` and `blacklist`\.",
+    ):
+        PairListManager(exchange, default_conf_usdt)
+
+    categories_mock.assert_not_called()
+
+
 def test_MarketCapPairList_exceptions(mocker, default_conf_usdt, caplog):
     exchange = get_patched_exchange(mocker, default_conf_usdt)
     default_conf_usdt["pairlists"] = [{"method": "MarketCapPairList"}]
@@ -3098,6 +3138,35 @@ def test_CrossMarketPairlist_filter(
     pm.refresh_pairlist()
 
     assert pm.whitelist == result
+
+
+@pytest.mark.parametrize(
+    "pairs_exist_on",
+    [
+        pytest.param("both_market", id="typo"),
+        pytest.param("BOTH_MARKETS", id="uppercase"),
+        pytest.param("", id="empty"),
+        pytest.param(None, id="null"),
+        pytest.param(True, id="true"),
+        pytest.param(False, id="false"),
+        pytest.param(0, id="integer"),
+        pytest.param(1.5, id="float"),
+        pytest.param([], id="list"),
+        pytest.param({}, id="object"),
+    ],
+)
+def test_CrossMarketPairList_invalid_pairs_exist_on(mocker, default_conf_usdt, pairs_exist_on):
+    default_conf_usdt["pairlists"] = [
+        {"method": "CrossMarketPairList", "pairs_exist_on": pairs_exist_on}
+    ]
+    exchange = get_patched_exchange(mocker, default_conf_usdt)
+
+    with pytest.raises(
+        OperationalException,
+        match=r"`pairs_exist_on` not configured correctly\. "
+        r"Supported values are `current_market_only` and `both_markets`\.",
+    ):
+        PairListManager(exchange, default_conf_usdt)
 
 
 def test_CrossMarketPairlist_gen_pairlist_uses_cache(mocker, default_conf_usdt, markets):
