@@ -23,18 +23,18 @@ class PairInformationFilter(IPairList):
 
         if not self._info_key:
             raise OperationalException(
-                "`info_key` not specified. Please check your configuration "
+                f"{self.name}: `info_key` not specified. Please check your configuration "
                 'for "pairlist.config.info_key"'
             )
         if "info_compare_value" not in self._pairlistconfig:
             raise OperationalException(
-                "`info_compare_value` not specified. Please check your configuration "
+                f"{self.name}: `info_compare_value` not specified. Please check your configuration "
                 'for "pairlist.config.info_compare_value"'
             )
 
         if self._selection_mode not in ["whitelist", "blacklist"]:
             raise OperationalException(
-                "`selection_mode` not configured correctly. "
+                f"{self.name}: `selection_mode` not configured correctly. "
                 "Supported Modes are `whitelist` and `blacklist`"
             )
 

@@ -37,8 +37,8 @@ class PercentChangePairList(IPairList):
 
         if "number_assets" not in self._pairlistconfig:
             raise OperationalException(
-                "`number_assets` not specified. Please check your configuration "
-                'for "pairlist.config.number_assets"'
+                f"{self.name}: `number_assets` not specified. Please check your configuration "
+                f'for "pairlist.config.number_assets"'
             )
 
         self._stake_currency = self._config["stake_currency"]
@@ -50,7 +50,8 @@ class PercentChangePairList(IPairList):
         self._sort_direction: str = self._pairlistconfig.get("sort_direction", "desc")
         if self._sort_direction not in ("asc", "desc"):
             raise OperationalException(
-                "`sort_direction` not configured correctly. Supported values are `asc` and `desc`."
+                f"{self.name}: `sort_direction` not configured correctly. "
+                "Supported values are `asc` and `desc`."
             )
         self._def_candletype = self._config["candle_type_def"]
 
@@ -65,8 +66,8 @@ class PercentChangePairList(IPairList):
 
         if self._use_range & (self._refresh_period < _tf_in_sec):
             raise OperationalException(
-                f"Refresh period of {self._refresh_period} seconds is smaller than one "
-                f"timeframe of {self._lookback_timeframe}. Please adjust refresh_period "
+                f"{self.name}: Refresh period of {self._refresh_period} seconds is smaller "
+                f"than one timeframe of {self._lookback_timeframe}. Please adjust refresh_period "
                 f"to at least {_tf_in_sec} and restart the bot."
             )
 

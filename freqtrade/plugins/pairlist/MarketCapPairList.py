@@ -28,13 +28,14 @@ class MarketCapPairList(IPairList):
         self._mode = self._pairlistconfig.get("mode", "whitelist")
         if self._mode not in ("whitelist", "blacklist"):
             raise OperationalException(
-                "`mode` not configured correctly. Supported modes are `whitelist` and `blacklist`."
+                f"{self.name}: `mode` not configured correctly. "
+                "Supported modes are `whitelist` and `blacklist`."
             )
 
         if (self._mode == "whitelist") and ("number_assets" not in self._pairlistconfig):
             raise OperationalException(
-                "`number_assets` not specified. Please check your configuration "
-                'for "pairlist.config.number_assets"'
+                f"{self.name}: `number_assets` not specified. Please check your configuration "
+                f'for "pairlist.config.number_assets"'
             )
 
         self._stake_currency = self._config["stake_currency"]
@@ -58,7 +59,7 @@ class MarketCapPairList(IPairList):
             for category in self._categories:
                 if category not in category_ids:
                     raise OperationalException(
-                        f"Category {category} not in coingecko category list. "
+                        f"{self.name}: Category {category} not in coingecko category list. "
                         f"You can choose from {category_ids}"
                     )
 
