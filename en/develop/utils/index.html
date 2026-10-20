@@ -3071,7 +3071,7 @@ You can use <code>docker compose run --rm -p 127.0.0.1:8080:8080 freqtrade webse
 This assumes that the configuration has a webserver enabled and configured for docker (listening port = <code>0.0.0.0</code>).</p>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
-<p>Don't forget to reset the command back to the trade command if you want to start a live or dry-run bot. </p>
+<p>Don't forget to reset the command back to the trade command if you want to start a live or dry-run bot.</p>
 </div>
 <h2 id="show-previous-backtest-results">Show previous Backtest results<a class="headerlink" href="#show-previous-backtest-results" title="Permanent link">&para;</a></h2>
 <p>Allows you to show previous backtest results.
@@ -3080,11 +3080,15 @@ Adding <code>--show-pair-list</code> outputs a sorted pair list you can easily c
 <summary>Strategy overfitting</summary>
 <p>Only using winning pairs can lead to an overfitted strategy, which will not work well on future data. Make sure to extensively test your strategy in dry-run before risking real money.</p>
 </details>
+<p>Adding <code>--show-params</code> outputs the parameters the backtest was run with - if the result contains any.
+Adding <code>--export-params</code> will write these parameters back to the strategy's parameter file (<code>&lt;strategy&gt;.json</code>), overwriting the current parameters of that strategy.
+The strategy is looked up in the strategy directory (<code>user_data/strategies</code> by default), so this only works if the strategy is still available locally.</p>
 <div class="highlight"><pre><span></span><code><span class="go">usage: freqtrade backtesting-show [-h] [-v] [--no-color] [--logfile FILE] [-V]</span>
 <span class="go">                                  [-c PATH] [-d PATH] [--userdir PATH]</span>
 <span class="go">                                  [--backtest-filename PATH]</span>
 <span class="go">                                  [--backtest-directory PATH]</span>
-<span class="go">                                  [--show-pair-list]</span>
+<span class="go">                                  [--show-pair-list] [--show-params]</span>
+<span class="go">                                  [--export-params]</span>
 <span class="go">                                  [--breakdown {day,week,month,year,weekday} [{day,week,month,year,weekday} ...]]</span>
 
 <span class="go">options:</span>
@@ -3099,6 +3103,9 @@ Adding <code>--show-pair-list</code> outputs a sorted pair list you can easily c
 <span class="go">                        Directory to use for backtest results. Example:</span>
 <span class="go">                        `--export-directory=user_data/backtest_results/`.</span>
 <span class="go">  --show-pair-list      Show backtesting pairlist sorted by profit.</span>
+<span class="go">  --show-params         Show the parameters stored in the backtest result.</span>
+<span class="go">  --export-params       Export the parameters stored in the backtest result to</span>
+<span class="go">                        the strategy's parameter file.</span>
 <span class="go">  --breakdown {day,week,month,year,weekday} [{day,week,month,year,weekday} ...]</span>
 <span class="go">                        Show backtesting breakdown per [day, week, month,</span>
 <span class="go">                        year, weekday].</span>
