@@ -7,6 +7,7 @@ import random
 from typing import Literal
 
 from freqtrade.enums import RunMode
+from freqtrade.exceptions import OperationalException
 from freqtrade.exchange import timeframe_to_seconds
 from freqtrade.exchange.exchange_types import Tickers
 from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter, SupportsBacktesting
@@ -35,6 +36,12 @@ class ShuffleFilter(IPairList):
 
         self._random = random.Random(self._seed)  # noqa: S311
         self._shuffle_freq: ShuffleValues = self._pairlistconfig.get("shuffle_frequency", "candle")
+        if self._shuffle_freq not in ("candle", "iteration"):
+            raise OperationalException(
+                f"{self.name}: `shuffle_frequency` not configured correctly "
+                f"(got `{self._shuffle_freq}`). "
+                "Supported values are `candle` and `iteration`."
+            )
         self.__pairlist_cache = PeriodicCache(
             maxsize=1000, ttl=timeframe_to_seconds(self._config["timeframe"])
         )

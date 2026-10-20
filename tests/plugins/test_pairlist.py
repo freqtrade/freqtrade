@@ -329,7 +329,7 @@ def test_refresh_pairlist_dynamic(mocker, shitcoinmarkets, tickers, whitelist_co
     whitelist_conf["pairlists"] = [{"method": "VolumePairList"}]
     with pytest.raises(
         OperationalException,
-        match=r"`number_assets` not specified. Please check your configuration "
+        match=r"^VolumePairList: `number_assets` not specified\. Please check your configuration "
         r'for "pairlist.config.number_assets"',
     ):
         PairListManager(freqtrade.exchange, whitelist_conf, MagicMock())
@@ -1087,8 +1087,8 @@ def test_VolumePairList_range(
     if volumefilter_result == "default_refresh_too_short":
         with pytest.raises(
             OperationalException,
-            match=r"Refresh period of [0-9]+ seconds is smaller than one timeframe "
-            r"of [0-9]+.*\. Please adjust refresh_period to at least [0-9]+ "
+            match=r"^VolumePairList: Refresh period of [0-9]+ seconds is smaller than one "
+            r"timeframe of [0-9]+.*\. Please adjust refresh_period to at least [0-9]+ "
             r"and restart the bot\.",
         ):
             freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
@@ -1456,6 +1456,23 @@ def test_ShuffleFilter_init(mocker, whitelist_conf, caplog) -> None:
         plm.refresh_pairlist()
         assert shuffle_mock.call_count == 1
         assert set(plm.whitelist) == set(pl1)
+
+
+@pytest.mark.parametrize("shuffle_frequency", ["candles", "Iteration"])
+def test_ShuffleFilter_invalid_shuffle_frequency(mocker, whitelist_conf, shuffle_frequency) -> None:
+    whitelist_conf["pairlists"] = [
+        {"method": "StaticPairList"},
+        {"method": "ShuffleFilter", "shuffle_frequency": shuffle_frequency},
+    ]
+    exchange = get_patched_exchange(mocker, whitelist_conf)
+
+    with pytest.raises(
+        OperationalException,
+        match=r"^ShuffleFilter: `shuffle_frequency` not configured correctly "
+        rf"\(got `{shuffle_frequency}`\)\. "
+        r"Supported values are `candle` and `iteration`\.",
+    ):
+        PairListManager(exchange, whitelist_conf)
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -2964,10 +2981,53 @@ def test_MarketCapPairList_filter_special_no_pair_from_coingecko(
     assert pm.whitelist == []
 
 
+@pytest.mark.parametrize(
+    "mode",
+    [
+        pytest.param("whitelits", id="typo"),
+        pytest.param("WHITELIST", id="uppercase"),
+        pytest.param("", id="empty"),
+        pytest.param(None, id="null"),
+        pytest.param(True, id="true"),
+        pytest.param(False, id="false"),
+        pytest.param(0, id="integer"),
+        pytest.param(1.5, id="float"),
+        pytest.param([], id="list"),
+        pytest.param({}, id="object"),
+    ],
+)
+def test_MarketCapPairList_invalid_mode(mocker, default_conf_usdt, mode):
+    default_conf_usdt["pairlists"] = [
+        {
+            "method": "MarketCapPairList",
+            "number_assets": 2,
+            "mode": mode,
+            "categories": ["layer-1"],
+        }
+    ]
+    exchange = get_patched_exchange(mocker, default_conf_usdt)
+    categories_mock = mocker.patch(
+        "freqtrade.plugins.pairlist.MarketCapPairList.FtCoinGeckoApi.get_coins_categories_list",
+        return_value=[{"category_id": "layer-1"}],
+    )
+
+    with pytest.raises(
+        OperationalException,
+        match=r"^MarketCapPairList: `mode` not configured correctly "
+        r"\(got `.*`\)\. "
+        r"Supported values are `whitelist` and `blacklist`\.",
+    ):
+        PairListManager(exchange, default_conf_usdt)
+
+    categories_mock.assert_not_called()
+
+
 def test_MarketCapPairList_exceptions(mocker, default_conf_usdt, caplog):
     exchange = get_patched_exchange(mocker, default_conf_usdt)
     default_conf_usdt["pairlists"] = [{"method": "MarketCapPairList"}]
-    with pytest.raises(OperationalException, match=r"`number_assets` not specified.*"):
+    with pytest.raises(
+        OperationalException, match=r"^MarketCapPairList: `number_assets` not specified.*"
+    ):
         # No number_assets
         PairListManager(exchange, default_conf_usdt)
 
@@ -2994,7 +3054,8 @@ def test_MarketCapPairList_exceptions(mocker, default_conf_usdt, caplog):
         }
     ]
     with pytest.raises(
-        OperationalException, match=r"Category layer250 not in coingecko category list\."
+        OperationalException,
+        match=r"^MarketCapPairList: Category layer250 not in coingecko category list\.",
     ):
         PairListManager(exchange, default_conf_usdt)
 
@@ -3098,6 +3159,36 @@ def test_CrossMarketPairlist_filter(
     pm.refresh_pairlist()
 
     assert pm.whitelist == result
+
+
+@pytest.mark.parametrize(
+    "pairs_exist_on",
+    [
+        pytest.param("both_market", id="typo"),
+        pytest.param("BOTH_MARKETS", id="uppercase"),
+        pytest.param("", id="empty"),
+        pytest.param(None, id="null"),
+        pytest.param(True, id="true"),
+        pytest.param(False, id="false"),
+        pytest.param(0, id="integer"),
+        pytest.param(1.5, id="float"),
+        pytest.param([], id="list"),
+        pytest.param({}, id="object"),
+    ],
+)
+def test_CrossMarketPairList_invalid_pairs_exist_on(mocker, default_conf_usdt, pairs_exist_on):
+    default_conf_usdt["pairlists"] = [
+        {"method": "CrossMarketPairList", "pairs_exist_on": pairs_exist_on}
+    ]
+    exchange = get_patched_exchange(mocker, default_conf_usdt)
+
+    with pytest.raises(
+        OperationalException,
+        match=r"^CrossMarketPairList: `pairs_exist_on` not configured correctly "
+        r"\(got `.*`\)\. "
+        r"Supported values are `current_market_only` and `both_markets`\.",
+    ):
+        PairListManager(exchange, default_conf_usdt)
 
 
 def test_CrossMarketPairlist_gen_pairlist_uses_cache(mocker, default_conf_usdt, markets):

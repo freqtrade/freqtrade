@@ -31,7 +31,7 @@ class VolumePairList(IPairList):
 
         if "number_assets" not in self._pairlistconfig:
             raise OperationalException(
-                "`number_assets` not specified. Please check your configuration "
+                f"{self.name}: `number_assets` not specified. Please check your configuration "
                 'for "pairlist.config.number_assets"'
             )
 
@@ -55,8 +55,8 @@ class VolumePairList(IPairList):
 
         if self._use_range and (self._refresh_period < _tf_in_sec):
             raise OperationalException(
-                f"Refresh period of {self._refresh_period} seconds is smaller than one "
-                f"timeframe of {self._lookback_timeframe}. Please adjust refresh_period "
+                f"{self.name}: Refresh period of {self._refresh_period} seconds is smaller "
+                f"than one timeframe of {self._lookback_timeframe}. Please adjust refresh_period "
                 f"to at least {_tf_in_sec} and restart the bot."
             )
 
