@@ -188,8 +188,8 @@ def test_remote_pairlist_init_wrong_mode(mocker, rpl_config):
 
     with pytest.raises(
         OperationalException,
-        match=r"^RemotePairList: `mode` not configured correctly. "
-        r"Supported Modes are 'whitelist','blacklist'",
+        match=r"^RemotePairList: `mode` not configured correctly \(got `blacklis`\)\. "
+        r"Supported values are `whitelist` and `blacklist`\.",
     ):
         get_patched_freqtradebot(mocker, rpl_config)
 
@@ -204,7 +204,8 @@ def test_remote_pairlist_init_wrong_mode(mocker, rpl_config):
     ]
 
     with pytest.raises(
-        OperationalException, match=r"A `blacklist` mode RemotePairList can not be.*first.*"
+        OperationalException,
+        match=r"^RemotePairList: A `blacklist` mode RemotePairList can not be.*first.*",
     ):
         get_patched_freqtradebot(mocker, rpl_config)
 
@@ -224,8 +225,8 @@ def test_remote_pairlist_init_wrong_proc_mode(mocker, rpl_config):
     get_patched_exchange(mocker, rpl_config)
     with pytest.raises(
         OperationalException,
-        match=r"^RemotePairList: `processing_mode` not configured correctly. "
-        r"Supported Modes are 'filter','append'",
+        match=r"^RemotePairList: `processing_mode` not configured correctly \(got `filler`\)\. "
+        r"Supported values are `filter` and `append`\.",
     ):
         get_patched_freqtradebot(mocker, rpl_config)
 

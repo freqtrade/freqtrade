@@ -25,7 +25,7 @@ def pif_config(default_conf_usdt):
     [
         ("info_key", "`info_key` not specified"),
         ("info_compare_value", "`info_compare_value` not specified"),
-        ("selection_mode", "`selection_mode` not configured correctly"),
+        ("selection_mode", r"`selection_mode` not configured correctly \(got `invalid_mode`\)"),
     ],
 )
 def test_PairInformationFilter_validation(mocker, pif_config, missing_key, error_msg):

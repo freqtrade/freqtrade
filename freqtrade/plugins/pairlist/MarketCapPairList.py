@@ -28,14 +28,14 @@ class MarketCapPairList(IPairList):
         self._mode = self._pairlistconfig.get("mode", "whitelist")
         if self._mode not in ("whitelist", "blacklist"):
             raise OperationalException(
-                f"{self.name}: `mode` not configured correctly. "
-                "Supported modes are `whitelist` and `blacklist`."
+                f"{self.name}: `mode` not configured correctly (got `{self._mode}`). "
+                "Supported values are `whitelist` and `blacklist`."
             )
 
         if (self._mode == "whitelist") and ("number_assets" not in self._pairlistconfig):
             raise OperationalException(
                 f"{self.name}: `number_assets` not specified. Please check your configuration "
-                f'for "pairlist.config.number_assets"'
+                'for "pairlist.config.number_assets"'
             )
 
         self._stake_currency = self._config["stake_currency"]

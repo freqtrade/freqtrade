@@ -2996,8 +2996,9 @@ def test_MarketCapPairList_invalid_mode(mocker, default_conf_usdt, mode):
 
     with pytest.raises(
         OperationalException,
-        match=r"^MarketCapPairList: `mode` not configured correctly\. "
-        r"Supported modes are `whitelist` and `blacklist`\.",
+        match=r"^MarketCapPairList: `mode` not configured correctly "
+        r"\(got `.*`\)\. "
+        r"Supported values are `whitelist` and `blacklist`\.",
     ):
         PairListManager(exchange, default_conf_usdt)
 
@@ -3166,7 +3167,8 @@ def test_CrossMarketPairList_invalid_pairs_exist_on(mocker, default_conf_usdt, p
 
     with pytest.raises(
         OperationalException,
-        match=r"^CrossMarketPairList: `pairs_exist_on` not configured correctly\. "
+        match=r"^CrossMarketPairList: `pairs_exist_on` not configured correctly "
+        r"\(got `.*`\)\. "
         r"Supported values are `current_market_only` and `both_markets`\.",
     ):
         PairListManager(exchange, default_conf_usdt)

@@ -1,3 +1,4 @@
+import re
 from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
@@ -178,7 +179,8 @@ def test_volume_change_pair_list_init_invalid_sort_direction(mocker, rpl_config,
 
     with pytest.raises(
         OperationalException,
-        match=r"^PercentChangePairList: `sort_direction` not configured correctly\. "
+        match=r"^PercentChangePairList: `sort_direction` not configured correctly "
+        rf"\(got `{re.escape(str(sort_direction))}`\)\. "
         r"Supported values are `asc` and `desc`\.",
     ):
         PairListManager(exchange, rpl_config)

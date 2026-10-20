@@ -38,7 +38,7 @@ class PercentChangePairList(IPairList):
         if "number_assets" not in self._pairlistconfig:
             raise OperationalException(
                 f"{self.name}: `number_assets` not specified. Please check your configuration "
-                f'for "pairlist.config.number_assets"'
+                'for "pairlist.config.number_assets"'
             )
 
         self._stake_currency = self._config["stake_currency"]
@@ -50,7 +50,8 @@ class PercentChangePairList(IPairList):
         self._sort_direction: str = self._pairlistconfig.get("sort_direction", "desc")
         if self._sort_direction not in ("asc", "desc"):
             raise OperationalException(
-                f"{self.name}: `sort_direction` not configured correctly. "
+                f"{self.name}: `sort_direction` not configured correctly "
+                f"(got `{self._sort_direction}`). "
                 "Supported values are `asc` and `desc`."
             )
         self._def_candletype = self._config["candle_type_def"]
