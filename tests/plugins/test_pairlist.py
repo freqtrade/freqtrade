@@ -1458,6 +1458,23 @@ def test_ShuffleFilter_init(mocker, whitelist_conf, caplog) -> None:
         assert set(plm.whitelist) == set(pl1)
 
 
+@pytest.mark.parametrize("shuffle_frequency", ["candles", "Iteration"])
+def test_ShuffleFilter_invalid_shuffle_frequency(mocker, whitelist_conf, shuffle_frequency) -> None:
+    whitelist_conf["pairlists"] = [
+        {"method": "StaticPairList"},
+        {"method": "ShuffleFilter", "shuffle_frequency": shuffle_frequency},
+    ]
+    exchange = get_patched_exchange(mocker, whitelist_conf)
+
+    with pytest.raises(
+        OperationalException,
+        match=r"^ShuffleFilter: `shuffle_frequency` not configured correctly "
+        rf"\(got `{shuffle_frequency}`\)\. "
+        r"Supported values are `candle` and `iteration`\.",
+    ):
+        PairListManager(exchange, whitelist_conf)
+
+
 @pytest.mark.usefixtures("init_persistence")
 def test_PerformanceFilter_lookback(mocker, default_conf_usdt, fee, caplog) -> None:
     default_conf_usdt["exchange"]["pair_whitelist"].extend(["ADA/USDT", "XRP/USDT", "ETC/USDT"])
