@@ -41,7 +41,7 @@ class PairListManager(LoggingMixin):
                 pairlistconfig=pairlist_handler_config,
                 pairlist_pos=len(self._pairlist_handlers),
             )
-            self._tickers_needed |= pairlist_handler.needstickers
+            self._tickers_needed = self._tickers_needed or pairlist_handler.needstickers
             self._pairlist_handlers.append(pairlist_handler)
 
         if not self._pairlist_handlers:
