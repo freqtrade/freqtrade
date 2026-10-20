@@ -4,6 +4,7 @@ from copy import deepcopy
 from fastapi import APIRouter, Depends, HTTPException
 
 from freqtrade.configuration import validate_config_consistency
+from freqtrade.exceptions import ConfigurationError
 from freqtrade.rpc.api_server.api_pairlists import handleExchangePayload
 from freqtrade.rpc.api_server.api_schemas import (
     PairHistory,
@@ -75,7 +76,10 @@ def pair_history_filtered(payload: PairHistoryRequest, config=Depends(get_config
             exchange,
             payload.columns,
             payload.live_mode,
+            [dict(p) for p in (payload.strategy_params or [])],
         )
+    except ConfigurationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.exception("Error in pair_history_filtered")
         raise HTTPException(status_code=502, detail=str(e))

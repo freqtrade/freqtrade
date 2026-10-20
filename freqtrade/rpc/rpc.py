@@ -1658,6 +1658,7 @@ class RPC:
         exchange: Exchange,
         selected_cols: list[str] | None,
         live: bool,
+        strategy_params: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         """
         Analyzed dataframe in Dict form, with full history loading and strategy analysis.
@@ -1676,6 +1677,7 @@ class RPC:
             startup_candles = 0
             if config.get("strategy"):
                 strategy = StrategyResolver.load_strategy(config)
+                strategy.ft_set_api_params(strategy_params)
                 startup_candles = strategy.startup_candle_count
                 strategy_name = strategy.get_strategy_name()
 

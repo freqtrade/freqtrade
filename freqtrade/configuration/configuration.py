@@ -296,6 +296,8 @@ class Configuration:
                 "Parameter --timeframe-detail detected, using {} for intra-candle backtesting ...",
             ),
             ("backtest_show_pair_list", "Parameter --show-pair-list detected."),
+            ("backtest_show_params", "Parameter --show-params detected."),
+            ("backtest_export_params", "Parameter --export-params detected."),
             (
                 "stake_amount",
                 "Parameter --stake-amount detected, overriding stake_amount to: {} ...",

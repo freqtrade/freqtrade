@@ -8,12 +8,18 @@ from collections import defaultdict
 from collections.abc import Iterator
 from copy import deepcopy
 from pathlib import Path
+from typing import Any
 
 from freqtrade.constants import Config
-from freqtrade.exceptions import DependencyException, OperationalException
+from freqtrade.exceptions import ConfigurationError, DependencyException, OperationalException
 from freqtrade.misc import deep_merge_dicts
 from freqtrade.optimize.hyperopt_tools import HyperoptTools
-from freqtrade.strategy.parameters import BaseParameter
+from freqtrade.strategy.parameters import (
+    BaseParameter,
+    CategoricalParameter,
+    DecimalParameter,
+    NumericParameter,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -23,11 +29,14 @@ logger = logging.getLogger(__name__)
 SpaceParams = dict[str, BaseParameter]
 AllSpaceParams = dict[str, SpaceParams]
 
+# Parameter values, grouped by space - as loaded from a file or provided via the API
+SpaceParamValues = dict[str, dict[str, Any]]
+
 
 class HyperStrategyMixin:
     """
     A helper base class which allows HyperOptAuto class to reuse implementations of buy/sell
-     strategy logic.
+    strategy logic.
     """
 
     def __init__(self, config: Config, *args, **kwargs):
@@ -40,7 +49,8 @@ class HyperStrategyMixin:
 
         params = self.load_params_from_file()
         params = params.get("params", {})
-        self._ft_params_from_file = params
+        self._ft_params_from_file: SpaceParamValues = params
+        self.__ft_params_from_api: SpaceParamValues = {}
         # Init/loading of parameters is done as part of ft_bot_start().
 
     def _ft_copy_parameters(self) -> None:
@@ -102,18 +112,87 @@ class HyperStrategyMixin:
         """
         Load Hyperoptable parameters
         Prevalence:
+        * Parameters from API (Only applicable to webserver mode)
         * Parameters from parameter file
         * Parameters defined in parameters objects (buy_params, sell_params, ...)
         * Parameter defaults
         """
         self._ft_hyper_params = detect_all_parameters(self)
+        used_params = self.ft_used_params
 
         for space in self._ft_hyper_params:
             params_values = deep_merge_dicts(
-                self._ft_params_from_file.get(space, {}),
-                deepcopy(getattr(self, f"{space}_params", {})),
+                used_params.get(space, {}), deepcopy(getattr(self, f"{space}_params", {}))
             )
             self._ft_set_param(self._ft_hyper_params[space], params_values, space, hyperopt)
+
+    @property
+    def ft_used_params(self) -> SpaceParamValues:
+        """
+        Parameters used by this strategy, by space.
+        Parameters from the parameter file, with API overrides applied on top.
+        Does not contain parameter defaults or values from the `<space>_params` attributes.
+        """
+        return deep_merge_dicts(self.__ft_params_from_api, deepcopy(self._ft_params_from_file))
+
+    def ft_set_api_params(self, params: list[dict[str, Any]] | None) -> None:
+        """
+        Store API-provided parameter overrides for the next ft_load_hyper_params() call.
+        :raises: ConfigurationError if an override does not match a loadable parameter.
+        """
+        self.__ft_params_from_api = {}
+        if not params:
+            return
+
+        if not self._ft_hyper_params:
+            self._ft_hyper_params = detect_all_parameters(self)
+
+        strategy_parameters = {name: param for name, param in self.enumerate_parameters()}
+        grouped_values: dict[str, dict[str, Any]] = defaultdict(dict)
+
+        for param_data in params:
+            name = param_data.get("name", None)
+            param_type = param_data.get("param_type", None)
+            value = param_data.get("value", None)
+            base_warning = "Invalid strategy parameter override:"
+
+            if not name or not param_type:
+                raise ConfigurationError(f"{base_warning} missing name or param_type.")
+
+            strategy_param = strategy_parameters.get(name)
+            if strategy_param is None:
+                raise ConfigurationError(f"{base_warning} '{name}' is not a strategy parameter.")
+            if strategy_param.param_type != param_type:
+                raise ConfigurationError(
+                    f"{base_warning} '{name}' is a {strategy_param.param_type}, not a {param_type}."
+                )
+            if not strategy_param.load:
+                raise ConfigurationError(f"{base_warning} '{name}' is not loaded (load=False).")
+            if not strategy_param.space or strategy_param.space not in self._ft_hyper_params:
+                raise ConfigurationError(f"{base_warning} '{name}' has no valid space.")
+            if (
+                isinstance(strategy_param, CategoricalParameter)
+                and value not in strategy_param.opt_range
+            ):
+                raise ConfigurationError(
+                    f"{base_warning} '{name}' must be one of {strategy_param.opt_range}."
+                )
+            if isinstance(strategy_param, DecimalParameter) and value is not None:
+                # Store the value the parameter will use - keeps ft_used_params accurate
+                value = round(value, strategy_param.decimals)
+            if (
+                isinstance(strategy_param, NumericParameter)
+                and value is not None
+                and not strategy_param.low <= value <= strategy_param.high
+            ):
+                logger.warning(
+                    f"Strategy parameter override '{name}' ({value}) is outside of its range "
+                    f"({strategy_param.low} - {strategy_param.high})."
+                )
+
+            grouped_values[strategy_param.space][name] = value
+
+        self.__ft_params_from_api = dict(grouped_values)
 
     def load_params_from_file(self) -> dict:
         filename_str = getattr(self, "__file__", "")

@@ -10,8 +10,10 @@ from freqtrade.configuration import TimeRange
 from freqtrade.constants import LAST_BT_RESULT_FN
 from freqtrade.data.btanalysis import (
     BT_DATA_COLUMNS,
+    backtest_strategy_dir,
     extract_trades_of_period,
     get_backtest_market_change,
+    get_backtest_strategy_params,
     get_backtest_wallet_change,
     get_latest_backtest_filename,
     get_latest_hyperopt_file,
@@ -24,7 +26,7 @@ from freqtrade.data.btanalysis import (
 from freqtrade.data.history import load_pair_history
 from freqtrade.exceptions import OperationalException
 from freqtrade.util import dt_utc
-from tests.conftest import CURRENT_TEST_STRATEGY, create_mock_trades
+from tests.conftest import CURRENT_TEST_STRATEGY, create_mock_trades, log_has_re
 from tests.conftest_trades import MOCK_TRADE_COUNT
 
 
@@ -308,3 +310,90 @@ def test_get_backtest_wallet_change(tmp_path):
 
     assert get_backtest_wallet_change(tmp_path / "backtest-result.feather", "TestStrategy") is None
     assert get_backtest_wallet_change(zip_file, "UnknownStrategy") is None
+
+
+def _store_strategy_zip(tmp_path, dtappendix, strategy_params=None):
+    """Helper to store a backtest result containing StrategyTestV3 and return the zip path."""
+    from freqtrade.optimize.optimize_reports import store_backtest_results
+
+    strategy_file = Path(__file__).parent.parent / "strategy" / "strats" / "strategy_test_v3.py"
+    store_backtest_results(
+        {"exportdirectory": tmp_path, "original_config": {}},
+        {"metadata": {}, "strategy": {}, "strategy_comparison": []},
+        dtappendix,
+        strategy_files={"StrategyTestV3": str(strategy_file)},
+        strategy_params=strategy_params,
+    )
+    return tmp_path / f"backtest-result-{dtappendix}.zip"
+
+
+def test_get_backtest_strategy_params(tmp_path, caplog):
+    zip_file = _store_strategy_zip(
+        tmp_path,
+        "2024_01_01_15_05_25",
+        strategy_params={"StrategyTestV3": {"buy": {"buy_rsi": 21}}},
+    )
+
+    params = get_backtest_strategy_params(zip_file, "StrategyTestV3")
+    assert params["strategy_name"] == "StrategyTestV3"
+    assert params["ft_stratparam_v"] == 1
+    assert params["params"] == {"buy": {"buy_rsi": 21}}
+
+    # Strategy not contained in the zip
+    assert get_backtest_strategy_params(zip_file, "UnknownStrategy") == {}
+    # Legacy json results don't contain parameters
+    assert get_backtest_strategy_params(tmp_path / "backtest-result.json", "StrategyTestV3") == {}
+
+    # Zip without a parameter file
+    zip_file = _store_strategy_zip(tmp_path, "2024_01_01_15_05_26")
+    assert get_backtest_strategy_params(zip_file, "StrategyTestV3") == {}
+
+    # Corrupt parameter file
+    with ZipFile(zip_file, "a") as zipf:
+        zipf.writestr(f"{zip_file.stem}_StrategyTestV3.json", "{not json")
+    assert get_backtest_strategy_params(zip_file, "StrategyTestV3") == {}
+    assert log_has_re(r"Could not load parameters .*StrategyTestV3\.json", caplog)
+
+
+def test_backtest_strategy_dir(tmp_path, default_conf):
+    from freqtrade.resolvers import StrategyResolver
+
+    zip_file = _store_strategy_zip(
+        tmp_path,
+        "2024_01_01_15_05_25",
+        strategy_params={"StrategyTestV3": {"buy": {"buy_rsi": 21}}},
+    )
+    default_conf.update({"strategy": "StrategyTestV3"})
+
+    with backtest_strategy_dir(zip_file, "StrategyTestV3") as directory:
+        assert sorted(x.name for x in directory.iterdir()) == [
+            f"{zip_file.stem}_StrategyTestV3.json",
+            f"{zip_file.stem}_StrategyTestV3.py",
+        ]
+        default_conf["strategy_path"] = str(directory)
+        strategy = StrategyResolver.load_strategy(default_conf)
+        # Parameters stored in the zip are picked up as a regular parameter file
+        assert strategy._ft_params_from_file == {"buy": {"buy_rsi": 21}}
+        strategy.ft_load_hyper_params(False)
+        assert strategy.buy_rsi.value == 21
+
+    # Directory is cleaned up again
+    assert not directory.exists()
+
+    # Without stored parameters, the strategy's own buy_params apply
+    zip_file = _store_strategy_zip(tmp_path, "2024_01_01_15_05_26")
+    with backtest_strategy_dir(zip_file, "StrategyTestV3") as directory:
+        assert [x.name for x in directory.iterdir()] == [f"{zip_file.stem}_StrategyTestV3.py"]
+        default_conf["strategy_path"] = str(directory)
+        strategy = StrategyResolver.load_strategy(default_conf)
+    assert strategy._ft_params_from_file == {}
+    strategy.ft_load_hyper_params(False)
+    assert strategy.buy_rsi.value == 35
+
+    with pytest.raises(ValueError, match=r"File .* not found in zip"):
+        with backtest_strategy_dir(zip_file, "UnknownStrategy"):
+            pass
+
+    with pytest.raises(ValueError, match=r"does not contain strategies"):
+        with backtest_strategy_dir(tmp_path / "backtest-result.json", "StrategyTestV3"):
+            pass

@@ -3,7 +3,10 @@ Helpers when analyzing backtest data
 """
 
 import logging
+import tempfile
 import zipfile
+from collections.abc import Iterator
+from contextlib import contextmanager
 from copy import copy
 from datetime import UTC, datetime
 from io import BytesIO, StringIO
@@ -154,12 +157,16 @@ def load_backtest_metadata(filename: Path | str) -> dict[str, Any]:
         raise OperationalException("Unexpected error while loading backtest metadata.") from e
 
 
-def _normalize_filename(file_or_directory: Path | str, filename: Path | str | None) -> Path:
+def get_backtest_filename(
+    file_or_directory: Path | str, filename: Path | str | None = None
+) -> Path:
     """
-    Normalize the filename by ensuring it is a Path object.
-    :param file_or_directory: The directory or file to normalize.
-    :param filename: The filename to normalize.
-    :return: A Path object representing the normalized filename.
+    Resolve a backtest result directory / filename combination to the actual file.
+    :param file_or_directory: pathlib.Path object, or string pointing to the directory,
+        or absolute/relative path to the backtest results file.
+    :param filename: Optional filename to load from (if different from the main filename).
+        Only valid when loading from a directory.
+    :return: Path to the backtest result file - the latest one if no filename is given.
     """
     if isinstance(file_or_directory, str):
         file_or_directory = Path(file_or_directory)
@@ -186,7 +193,7 @@ def load_backtest_stats(
         Only valid when loading from a directory.
     :return: a dictionary containing the resulting file.
     """
-    fn = _normalize_filename(file_or_directory, filename)
+    fn = get_backtest_filename(file_or_directory, filename)
 
     if not fn.is_file():
         raise ValueError(f"File or directory {fn} does not exist.")
@@ -332,6 +339,60 @@ def get_backtest_wallet_change(filename: Path, strategy_name: str) -> pd.DataFra
     return None
 
 
+def get_backtest_strategy_params(filename: Path, strategy_name: str) -> dict[str, Any]:
+    """
+    Read the parameter file stored for one strategy inside a backtest result zip.
+    :param filename: Path to the backtest result zip file
+    :param strategy_name: Name of the strategy to load the parameters for
+    :return: Content of the parameter file, or an empty dict if none can be loaded
+    """
+    from freqtrade.optimize.hyperopt_tools import HyperoptTools
+
+    if filename.suffix != ".zip":
+        return {}
+
+    params_file = f"{filename.stem}_{strategy_name}.json"
+    try:
+        data = load_file_from_zip(filename, params_file)
+    except ValueError:
+        return {}
+    try:
+        return HyperoptTools.load_params(data)
+    except ValueError as e:
+        logger.warning(f"Could not load parameters {params_file} from {filename}: {e}")
+        return {}
+
+
+@contextmanager
+def backtest_strategy_dir(filename: Path, strategy_name: str) -> Iterator[Path]:
+    """
+    Extract the strategy and its parameter file from a backtest result zip into a
+    temporary directory - which can then be used as `strategy_path`.
+    The archived filenames are kept, so the parameter file remains a sibling of the
+    strategy file, and is picked up by the strategy as usual.
+    :param filename: Path to the backtest result zip file
+    :param strategy_name: Name of the strategy to extract
+    :return: Context manager yielding the directory the strategy was extracted to.
+    :raises: ValueError if the zip does not contain this strategy.
+    """
+    if filename.suffix != ".zip":
+        raise ValueError(f"Backtest result {filename} does not contain strategies.")
+
+    strategy_file = f"{filename.stem}_{strategy_name}.py"
+    strategy_code = load_file_from_zip(filename, strategy_file)
+
+    with tempfile.TemporaryDirectory(prefix="ft_bt_strategy") as tmpdir:
+        directory = Path(tmpdir)
+        (directory / strategy_file).write_bytes(strategy_code)
+        try:
+            params_file = f"{filename.stem}_{strategy_name}.json"
+            (directory / params_file).write_bytes(load_file_from_zip(filename, params_file))
+        except ValueError:
+            logger.info(f"No parameters stored for {strategy_name} in {filename}.")
+
+        yield directory
+
+
 def find_existing_backtest_stats(
     dirname: Path | str, run_ids: dict[str, str], min_backtest_date: datetime | None = None
 ) -> dict[str, Any]:
@@ -468,7 +529,7 @@ def load_file_from_zip(zip_path: Path, filename: str) -> bytes:
                 with zipf.open(filename) as file:
                     return file.read()
             except KeyError:
-                logger.error(f"File {filename} not found in zip: {zip_path}")
+                # Not logged - callers decide whether a missing file is an error.
                 raise ValueError(f"File {filename} not found in zip: {zip_path}") from None
     except FileNotFoundError:
         raise ValueError(f"Zip file {zip_path} not found.")
@@ -493,7 +554,7 @@ def load_backtest_analysis_data(
     """
     import joblib
 
-    zip_path = _normalize_filename(file_or_directory, filename)
+    zip_path = get_backtest_filename(file_or_directory, filename)
 
     if zip_path.suffix == ".zip":
         # Load from zip file
