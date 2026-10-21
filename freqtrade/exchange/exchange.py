@@ -2801,6 +2801,13 @@ class Exchange(LoggingMixin):
                         data.extend(new_data)
         # Sort data again after extending the result - above calls return in "async order"
         data = sorted(data, key=lambda x: x[0])
+        # Overlapping pages repeat open times. A pair younger than one page is returned
+        # in full every time, so the forming candle is in the list twice. Dataframes
+        # drop duplicate dates later, but refresh timing only removes one trailing
+        # candle - a second copy of the forming candle is then treated as the last
+        # closed candle, and the next close is skipped. Keep one candle per open time;
+        # later pages win.
+        data = list({candle[0]: candle for candle in data}.values())
         return (
             pair,
             timeframe,
