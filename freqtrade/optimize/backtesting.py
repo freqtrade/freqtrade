@@ -721,7 +721,7 @@ class Backtesting:
         current_rate: float = row[OPEN_IDX]
         current_profit = trade.calc_profit_ratio(current_rate)
         min_stake = self.exchange.get_min_pair_stake_amount(
-            trade.pair, current_rate, -0.1, trade.leverage
+            trade.pair, current_rate, 0.0, trade.leverage
         )
         max_stake = self.exchange.get_max_pair_stake_amount(
             trade.pair, current_rate, trade.leverage
