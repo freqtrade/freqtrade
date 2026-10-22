@@ -3404,6 +3404,103 @@ def test_refresh_latest_ohlcv_provisional_candle(mocker, default_conf, time_mach
     assert exchange._pairs_last_refresh_time[pair] == dt_ts(last_candle)
 
 
+def test_refresh_latest_ohlcv_short_history_duplicate_pages(
+    mocker, default_conf, time_machine
+) -> None:
+    """
+    Startup (or a pair joining the whitelist) needs more candles than one page, but the
+    pair is younger than that. Every page then returns the whole history, including the
+    forming candle. The refresh time must stay on the last closed candle, so the first
+    close after startup is fetched instead of being skipped for a full period.
+    """
+    start = datetime(2026, 6, 1, tzinfo=UTC)
+    history_len = 30
+    ohlcv = generate_test_data_raw("1d", history_len, start.strftime("%Y-%m-%d"))
+    forming = start + timedelta(days=history_len - 1)
+    pair = ("IOTA/USDT", "1d", CandleType.FUTURES)
+
+    # Midway through the newest candle. It is still forming.
+    time_machine.move_to(forming + timedelta(hours=12), tick=False)
+    exchange = get_patched_exchange(mocker, default_conf)
+    exchange._set_startup_candle_count(default_conf)
+    mocker.patch(f"{EXMS}.ohlcv_candle_limit", return_value=100)
+    # 800 startup candles at a 499 limit is two calls. Same shape, smaller numbers.
+    exchange.required_candle_call_count = 2
+    exchange._api_async.fetch_ohlcv = AsyncMock(side_effect=lambda *args, **kwargs: deepcopy(ohlcv))
+
+    exchange.refresh_latest_ohlcv([pair])
+    assert exchange._api_async.fetch_ohlcv.call_count == 2
+    # Grouping drops the repeated dates, then the forming candle.
+    assert len(exchange.klines(pair)) == history_len - 1
+    assert exchange.klines(pair).iloc[-1]["date"] == forming - timedelta(days=1)
+    # Not the forming candle - that would skip the next close.
+    assert exchange._pairs_last_refresh_time[pair] == ohlcv[-2][0]
+    assert exchange._now_is_time_to_refresh(*pair) is False
+
+    # Still inside this candle: keep serving the cache.
+    exchange._api_async.fetch_ohlcv.reset_mock()
+    time_machine.move_to(forming + timedelta(hours=18), tick=False)
+    exchange.refresh_latest_ohlcv([pair])
+    assert exchange._api_async.fetch_ohlcv.call_count == 0
+    assert exchange._now_is_time_to_refresh(*pair) is False
+
+    # The daily candle closed. Binance also returns the new forming candle.
+    closed_at = forming + timedelta(days=1)
+    updated = deepcopy(ohlcv)
+    updated.append([dt_ts(closed_at), 1.0, 2.0, 0.5, 1.5, 10.0])
+    exchange._api_async.fetch_ohlcv = AsyncMock(
+        side_effect=lambda *args, **kwargs: deepcopy(updated)
+    )
+    # Well after the close, as in the report (the candle was still missing ~15 minutes later).
+    time_machine.move_to(closed_at + timedelta(minutes=15), tick=False)
+    assert exchange._now_is_time_to_refresh(*pair) is True
+
+    exchange.refresh_latest_ohlcv([pair])
+    assert exchange._api_async.fetch_ohlcv.call_count == 1
+    assert exchange.klines(pair).iloc[-1]["date"] == forming
+    assert exchange._pairs_last_refresh_time[pair] == ohlcv[-1][0]
+    assert exchange._now_is_time_to_refresh(*pair) is False
+
+
+def test_process_ohlcv_df_refresh_time_from_response(mocker, default_conf, time_machine) -> None:
+    """
+    Refresh time follows the candles this response kept, not the frame merged with the
+    cache. A response that contains only the candle being dropped still records the
+    previous open, so the pair is not fetched again on every iteration.
+    """
+    start = datetime(2026, 8, 1, tzinfo=UTC)
+    cached = generate_test_data_raw("1h", 10, start.strftime("%Y-%m-%d"))
+    # During the last cached candle, so that candle is the forming one.
+    time_machine.move_to(start + timedelta(hours=9, minutes=30), tick=False)
+    exchange = get_patched_exchange(mocker, default_conf)
+    exchange._set_startup_candle_count(default_conf)
+    pair, timeframe, candle_type = "IOTA/ETH", "1h", CandleType.SPOT
+    key = (pair, timeframe, candle_type)
+    exchange._klines[key] = ohlcv_to_dataframe(
+        cached[:-1],
+        timeframe,
+        pair,
+        fill_missing=False,
+        drop_incomplete=False,
+        candle_type=candle_type,
+    )
+
+    # Early candles only, each repeated, plus the forming candle that will be dropped.
+    # The cached frame still ends one candle later.
+    response = cached[:3] + cached[:3] + [cached[-1]]
+    df = exchange._process_ohlcv_df(pair, timeframe, candle_type, response, True, True, dt_ts())
+    assert exchange._pairs_last_refresh_time[key] == cached[2][0]
+    assert exchange._pairs_last_poll_time[key] == dt_ts()
+    assert df.iloc[-1]["date"] == start + timedelta(hours=8)
+
+    # Nothing but the forming candle. Refresh time steps back one candle, and a repeat
+    # of that response must not look due immediately.
+    only_forming = [cached[-1], cached[-1]]
+    exchange._process_ohlcv_df(pair, timeframe, candle_type, only_forming, True, True, dt_ts())
+    assert exchange._pairs_last_refresh_time[key] == cached[-1][0] - timeframe_to_msecs("1h")
+    assert exchange._now_is_time_to_refresh(pair, timeframe, candle_type) is False
+
+
 def test_refresh_ohlcv_with_cache(mocker, default_conf, time_machine) -> None:
     start = datetime(2021, 8, 1, 0, 0, 0, 0, tzinfo=UTC)
     ohlcv = generate_test_data_raw("1h", 100, start.strftime("%Y-%m-%d"))

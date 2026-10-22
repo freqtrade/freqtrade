@@ -2999,19 +2999,6 @@ class Exchange(LoggingMixin):
             and bool(ticks)
             and (ticks[-1][0] >= curr_candle_date or not candles_final)
         )
-        if cache:
-            # Remember when this pair was last queried
-            self._pairs_last_poll_time[(pair, timeframe, c_type)] = fetch_start_ms
-            # keeping last candle time as last refreshed time of the pair
-            kept_ticks = ticks[:-1] if drop_incomplete_ else ticks
-            if kept_ticks:
-                # The newest candle we hold - a provisional last candle was dropped above.
-                self._pairs_last_refresh_time[(pair, timeframe, c_type)] = kept_ticks[-1][0]
-            elif ticks:
-                # The response held nothing but a dropped candle - remember the candle before
-                # it, so the pair is re-checked at candle cadence instead of on every iteration.
-                last_refresh = ticks[-1][0] - timeframe_to_msecs(timeframe)
-                self._pairs_last_refresh_time[(pair, timeframe, c_type)] = last_refresh
         has_cache = cache and (pair, timeframe, c_type) in self._klines
         # in case of existing cache, fill_missing happens after concatenation
         ohlcv_df = ohlcv_to_dataframe(
@@ -3024,6 +3011,20 @@ class Exchange(LoggingMixin):
         )
         # keeping parsed dataframe in cache
         if cache:
+            # Remember when this pair was last queried
+            self._pairs_last_poll_time[(pair, timeframe, c_type)] = fetch_start_ms
+            # Newest candle this response kept. Conversion groups by date and drops the
+            # incomplete candle, so a repeated forming candle cannot advance the refresh
+            # time. Taken from this response, before it is merged with the cached frame.
+            if not ohlcv_df.empty:
+                self._pairs_last_refresh_time[(pair, timeframe, c_type)] = dt_ts(
+                    ohlcv_df["date"].iloc[-1].to_pydatetime()
+                )
+            elif ticks:
+                # The response held nothing but a dropped candle - remember the candle before
+                # it, so the pair is re-checked at candle cadence instead of on every iteration.
+                last_refresh = ticks[-1][0] - timeframe_to_msecs(timeframe)
+                self._pairs_last_refresh_time[(pair, timeframe, c_type)] = last_refresh
             if (pair, timeframe, c_type) in self._klines:
                 old = self._klines[(pair, timeframe, c_type)]
                 # Reassign so we return the updated, combined df
