@@ -19,13 +19,6 @@
   },
   "packageRules": [
     {
-      "description": "constraints.python is our minimum supported Python version - don't bump it to the latest Python release.",
-      "matchManagers": ["renovate-config"],
-      "matchDepTypes": ["tool-constraint"],
-      "matchDepNames": ["python"],
-      "enabled": false
-    },
-    {
       "description": "Keep scipy and scipy-stubs updates in their own PR, so both are bumped together.",
       "matchDatasources": ["pypi"],
       "matchPackageNames": ["scipy", "scipy-stubs"],
