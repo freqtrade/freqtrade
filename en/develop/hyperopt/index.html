@@ -3196,7 +3196,7 @@ Freqtrade will log a warning when the value of an optimized parameter is used du
 Always access them through the strategy instance (<code>self.buy_rsi.value</code>) - not through the class (<code>MyStrategy.buy_rsi.value</code>), which will always return the default value.</p>
 </div>
 <h2 id="optimizing-an-indicator-parameter">Optimizing an indicator parameter<a class="headerlink" href="#optimizing-an-indicator-parameter" title="Permanent link">&para;</a></h2>
-<p>Assuming you have a simple strategy in mind - a EMA cross strategy (2 Moving averages crossing) - and you'd like to find the ideal parameters for this strategy.
+<p>Assuming you have a simple strategy in mind - an EMA cross strategy (2 Moving averages crossing) - and you'd like to find the ideal parameters for this strategy.
 By default, we assume a stoploss of 5% - and a take-profit (<code>minimal_roi</code>) of 10% - which means freqtrade will sell the trade once 10% profit has been reached.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataFrame</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">reduce</span>

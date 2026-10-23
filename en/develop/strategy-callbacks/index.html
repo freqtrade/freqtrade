@@ -3220,7 +3220,7 @@ This can be used to perform calculations which are pair independent (apply to al
 <p>Called for open trade every throttling iteration (roughly every 5 seconds) until a trade is closed.</p>
 <p>Allows to define custom exit signals, indicating that specified position should be closed (full exit). This is very useful when we need to customize exit conditions for each individual trade, or if you need trade data to make an exit decision.</p>
 <p>For example you could implement a 1:2 risk-reward ROI with <code>custom_exit()</code>.</p>
-<p>Using <code>custom_exit()</code> signals in place of stoploss though <em>is not recommended</em>. It is a inferior method to using <code>custom_stoploss()</code> in this regard - which also allows you to keep the stoploss on exchange.</p>
+<p>Using <code>custom_exit()</code> signals in place of stoploss though <em>is not recommended</em>. It is an inferior method to using <code>custom_stoploss()</code> in this regard - which also allows you to keep the stoploss on exchange.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Returning a (none-empty) <code>string</code> or <code>True</code> from this method is equal to setting exit signal on a candle at specified time. This method is not called when exit signal is set already, or if exit signals are disabled (<code>use_exit_signal=False</code>). <code>string</code> max length is 64 characters. Exceeding this limit will cause the message to be truncated to 64 characters.
@@ -3794,7 +3794,7 @@ This are the last methods that will be called before an order is placed.</p>
                             <span class="n">time_in_force</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">current_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">entry_tag</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
                             <span class="n">side</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""</span>
-<span class="sd">        Called right before placing a entry order.</span>
+<span class="sd">        Called right before placing an entry order.</span>
 <span class="sd">        Timing for this function is critical, so avoid doing heavy computations or</span>
 <span class="sd">        network requests in this method.</span>
 
@@ -3885,7 +3885,7 @@ Adjustment orders can be assigned with a tag by returning a 2 element Tuple, wit
 <p>The combined stake currently allocated to the position is held in <code>trade.stake_amount</code>. Therefore <code>trade.stake_amount</code> will always be updated on every additional entry and partial exit made through <code>adjust_trade_position()</code>.</p>
 <div class="admonition danger">
 <p class="admonition-title">Loose Logic</p>
-<p>On dry and live run, this function will be called every <code>throttle_process_secs</code> (default to 5s). If you have a loose logic, (e.g. increase position if RSI of the last candle is below 30), your bot will do extra re-entry every 5 secs until you either it run out of money, hit the <code>max_position_adjustment</code> limit, or a new candle with RSI more than 30 arrived.</p>
+<p>On dry and live run, this function will be called every <code>throttle_process_secs</code> (default to 5s). If you have a loose logic, (e.g. increase position if RSI of the last candle is below 30), your bot will do extra re-entry every 5 secs until it either runs out of money, hits the <code>max_position_adjustment</code> limit, or a new candle with RSI above 30 arrives.</p>
 <p>Same thing also can happen with partial exit.<br />
 So be sure to have a strict logic and/or check for the last filled order and if an order is already open.</p>
 </div>
@@ -4080,7 +4080,7 @@ Orders that are cancelled via the above methods will not have this callback call
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Exit and entry order price re-adjustment logic, returning the user desired limit price.</span>
-<span class="sd">        This only executes when a order was already placed, still open (unfilled fully or partially)</span>
+<span class="sd">        This only executes when an order is already placed, still open (unfilled fully or partially)</span>
 <span class="sd">        and not timed out on subsequent candles after entry trigger.</span>
 
 <span class="sd">        For full documentation please go to https://www.freqtrade.io/en/stable/strategy-callbacks/</span>

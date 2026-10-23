@@ -2382,7 +2382,7 @@ docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> 
 <p>All freqtrade arguments will be available by running <code>docker compose run --rm freqtrade &lt;command&gt; &lt;optional arguments&gt;</code>.</p>
 <div class="admonition warning">
 <p class="admonition-title"><code>docker compose</code> for trade commands</p>
-<p>Trade commands (<code>freqtrade trade &lt;...&gt;</code>) should not be ran via <code>docker compose run</code> - but should use <code>docker compose up -d</code> instead.
+<p>Trade commands (<code>freqtrade trade &lt;...&gt;</code>) should not be run via <code>docker compose run</code> - but should use <code>docker compose up -d</code> instead.
 This makes sure that the container is properly started (including port forwardings) and will make sure that the container will restart after a system reboot.
 If you intend to use freqUI, please also ensure to adjust the <a href="../rest-api/#configuration-with-docker">configuration accordingly</a>, otherwise the UI will not be available.</p>
 </div>

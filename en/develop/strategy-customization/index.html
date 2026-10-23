@@ -3312,7 +3312,7 @@ Pandas is a great library developed for processing large amounts of data in tabu
 </details>
 <div class="admonition warning">
 <p class="admonition-title">Trade order assumptions</p>
-<p>In backtesting, signals are generated on candle close. Trades are then initiated immeditely on next candle open.</p>
+<p>In backtesting, signals are generated on candle close. Trades are then initiated immediately on next candle open.</p>
 <p>In dry and live, this may be delayed due to all pair dataframes needing to be analysed first, then trade processing 
 for each of those pairs happens. This means that in dry/live you need to be mindful of having as low a computation 
 delay as possible, usually by running a low number of pairs and having a CPU with a good clock speed.</p>

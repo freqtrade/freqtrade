@@ -2920,7 +2920,7 @@ Obviously in complex such configurations, the Producer may not provide data for 
 <p>The optional <code>bearer_token</code> will be included in the requests Authorization Header.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>In case of a server error the last received pairlist will be kept if <code>keep_pairlist_on_failure</code> is set to true, when set to false a empty pairlist is returned.</p>
+<p>In case of a server error the last received pairlist will be kept if <code>keep_pairlist_on_failure</code> is set to true, when set to false an empty pairlist is returned.</p>
 </div>
 <h4 id="marketcappairlist">MarketCapPairList<a class="headerlink" href="#marketcappairlist" title="Permanent link">&para;</a></h4>
 <p><code>MarketCapPairList</code> employs sorting/filtering of pairs by their marketcap rank based of CoinGecko. The returned pairlist will be sorted based of their marketcap ranks if used in whitelist <code>mode</code>.</p>
@@ -3389,7 +3389,7 @@ If that ratio is below <code>required_profit</code>, that pair will be locked fo
 This Protection does not consider <code>lookback_period</code> as it only looks at the latest trade.</p>
 </div>
 <h3 id="full-example-of-protections">Full example of Protections<a class="headerlink" href="#full-example-of-protections" title="Permanent link">&para;</a></h3>
-<p>All protections can be combined at will, also with different parameters, creating a increasing wall for under-performing pairs.
+<p>All protections can be combined at will, also with different parameters, creating an increasing wall for under-performing pairs.
 All protections are evaluated in the sequence they are defined.</p>
 <p>The below example assumes a timeframe of 1 hour:</p>
 <ul>

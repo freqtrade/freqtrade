@@ -2215,7 +2215,7 @@
 <span class="w">        </span><span class="nt">"purge_old_models"</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span>
 <span class="w">    </span><span class="p">}</span>
 </code></pre></div>
-<p>This will automatically purge all models older than the four most recently trained ones to save disk space. Inputing "0" will never purge any models.</p>
+<p>This will automatically purge all models older than the four most recently trained ones to save disk space. Inputting "0" will never purge any models.</p>
 <h2 id="backtesting">Backtesting<a class="headerlink" href="#backtesting" title="Permanent link">&para;</a></h2>
 <p>The FreqAI backtesting module can be executed with the following command:</p>
 <div class="highlight"><pre><span></span><code>freqtrade<span class="w"> </span>backtesting<span class="w"> </span>--strategy<span class="w"> </span>FreqaiExampleStrategy<span class="w"> </span>--strategy-path<span class="w"> </span>freqtrade/templates<span class="w"> </span>--config<span class="w"> </span>config_examples/config_freqai.example.json<span class="w"> </span>--freqaimodel<span class="w"> </span>LightGBMRegressor<span class="w"> </span>--timerange<span class="w"> </span><span class="m">20210501</span>-20210701
