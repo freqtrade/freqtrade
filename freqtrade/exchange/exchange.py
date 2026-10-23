@@ -3013,9 +3013,7 @@ class Exchange(LoggingMixin):
         if cache:
             # Remember when this pair was last queried
             self._pairs_last_poll_time[(pair, timeframe, c_type)] = fetch_start_ms
-            # Newest candle this response kept. Conversion groups by date and drops the
-            # incomplete candle, so a repeated forming candle cannot advance the refresh
-            # time. Taken from this response, before it is merged with the cached frame.
+            # Taken from this response, before it is merged with the cached frame.
             if not ohlcv_df.empty:
                 self._pairs_last_refresh_time[(pair, timeframe, c_type)] = dt_ts(
                     ohlcv_df["date"].iloc[-1].to_pydatetime()
