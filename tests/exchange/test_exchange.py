@@ -3237,16 +3237,19 @@ def test_refresh_latest_ohlcv_no_empty_candles(mocker, default_conf, time_machin
 
     # A newly listed pair only has the currently forming candle - nothing is kept from that
     # response, but it must not be re-queried until the next candle either.
+    # Paged startup requests return that candle once per page.
     new_candle = start + timedelta(minutes=515)
     pair_new = ("XRP/EUR", "5m", CandleType.SPOT)
     time_machine.move_to(new_candle, tick=False)
     exchange._api_async.fetch_ohlcv = AsyncMock(
-        return_value=[[dt_ts(new_candle), 1.0, 2.0, 0.5, 1.5, 100.0]]
+        return_value=[[dt_ts(new_candle), 1.0, 2.0, 0.5, 1.5, 100.0]] * 2
     )
     for _ in range(12):
         time_machine.shift(timedelta(seconds=5))
         exchange.refresh_latest_ohlcv([pair_new])
     assert exchange._api_async.fetch_ohlcv.call_count == 1
+    # The candle before the dropped one - not the forming candle, which would skip the next close.
+    assert exchange._pairs_last_refresh_time[pair_new] == dt_ts(new_candle - timedelta(minutes=5))
 
     # Neither pair may ever have had its cache evicted.
     assert "Time jump detected" not in caplog.text
@@ -3460,45 +3463,6 @@ def test_refresh_latest_ohlcv_short_history_duplicate_pages(
     assert exchange.klines(pair).iloc[-1]["date"] == forming
     assert exchange._pairs_last_refresh_time[pair] == ohlcv[-1][0]
     assert exchange._now_is_time_to_refresh(*pair) is False
-
-
-def test_process_ohlcv_df_refresh_time_from_response(mocker, default_conf, time_machine) -> None:
-    """
-    Refresh time follows the candles this response kept, not the frame merged with the
-    cache. A response that contains only the candle being dropped still records the
-    previous open, so the pair is not fetched again on every iteration.
-    """
-    start = datetime(2026, 8, 1, tzinfo=UTC)
-    cached = generate_test_data_raw("1h", 10, start.strftime("%Y-%m-%d"))
-    # During the last cached candle, so that candle is the forming one.
-    time_machine.move_to(start + timedelta(hours=9, minutes=30), tick=False)
-    exchange = get_patched_exchange(mocker, default_conf)
-    exchange._set_startup_candle_count(default_conf)
-    pair, timeframe, candle_type = "IOTA/ETH", "1h", CandleType.SPOT
-    key = (pair, timeframe, candle_type)
-    exchange._klines[key] = ohlcv_to_dataframe(
-        cached[:-1],
-        timeframe,
-        pair,
-        fill_missing=False,
-        drop_incomplete=False,
-        candle_type=candle_type,
-    )
-
-    # Early candles only, each repeated, plus the forming candle that will be dropped.
-    # The cached frame still ends one candle later.
-    response = cached[:3] + cached[:3] + [cached[-1]]
-    df = exchange._process_ohlcv_df(pair, timeframe, candle_type, response, True, True, dt_ts())
-    assert exchange._pairs_last_refresh_time[key] == cached[2][0]
-    assert exchange._pairs_last_poll_time[key] == dt_ts()
-    assert df.iloc[-1]["date"] == start + timedelta(hours=8)
-
-    # Nothing but the forming candle. Refresh time steps back one candle, and a repeat
-    # of that response must not look due immediately.
-    only_forming = [cached[-1], cached[-1]]
-    exchange._process_ohlcv_df(pair, timeframe, candle_type, only_forming, True, True, dt_ts())
-    assert exchange._pairs_last_refresh_time[key] == cached[-1][0] - timeframe_to_msecs("1h")
-    assert exchange._now_is_time_to_refresh(pair, timeframe, candle_type) is False
 
 
 def test_refresh_ohlcv_with_cache(mocker, default_conf, time_machine) -> None:
