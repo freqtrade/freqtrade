@@ -231,7 +231,7 @@ class Okx(Exchange):
             order.get("status", "open") == "closed"
             and (real_order_id := order.get("info", {}).get("ordId")) is not None
         ):
-            # Once a order triggered, we fetch the regular followup order.
+            # Once an order triggered, we fetch the regular followup order.
             order_reg = self.fetch_order(real_order_id, pair)
             self._log_exchange_response("fetch_stoploss_order1", order_reg)
             order_reg["id_stop"] = order_reg["id"]

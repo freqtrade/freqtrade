@@ -223,7 +223,7 @@ async def api_start_backtest(
 def api_get_backtest():
     """
     Get backtesting result.
-    Returns Result after backtesting has been ran.
+    Returns Result after backtesting has been run.
     """
     from freqtrade.persistence import LocalTrade
 

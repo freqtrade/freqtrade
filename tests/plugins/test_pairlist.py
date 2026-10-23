@@ -954,7 +954,7 @@ def test_VolumePairList_whitelist_gen(
             "binance",
             "lookback_period_negative",
         ),  # OperationalException expected
-        # lookback range exceedes exchange limit
+        # lookback range exceeds exchange limit
         (
             [
                 {
@@ -1119,7 +1119,7 @@ def test_VolumePairList_range(
         )
         start_dt = dt_now()
         time_machine.move_to(start_dt)
-        # remove ohlcv when looback_timeframe != 1d
+        # remove ohlcv when lookback_timeframe != 1d
         # to enforce fallback to ticker data
         if "lookback_timeframe" in pairlists[0] and pairlists[0]["lookback_timeframe"] != "1d":
             ohlcv_data = {}

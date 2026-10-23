@@ -340,7 +340,7 @@ class FreqtradeBot(LoggingMixin):
 
         # Protect from collisions with force_exit.
         # Without this, freqtrade may try to recreate stoploss_on_exchange orders
-        # while exiting is in process, since telegram messages arrive in an different thread.
+        # while exiting is in process, since telegram messages arrive in a different thread.
         with self._exit_lock:
             trades = Trade.get_open_trades()
             # First process current opened trades (positions)
@@ -686,7 +686,7 @@ class FreqtradeBot(LoggingMixin):
 
     def handle_onexchange_order(self, trade: Trade) -> bool:
         """
-        Try refinding a order that is not in the database.
+        Try refinding an order that is not in the database.
         Only used balance disappeared, which would make exiting impossible.
         :return: True if the trade was deleted, False otherwise
         """
@@ -1396,7 +1396,7 @@ class FreqtradeBot(LoggingMixin):
         sub_trade: bool = False,
     ) -> None:
         """
-        Sends rpc notification when a entry order occurred.
+        Sends rpc notification when an entry order occurred.
         """
         open_rate = order.safe_price
 
@@ -1445,7 +1445,7 @@ class FreqtradeBot(LoggingMixin):
         self, trade: Trade, order_type: str, reason: str, sub_trade: bool = False
     ) -> None:
         """
-        Sends rpc notification when a entry order cancel occurred.
+        Sends rpc notification when an entry order cancel occurred.
         """
         current_rate = self.exchange.get_rate(
             trade.pair, side="entry", is_short=trade.is_short, refresh=False
@@ -2566,7 +2566,7 @@ class FreqtradeBot(LoggingMixin):
             strategy_safe_wrapper(self.strategy.order_filled, supress_error=True)(
                 pair=trade.pair, trade=trade, order=order, current_time=datetime.now(UTC)
             )
-            # If a entry order was closed, force update on stoploss on exchange
+            # If an entry order was closed, force update on stoploss on exchange
             if order.ft_order_side == trade.entry_side:
                 if send_msg:
                     if trade.nr_of_successful_entries > 1:

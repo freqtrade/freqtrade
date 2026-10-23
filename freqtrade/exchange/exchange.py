@@ -1293,7 +1293,7 @@ class Exchange(LoggingMixin):
                     "cost": (_amount * average),
                 }
             )
-            # market orders will always incurr taker fees
+            # market orders will always incur taker fees
             dry_order = self.add_dry_order_fee(pair, dry_order, "taker")
 
         dry_order = self.check_dry_limit_order_filled(

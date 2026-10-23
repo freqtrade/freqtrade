@@ -582,7 +582,7 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
     result = exchange.get_min_pair_stake_amount("ETH/BTC", 2, stoploss, 10)
     assert pytest.approx(result) == expected_result / 10
 
-    # min amount and cost are set (amount is minial)
+    # min amount and cost are set (amount is minimal)
     markets["ETH/BTC"]["limits"] = {
         "cost": {"min": 8, "max": 10000},
         "amount": {"min": 2, "max": 500},
