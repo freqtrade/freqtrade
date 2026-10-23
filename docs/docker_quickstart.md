@@ -124,7 +124,7 @@ Advanced users may edit the docker-compose file further to include all possible 
 All freqtrade arguments will be available by running `docker compose run --rm freqtrade <command> <optional arguments>`.
 
 !!! Warning "`docker compose` for trade commands"
-    Trade commands (`freqtrade trade <...>`) should not be ran via `docker compose run` - but should use `docker compose up -d` instead.
+    Trade commands (`freqtrade trade <...>`) should not be run via `docker compose run` - but should use `docker compose up -d` instead.
     This makes sure that the container is properly started (including port forwardings) and will make sure that the container will restart after a system reboot.
     If you intend to use freqUI, please also ensure to adjust the [configuration accordingly](rest-api.md#configuration-with-docker), otherwise the UI will not be available.
 

@@ -129,7 +129,7 @@ Allows to define custom exit signals, indicating that specified position should 
 
 For example you could implement a 1:2 risk-reward ROI with `custom_exit()`.
 
-Using `custom_exit()` signals in place of stoploss though *is not recommended*. It is a inferior method to using `custom_stoploss()` in this regard - which also allows you to keep the stoploss on exchange.
+Using `custom_exit()` signals in place of stoploss though *is not recommended*. It is an inferior method to using `custom_stoploss()` in this regard - which also allows you to keep the stoploss on exchange.
 
 !!! Note
     Returning a (none-empty) `string` or `True` from this method is equal to setting exit signal on a candle at specified time. This method is not called when exit signal is set already, or if exit signals are disabled (`use_exit_signal=False`). `string` max length is 64 characters. Exceeding this limit will cause the message to be truncated to 64 characters.
@@ -804,7 +804,7 @@ class AwesomeStrategy(IStrategy):
                             time_in_force: str, current_time: datetime, entry_tag: str | None,
                             side: str, **kwargs) -> bool:
         """
-        Called right before placing a entry order.
+        Called right before placing an entry order.
         Timing for this function is critical, so avoid doing heavy computations or
         network requests in this method.
 
@@ -908,7 +908,7 @@ Modifications to leverage are not possible, and the stake-amount returned is ass
 The combined stake currently allocated to the position is held in `trade.stake_amount`. Therefore `trade.stake_amount` will always be updated on every additional entry and partial exit made through `adjust_trade_position()`.
 
 !!! Danger "Loose Logic"
-    On dry and live run, this function will be called every `throttle_process_secs` (default to 5s). If you have a loose logic, (e.g. increase position if RSI of the last candle is below 30), your bot will do extra re-entry every 5 secs until you either it run out of money, hit the `max_position_adjustment` limit, or a new candle with RSI more than 30 arrived.
+    On dry and live run, this function will be called every `throttle_process_secs` (default to 5s). If you have a loose logic, (e.g. increase position if RSI of the last candle is below 30), your bot will do extra re-entry every 5 secs until it either runs out of money, hits the `max_position_adjustment` limit, or a new candle with RSI above 30 arrives.
 
     Same thing also can happen with partial exit.  
     So be sure to have a strict logic and/or check for the last filled order and if an order is already open.
@@ -1118,7 +1118,7 @@ class AwesomeStrategy(IStrategy):
     ) -> float | None:
         """
         Exit and entry order price re-adjustment logic, returning the user desired limit price.
-        This only executes when a order was already placed, still open (unfilled fully or partially)
+        This only executes when an order is already placed, still open (unfilled fully or partially)
         and not timed out on subsequent candles after entry trigger.
 
         For full documentation please go to https://www.freqtrade.io/en/stable/strategy-callbacks/

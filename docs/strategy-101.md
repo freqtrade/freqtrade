@@ -144,7 +144,7 @@ Dry runs are enabled by setting `dry_run` to true in your [configuration](config
 
 !!! Warning "Backtests can be very inaccurate"
     There are many reasons why backtest results may not match reality. Please check the [backtesting assumptions](backtesting.md#assumptions-made-by-backtesting) and [common strategy mistakes](strategy-customization.md#common-mistakes-when-developing-strategies) documentation.
-    Some websites that list and rank Freqtrade strategies show impressive backtest results. Do not assume these results are achieveable or realistic.
+    Some websites that list and rank Freqtrade strategies show impressive backtest results. Do not assume these results are achievable or realistic.
 
 ??? Hint "Useful commands"
     Freqtrade includes two useful commands to check for basic flaws in strategies: [lookahead-analysis](lookahead-analysis.md) and [recursive-analysis](recursive-analysis.md).

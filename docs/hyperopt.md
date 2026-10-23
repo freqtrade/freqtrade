@@ -242,7 +242,7 @@ There are two parameter options that can help you to quickly test various ideas:
 
 ## Optimizing an indicator parameter
 
-Assuming you have a simple strategy in mind - a EMA cross strategy (2 Moving averages crossing) - and you'd like to find the ideal parameters for this strategy.
+Assuming you have a simple strategy in mind - an EMA cross strategy (2 Moving averages crossing) - and you'd like to find the ideal parameters for this strategy.
 By default, we assume a stoploss of 5% - and a take-profit (`minimal_roi`) of 10% - which means freqtrade will sell the trade once 10% profit has been reached.
 
 ``` python

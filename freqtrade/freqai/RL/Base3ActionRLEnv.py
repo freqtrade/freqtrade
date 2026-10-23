@@ -112,7 +112,7 @@ class Base3ActionRLEnv(BaseEnvironment):
     def is_tradesignal(self, action: int) -> bool:
         """
         Determine if the signal is a trade signal
-        e.g.: agent wants a Actions.Buy while it is in a Positions.short
+        e.g.: agent wants an Actions.Buy while it is in a Positions.short
         """
         return (
             (action == Actions.Buy.value and self._position == Positions.Neutral)
@@ -130,7 +130,7 @@ class Base3ActionRLEnv(BaseEnvironment):
     def _is_valid(self, action: int) -> bool:
         """
         Determine if the signal is valid.
-        e.g.: agent wants a Actions.Sell while it is in a Positions.Long
+        e.g.: agent wants an Actions.Sell while it is in a Positions.Long
         """
         if self.can_short:
             return action in [Actions.Buy.value, Actions.Sell.value, Actions.Neutral.value]

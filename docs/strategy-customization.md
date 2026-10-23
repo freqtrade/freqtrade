@@ -157,7 +157,7 @@ Vectorized operations perform calculations across the whole range of data and ar
     - Trades are orders that are executed (on the exchange in live mode) where a trade will then open as close to next candle open as possible.
 
 !!! Warning "Trade order assumptions"
-    In backtesting, signals are generated on candle close. Trades are then initiated immeditely on next candle open.
+    In backtesting, signals are generated on candle close. Trades are then initiated immediately on next candle open.
 
     In dry and live, this may be delayed due to all pair dataframes needing to be analysed first, then trade processing 
     for each of those pairs happens. This means that in dry/live you need to be mindful of having as low a computation 

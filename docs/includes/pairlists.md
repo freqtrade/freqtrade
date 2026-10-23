@@ -367,7 +367,7 @@ The optional `read_timeout` specifies the maximum amount of time (in seconds) to
 The optional `bearer_token` will be included in the requests Authorization Header.
 
 !!! Note
-    In case of a server error the last received pairlist will be kept if `keep_pairlist_on_failure` is set to true, when set to false a empty pairlist is returned.
+    In case of a server error the last received pairlist will be kept if `keep_pairlist_on_failure` is set to true, when set to false an empty pairlist is returned.
 
 #### MarketCapPairList
 
