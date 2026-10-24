@@ -356,11 +356,25 @@ class ExternalMessageConsumer:
             logger.debug(f"Received Empty Dataframe for {key}")
             return
 
+        df_len = len(df)
         # If set, remove the Entry and Exit signals from the Producer
         if self._emc_config.get("remove_entry_exit_signals", False):
             df = remove_entry_exit_signals(df)
 
-        logger.debug(f"Received {len(df)} candle(s) for {key}")
+        logger.debug(f"Received {df_len} candle(s) for {key}")
+
+        # If set to False, reject a single candle and request the full dataframe from the Producer
+        if not self._emc_config.get("cache_enabled", True) and df_len < FULL_DATAFRAME_THRESHOLD:
+            self.send_producer_request(
+                producer_name,
+                WSAnalyzedDFRequest(data={"limit": self.initial_candle_limit, "pair": pair}),
+            )
+
+            logger.debug(
+                f"The Producer cache is disabled, requesting {self.initial_candle_limit} candles "
+                f"for {key} from `{producer_name}`"
+            )
+            return
 
         did_append, n_missing = self._dp._add_external_df(
             pair,
