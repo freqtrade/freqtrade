@@ -239,9 +239,10 @@ class PercentChangePairList(IPairList):
             )
 
             # in case of candle data calculate typical price and change for candle
-            if pair_candles is not None and not pair_candles.empty:
-                current_close = pair_candles["close"].iloc[-1]
-                previous_close = pair_candles["close"].shift(self._lookback_period).iloc[-1]
+            if pair_candles is not None and len(pair_candles) > self._lookback_period:
+                close = pair_candles["close"]
+                current_close = close.iloc[-1]
+                previous_close = close.iloc[-(1 + self._lookback_period)]
                 pct_change = (
                     ((current_close - previous_close) / previous_close) * 100
                     if previous_close > 0
