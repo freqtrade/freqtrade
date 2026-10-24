@@ -8,7 +8,7 @@
 {
     "$schema": "https://schema.freqtrade.io/schema.json",
     "max_open_trades": {{ max_open_trades }},
-    "stake_currency": {{ stake_currency | tojson }},
+    "stake_currency": "{{ stake_currency }}",
     "stake_amount": {{ stake_amount }},
     "tradable_balance_ratio": 0.99,
 {%- if fiat_display_currency %}

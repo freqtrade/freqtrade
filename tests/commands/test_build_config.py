@@ -35,7 +35,10 @@ def test_validate_is_int():
     assert not validate_is_int("-ee")
 
 
-@pytest.mark.parametrize("exchange", ["bybit", "binance", "kraken", "kucoin", "okx"])
+@pytest.mark.parametrize(
+    "exchange",
+    ["bybit", "binance", "bittrex", "gate", "gateio", "htx", "kraken", "kucoin", "kucoineu", "okx"],
+)
 @pytest.mark.parametrize(
     "credential",
     ["sampleKey", 'quoted"secret', r"backslash\new", "line\nbreak", "secret\u79d8\u5bc6"],
@@ -82,8 +85,14 @@ def test_start_new_config(mocker, caplog, tmp_path, exchange, credential):
     assert result["exchange"]["name"] == exchange
     assert result["exchange"]["api_key"] == credential
     assert result["exchange"]["secret"] == credential
-    if exchange in ("kucoin", "okx"):
+    if exchange in ("kucoin", "kucoineu", "okx"):
         assert result["exchange"]["password"] == credential
+    if exchange in ("gate", "gateio"):
+        assert result["exchange"]["unknown_fee_rate"] == 1
+    if exchange == "htx":
+        assert result["exchange"]["pair_blacklist"] == ["HT/.*"]
+    if exchange == "bittrex":
+        assert result["order_types"]["stoploss"] == "limit"
     assert result["telegram"]["token"] == credential
     assert result["telegram"]["chat_id"] == credential
     assert result["api_server"]["username"] == credential
@@ -93,7 +102,10 @@ def test_start_new_config(mocker, caplog, tmp_path, exchange, credential):
     assert result["timeframe"] == "15m"
 
 
-@pytest.mark.parametrize("exchange", ["bybit", "binance", "kraken", "kucoin", "okx"])
+@pytest.mark.parametrize(
+    "exchange",
+    ["bybit", "binance", "bittrex", "gate", "gateio", "htx", "kraken", "kucoin", "kucoineu", "okx"],
+)
 def test_deploy_new_config_optional_credentials(tmp_path, exchange):
     config_path = tmp_path / "config.json"
     selections = {
@@ -118,7 +130,7 @@ def test_deploy_new_config_optional_credentials(tmp_path, exchange):
     assert result["max_open_trades"] == 3
     assert result["exchange"]["api_key"] == ""
     assert result["exchange"]["secret"] == ""
-    if exchange in ("kucoin", "okx"):
+    if exchange in ("kucoin", "kucoineu", "okx"):
         assert result["exchange"]["password"] == ""
     assert result["telegram"]["token"] == ""
     assert result["telegram"]["chat_id"] == ""
