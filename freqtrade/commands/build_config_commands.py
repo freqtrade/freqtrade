@@ -26,9 +26,7 @@ def start_new_config(args: dict[str, Any]) -> None:
     chown_user_directory(config_path.parent)
     if config_path.exists():
         overwrite = ask_user_overwrite(config_path)
-        if overwrite:
-            config_path.unlink()
-        else:
+        if not overwrite:
             raise OperationalException(
                 f"Configuration file `{config_path}` already exists. "
                 "Please delete it or use a different configuration file name."

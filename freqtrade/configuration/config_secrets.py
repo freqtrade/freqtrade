@@ -49,6 +49,13 @@ def sanitize_config(config: Config, *, show_sensitive: bool = False) -> Config:
             if key in config:
                 config[key] = "REDACTED"
 
+    for producer in config.get("external_message_consumer", {}).get("producers", []):
+        if "ws_token" in producer:
+            producer["ws_token"] = "REDACTED"  # noqa: S105
+    for pairlist in config.get("pairlists", []):
+        if "bearer_token" in pairlist:
+            pairlist["bearer_token"] = "REDACTED"  # noqa: S105
+
     return config
 
 

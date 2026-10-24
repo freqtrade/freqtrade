@@ -1,8 +1,8 @@
 "download_trades": true,
 "exchange": {
     "name": "kraken",
-    "api_key": "{{ exchange_api_key }}",
-    "secret": "{{ exchange_secret }}",
+    "api_key": {{ exchange_api_key | default("") | tojson }},
+    "secret": {{ exchange_secret | default("") | tojson }},
     "ccxt_config": {},
     "ccxt_async_config": {},
     "pair_whitelist": [
