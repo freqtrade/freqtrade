@@ -572,7 +572,7 @@ class Exchange(LoggingMixin):
         """
         Exchange ohlcv candle limit
         Uses ohlcv_candle_limit_per_timeframe if the exchange has different limits
-        per timeframe (e.g. bittrex), otherwise falls back to ohlcv_candle_limit
+        per timeframe (e.g. htx), otherwise falls back to ohlcv_candle_limit
         :param timeframe: Timeframe to check
         :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
         :param since_ms: Starting timestamp

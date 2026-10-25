@@ -37,7 +37,7 @@ def test_validate_is_int():
 
 @pytest.mark.parametrize(
     "exchange",
-    ["bybit", "binance", "bittrex", "gate", "gateio", "htx", "kraken", "kucoin", "kucoineu", "okx"],
+    ["bybit", "binance", "gate", "gateio", "htx", "kraken", "kucoin", "kucoineu", "okx"],
 )
 @pytest.mark.parametrize(
     "credential",
@@ -91,8 +91,6 @@ def test_start_new_config(mocker, caplog, tmp_path, exchange, credential):
         assert result["exchange"]["unknown_fee_rate"] == 1
     if exchange == "htx":
         assert result["exchange"]["pair_blacklist"] == ["HT/.*"]
-    if exchange == "bittrex":
-        assert result["order_types"]["stoploss"] == "limit"
     assert result["telegram"]["token"] == credential
     assert result["telegram"]["chat_id"] == credential
     assert result["api_server"]["username"] == credential
@@ -104,7 +102,7 @@ def test_start_new_config(mocker, caplog, tmp_path, exchange, credential):
 
 @pytest.mark.parametrize(
     "exchange",
-    ["bybit", "binance", "bittrex", "gate", "gateio", "htx", "kraken", "kucoin", "kucoineu", "okx"],
+    ["bybit", "binance", "gate", "gateio", "htx", "kraken", "kucoin", "kucoineu", "okx"],
 )
 def test_deploy_new_config_optional_credentials(tmp_path, exchange):
     config_path = tmp_path / "config.json"
