@@ -40,6 +40,7 @@ class Gate(Exchange):
         "needs_trading_fees": True,
         "marketOrderRequiresPrice": False,
         "funding_fee_candle_limit": 90,
+        "funding_history_limit": 1000,
         "stop_price_type_field": "price_type",
         "l2_limit_upper": 300,
         "stoploss_blocks_assets": False,

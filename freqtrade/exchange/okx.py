@@ -38,6 +38,7 @@ class Okx(Exchange):
     }
     _ft_has_futures: FtHas = {
         "tickers_have_quoteVolume": False,
+        "funding_history_limit": 100,
         "stop_price_type_field": "slTriggerPxType",
         "stop_price_type_value_mapping": {
             PriceType.LAST: "last",
