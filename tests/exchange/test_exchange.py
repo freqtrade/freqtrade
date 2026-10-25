@@ -257,6 +257,25 @@ def test_init_ccxt_kwargs(default_conf, mocker, caplog):
     assert ex._ccxt_config == {}
     Exchange._headers = {}
 
+    # Credentials in ccxt_config are applied, but not logged
+    caplog.clear()
+    conf = copy.deepcopy(default_conf)
+    conf["dry_run"] = False
+    conf["exchange"]["ccxt_config"] = {"apiKey": "ccxt-key", "TestKWARG": 11}
+    ex = Exchange(conf)
+    assert ex._api.apiKey == "ccxt-key"
+    assert log_has(
+        "Applying additional ccxt config: {'apiKey': 'REDACTED', 'TestKWARG': 11}", caplog
+    )
+    assert not log_has_re(r".*ccxt-key.*", caplog)
+
+    # Dry-run removes the credential - so it's logged as None, not as REDACTED
+    caplog.clear()
+    conf["dry_run"] = True
+    ex = Exchange(conf)
+    assert ex._api.apiKey is None
+    assert log_has("Applying additional ccxt config: {'apiKey': None, 'TestKWARG': 11}", caplog)
+
 
 def test_destroy(default_conf, mocker, caplog):
     caplog.set_level(logging.DEBUG)

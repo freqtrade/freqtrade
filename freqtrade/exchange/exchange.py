@@ -21,7 +21,7 @@ from ccxt import TICK_SIZE
 from dateutil import parser
 from pandas import DataFrame, Timestamp, concat
 
-from freqtrade.configuration import remove_exchange_credentials
+from freqtrade.configuration import remove_exchange_credentials, sanitize_config
 from freqtrade.constants import (
     DEFAULT_AMOUNT_RESERVE_PERCENT,
     DEFAULT_TRADES_COLUMNS,
@@ -444,7 +444,8 @@ class Exchange(LoggingMixin):
             "privateKey": exchange_config.get("private_key", exchange_config.get("privateKey")),
         }
         if ccxt_kwargs:
-            logger.info("Applying additional ccxt config: %s", ccxt_kwargs)
+            sanitized = sanitize_config({"exchange": {"ccxt_config": ccxt_kwargs}})
+            logger.info("Applying additional ccxt config: %s", sanitized["exchange"]["ccxt_config"])
         if self._ccxt_params:
             # Inject static options after the above output to not confuse users.
             ccxt_kwargs = deep_merge_dicts(self._ccxt_params, deepcopy(ccxt_kwargs))
