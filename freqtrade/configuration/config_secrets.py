@@ -24,6 +24,27 @@ _SENSITIVE_KEYS = [
     "api_server.ws_token",
     "webhook.url",
     "coingecko.api_key",
+    # ccxt credentials (requiredCredentials) - ccxt also accepts snake_case variants
+    *[
+        f"exchange.{ccxt_section}.{key}"
+        for ccxt_section in ("ccxt_config", "ccxt_sync_config", "ccxt_async_config")
+        for key in (
+            "apiKey",
+            "api_key",
+            "secret",
+            "uid",
+            "accountId",
+            "account_id",
+            "login",
+            "password",
+            "twofa",
+            "privateKey",
+            "private_key",
+            "walletAddress",
+            "wallet_address",
+            "token",
+        )
+    ],
 ]
 
 
