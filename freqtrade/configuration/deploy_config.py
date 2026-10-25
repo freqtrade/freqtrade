@@ -28,6 +28,12 @@ def validate_is_float(val):
         return False
 
 
+def parse_stake_amount(val: str) -> str | int | float:
+    if val == UNLIMITED_STAKE_AMOUNT:
+        return val
+    return int(val) if validate_is_int(val) else float(val)
+
+
 def exchange_requires_password(exchange_name: str) -> bool:
     import ccxt
 
@@ -79,9 +85,7 @@ def ask_user_config() -> dict[str, Any]:
             "message": f"Please insert your stake amount (Number or '{UNLIMITED_STAKE_AMOUNT}'):",
             "default": "unlimited",
             "validate": lambda val: val == UNLIMITED_STAKE_AMOUNT or validate_is_float(val),
-            "filter": lambda val: (
-                '"' + UNLIMITED_STAKE_AMOUNT + '"' if val == UNLIMITED_STAKE_AMOUNT else val
-            ),
+            "filter": parse_stake_amount,
         },
         {
             "type": "text",
@@ -89,6 +93,7 @@ def ask_user_config() -> dict[str, Any]:
             "message": "Please insert max_open_trades (Integer or -1 for unlimited open trades):",
             "default": "3",
             "validate": lambda val: validate_is_int(val),
+            "filter": lambda val: int(val),
         },
         {
             "type": "select",

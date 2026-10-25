@@ -119,9 +119,9 @@ def test_start_new_config(mocker, caplog, tmp_path, exchange, credential):
 def test_deploy_new_config_optional_credentials(tmp_path, exchange, has_password):
     config_path = tmp_path / "config.json"
     selections = {
-        "max_open_trades": "3",
+        "max_open_trades": 3,
         "stake_currency": "USDT",
-        "stake_amount": '"unlimited"',
+        "stake_amount": "unlimited",
         "dry_run": True,
         "trading_mode": "spot",
         "margin_mode": "",
@@ -136,6 +136,7 @@ def test_deploy_new_config_optional_credentials(tmp_path, exchange, has_password
     result = rapidjson.loads(config_path.read_text(encoding="utf-8"))
 
     assert result["dry_run"] is True
+    assert result["stake_currency"] == "USDT"
     assert result["stake_amount"] == "unlimited"
     assert result["max_open_trades"] == 3
     assert result["exchange"]["api_key"] == ""
@@ -213,6 +214,13 @@ def test_ask_user_config(mocker):
     answers = ask_user_config()
     assert isinstance(answers, dict)
     assert prompt_mock.call_count == 1
+
+    questions = {q["name"]: q for q in prompt_mock.call_args[0][0] if "name" in q}
+    assert questions["stake_amount"]["filter"]("unlimited") == "unlimited"
+    assert questions["stake_amount"]["filter"]("122") == 122
+    assert isinstance(questions["stake_amount"]["filter"]("122"), int)
+    assert questions["stake_amount"]["filter"]("0.5") == 0.5
+    assert questions["max_open_trades"]["filter"]("-1") == -1
 
     prompt_mock = mocker.patch("freqtrade.configuration.deploy_config.prompt", return_value={})
 
