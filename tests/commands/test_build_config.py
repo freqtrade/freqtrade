@@ -9,6 +9,7 @@ from freqtrade.configuration.deploy_config import (
     ask_user_config,
     ask_user_overwrite,
     deploy_new_config,
+    exchange_requires_password,
     validate_is_float,
     validate_is_int,
 )
@@ -101,10 +102,21 @@ def test_start_new_config(mocker, caplog, tmp_path, exchange, credential):
 
 
 @pytest.mark.parametrize(
-    "exchange",
-    ["bybit", "binance", "gate", "gateio", "htx", "kraken", "kucoin", "okx"],
+    "exchange,has_password",
+    [
+        ("bybit", False),
+        ("binance", False),
+        ("bitget", True),
+        ("gate", False),
+        ("gateio", False),
+        ("htx", False),
+        ("kraken", False),
+        ("kucoin", True),
+        ("myokx", True),
+        ("okx", True),
+    ],
 )
-def test_deploy_new_config_optional_credentials(tmp_path, exchange):
+def test_deploy_new_config_optional_credentials(tmp_path, exchange, has_password):
     config_path = tmp_path / "config.json"
     selections = {
         "max_open_trades": "3",
@@ -128,8 +140,10 @@ def test_deploy_new_config_optional_credentials(tmp_path, exchange):
     assert result["max_open_trades"] == 3
     assert result["exchange"]["api_key"] == ""
     assert result["exchange"]["secret"] == ""
-    if exchange in ("kucoin", "okx"):
+    if has_password:
         assert result["exchange"]["password"] == ""
+    else:
+        assert "password" not in result["exchange"]
     assert result["telegram"]["token"] == ""
     assert result["telegram"]["chat_id"] == ""
     assert result["api_server"]["username"] == ""
@@ -137,6 +151,14 @@ def test_deploy_new_config_optional_credentials(tmp_path, exchange):
     assert result["api_server"]["listen_ip_address"] == "127.0.0.1"
     assert "timeframe" not in result
     assert "fiat_display_currency" not in result
+
+
+@pytest.mark.parametrize(
+    "exchange,expected",
+    [("okx", True), ("okxus", True), ("bitget", True), ("binance", False), ("doesnotexist", False)],
+)
+def test_exchange_requires_password(exchange, expected):
+    assert exchange_requires_password(exchange) is expected
 
 
 def test_start_new_config_exists(mocker, caplog):
