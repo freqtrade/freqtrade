@@ -1,10 +1,12 @@
 # pragma pylint: disable=missing-docstring, protected-access, invalid-name
 import json
+import re
 import warnings
 from copy import deepcopy
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import ccxt
 import pytest
 
 from freqtrade.commands import Arguments
@@ -1629,6 +1631,31 @@ def test_sanitize_config_nested_tokens():
     ]
     assert config == original_config
     assert sanitize_config(config, show_sensitive=True) == original_config
+
+
+@pytest.mark.parametrize("ccxt_section", ["ccxt_config", "ccxt_sync_config", "ccxt_async_config"])
+def test_sanitize_config_ccxt_credentials(ccxt_section):
+    # Ensure all possible "requiredCredentials" variants are sanitized
+    # ccxt also accepts the snake_case variant of each key (apiKey -> api_key)
+    credential_keys = {
+        variant
+        for key in ccxt.Exchange.requiredCredentials
+        for variant in (key, re.sub(r"(?<!^)(?=[A-Z])", "_", key).lower())
+    }
+    config = {
+        "exchange": {
+            "name": "binance",
+            ccxt_section: {key: f"{key}-value" for key in credential_keys} | {"timeout": 5000},
+        }
+    }
+    original_config = deepcopy(config)
+
+    result = sanitize_config(config)
+
+    for key in credential_keys:
+        assert result["exchange"][ccxt_section][key] == "REDACTED"
+    assert result["exchange"][ccxt_section]["timeout"] == 5000
+    assert config == original_config
 
 
 def test_remove_exchange_credentials(default_conf) -> None:
