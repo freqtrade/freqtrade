@@ -64,17 +64,17 @@ def sanitize_config(config: Config, *, show_sensitive: bool = False) -> Config:
             nested_config = config
             for nested_key in nested_keys[:-1]:
                 nested_config = nested_config.get(nested_key, {})
-            if nested_keys[-1] in nested_config:
+            if nested_config.get(nested_keys[-1]):
                 nested_config[nested_keys[-1]] = "REDACTED"
         else:
-            if key in config:
+            if config.get(key):
                 config[key] = "REDACTED"
 
     for producer in config.get("external_message_consumer", {}).get("producers", []):
-        if "ws_token" in producer:
+        if producer.get("ws_token"):
             producer["ws_token"] = "REDACTED"  # noqa: S105
     for pairlist in config.get("pairlists", []):
-        if "bearer_token" in pairlist:
+        if pairlist.get("bearer_token"):
             pairlist["bearer_token"] = "REDACTED"  # noqa: S105
 
     return config

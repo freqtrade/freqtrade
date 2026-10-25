@@ -1608,6 +1608,17 @@ def test_sanitize_config(default_conf_usdt):
     assert res["exchange"]["secret"] == default_conf_usdt["exchange"]["secret"]
 
 
+def test_sanitize_config_empty_values():
+    config = {
+        "exchange": {"api_key": "", "secret": None, "ccxt_config": {"apiKey": None}},
+        "telegram": {"token": ""},
+        "pairlists": [{"method": "RemotePairList", "bearer_token": ""}],
+    }
+
+    # Unset credentials are not hidden - there's nothing to hide.
+    assert sanitize_config(config) == config
+
+
 def test_sanitize_config_nested_tokens():
     config = {
         "external_message_consumer": {
