@@ -92,7 +92,9 @@ def remove_exchange_credentials(exchange_config: ExchangeConfig, dry_run: bool) 
         return
 
     for key in [k for k in _SENSITIVE_KEYS if k.startswith("exchange.")]:
-        if "." in key:
-            key1 = key.removeprefix("exchange.")
-            if key1 in exchange_config:
-                exchange_config[key1] = None
+        nested_keys = key.removeprefix("exchange.").split(".")
+        nested_config = exchange_config
+        for nested_key in nested_keys[:-1]:
+            nested_config = nested_config.get(nested_key, {})
+        if nested_keys[-1] in nested_config:
+            nested_config[nested_keys[-1]] = None

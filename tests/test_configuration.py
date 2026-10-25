@@ -1670,3 +1670,21 @@ def test_remove_exchange_credentials(default_conf) -> None:
     assert conf["exchange"]["secret"] is None
     assert conf["exchange"].get("password") is None
     assert conf["exchange"].get("uid") is None
+
+
+def test_remove_exchange_credentials_ccxt_config() -> None:
+    exchange_config = {
+        "name": "binance",
+        "api_key": "key",
+        "ccxt_config": {"apiKey": "ccxt-key", "secret": "ccxt-secret", "timeout": 5000},
+        "ccxt_async_config": {"password": "ccxt-password"},
+    }
+    remove_exchange_credentials(exchange_config, False)
+    assert exchange_config["ccxt_config"]["apiKey"] == "ccxt-key"
+
+    remove_exchange_credentials(exchange_config, True)
+    assert exchange_config["api_key"] is None
+    assert exchange_config["ccxt_config"] == {"apiKey": None, "secret": None, "timeout": 5000}
+    assert exchange_config["ccxt_async_config"] == {"password": None}
+    # Didn't add non-existing sections
+    assert "ccxt_sync_config" not in exchange_config
