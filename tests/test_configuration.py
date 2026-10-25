@@ -1606,6 +1606,31 @@ def test_sanitize_config(default_conf_usdt):
     assert res["exchange"]["secret"] == default_conf_usdt["exchange"]["secret"]
 
 
+def test_sanitize_config_nested_tokens():
+    config = {
+        "external_message_consumer": {
+            "producers": [{"name": "producer", "host": "localhost", "ws_token": "producer-token"}]
+        },
+        "pairlists": [
+            {"method": "StaticPairList"},
+            {"method": "RemotePairList", "bearer_token": "pairlist-token"},
+        ],
+    }
+    original_config = deepcopy(config)
+
+    result = sanitize_config(config)
+
+    assert result["external_message_consumer"]["producers"] == [
+        {"name": "producer", "host": "localhost", "ws_token": "REDACTED"}
+    ]
+    assert result["pairlists"] == [
+        {"method": "StaticPairList"},
+        {"method": "RemotePairList", "bearer_token": "REDACTED"},
+    ]
+    assert config == original_config
+    assert sanitize_config(config, show_sensitive=True) == original_config
+
+
 def test_remove_exchange_credentials(default_conf) -> None:
     conf = deepcopy(default_conf)
     remove_exchange_credentials(conf["exchange"], False)
