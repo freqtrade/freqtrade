@@ -321,6 +321,7 @@ class Exchange(LoggingMixin):
 
         logger.info(f'Using Exchange "{self.name}"')
         self.required_candle_call_count = 1
+        self._startup_candle_count: int = 0
         # Converts the interval provided in minutes in config to seconds
         self.markets_refresh_interval: int = (
             exchange_conf.get("markets_refresh_interval", 60) * 60 * 1000
@@ -387,7 +388,7 @@ class Exchange(LoggingMixin):
         return loop
 
     def _set_startup_candle_count(self, config: Config) -> None:
-        self._startup_candle_count: int = config.get("startup_candle_count", 0)
+        self._startup_candle_count = config.get("startup_candle_count", 0)
         self.required_candle_call_count = self.validate_required_startup_candles(
             self._startup_candle_count, config.get("timeframe", "")
         )
