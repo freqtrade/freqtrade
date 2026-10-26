@@ -8,11 +8,11 @@
 
 ruff==0.17.1
 mypy==2.4.0
-pre-commit==4.6.2
+pre-commit==4.7.0
 pytest==9.1.1
 pytest-asyncio==1.4.0
 pytest-cov==7.1.0
-pytest-mock==3.16.0
+pytest-mock==3.17.0
 pytest-random-order==1.2.0
 pytest-timeout==2.4.0
 pytest-xdist==3.8.0
@@ -20,7 +20,7 @@ pytest-xdist==3.8.0
 time-machine==3.5.1
 
 # Convert jupyter notebooks to markdown documents
-nbconvert==7.17.1
+nbconvert==7.17.2
 
 # mypy types
 scipy-stubs==1.18.1.1  # keep in sync with `scipy` in `requirements.txt`
