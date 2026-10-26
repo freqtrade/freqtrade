@@ -183,7 +183,7 @@ jobs:
 
   mypy-version-check:
     name: "Mypy Version Check"
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
@@ -203,7 +203,7 @@ jobs:
 
   pre-commit:
     name: "Pre-commit checks"
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
@@ -218,7 +218,7 @@ jobs:
 
   docs-check:
     name: "Documentation build"
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
@@ -252,7 +252,7 @@ jobs:
   build-linux-online:
     # Run pytest with "live" checks
     name: "Online / live tests"
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     strategy:
       matrix:
         python-version: ["3.14"]
@@ -291,7 +291,7 @@ jobs:
       build,
       build-linux-online
     ]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     # Discord notification can't handle schedule events
     if: github.event_name != 'schedule' && github.repository == 'freqtrade/freqtrade'
     steps:
@@ -313,7 +313,7 @@ jobs:
       mypy-version-check,
       pre-commit,
     ]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     strategy:
       matrix:
         python-version: ["3.13"]
@@ -365,7 +365,7 @@ jobs:
   deploy-test-pypi:
     name: "Publish Python 🐍 distribution 📦 to TestPyPI"
     needs: [ build ]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     if: (github.event_name == 'release')
     environment:
       name: testpypi
@@ -394,7 +394,7 @@ jobs:
   deploy-pypi:
     name: "Publish Python 🐍 distribution 📦 to PyPI"
     needs: [ build ]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     if: (github.event_name == 'release')
     environment:
       name: pypi

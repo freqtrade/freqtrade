@@ -37,7 +37,7 @@ permissions: {}
 jobs:
   deploy-docker:
     name: "Delete Packages"
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     if: github.repository == 'freqtrade/freqtrade'
     permissions:
       packages: write  # Needed to delete package versions
