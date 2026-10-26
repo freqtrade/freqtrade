@@ -58,7 +58,7 @@ repos:
             )$
 
   - repo: https://github.com/stefmolin/exif-stripper
-    rev: 1.2.0
+    rev: 1.3.1
     hooks:
       - id: strip-exif
 
@@ -71,6 +71,6 @@ repos:
 
   # Ensure github actions remain safe
   - repo: https://github.com/woodruffw/zizmor-pre-commit
-    rev: v1.30.1
+    rev: v1.31.1
     hooks:
     - id: zizmor
