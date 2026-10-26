@@ -33,7 +33,7 @@ env:
 jobs:
   deploy-docker:
     name: "Deploy Docker x64 and armv7l"
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     if: github.repository == 'freqtrade/freqtrade'
     environment:
       name: docker
@@ -168,7 +168,7 @@ jobs:
       packages: write # Needed to push package versions
     needs: [ deploy-docker ]
     # Must run on an ARM runner to avoid emulation
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     if: github.repository == 'freqtrade/freqtrade'
     environment:
       name: docker

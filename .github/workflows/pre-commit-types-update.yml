@@ -13,7 +13,7 @@ permissions: {}
 jobs:
   mypy-version-update:
     name: "Pre-commit mypy type versions update"
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     # Only run this job for pull requests created by dependabot[bot]
     if: >
       (
