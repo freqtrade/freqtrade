@@ -6294,3 +6294,29 @@ def test_check_and_call_adjust_trade_position(mocker, default_conf_usdt, fee, ca
     trade = Trade.get_trades(trade_filter=[Trade.id == 5]).first()
     assert trade.orders[-1].ft_order_tag == "partial_exit_c"
     assert trade.is_open
+
+
+@pytest.mark.parametrize("order_price", [None, 0, 2.2])
+def test_emergency_exit_without_order_price(
+    default_conf_usdt, ticker_usdt, fee, mocker, order_price
+):
+    patch_RPCManager(mocker)
+    patch_exchange(mocker)
+    mocker.patch.multiple(
+        EXMS,
+        fetch_ticker=ticker_usdt,
+        get_fee=fee,
+        _dry_is_price_crossed=MagicMock(return_value=True),
+    )
+    patch_whitelist(mocker, default_conf_usdt)
+    freqtrade = FreqtradeBot(default_conf_usdt)
+    patch_get_signal(freqtrade)
+    freqtrade.enter_positions(1)
+    trade = Trade.session.scalars(select(Trade)).first()
+    assert trade
+
+    # Cancelled orders can come back without a price (e.g. on krakenfutures)
+    freqtrade.emergency_exit(trade, order_price, trade.amount)
+
+    assert trade.orders[-1].ft_order_side == "sell"
+    assert trade.orders[-1].order_type == "market"

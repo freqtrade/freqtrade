@@ -1832,6 +1832,11 @@ class FreqtradeBot(LoggingMixin):
     def emergency_exit(
         self, trade: Trade, price: float, sub_trade_amt: float | None = None
     ) -> None:
+        if not price:
+            # Some exchanges don't return a price for cancelled orders.
+            price = self.exchange.get_rate(
+                trade.pair, refresh=True, side="exit", is_short=trade.is_short
+            )
         try:
             self.execute_trade_exit(
                 trade,
