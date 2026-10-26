@@ -202,6 +202,10 @@ def test_timeframe_to_prev_date():
     assert timeframe_to_prev_date("5m", time) == time
     time = dt_utc(2019, 8, 12, 13, 0, 0)
     assert timeframe_to_prev_date("1h", time) == time
+    assert timeframe_to_prev_date("1w", dt_utc(2019, 8, 12)) == dt_utc(2019, 8, 12)
+    assert timeframe_to_prev_date("1w", dt_utc(2019, 8, 11, 23, 59)) == dt_utc(2019, 8, 5)
+    assert timeframe_to_prev_date("1M", dt_utc(2019, 8, 1)) == dt_utc(2019, 8, 1)
+    assert timeframe_to_prev_date("1y", dt_utc(2019, 1, 1)) == dt_utc(2019, 1, 1)
 
 
 def test_timeframe_to_next_date():
@@ -235,6 +239,10 @@ def test_timeframe_to_next_date():
 
     date = dt_utc(2019, 8, 12, 13, 30, 0)
     assert timeframe_to_next_date("5m", date) == date + timedelta(minutes=5)
+    assert timeframe_to_next_date("1w", dt_utc(2019, 8, 12)) == dt_utc(2019, 8, 19)
+    assert timeframe_to_next_date("1w", dt_utc(2019, 8, 11, 23, 59)) == dt_utc(2019, 8, 12)
+    assert timeframe_to_next_date("1M", dt_utc(2019, 12, 31, 23, 59)) == dt_utc(2020, 1, 1)
+    assert timeframe_to_next_date("1y", dt_utc(2019, 1, 1)) == dt_utc(2020, 1, 1)
 
 
 @pytest.mark.parametrize(

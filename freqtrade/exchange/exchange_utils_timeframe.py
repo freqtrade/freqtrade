@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import ccxt
 from ccxt import ROUND_DOWN, ROUND_UP
@@ -75,6 +75,13 @@ def timeframe_to_prev_date(timeframe: str, date: datetime | None = None) -> date
     """
     if not date:
         date = datetime.now(UTC)
+    midnight = {"hour": 0, "minute": 0, "second": 0, "microsecond": 0}
+    if timeframe == "1w":
+        return (date - timedelta(days=date.weekday())).replace(**midnight)
+    if timeframe == "1M":
+        return date.replace(day=1, **midnight)
+    if timeframe == "1y":
+        return date.replace(month=1, day=1, **midnight)
 
     new_timestamp = ccxt.Exchange.round_timeframe(timeframe, dt_ts(date), ROUND_DOWN) // 1000
     return dt_from_ts(new_timestamp)
@@ -89,5 +96,13 @@ def timeframe_to_next_date(timeframe: str, date: datetime | None = None) -> date
     """
     if not date:
         date = datetime.now(UTC)
+    midnight = {"hour": 0, "minute": 0, "second": 0, "microsecond": 0}
+    if timeframe == "1w":
+        return (date + timedelta(days=7 - date.weekday())).replace(**midnight)
+    if timeframe == "1M":
+        year = date.year + int(date.month == 12)
+        return date.replace(year=year, month=date.month % 12 + 1, day=1, **midnight)
+    if timeframe == "1y":
+        return date.replace(year=date.year + 1, month=1, day=1, **midnight)
     new_timestamp = ccxt.Exchange.round_timeframe(timeframe, dt_ts(date), ROUND_UP) // 1000
     return dt_from_ts(new_timestamp)
