@@ -24,26 +24,25 @@ jobs:
   build-and-push:
     name: "Build and Push Devcontainer Image"
     permissions:
-      packages: write  # Needed to push package versions
+      packages: write # Needed to push package versions
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      with:
-        persist-credentials: false
-    - name: Login to GitHub Container Registry
-      uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-    - name: Pre-build dev container image
-      uses: devcontainers/ci@513af61f4de4f75d37e4438f184ba4358f0fc1ca # v0.3.1900000450
-      with:
-        subFolder: .github
-        imageName: ghcr.io/${{ github.repository }}-devcontainer
-        cacheFrom: ghcr.io/${{ github.repository }}-devcontainer
-        push: always
-
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Pre-build dev container image
+        uses: devcontainers/ci@513af61f4de4f75d37e4438f184ba4358f0fc1ca # v0.3.1900000450
+        with:
+          subFolder: .github
+          imageName: ghcr.io/${{ github.repository }}-devcontainer
+          cacheFrom: ghcr.io/${{ github.repository }}-devcontainer
+          push: always
 
   packages-cleanup:
     name: "Docker Package Cleanup"
@@ -53,4 +52,4 @@ jobs:
     permissions:
       packages: write # Needed to delete package versions
     with:
-      package_name: 'freqtrade-devcontainer'
+      package_name: "freqtrade-devcontainer"
