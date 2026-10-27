@@ -322,7 +322,7 @@ class Wallets:
         if "available_capital" in self._config:
             starting_balance = self._config["available_capital"]
             tot_profit = Trade.get_total_closed_profit()
-            available_amount = starting_balance + tot_profit
+            available_amount = val_tied_up + starting_balance + tot_profit
 
         else:
             # Ensure <tradable_balance_ratio>% is used from the overall balance
