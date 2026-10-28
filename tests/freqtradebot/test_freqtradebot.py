@@ -6296,27 +6296,56 @@ def test_check_and_call_adjust_trade_position(mocker, default_conf_usdt, fee, ca
     assert trade.is_open
 
 
-@pytest.mark.parametrize("order_price", [None, 0, 2.2])
-def test_emergency_exit_without_order_price(
-    default_conf_usdt, ticker_usdt, fee, mocker, order_price
-):
-    patch_RPCManager(mocker)
-    patch_exchange(mocker)
-    mocker.patch.multiple(
-        EXMS,
-        fetch_ticker=ticker_usdt,
-        get_fee=fee,
-        _dry_is_price_crossed=MagicMock(return_value=True),
+@pytest.mark.parametrize(
+    "order_price,expected_price",
+    [
+        (None, 2.2),
+        (0, 2.2),
+        (2.5, 2.5),
+    ],
+)
+def test_handle_cancel_order_emergency_exit_price(
+    mocker, default_conf_usdt, fee, order_price, expected_price
+) -> None:
+    # Some exchanges (e.g. krakenfutures) return no price for a cancelled order.
+    default_conf_usdt["unfilledtimeout"]["exit_timeout_count"] = 1
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    get_rate_mock = mocker.patch(f"{EXMS}.get_rate")
+    mocker.patch.object(freqtrade, "handle_cancel_exit", return_value=True)
+    mocker.patch.object(Trade, "get_canceled_exit_order_count", return_value=1)
+    exit_mock = mocker.patch.object(freqtrade, "execute_trade_exit")
+
+    trade = Trade(
+        pair="LTC/USDT",
+        amount=10.0,
+        exchange="binance",
+        open_rate=2.0,
+        open_date=dt_now() - timedelta(days=2),
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        stake_amount=20.0,
+        is_short=False,
     )
-    patch_whitelist(mocker, default_conf_usdt)
-    freqtrade = FreqtradeBot(default_conf_usdt)
-    patch_get_signal(freqtrade)
-    freqtrade.enter_positions(1)
-    trade = Trade.session.scalars(select(Trade)).first()
-    assert trade
+    order_obj = Order(
+        ft_order_side="sell",
+        ft_pair=trade.pair,
+        ft_is_open=True,
+        order_id="sell_123456",
+        status="open",
+        symbol=trade.pair,
+        order_type="limit",
+        side="sell",
+        price=2.2,
+        filled=0.0,
+        remaining=10.0,
+        amount=10.0,
+    )
+    trade.orders = [order_obj]
+    order = {"id": "sell_123456", "side": "sell", "amount": 10.0, "price": order_price}
 
-    # Cancelled orders can come back without a price (e.g. on krakenfutures)
-    freqtrade.emergency_exit(trade, order_price, trade.amount)
+    assert freqtrade.handle_cancel_order(order, order_obj, trade, CANCEL_REASON["TIMEOUT"])
 
-    assert trade.orders[-1].ft_order_side == "sell"
-    assert trade.orders[-1].order_type == "market"
+    assert exit_mock.call_count == 1
+    assert exit_mock.call_args[0][1] == expected_price
+    assert exit_mock.call_args[1]["sub_trade_amt"] == 10.0
+    assert get_rate_mock.call_count == 0
