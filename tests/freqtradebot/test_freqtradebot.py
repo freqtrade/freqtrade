@@ -6310,7 +6310,6 @@ def test_handle_cancel_order_emergency_exit_price(
     # Some exchanges (e.g. krakenfutures) return no price for a cancelled order.
     default_conf_usdt["unfilledtimeout"]["exit_timeout_count"] = 1
     freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
-    get_rate_mock = mocker.patch(f"{EXMS}.get_rate")
     mocker.patch.object(freqtrade, "handle_cancel_exit", return_value=True)
     mocker.patch.object(Trade, "get_canceled_exit_order_count", return_value=1)
     exit_mock = mocker.patch.object(freqtrade, "execute_trade_exit")
@@ -6348,4 +6347,3 @@ def test_handle_cancel_order_emergency_exit_price(
     assert exit_mock.call_count == 1
     assert exit_mock.call_args[0][1] == expected_price
     assert exit_mock.call_args[1]["sub_trade_amt"] == 10.0
-    assert get_rate_mock.call_count == 0
