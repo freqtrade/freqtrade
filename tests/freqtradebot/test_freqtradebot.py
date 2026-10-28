@@ -6294,3 +6294,56 @@ def test_check_and_call_adjust_trade_position(mocker, default_conf_usdt, fee, ca
     trade = Trade.get_trades(trade_filter=[Trade.id == 5]).first()
     assert trade.orders[-1].ft_order_tag == "partial_exit_c"
     assert trade.is_open
+
+
+@pytest.mark.parametrize(
+    "order_price,expected_price",
+    [
+        (None, 2.2),
+        (0, 2.2),
+        (2.5, 2.5),
+    ],
+)
+def test_handle_cancel_order_emergency_exit_price(
+    mocker, default_conf_usdt, fee, order_price, expected_price
+) -> None:
+    # Some exchanges (e.g. krakenfutures) return no price for a cancelled order.
+    default_conf_usdt["unfilledtimeout"]["exit_timeout_count"] = 1
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    mocker.patch.object(freqtrade, "handle_cancel_exit", return_value=True)
+    mocker.patch.object(Trade, "get_canceled_exit_order_count", return_value=1)
+    exit_mock = mocker.patch.object(freqtrade, "execute_trade_exit")
+
+    trade = Trade(
+        pair="LTC/USDT",
+        amount=10.0,
+        exchange="binance",
+        open_rate=2.0,
+        open_date=dt_now() - timedelta(days=2),
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        stake_amount=20.0,
+        is_short=False,
+    )
+    order_obj = Order(
+        ft_order_side="sell",
+        ft_pair=trade.pair,
+        ft_is_open=True,
+        order_id="sell_123456",
+        status="open",
+        symbol=trade.pair,
+        order_type="limit",
+        side="sell",
+        price=2.2,
+        filled=0.0,
+        remaining=10.0,
+        amount=10.0,
+    )
+    trade.orders = [order_obj]
+    order = {"id": "sell_123456", "side": "sell", "amount": 10.0, "price": order_price}
+
+    assert freqtrade.handle_cancel_order(order, order_obj, trade, CANCEL_REASON["TIMEOUT"])
+
+    assert exit_mock.call_count == 1
+    assert exit_mock.call_args[0][1] == expected_price
+    assert exit_mock.call_args[1]["sub_trade_amt"] == 10.0

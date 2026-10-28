@@ -1826,7 +1826,12 @@ class FreqtradeBot(LoggingMixin):
                     )
                     # Trade.session.refresh(order_obj)
 
-                    self.emergency_exit(trade, order["price"], order_obj.safe_remaining)
+                    # Some exchanges don't return a price for cancelled orders.
+                    self.emergency_exit(
+                        trade,
+                        order.get("price") or order_obj.safe_placement_price,
+                        order_obj.safe_remaining,
+                    )
             return canceled
 
     def emergency_exit(
