@@ -228,8 +228,6 @@ exclude-newer = "1 week"
 
 [tool.uv.exclude-newer-package]
 ccxt = false
-virtualenv = "5 days"
-certifi = "2 days"
 
 [tool.ruff]
 line-length = 100
