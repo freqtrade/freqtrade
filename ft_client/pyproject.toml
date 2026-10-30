@@ -7,7 +7,6 @@ name = "freqtrade-client"
 dynamic = ["version"]
 
 authors = [
-  {name = "Freqtrade Team"},
   {name = "Freqtrade Team", email = "freqtrade@protonmail.com"},
 ]
 
@@ -35,9 +34,11 @@ dependencies = [
 
 
 [project.urls]
-Homepage = "https://github.com/freqtrade/freqtrade"
-Documentation = "https://freqtrade.io"
-"Bug Tracker" = "https://github.com/freqtrade/freqtrade/issues"
+Homepage = "https://www.freqtrade.io"
+Documentation = "https://www.freqtrade.io"
+Source = "https://github.com/freqtrade/freqtrade"
+Issues = "https://github.com/freqtrade/freqtrade/issues"
+Changelog = "https://github.com/freqtrade/freqtrade/releases"
 
 
 [project.scripts]
