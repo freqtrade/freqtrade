@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools >= 64.0.0", "wheel"]
+requires = ["setuptools >= 77.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -13,15 +13,19 @@ authors = [
 description = "Freqtrade - Crypto Trading Bot"
 readme = "README.md"
 requires-python = ">=3.12"
-license = {text = "GPLv3"}
+license = "GPL-3.0-only"
+license-files = ["LICENSE"]
+keywords = ["trading", "cryptocurrency", "bot", "backtesting", "ccxt"]
 classifiers = [
+    "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
     "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
     "Operating System :: Unix",
     "Topic :: Office/Business :: Financial :: Investment",
 ]
