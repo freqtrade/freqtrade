@@ -86,7 +86,7 @@ plot = ["plotly>=4.0"]
 hyperopt = [
   "cmaes",
   "filelock",
-  "optuna > 4.0.0",
+  "optuna>4.0.0",
   "scikit-learn",
 ]
 freqai = [
