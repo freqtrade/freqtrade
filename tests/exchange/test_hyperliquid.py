@@ -692,6 +692,32 @@ def test_hyperliquid_fetch_order(default_conf_usdt, mocker, markets_hip3):
 
     o = exchange.fetch_order("11111", "VNTL-SPACEX/USDH:USDH")
     assert o["average"] == 102
+    assert o["filled"] == 5.0
+    assert gtfo_mock.call_count == 1
+
+    # Reduce-only stop capped by a smaller position - ccxt reports the full order size as filled
+    api_mock.fetch_order = MagicMock(
+        return_value={
+            "id": "22222",
+            "symbol": "ETH/USDC:USDC",
+            "status": "closed",
+            "amount": 8.33,
+            "filled": 8.33,
+            "remaining": 0.0,
+            "average": None,
+            "timestamp": 1630000300,
+        }
+    )
+    gtfo_mock.reset_mock()
+    gtfo_mock.return_value = [
+        {"order_id": "22222", "price": 100, "amount": 7.0},
+        {"order_id": "22222", "price": 100, "amount": 0.29},
+    ]
+
+    o = exchange.fetch_order("22222", "ETH/USDC:USDC")
+    assert o["average"] == 100
+    assert o["filled"] == pytest.approx(7.29)
+    assert o["remaining"] == pytest.approx(1.04)
     assert gtfo_mock.call_count == 1
 
 
