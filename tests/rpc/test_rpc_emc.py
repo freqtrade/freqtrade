@@ -11,8 +11,9 @@ import pytest
 import websockets
 
 from freqtrade.data.dataprovider import DataProvider
+from freqtrade.enums import CandleType
 from freqtrade.rpc.external_message_consumer import ExternalMessageConsumer
-from tests.conftest import log_has, log_has_re, log_has_when
+from tests.conftest import generate_test_data, log_has, log_has_re, log_has_when
 
 
 _TEST_WS_TOKEN = "secret_Ws_t0ken"
@@ -76,6 +77,25 @@ def test_emc_init(patched_emc):
     assert patched_emc.sleep_time > 0
 
 
+@pytest.mark.parametrize("limit", [None, 500])
+def test_emc_initial_candle_limit(default_conf, mocker, limit):
+    mocker.patch.object(ExternalMessageConsumer, "start")
+    emc_config = {
+        "enabled": True,
+        "producers": [{"name": "default", "host": "null", "port": 9891, "ws_token": "x"}],
+    }
+    if limit is not None:
+        emc_config["initial_candle_limit"] = limit
+    default_conf["external_message_consumer"] = emc_config
+
+    dataprovider = DataProvider(default_conf, None, None, None)
+    emc = ExternalMessageConsumer(default_conf, dataprovider)
+
+    expected = limit if limit is not None else 1500
+    assert emc.initial_candle_limit == expected
+    assert emc._initial_requests[2].data["limit"] == expected
+
+
 # Parametrize this?
 def test_emc_handle_producer_message(patched_emc, caplog, ohlcv_history):
     test_producer = {"name": "test", "url": "ws://test", "ws_token": "test"}
@@ -83,6 +103,7 @@ def test_emc_handle_producer_message(patched_emc, caplog, ohlcv_history):
     invalid_msg = r"Invalid message .+"
 
     caplog.set_level(logging.DEBUG)
+    patched_emc.initial_candle_limit = 500
 
     # Test handle whitelist message
     whitelist_message = {"type": "whitelist", "data": ["BTC/USDT"]}
@@ -94,6 +115,8 @@ def test_emc_handle_producer_message(patched_emc, caplog, ohlcv_history):
     )
 
     # Test handle analyzed_df single candle message
+    channel_stream = MagicMock()
+    patched_emc._channel_streams[producer_name] = channel_stream
     df_message = {
         "type": "analyzed_df",
         "data": {
@@ -105,7 +128,33 @@ def test_emc_handle_producer_message(patched_emc, caplog, ohlcv_history):
     patched_emc.handle_producer_message(test_producer, df_message)
 
     assert log_has(f"Received message of type `analyzed_df` from `{producer_name}`", caplog)
-    assert log_has_re(r"Holes in data or no existing df,.+", caplog)
+    assert log_has_re(r"Holes in data or no existing df, requesting 500 candles .+", caplog)
+    # No existing df - a full dataframe is requested
+    channel_stream.publish.assert_called_once()
+    request = channel_stream.publish.call_args[0][0]
+    assert request["type"] == "analyzed_df"
+    assert request["data"] == {"limit": 500, "pair": "BTC/USDT"}
+
+    # Test handle analyzed_df full dataframe message
+    patched_emc._emc_config["remove_entry_exit_signals"] = True
+    full_df = generate_test_data("5m", 150)
+    full_df["enter_long"] = 1
+    df_message["data"]["df"] = full_df
+    caplog.clear()
+    channel_stream.reset_mock()
+    patched_emc.handle_producer_message(test_producer, df_message)
+
+    assert log_has_re(
+        rf"Consumed message from `{producer_name}` of type `RPCMessageType.ANALYZED_DF`.*",
+        caplog,
+    )
+    channel_stream.publish.assert_not_called()
+    stored_df, _ = patched_emc._dp.get_producer_df(
+        "BTC/USDT", "5m", CandleType.SPOT, producer_name=producer_name
+    )
+    assert len(stored_df) == 150
+    assert (stored_df["enter_long"] == 0).all()
+    patched_emc._emc_config["remove_entry_exit_signals"] = False
 
     # Test unhandled message
     unhandled_message = {"type": "status", "data": "RUNNING"}

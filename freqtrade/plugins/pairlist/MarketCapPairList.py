@@ -26,10 +26,15 @@ class MarketCapPairList(IPairList):
         super().__init__(*args, **kwargs)
 
         self._mode = self._pairlistconfig.get("mode", "whitelist")
+        if self._mode not in ("whitelist", "blacklist"):
+            raise OperationalException(
+                f"{self.name}: `mode` not configured correctly (got `{self._mode}`). "
+                "Supported values are `whitelist` and `blacklist`."
+            )
 
         if (self._mode == "whitelist") and ("number_assets" not in self._pairlistconfig):
             raise OperationalException(
-                "`number_assets` not specified. Please check your configuration "
+                f"{self.name}: `number_assets` not specified. Please check your configuration "
                 'for "pairlist.config.number_assets"'
             )
 
@@ -54,7 +59,7 @@ class MarketCapPairList(IPairList):
             for category in self._categories:
                 if category not in category_ids:
                     raise OperationalException(
-                        f"Category {category} not in coingecko category list. "
+                        f"{self.name}: Category {category} not in coingecko category list. "
                         f"You can choose from {category_ids}"
                     )
 
@@ -217,7 +222,7 @@ class MarketCapPairList(IPairList):
             data.sort(key=lambda d: float(d.get("market_cap") or 0.0), reverse=True)
 
             if data:
-                marketcap_list = [row["symbol"] for row in data]
+                marketcap_list = list(dict.fromkeys(row["symbol"] for row in data))
                 self._marketcap_cache["marketcap"] = marketcap_list
 
         if marketcap_list:

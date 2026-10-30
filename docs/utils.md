@@ -326,7 +326,7 @@ You can now use `docker compose up` to start the webserver.
 This assumes that the configuration has a webserver enabled and configured for docker (listening port = `0.0.0.0`).
 
 !!! Tip
-    Don't forget to reset the command back to the trade command if you want to start a live or dry-run bot. 
+    Don't forget to reset the command back to the trade command if you want to start a live or dry-run bot.
 
 ## Show previous Backtest results
 
@@ -335,6 +335,10 @@ Adding `--show-pair-list` outputs a sorted pair list you can easily copy/paste i
 
 ??? Warning "Strategy overfitting"
     Only using winning pairs can lead to an overfitted strategy, which will not work well on future data. Make sure to extensively test your strategy in dry-run before risking real money.
+
+Adding `--show-params` outputs the parameters the backtest was run with - if the result contains any.
+Adding `--export-params` will write these parameters back to the strategy's parameter file (`<strategy>.json`), overwriting the current parameters of that strategy.
+The strategy is looked up in the strategy directory (`user_data/strategies` by default), so this only works if the strategy is still available locally.
 
 --8<-- "commands/backtesting-show.md"
 

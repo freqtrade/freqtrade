@@ -50,7 +50,7 @@ Enable subscribing to an instance by adding the `external_message_consumer` sect
 | `ping_timeout` | Ping timeout <br>*Defaults to `10`.*<br> **Datatype:** Integer - in seconds.
 | `sleep_time` | Sleep time before retrying to connect.<br>*Defaults to `10`.*<br> **Datatype:** Integer - in seconds.
 | `remove_entry_exit_signals` | Remove signal columns from the dataframe (set them to 0) on dataframe receipt.<br>*Defaults to `false`.*<br> **Datatype:** Boolean.
-| `initial_candle_limit` | Initial candles to expect from the Producer.<br>*Defaults to `1500`.*<br> **Datatype:** Integer - Number of candles.
+| `initial_candle_limit` | Initial candles to expect from the Producer. Must be between `100` and `1500`.<br>*Defaults to `1500`.*<br> **Datatype:** Integer - Number of candles.
 | `message_size_limit` | Size limit per message<br>*Defaults to `8`.*<br> **Datatype:** Integer - Megabytes.
 
 Instead of (or as well as) calculating indicators in `populate_indicators()` the follower instance listens on the connection to a producer instance's messages (or multiple producer instances in advanced configurations) and requests the producer's most recently analyzed dataframes for each pair in the active whitelist.

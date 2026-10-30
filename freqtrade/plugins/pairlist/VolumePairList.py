@@ -31,7 +31,7 @@ class VolumePairList(IPairList):
 
         if "number_assets" not in self._pairlistconfig:
             raise OperationalException(
-                "`number_assets` not specified. Please check your configuration "
+                f"{self.name}: `number_assets` not specified. Please check your configuration "
                 'for "pairlist.config.number_assets"'
             )
 
@@ -55,8 +55,8 @@ class VolumePairList(IPairList):
 
         if self._use_range and (self._refresh_period < _tf_in_sec):
             raise OperationalException(
-                f"Refresh period of {self._refresh_period} seconds is smaller than one "
-                f"timeframe of {self._lookback_timeframe}. Please adjust refresh_period "
+                f"{self.name}: Refresh period of {self._refresh_period} seconds is smaller "
+                f"than one timeframe of {self._lookback_timeframe}. Please adjust refresh_period "
                 f"to at least {_tf_in_sec} and restart the bot."
             )
 
@@ -197,8 +197,8 @@ class VolumePairList(IPairList):
                 needed_pairs, lookback_period=self._lookback_period
             )
 
+            volume_in_contracts = self._exchange.get_option("ohlcv_volume_in_contracts")
             for i, p in enumerate(filtered_tickers):
-                contract_size = self._exchange.markets[p["symbol"]].get("contractSize", 1.0) or 1.0
                 pair_candles = candles.get(
                     (p["symbol"], self._lookback_timeframe, self._def_candletype), None
                 )
@@ -209,6 +209,11 @@ class VolumePairList(IPairList):
                             pair_candles["high"] + pair_candles["low"] + pair_candles["close"]
                         ) / 3
 
+                        contract_size = (
+                            (self._exchange.get_contract_size(p["symbol"]) or 1.0)
+                            if volume_in_contracts
+                            else 1.0
+                        )
                         pair_candles["quoteVolume"] = (
                             pair_candles["volume"] * pair_candles["typical_price"] * contract_size
                         )

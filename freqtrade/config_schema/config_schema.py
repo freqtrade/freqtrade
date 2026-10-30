@@ -8,6 +8,7 @@ from freqtrade.constants import (
     BACKTEST_CACHE_AGE,
     DRY_RUN_WALLET,
     EXPORT_OPTIONS,
+    FULL_DATAFRAME_THRESHOLD,
     HYPEROPT_LOSS_BUILTIN,
     MARGIN_MODES,
     ORDERTIF_POSSIBILITIES,
@@ -1032,8 +1033,22 @@ CONF_SCHEMA = {
                     "default": False,
                 },
                 "enable_ws": {
-                    "description": "Enable WebSocket connections to the exchange.",
-                    "type": "boolean",
+                    "description": (
+                        "Enable WebSocket connections to the exchange. "
+                        "Either a boolean to enable/disable all streams, or an object "
+                        'for per-stream control (e.g. {"ohlcv": true, "orderbook": false}).'
+                    ),
+                    "oneOf": [
+                        {"type": "boolean"},
+                        {
+                            "type": "object",
+                            "properties": {
+                                "ohlcv": {"type": "boolean"},
+                                "orderbook": {"type": "boolean"},
+                            },
+                            "additionalProperties": False,
+                        },
+                    ],
                     "default": True,
                 },
                 "unknown_fee_rate": {
@@ -1156,7 +1171,7 @@ CONF_SCHEMA = {
                 "initial_candle_limit": {
                     "description": "Initial candle limit.",
                     "type": "integer",
-                    "minimum": 0,
+                    "minimum": FULL_DATAFRAME_THRESHOLD,
                     "maximum": 1500,
                     "default": 1500,
                 },

@@ -9,8 +9,8 @@ import sys
 
 
 # check min. python version
-if sys.version_info < (3, 11):  # pragma: no cover  # noqa: UP036
-    sys.exit("Freqtrade requires Python version >= 3.11")
+if sys.version_info < (3, 12):  # pragma: no cover  # noqa: UP036
+    sys.exit("Freqtrade requires Python version >= 3.12")
 
 from freqtrade import __version__
 from freqtrade.commands import Arguments

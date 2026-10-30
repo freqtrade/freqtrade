@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from copy import deepcopy
+from io import StringIO
 from pathlib import Path
 from typing import Any
 
@@ -11,30 +12,36 @@ from freqtrade.configuration import remove_exchange_credentials
 from freqtrade.configuration.config_validation import validate_config_consistency
 from freqtrade.constants import Config
 from freqtrade.data.btanalysis import (
+    backtest_strategy_dir,
     delete_backtest_result,
     get_backtest_market_change,
     get_backtest_result,
     get_backtest_resultlist,
     get_backtest_wallet_change,
     load_and_merge_backtest_result,
+    load_file_from_zip,
     update_backtest_metadata,
 )
 from freqtrade.enums import BacktestState, RunMode
 from freqtrade.exceptions import ConfigurationError, DependencyException, OperationalException
 from freqtrade.ft_types import get_BacktestResultType_default
-from freqtrade.misc import deep_merge_dicts, is_file_in_dir
+from freqtrade.misc import deep_merge_dicts, is_file_in_dir, json_load
+from freqtrade.rpc.api_server.api_pairlists import handleExchangePayload
 from freqtrade.rpc.api_server.api_schemas import (
     BacktestHistoryEntry,
     BacktestMarketChange,
     BacktestMetadataUpdate,
+    BacktestPairHistoryRequest,
     BacktestRequest,
     BacktestResponse,
+    ExchangeModePayloadMixin,
+    PairHistory,
     StrategyName,
     WalletHistoryResponse,
 )
-from freqtrade.rpc.api_server.deps import get_config
+from freqtrade.rpc.api_server.deps import get_config, get_exchange
 from freqtrade.rpc.api_server.webserver_bgwork import ApiBG
-from freqtrade.rpc.rpc import RPCException
+from freqtrade.rpc.rpc import RPC, RPCException
 from freqtrade.util import dt_now
 
 
@@ -44,7 +51,9 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-def __run_backtest_bg(btconfig: Config, job_id: str):
+def __run_backtest_bg(
+    btconfig: Config, job_id: str, strategy_params: list[dict[str, Any]] | None = None
+):
     from freqtrade.data.metrics import combined_dataframes_with_rel_mean
     from freqtrade.optimize.optimize_reports import generate_backtest_stats, store_backtest_results
     from freqtrade.resolvers import StrategyResolver
@@ -56,6 +65,7 @@ def __run_backtest_bg(btconfig: Config, job_id: str):
         # Reload strategy
         lastconfig = ApiBG.bt["last_config"]
         strat = StrategyResolver.load_strategy(btconfig)
+        strat.ft_set_api_params(strategy_params)
         validate_config_consistency(btconfig)
         time_settings_changed = (
             lastconfig.get("timeframe") != strat.timeframe
@@ -132,6 +142,10 @@ def __run_backtest_bg(btconfig: Config, job_id: str):
                     strategy_files={
                         s.get_strategy_name(): s.__file__ for s in cachedBt.strategylist
                     },
+                    # Store the used parameters if the API provided overrides
+                    strategy_params=(
+                        {strategy_name: strat.ft_used_params} if strategy_params else None
+                    ),
                 )
                 cachedBt.results["metadata"][strategy_name]["filename"] = str(fn.stem)
                 cachedBt.results["metadata"][strategy_name]["strategy"] = strategy_name
@@ -164,9 +178,8 @@ async def api_start_backtest(
     btconfig = deepcopy(config)
     btconfig["runmode"] = RunMode.BACKTEST
     remove_exchange_credentials(btconfig["exchange"], True)
-    settings = dict(bt_settings)
-    if settings.get("freqai", None) is not None:
-        settings["freqai"] = dict(settings["freqai"])
+    settings = bt_settings.model_dump(mode="python")
+    strategy_params: list[dict[str, Any]] | None = settings.pop("strategy_params", None)
     # Pydantic models will contain all keys, but non-provided ones are None
 
     btconfig = deep_merge_dicts(settings, btconfig, allow_null_overrides=False)
@@ -192,7 +205,9 @@ async def api_start_backtest(
     }
     ApiBG.bt["job_id"] = job_id
 
-    background_tasks.add_task(__run_backtest_bg, btconfig=btconfig, job_id=job_id)
+    background_tasks.add_task(
+        __run_backtest_bg, btconfig=btconfig, job_id=job_id, strategy_params=strategy_params
+    )
     ApiBG.analysis_running = True
 
     return {
@@ -208,7 +223,7 @@ async def api_start_backtest(
 def api_get_backtest():
     """
     Get backtesting result.
-    Returns Result after backtesting has been ran.
+    Returns Result after backtesting has been run.
     """
     from freqtrade.persistence import LocalTrade
 
@@ -426,3 +441,76 @@ def api_get_backtest_wallet(file: str, strategy: StrategyName, config=Depends(ge
         "data": results.values.tolist(),
         "length": len(results),
     }
+
+
+@router.post(
+    "/backtest/history/{file}/{strategy}/pair_history",
+    response_model=PairHistory,
+    tags=["webserver", "backtest"],
+)
+def api_backtest_pair_history(
+    file: str,
+    strategy: StrategyName,
+    payload: BacktestPairHistoryRequest,
+    config=Depends(get_config),
+):
+    """
+    Analyze a pair with the strategy and parameters stored in a backtest result.
+    Contrary to /pair_history, this uses the strategy as it was at the time of the backtest,
+    instead of the current version in the strategy directory.
+    """
+    bt_results_base: Path = config["user_data_dir"] / "backtest_results"
+    file_abs = (bt_results_base / file).with_suffix(".zip")
+    # Ensure file is in backtest_results directory
+    if not is_file_in_dir(file_abs, bt_results_base):
+        raise HTTPException(status_code=404, detail="File not found.")
+
+    bt_result = next((r for r in get_backtest_result(file_abs) if r["strategy"] == strategy), None)
+    if bt_result is None:
+        raise HTTPException(status_code=404, detail=f"Strategy {strategy} not found in {file}.")
+
+    # Older results may not have these stored in their metadata.
+    if not (timeframe := bt_result["timeframe"]):
+        raise HTTPException(
+            status_code=422, detail=f"Backtest result {file} does not contain a timeframe."
+        )
+    timerange = payload.timerange
+    if not timerange:
+        # backtest_start_ts are in the backtest output files since 2 years.
+        timerange = f"{bt_result['backtest_start_ts']}-{bt_result['backtest_end_ts']}"
+
+    config_loc = deepcopy(config)
+    config_loc.update({"strategy": strategy, "timeframe": timeframe, "timerange": timerange})
+
+    try:
+        # Exchange settings of the backtest may differ from the current webserver config.
+        bt_config = json_load(
+            StringIO(load_file_from_zip(file_abs, f"{file_abs.stem}_config.json").decode("utf-8"))
+        )
+        handleExchangePayload(
+            ExchangeModePayloadMixin(
+                exchange=bt_config.get("exchange", {}).get("name"),
+                trading_mode=bt_config.get("trading_mode", "spot"),
+                margin_mode=bt_config.get("margin_mode"),
+            ),
+            config_loc,
+        )
+        # The strategy is imported lazily, so the directory must exist for the whole call.
+        with backtest_strategy_dir(file_abs, strategy) as strategy_dir:
+            config_loc["strategy_path"] = str(strategy_dir)
+            exchange = get_exchange(config_loc)
+            validate_config_consistency(config_loc)
+
+            return RPC._rpc_analysed_history_full(
+                config_loc, payload.pair, timeframe, exchange, payload.columns, False
+            )
+    except ConfigurationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except ValueError as e:
+        # Older results may not contain the config or the strategy.
+        raise HTTPException(
+            status_code=422, detail=f"Backtest result {file} cannot be replayed: {e}"
+        )
+    except Exception as e:
+        logger.exception("Error in api_backtest_pair_history")
+        raise HTTPException(status_code=502, detail=str(e))

@@ -1,10 +1,12 @@
 # pragma pylint: disable=missing-docstring, protected-access, invalid-name
 import json
+import re
 import warnings
 from copy import deepcopy
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import ccxt
 import pytest
 
 from freqtrade.commands import Arguments
@@ -1606,6 +1608,67 @@ def test_sanitize_config(default_conf_usdt):
     assert res["exchange"]["secret"] == default_conf_usdt["exchange"]["secret"]
 
 
+def test_sanitize_config_empty_values():
+    config = {
+        "exchange": {"api_key": "", "secret": None, "ccxt_config": {"apiKey": None}},
+        "telegram": {"token": ""},
+        "pairlists": [{"method": "RemotePairList", "bearer_token": ""}],
+    }
+
+    # Unset credentials are not hidden - there's nothing to hide.
+    assert sanitize_config(config) == config
+
+
+def test_sanitize_config_nested_tokens():
+    config = {
+        "external_message_consumer": {
+            "producers": [{"name": "producer", "host": "localhost", "ws_token": "producer-token"}]
+        },
+        "pairlists": [
+            {"method": "StaticPairList"},
+            {"method": "RemotePairList", "bearer_token": "pairlist-token"},
+        ],
+    }
+    original_config = deepcopy(config)
+
+    result = sanitize_config(config)
+
+    assert result["external_message_consumer"]["producers"] == [
+        {"name": "producer", "host": "localhost", "ws_token": "REDACTED"}
+    ]
+    assert result["pairlists"] == [
+        {"method": "StaticPairList"},
+        {"method": "RemotePairList", "bearer_token": "REDACTED"},
+    ]
+    assert config == original_config
+    assert sanitize_config(config, show_sensitive=True) == original_config
+
+
+@pytest.mark.parametrize("ccxt_section", ["ccxt_config", "ccxt_sync_config", "ccxt_async_config"])
+def test_sanitize_config_ccxt_credentials(ccxt_section):
+    # Ensure all possible "requiredCredentials" variants are sanitized
+    # ccxt also accepts the snake_case variant of each key (apiKey -> api_key)
+    credential_keys = {
+        variant
+        for key in ccxt.Exchange.requiredCredentials
+        for variant in (key, re.sub(r"(?<!^)(?=[A-Z])", "_", key).lower())
+    }
+    config = {
+        "exchange": {
+            "name": "binance",
+            ccxt_section: {key: f"{key}-value" for key in credential_keys} | {"timeout": 5000},
+        }
+    }
+    original_config = deepcopy(config)
+
+    result = sanitize_config(config)
+
+    for key in credential_keys:
+        assert result["exchange"][ccxt_section][key] == "REDACTED"
+    assert result["exchange"][ccxt_section]["timeout"] == 5000
+    assert config == original_config
+
+
 def test_remove_exchange_credentials(default_conf) -> None:
     conf = deepcopy(default_conf)
     remove_exchange_credentials(conf["exchange"], False)
@@ -1618,3 +1681,21 @@ def test_remove_exchange_credentials(default_conf) -> None:
     assert conf["exchange"]["secret"] is None
     assert conf["exchange"].get("password") is None
     assert conf["exchange"].get("uid") is None
+
+
+def test_remove_exchange_credentials_ccxt_config() -> None:
+    exchange_config = {
+        "name": "binance",
+        "api_key": "key",
+        "ccxt_config": {"apiKey": "ccxt-key", "secret": "ccxt-secret", "timeout": 5000},
+        "ccxt_async_config": {"password": "ccxt-password"},
+    }
+    remove_exchange_credentials(exchange_config, False)
+    assert exchange_config["ccxt_config"]["apiKey"] == "ccxt-key"
+
+    remove_exchange_credentials(exchange_config, True)
+    assert exchange_config["api_key"] is None
+    assert exchange_config["ccxt_config"] == {"apiKey": None, "secret": None, "timeout": 5000}
+    assert exchange_config["ccxt_async_config"] == {"password": None}
+    # Didn't add non-existing sections
+    assert "ccxt_sync_config" not in exchange_config

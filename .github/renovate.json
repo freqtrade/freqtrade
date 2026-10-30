@@ -1,0 +1,85 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "github>freqtrade/renovate-config"
+  ],
+  "timezone": "Europe/Berlin",
+  "constraints": {
+    "python": "3.12"
+  },
+  "constraintsFiltering": "strict",
+  "pip_requirements": {
+    "managerFilePatterns": ["/(^|/)requirements-freqai-rl\\.txt$/"]
+  },
+  "schedule": [
+    "* 0-5 * * 1"
+  ],
+  "pre-commit": {
+    "enabled": true
+  },
+  "packageRules": [
+    {
+      "description": "Keep scipy and scipy-stubs updates in their own PR, so both are bumped together.",
+      "matchDatasources": ["pypi"],
+      "matchPackageNames": ["scipy", "scipy-stubs"],
+      "groupName": "Scipy",
+      "groupSlug": "scipy"
+    },
+    {
+      "description": "Keep scikit-learn updates in their own PR, so the freqai and hyperopt pins are bumped together.",
+      "matchDatasources": ["pypi"],
+      "matchPackageNames": ["scikit-learn"],
+      "groupName": "Scikit-learn",
+      "groupSlug": "scikit-learn"
+    },
+    {
+      "description": "Keep pyarrow updates in their own PR.",
+      "matchDatasources": ["pypi"],
+      "matchPackageNames": ["pyarrow"],
+      "groupName": "Pyarrow",
+      "groupSlug": "pyarrow"
+    },
+    {
+      "description": "Keep freqai dependencies in their own PR - they can't usually be safely updated together with the rest. scikit-learn is excluded, as it's shared with hyperopt.",
+      "matchDatasources": ["pypi"],
+      "matchFileNames": ["requirements-freqai.txt", "requirements-freqai-rl.txt"],
+      "matchPackageNames": ["!scikit-learn"],
+      "groupName": "FreqAI dependencies",
+      "groupSlug": "freqai"
+    },
+    {
+      "description": "Group pre-commit hook updates into one PR, as pre-commit autoupdate did.",
+      "matchManagers": ["pre-commit"],
+      "matchDepTypes": ["!pre-commit-python"],
+      "groupName": "pre-commit hooks",
+      "groupSlug": "pre-commit-hooks"
+    },
+    {
+      "description": "Bump mypy additional_dependencies in the same PR as their requirements-dev.txt pin. SQLAlchemy is pinned in requirements.txt, so it stays in the main non-major batch.",
+      "matchDatasources": ["pypi"],
+      "matchDepTypes": ["pre-commit-python"],
+      "matchPackageNames": ["!SQLAlchemy", "!scipy-stubs"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "python non-major dev dependencies",
+      "groupSlug": "python-dev-minor-patch"
+    },
+    {
+      "description": "Bump ruff in one Group.",
+      "matchPackageNames": ["ruff", "/ruff-pre-commit$/"],
+      "groupName": "Ruff",
+      "groupSlug": "ruff"
+    },
+    {
+      "description": "Bump mypy in requirements-dev.txt and its pre-commit hook together.",
+      "matchPackageNames": ["mypy", "/mirrors-mypy$/"],
+      "groupName": "Mypy",
+      "groupSlug": "mypy"
+    },
+    {
+      "description": "Keep Dockerfile.armhf updates separate.",
+      "matchFileNames": ["docker/Dockerfile.armhf"],
+      "groupName": "Dockerfile.armhf",
+      "groupSlug": "dockerfile-armhf"
+    }
+  ]
+}

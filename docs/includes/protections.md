@@ -145,7 +145,7 @@ def protections(self):
 
 ### Full example of Protections
 
-All protections can be combined at will, also with different parameters, creating a increasing wall for under-performing pairs.
+All protections can be combined at will, also with different parameters, creating an increasing wall for under-performing pairs.
 All protections are evaluated in the sequence they are defined.
 
 The below example assumes a timeframe of 1 hour:

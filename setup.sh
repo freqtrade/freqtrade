@@ -8,8 +8,8 @@ function echo_block() {
 }
 UV=false
 # Supported Python minor versions (order matters for detection)
-SUPPORTED_MINOR_VERS=(14 13 12 11)
-SUPPORTED_PY_VERSIONS="3.11, 3.12, 3.13 and 3.14"
+SUPPORTED_MINOR_VERS=(14 13 12)
+SUPPORTED_PY_VERSIONS="3.12, 3.13 and 3.14"
 
 function check_installed_pip() {
    ${PYTHON} -m pip > /dev/null
@@ -254,7 +254,7 @@ function install() {
         install_redhat
     else
         echo "This script does not support your OS."
-        echo "If you have Python version 3.11 - 3.14, pip, virtualenv installed you can continue."
+        echo "If you have Python version 3.12 - 3.14, pip, virtualenv installed you can continue."
         echo "Wait 10 seconds to continue the next install steps or use ctrl+c to interrupt this shell."
         sleep 10
     fi
@@ -281,7 +281,7 @@ function help() {
     echo "	-p,--plot       Install dependencies for Plotting scripts."
 }
 
-# Verify if 3.11+ is installed
+# Verify if 3.12+ is installed
 check_installed_python
 
 case $* in

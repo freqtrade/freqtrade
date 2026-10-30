@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Any, TypeAlias
+from typing import Any
 
 from pandas import DataFrame
 from rich.table import Column, Table
@@ -8,7 +8,7 @@ from rich.text import Text
 from freqtrade.loggers.rich_console import get_rich_console
 
 
-TextOrString: TypeAlias = str | Text
+type TextOrString = str | Text
 
 
 def print_rich_table(

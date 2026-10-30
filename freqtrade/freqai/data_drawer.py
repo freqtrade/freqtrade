@@ -140,8 +140,8 @@ class FreqaiDataDrawer:
         exists = self.global_metadata_path.is_file()
         if exists:
             with self.global_metadata_path.open("r") as fp:
-                metatada_dict = rapidjson.load(fp, number_mode=rapidjson.NM_NATIVE)
-                return metatada_dict
+                metadata_dict = rapidjson.load(fp, number_mode=rapidjson.NM_NATIVE)
+                return metadata_dict
         return {}
 
     def load_drawer_from_disk(self):

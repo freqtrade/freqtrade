@@ -367,7 +367,7 @@ The optional `read_timeout` specifies the maximum amount of time (in seconds) to
 The optional `bearer_token` will be included in the requests Authorization Header.
 
 !!! Note
-    In case of a server error the last received pairlist will be kept if `keep_pairlist_on_failure` is set to true, when set to false a empty pairlist is returned.
+    In case of a server error the last received pairlist will be kept if `keep_pairlist_on_failure` is set to true, when set to false an empty pairlist is returned.
 
 #### MarketCapPairList
 
@@ -527,6 +527,20 @@ In this example, the resulting `PairInformationFilter` configuration will includ
         "info_compare_value": "TRADIFI_PERPETUAL", // can be any matching value
     }
 ]
+```
+
+`info_compare_value` is required and accepts strings, numbers, booleans, and `null`, including `""`, `0`, and `false`.
+Use unquoted JSON `null` to match a field containing Python `None`. The quoted value `"null"` matches a string instead.
+
+For example, this filter keeps pairs whose `info.preListingInfo` field exists and contains `None`:
+
+``` json
+{
+    "method": "PairInformationFilter",
+    "selection_mode": "whitelist",
+    "info_key": "info.preListingInfo",
+    "info_compare_value": null
+}
 ```
 
 #### PerformanceFilter

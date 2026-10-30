@@ -170,6 +170,51 @@ def test_init(default_conf, mocker, caplog):
     assert log_has("Instance is running with dry_run enabled", caplog)
 
 
+@pytest.mark.parametrize(
+    "enable_ws,exp_ohlcv,exp_orderbook",
+    [
+        # historic boolean behavior - enables/disables all streams
+        (True, True, True),
+        (False, False, False),
+        # per-stream dict control
+        ({"ohlcv": True, "orderbook": True}, True, True),
+        ({"ohlcv": True, "orderbook": False}, True, False),
+        ({"ohlcv": False, "orderbook": True}, False, True),
+        ({"ohlcv": False, "orderbook": False}, False, False),
+        # streams omitted from the dict default to enabled
+        ({"orderbook": False}, True, False),
+        ({"ohlcv": False}, False, True),
+        ({}, True, True),
+    ],
+)
+def test_exchange_ws_enable_per_stream(default_conf, mocker, enable_ws, exp_ohlcv, exp_orderbook):
+    # Patch ExchangeWS to avoid spinning up a real websocket thread.
+    ws_mock = mocker.patch("freqtrade.exchange.exchange.ExchangeWS")
+    default_conf["runmode"] = RunMode.DRY_RUN
+    default_conf["exchange"]["enable_ws"] = enable_ws
+    # Force the exchange to "support" both watch endpoints regardless of the ccxt mock.
+    default_conf["exchange"]["_ft_has_params"] = {
+        "exchange_has_overrides": {"watchOHLCV": True, "watchOrderBook": True},
+    }
+
+    exchange = get_patched_exchange(mocker, default_conf)
+
+    assert exchange._has_watch_ohlcv is exp_ohlcv
+    assert exchange._has_watch_orderbook is exp_orderbook
+
+    # The websocket handler is only created if at least one stream is active.
+    if exp_ohlcv or exp_orderbook:
+        assert exchange._exchange_ws is not None
+        assert ws_mock.call_count == 1
+    else:
+        assert exchange._exchange_ws is None
+        assert ws_mock.call_count == 0
+
+    # can_use_websocket respects settings
+    can_use = exchange._can_use_websocket(exchange._exchange_ws, "BTC/USDT", "5m", CandleType.SPOT)
+    assert can_use is (exp_ohlcv and exchange._exchange_ws is not None)
+
+
 def test_init_ccxt_kwargs(default_conf, mocker, caplog):
     mocker.patch(f"{EXMS}.reload_markets")
     mocker.patch(f"{EXMS}.validate_stakecurrency")
@@ -211,6 +256,25 @@ def test_init_ccxt_kwargs(default_conf, mocker, caplog):
     assert ex._api.hello == "world"
     assert ex._ccxt_config == {}
     Exchange._headers = {}
+
+    # Credentials in ccxt_config are applied, but not logged
+    caplog.clear()
+    conf = copy.deepcopy(default_conf)
+    conf["dry_run"] = False
+    conf["exchange"]["ccxt_config"] = {"apiKey": "ccxt-key", "TestKWARG": 11}
+    ex = Exchange(conf)
+    assert ex._api.apiKey == "ccxt-key"
+    assert log_has(
+        "Applying additional ccxt config: {'apiKey': 'REDACTED', 'TestKWARG': 11}", caplog
+    )
+    assert not log_has_re(r".*ccxt-key.*", caplog)
+
+    # Dry-run removes the credential - so it's logged as None, not as REDACTED
+    caplog.clear()
+    conf["dry_run"] = True
+    ex = Exchange(conf)
+    assert ex._api.apiKey is None
+    assert log_has("Applying additional ccxt config: {'apiKey': None, 'TestKWARG': 11}", caplog)
 
 
 def test_destroy(default_conf, mocker, caplog):
@@ -537,7 +601,7 @@ def test__get_stake_amount_limit(mocker, default_conf) -> None:
     result = exchange.get_min_pair_stake_amount("ETH/BTC", 2, stoploss, 10)
     assert pytest.approx(result) == expected_result / 10
 
-    # min amount and cost are set (amount is minial)
+    # min amount and cost are set (amount is minimal)
     markets["ETH/BTC"]["limits"] = {
         "cost": {"min": 8, "max": 10000},
         "amount": {"min": 2, "max": 500},
@@ -2406,12 +2470,12 @@ def test_get_tickers(default_conf, mocker, exchange_name, caplog):
     exchange = get_patched_exchange(mocker, default_conf, api_mock, exchange=exchange_name)
     exchange.get_tickers()
 
-    api_mock.fetch_tickers.reset_mock()
-    api_mock.fetch_bids_asks.reset_mock()
     default_conf["trading_mode"] = TradingMode.FUTURES
     default_conf["margin_mode"] = MarginMode.ISOLATED
     mocker.patch(f"{EXMS}.exchange_has", return_value=True)
     exchange = get_patched_exchange(mocker, default_conf, api_mock, exchange=exchange_name)
+    api_mock.fetch_tickers.reset_mock()
+    api_mock.fetch_bids_asks.reset_mock()
 
     exchange.get_tickers()
     assert api_mock.fetch_tickers.call_count == 1
@@ -2451,6 +2515,10 @@ def test_get_conversion_rate(default_conf_usdt, mocker, exchange_name):
     default_conf_usdt["trading_mode"] = "futures"
 
     exchange = get_patched_exchange(mocker, default_conf_usdt, api_mock, exchange=exchange_name)
+    # okx fetches tickers on init to convert leverage tiers
+    api_mock.fetch_tickers.reset_mock()
+    api_mock.fetch_tickers.side_effect = [tick, tick2]
+    exchange._fetch_tickers_cache.clear()
     # retrieve original ticker
     assert exchange.get_conversion_rate("USDT", "USDT") == 1
     assert api_mock.fetch_tickers.call_count == 0
@@ -2752,7 +2820,9 @@ async def test__async_get_historic_ohlcv(default_conf, mocker, caplog, exchange_
 
 
 @pytest.mark.parametrize("candle_type", [CandleType.FUTURES, CandleType.MARK, CandleType.SPOT])
-def test_refresh_latest_ohlcv(mocker, default_conf_usdt, caplog, candle_type) -> None:
+def test_refresh_latest_ohlcv(mocker, default_conf_usdt, caplog, candle_type, time_machine) -> None:
+    # Freeze time - crossing a candle boundary mid-test would expire the cache
+    time_machine.move_to(dt_now(), tick=False)
     ohlcv = [
         [
             dt_ts(dt_now() - timedelta(minutes=5)),  # unix timestamp ms
@@ -3188,16 +3258,19 @@ def test_refresh_latest_ohlcv_no_empty_candles(mocker, default_conf, time_machin
 
     # A newly listed pair only has the currently forming candle - nothing is kept from that
     # response, but it must not be re-queried until the next candle either.
+    # Paged startup requests return that candle once per page.
     new_candle = start + timedelta(minutes=515)
     pair_new = ("XRP/EUR", "5m", CandleType.SPOT)
     time_machine.move_to(new_candle, tick=False)
     exchange._api_async.fetch_ohlcv = AsyncMock(
-        return_value=[[dt_ts(new_candle), 1.0, 2.0, 0.5, 1.5, 100.0]]
+        return_value=[[dt_ts(new_candle), 1.0, 2.0, 0.5, 1.5, 100.0]] * 2
     )
     for _ in range(12):
         time_machine.shift(timedelta(seconds=5))
         exchange.refresh_latest_ohlcv([pair_new])
     assert exchange._api_async.fetch_ohlcv.call_count == 1
+    # The candle before the dropped one - not the forming candle, which would skip the next close.
+    assert exchange._pairs_last_refresh_time[pair_new] == dt_ts(new_candle - timedelta(minutes=5))
 
     # Neither pair may ever have had its cache evicted.
     assert "Time jump detected" not in caplog.text
@@ -3353,6 +3426,64 @@ def test_refresh_latest_ohlcv_provisional_candle(mocker, default_conf, time_mach
     assert exchange.klines(pair).iloc[-1]["date"] == last_candle
     assert exchange.klines(pair).iloc[-1]["volume"] == volume * 2
     assert exchange._pairs_last_refresh_time[pair] == dt_ts(last_candle)
+
+
+def test_refresh_latest_ohlcv_short_history_duplicate_pages(
+    mocker, default_conf, time_machine
+) -> None:
+    """
+    Startup (or a pair joining the whitelist) needs more candles than one page, but the
+    pair is younger than that. Every page then returns the whole history, including the
+    forming candle. The refresh time must stay on the last closed candle, so the first
+    close after startup is fetched instead of being skipped for a full period.
+    """
+    start = datetime(2026, 6, 1, tzinfo=UTC)
+    history_len = 30
+    ohlcv = generate_test_data_raw("1d", history_len, start.strftime("%Y-%m-%d"))
+    forming = start + timedelta(days=history_len - 1)
+    pair = ("IOTA/USDT", "1d", CandleType.FUTURES)
+
+    # Midway through the newest candle. It is still forming.
+    time_machine.move_to(forming + timedelta(hours=12), tick=False)
+    exchange = get_patched_exchange(mocker, default_conf)
+    exchange._set_startup_candle_count(default_conf)
+    mocker.patch(f"{EXMS}.ohlcv_candle_limit", return_value=100)
+    # 800 startup candles at a 499 limit is two calls. Same shape, smaller numbers.
+    exchange.required_candle_call_count = 2
+    exchange._api_async.fetch_ohlcv = AsyncMock(side_effect=lambda *args, **kwargs: deepcopy(ohlcv))
+
+    exchange.refresh_latest_ohlcv([pair])
+    assert exchange._api_async.fetch_ohlcv.call_count == 2
+    # Grouping drops the repeated dates, then the forming candle.
+    assert len(exchange.klines(pair)) == history_len - 1
+    assert exchange.klines(pair).iloc[-1]["date"] == forming - timedelta(days=1)
+    # Not the forming candle - that would skip the next close.
+    assert exchange._pairs_last_refresh_time[pair] == ohlcv[-2][0]
+    assert exchange._now_is_time_to_refresh(*pair) is False
+
+    # Still inside this candle: keep serving the cache.
+    exchange._api_async.fetch_ohlcv.reset_mock()
+    time_machine.move_to(forming + timedelta(hours=18), tick=False)
+    exchange.refresh_latest_ohlcv([pair])
+    assert exchange._api_async.fetch_ohlcv.call_count == 0
+    assert exchange._now_is_time_to_refresh(*pair) is False
+
+    # The daily candle closed. Binance also returns the new forming candle.
+    closed_at = forming + timedelta(days=1)
+    updated = deepcopy(ohlcv)
+    updated.append([dt_ts(closed_at), 1.0, 2.0, 0.5, 1.5, 10.0])
+    exchange._api_async.fetch_ohlcv = AsyncMock(
+        side_effect=lambda *args, **kwargs: deepcopy(updated)
+    )
+    # Well after the close, as in the report (the candle was still missing ~15 minutes later).
+    time_machine.move_to(closed_at + timedelta(minutes=15), tick=False)
+    assert exchange._now_is_time_to_refresh(*pair) is True
+
+    exchange.refresh_latest_ohlcv([pair])
+    assert exchange._api_async.fetch_ohlcv.call_count == 1
+    assert exchange.klines(pair).iloc[-1]["date"] == forming
+    assert exchange._pairs_last_refresh_time[pair] == ohlcv[-1][0]
+    assert exchange._now_is_time_to_refresh(*pair) is False
 
 
 def test_refresh_ohlcv_with_cache(mocker, default_conf, time_machine) -> None:
@@ -3879,6 +4010,85 @@ def test_fetch_l2_order_book(default_conf, mocker, order_book_l2, exchange_name)
         else:
             next_limit = exchange.get_next_limit_in_list(val, exchange.get_option("l2_limit_range"))
             assert api_mock.fetch_l2_order_book.call_args_list[0][0][1] == next_limit
+
+
+def test_fetch_l2_order_book_ws_stale_fallback(default_conf, mocker, order_book_l2, caplog):
+    api_mock = MagicMock()
+    api_mock.fetch_l2_order_book = order_book_l2
+    exchange = get_patched_exchange(mocker, default_conf, api_mock)
+
+    ws_ob = {
+        "bids": [[10.0 - i, 1.0] for i in range(20)],
+        "asks": [[11.0 + i, 1.0] for i in range(20)],
+    }
+    ws_mock = MagicMock()
+    ws_mock.get_orderbook.return_value = ws_ob
+    exchange._exchange_ws = ws_mock
+    exchange._has_watch_orderbook = True
+    # Max age is sourced from ft_has and passed through to the freshness check.
+    exchange._ft_has["orderbook_max_age"] = 7
+
+    # Fresh feed with sufficient depth -> use the websocket book, no REST call.
+    ws_mock.orderbook_is_fresh.return_value = True
+    order_book = exchange.fetch_l2_order_book("ETH/BTC", limit=10)
+    assert order_book == ws_ob
+    ws_mock.schedule_orderbook.assert_called_with("ETH/BTC")
+    # The depth is passed down, so the copy stays cheap.
+    ws_mock.get_orderbook.assert_called_with("ETH/BTC", 10)
+    ws_mock.orderbook_is_fresh.assert_called_with("ETH/BTC", 7)
+    assert api_mock.fetch_l2_order_book.call_count == 0
+
+    # The limit is rounded up to what the exchange's REST endpoint would return
+    # (binance l2_limit_range), so both paths yield the same number of entries.
+    exchange.fetch_l2_order_book("ETH/BTC", limit=15)
+    ws_mock.get_orderbook.assert_called_with("ETH/BTC", 20)
+    assert api_mock.fetch_l2_order_book.call_count == 0
+
+    # Book is shallower than the REST response would be -> fall back to REST rather
+    # than silently returning fewer entries.
+    caplog.set_level(logging.DEBUG)
+    order_book = exchange.fetch_l2_order_book("ETH/BTC", limit=50)
+    assert order_book != ws_ob
+    assert api_mock.fetch_l2_order_book.call_count == 1
+    assert log_has_re(r"Websocket orderbook for ETH/BTC only has 20/50 entries", caplog)
+
+    # Exchanges capping the REST depth (e.g. hyperliquid's [20]) can serve deep
+    # requests from the websocket - REST wouldn't return more either.
+    caplog.clear()
+    exchange._ft_has["l2_limit_range"] = [20]
+    order_book = exchange.fetch_l2_order_book("ETH/BTC", limit=1000)
+    assert order_book == ws_ob
+    ws_mock.get_orderbook.assert_called_with("ETH/BTC", 20)
+    assert api_mock.fetch_l2_order_book.call_count == 1
+    exchange._ft_has["l2_limit_range"] = [5, 10, 20, 50, 100, 500, 1000]
+
+    # Past the depth the stream is subscribed at (binance: 100) the websocket could
+    # never answer - don't subscribe and don't copy the book just to discard it.
+    caplog.clear()
+    ws_mock.reset_mock()
+    order_book = exchange.fetch_l2_order_book("ETH/BTC", limit=500)
+    assert order_book != ws_ob
+    assert ws_mock.schedule_orderbook.call_count == 0
+    assert ws_mock.get_orderbook.call_count == 0
+    assert api_mock.fetch_l2_order_book.call_count == 2
+
+    # Stale feed (stuck websocket) -> warn and fall back to REST.
+    caplog.clear()
+    ws_mock.orderbook_is_fresh.return_value = False
+    order_book = exchange.fetch_l2_order_book("ETH/BTC", limit=10)
+    assert "bids" in order_book
+    assert "asks" in order_book
+    assert api_mock.fetch_l2_order_book.call_count == 3
+    assert log_has_re(r"Websocket orderbook for ETH/BTC is stale .* falling back to REST", caplog)
+
+    # Throttled via log_once - a stuck feed must not warn on every single call.
+    # The message is still emitted at debug level, so assert on the warning records only.
+    caplog.clear()
+    order_book = exchange.fetch_l2_order_book("ETH/BTC", limit=10)
+    assert api_mock.fetch_l2_order_book.call_count == 4
+    assert not [
+        r for r in caplog.records if r.levelno == logging.WARNING and "is stale" in r.getMessage()
+    ]
 
 
 @pytest.mark.parametrize("exchange_name", EXCHANGES)
@@ -5875,48 +6085,49 @@ def test_get_funding_fees(default_conf_usdt, mocker, exchange_name, caplog):
 @pytest.mark.parametrize("exchange_name", ["binance"])
 def test__get_funding_fees_from_exchange(default_conf, mocker, exchange_name):
     api_mock = MagicMock()
-    api_mock.fetch_funding_history = MagicMock(
-        return_value=[
-            {
-                "amount": 0.14542,
-                "code": "USDT",
-                "datetime": "2021-09-01T08:00:01.000Z",
-                "id": "485478",
-                "info": {
-                    "asset": "USDT",
-                    "income": "0.14542",
-                    "incomeType": "FUNDING_FEE",
-                    "info": "FUNDING_FEE",
-                    "symbol": "XRPUSDT",
-                    "time": "1630382001000",
-                    "tradeId": "",
-                    "tranId": "993203",
-                },
-                "symbol": "XRP/USDT",
-                "timestamp": 1630382001000,
+    funding_history = [
+        {
+            "amount": 0.14542,
+            "code": "USDT",
+            "datetime": "2021-09-01T08:00:01.000Z",
+            "id": "485478",
+            "info": {
+                "asset": "USDT",
+                "income": "0.14542",
+                "incomeType": "FUNDING_FEE",
+                "info": "FUNDING_FEE",
+                "symbol": "XRPUSDT",
+                "time": "1630382001000",
+                "tradeId": "",
+                "tranId": "993203",
             },
-            {
-                "amount": -0.14642,
-                "code": "USDT",
-                "datetime": "2021-09-01T16:00:01.000Z",
-                "id": "485479",
-                "info": {
-                    "asset": "USDT",
-                    "income": "-0.14642",
-                    "incomeType": "FUNDING_FEE",
-                    "info": "FUNDING_FEE",
-                    "symbol": "XRPUSDT",
-                    "time": "1630314001000",
-                    "tradeId": "",
-                    "tranId": "993204",
-                },
-                "symbol": "XRP/USDT",
-                "timestamp": 1630314001000,
+            "symbol": "XRP/USDT",
+            "timestamp": 1630382001000,
+        },
+        {
+            "amount": -0.14642,
+            "code": "USDT",
+            "datetime": "2021-09-01T16:00:01.000Z",
+            "id": "485479",
+            "info": {
+                "asset": "USDT",
+                "income": "-0.14642",
+                "incomeType": "FUNDING_FEE",
+                "info": "FUNDING_FEE",
+                "symbol": "XRPUSDT",
+                "time": "1630314001000",
+                "tradeId": "",
+                "tranId": "993204",
             },
-        ]
-    )
+            "symbol": "XRP/USDT",
+            "timestamp": 1630314001000,
+        },
+    ]
+    api_mock.fetch_funding_history = MagicMock(return_value=funding_history)
     type(api_mock).has = PropertyMock(return_value={"fetchFundingHistory": True})
 
+    default_conf["trading_mode"] = "futures"
+    default_conf["margin_mode"] = "isolated"
     # mocker.patch(f'{EXMS}.get_funding_fees', lambda pair, since: y)
     exchange = get_patched_exchange(mocker, default_conf, api_mock, exchange=exchange_name)
     date_time = datetime.strptime("2021-09-01T00:00:01.000Z", "%Y-%m-%dT%H:%M:%S.%fZ")
@@ -5927,6 +6138,31 @@ def test__get_funding_fees_from_exchange(default_conf, mocker, exchange_name):
 
     assert pytest.approx(expected_fees) == fees_from_datetime
     assert pytest.approx(expected_fees) == fees_from_unix_time
+    # Page shorter than the limit ends the loop
+    assert api_mock.fetch_funding_history.call_count == 2
+    assert api_mock.fetch_funding_history.call_args[1]["limit"] == 1000
+
+    # Without limit, repeated entries end the loop - without relying on id (gate has no id)
+    api_mock.fetch_funding_history = MagicMock(
+        return_value=[{**fee, "id": None} for fee in funding_history]
+    )
+    exchange._ft_has["funding_history_limit"] = None
+    fees = exchange._get_funding_fees_from_exchange(pair="XRP/USDT", since=unix_time)
+    assert pytest.approx(expected_fees) == fees
+    assert api_mock.fetch_funding_history.call_count == 2
+
+    # Paginated response
+    exchange._ft_has["funding_history_limit"] = 1
+    api_mock.fetch_funding_history = MagicMock(
+        side_effect=[[funding_history[1]], [funding_history[0]], []]
+    )
+    fees = exchange._get_funding_fees_from_exchange(pair="XRP/USDT", since=unix_time)
+    assert pytest.approx(expected_fees) == fees
+    assert api_mock.fetch_funding_history.call_count == 3
+    calls = api_mock.fetch_funding_history.call_args_list
+    assert calls[0][1]["since"] == unix_time
+    assert calls[1][1]["since"] == 1630314001001
+    assert calls[2][1]["since"] == 1630382001001
 
     ccxt_exceptionhandlers(
         mocker,

@@ -33,7 +33,7 @@ class RemotePairList(IPairList):
 
         if "pairlist_url" not in self._pairlistconfig:
             raise OperationalException(
-                "`pairlist_url` not specified. Please check your configuration "
+                f"{self.name}: `pairlist_url` not specified. Please check your configuration "
                 'for "pairlist.config.pairlist_url"'
             )
 
@@ -52,17 +52,20 @@ class RemotePairList(IPairList):
 
         if self._mode not in ["whitelist", "blacklist"]:
             raise OperationalException(
-                '`mode` not configured correctly. Supported Modes are "whitelist","blacklist"'
+                f"{self.name}: `mode` not configured correctly (got `{self._mode}`). "
+                "Supported values are `whitelist` and `blacklist`."
             )
 
         if self._processing_mode not in ["filter", "append"]:
             raise OperationalException(
-                '`processing_mode` not configured correctly. Supported Modes are "filter","append"'
+                f"{self.name}: `processing_mode` not configured correctly "
+                f"(got `{self._processing_mode}`). "
+                "Supported values are `filter` and `append`."
             )
 
         if self._pairlist_pos == 0 and self._mode == "blacklist":
             raise OperationalException(
-                "A `blacklist` mode RemotePairList can not be on the first "
+                f"{self.name}: A `blacklist` mode RemotePairList can not be on the first "
                 "position of your pairlist."
             )
 

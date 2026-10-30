@@ -85,6 +85,9 @@ class RPCException(Exception):
 
 
 class RPCHandler:
+    # Deliver messages from a dedicated worker thread, so slow handlers don't block the bot.
+    _use_queue: bool = True
+
     def __init__(self, rpc: "RPC", config: Config) -> None:
         """
         Initializes RPCHandlers
@@ -1300,6 +1303,7 @@ class RPC:
         """
         Fetch custom data for a specific trade, or all open trades if `trade_id` is not provided.
         Pagination is applied via `limit` and `offset`.
+        Returns an empty list when no custom data matches. An unknown trade ID raises RPCException.
 
         Returns an array of dictionaries, each containing:
         - "trade_id": the ID of the trade (int)
@@ -1319,10 +1323,8 @@ class RPC:
         else:
             trades = Trade.get_trades(trade_filter=[Trade.id == trade_id]).all()
 
-        if not trades:
-            raise RPCException(
-                f"No trade found for trade_id: {trade_id}" if trade_id else "No open trades found."
-            )
+        if trade_id is not None and not trades:
+            raise RPCException(f"No trade found for trade_id: {trade_id}")
 
         results = []
         for trade in trades:
@@ -1347,16 +1349,6 @@ class RPC:
                     for data_entry in custom_data
                 ]
                 results.append({"trade_id": trade.id, "custom_data": formatted_custom_data})
-
-            # Handle case when there is no custom data found across trades.
-            if not results:
-                message_details = ""
-                if key:
-                    message_details += f"with key '{key}' "
-                message_details += (
-                    f"found for Trade ID: {trade_id}." if trade_id else "found for any open trades."
-                )
-                raise RPCException(f"No custom-data {message_details}")
 
         return results
 
@@ -1666,6 +1658,7 @@ class RPC:
         exchange: Exchange,
         selected_cols: list[str] | None,
         live: bool,
+        strategy_params: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         """
         Analyzed dataframe in Dict form, with full history loading and strategy analysis.
@@ -1684,6 +1677,7 @@ class RPC:
             startup_candles = 0
             if config.get("strategy"):
                 strategy = StrategyResolver.load_strategy(config)
+                strategy.ft_set_api_params(strategy_params)
                 startup_candles = strategy.startup_candle_count
                 strategy_name = strategy.get_strategy_name()
 

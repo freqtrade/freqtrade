@@ -17,7 +17,7 @@ Once the bot is started in trade / dry-run mode (with `freqtrade trade`) - the U
 
 ## Configuration
 
-FreqUI does not have it's own configuration file - but assumes a working setup for the [rest-api](rest-api.md) is available.
+FreqUI does not have its own configuration file - but assumes a working setup for the [rest-api](rest-api.md) is available.
 Please refer to the corresponding documentation page to get setup with freqUI
 
 ## UI

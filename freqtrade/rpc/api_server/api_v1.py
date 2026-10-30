@@ -72,7 +72,8 @@ logger = logging.getLogger(__name__)
 # 2.48: Add /backtest/history/wallets endpoint
 # 2.49: Add /lookahead_analysis and /recursive_analysis endpoints and background job deletion
 # 2.50: Updated supported timerange to include hour/minute precision.
-API_VERSION = 2.50
+# 2.51: Add Strategy parameter Modification in webserver mode, pair_history from backtest result
+API_VERSION = 2.51
 
 # Public API, requires no auth.
 router_public = APIRouter()

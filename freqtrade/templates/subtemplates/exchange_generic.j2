@@ -1,7 +1,10 @@
 "exchange": {
-    "name": "{{ exchange_name | lower }}",
-    "api_key": "{{ exchange_api_key }}",
-    "secret": "{{ exchange_secret }}",
+    "name": {{ exchange_name | lower | tojson }},
+    "api_key": {{ exchange_api_key | default("") | tojson }},
+    "secret": {{ exchange_secret | default("") | tojson }},
+{%- if exchange_requires_password %}
+    "password": {{ exchange_api_key_password | default("") | tojson }},
+{%- endif %}
     "ccxt_config": {},
     "ccxt_async_config": {},
     "pair_whitelist": [

@@ -1,0 +1,12 @@
+"exchange": {
+    "name": {{ exchange_name | lower | tojson }},
+    "api_key": {{ exchange_api_key | default("") | tojson }},
+    "secret": {{ exchange_secret | default("") | tojson }},
+    "unknown_fee_rate": 1,
+    "ccxt_config": {},
+    "ccxt_async_config": {},
+    "pair_whitelist": [
+    ],
+    "pair_blacklist": [
+    ]
+}

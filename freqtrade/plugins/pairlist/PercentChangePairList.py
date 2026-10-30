@@ -37,7 +37,7 @@ class PercentChangePairList(IPairList):
 
         if "number_assets" not in self._pairlistconfig:
             raise OperationalException(
-                "`number_assets` not specified. Please check your configuration "
+                f"{self.name}: `number_assets` not specified. Please check your configuration "
                 'for "pairlist.config.number_assets"'
             )
 
@@ -47,7 +47,13 @@ class PercentChangePairList(IPairList):
         self._max_value = self._pairlistconfig.get("max_value", None)
         self._refresh_period = self._pairlistconfig.get("refresh_period", 1800)
         self._pair_cache: FtTTLCache = FtTTLCache(maxsize=1, ttl=self._refresh_period)
-        self._sort_direction: str | None = self._pairlistconfig.get("sort_direction", "desc")
+        self._sort_direction: str = self._pairlistconfig.get("sort_direction", "desc")
+        if self._sort_direction not in ("asc", "desc"):
+            raise OperationalException(
+                f"{self.name}: `sort_direction` not configured correctly "
+                f"(got `{self._sort_direction}`). "
+                "Supported values are `asc` and `desc`."
+            )
         self._def_candletype = self._config["candle_type_def"]
 
         self._init_lookback_config()
@@ -59,10 +65,10 @@ class PercentChangePairList(IPairList):
         # whether to use range lookback or not
         self._use_range = (self._tf_in_min > 0) and (self._lookback_period > 0)
 
-        if self._use_range & (self._refresh_period < _tf_in_sec):
+        if self._use_range and (self._refresh_period < _tf_in_sec):
             raise OperationalException(
-                f"Refresh period of {self._refresh_period} seconds is smaller than one "
-                f"timeframe of {self._lookback_timeframe}. Please adjust refresh_period "
+                f"{self.name}: Refresh period of {self._refresh_period} seconds is smaller "
+                f"than one timeframe of {self._lookback_timeframe}. Please adjust refresh_period "
                 f"to at least {_tf_in_sec} and restart the bot."
             )
 
@@ -119,7 +125,7 @@ class PercentChangePairList(IPairList):
             "sort_direction": {
                 "type": "option",
                 "default": "desc",
-                "options": ["", "asc", "desc"],
+                "options": ["asc", "desc"],
                 "description": "Sort pairlist",
                 "help": "Sort Pairlist ascending or descending by rate of change.",
             },
@@ -233,9 +239,10 @@ class PercentChangePairList(IPairList):
             )
 
             # in case of candle data calculate typical price and change for candle
-            if pair_candles is not None and not pair_candles.empty:
-                current_close = pair_candles["close"].iloc[-1]
-                previous_close = pair_candles["close"].shift(self._lookback_period).iloc[-1]
+            if pair_candles is not None and len(pair_candles) > self._lookback_period:
+                close = pair_candles["close"]
+                current_close = close.iloc[-1]
+                previous_close = close.iloc[-(1 + self._lookback_period)]
                 pct_change = (
                     ((current_close - previous_close) / previous_close) * 100
                     if previous_close > 0

@@ -1375,6 +1375,7 @@ async def test_telegram_forceexit_handle(
     context = MagicMock()
     context.args = ["1"]
     await telegram._force_exit(update=update, context=context)
+    freqtradebot.rpc.flush()
 
     assert msg_mock.call_count == 4
     last_msg = msg_mock.call_args_list[-2][0][0]
@@ -1445,6 +1446,7 @@ async def test_telegram_force_exit_down_handle(
     context = MagicMock()
     context.args = ["1"]
     await telegram._force_exit(update=update, context=context)
+    freqtradebot.rpc.flush()
 
     assert msg_mock.call_count == 4
 
@@ -1502,12 +1504,14 @@ async def test_forceexit_all_handle(default_conf, update, ticker, fee, mocker) -
 
     # Create some test data
     freqtradebot.enter_positions(4)
+    freqtradebot.rpc.flush()
     msg_mock.reset_mock()
 
     # /forceexit all
     context = MagicMock()
     context.args = ["all"]
     await telegram._force_exit(update=update, context=context)
+    freqtradebot.rpc.flush()
 
     # Called for each trade 2 times
     assert msg_mock.call_count == 8
@@ -1604,6 +1608,7 @@ async def test_force_exit_no_pair(default_conf, update, ticker, fee, mocker) -> 
     assert keyboard[1][0].callback_data == "force_exit__2 "
     update = MagicMock()
     update.callback_query = AsyncMock()
+    update.callback_query.message.chat_id = 1235
     update.callback_query.data = keyboard[1][0].callback_data
     await telegram._force_exit_inline(update, None)
     assert update.callback_query.answer.call_count == 1
@@ -1684,12 +1689,14 @@ async def test_force_enter_no_pair(default_conf, update, mocker) -> None:
     assert reduce(lambda acc, x: acc + len(x), keyboard, 0) == 5
     update = MagicMock()
     update.callback_query = AsyncMock()
+    update.callback_query.message.chat_id = 1235
     update.callback_query.data = "force_enter__XRP/USDT_||_long"
     await telegram._force_enter_inline(update, None)
     assert fbuy_mock.call_count == 1
 
     fbuy_mock.reset_mock()
     update.callback_query = AsyncMock()
+    update.callback_query.message.chat_id = 1235
     update.callback_query.data = "force_enter__cancel"
     await telegram._force_enter_inline(update, None)
     assert fbuy_mock.call_count == 0
@@ -3018,7 +3025,9 @@ async def test_telegram_list_custom_data(default_conf_usdt, update, ticker, fee,
     context.args = ["1"]
     await telegram._list_custom_data(update=update, context=context)
     assert msg_mock.call_count == 1
-    assert "No custom-data found for Trade ID: 1." in msg_mock.call_args_list[0][0][0]
+    assert msg_mock.call_args_list[0][0][0] == (
+        "Didn't find any custom-data entries for Trade ID: `1`"
+    )
     msg_mock.reset_mock()
 
     # Add some custom data
@@ -3026,6 +3035,15 @@ async def test_telegram_list_custom_data(default_conf_usdt, update, ticker, fee,
     trade1.set_custom_data("test_int", 1)
     trade1.set_custom_data("test_dict", {"test": "dict"})
     Trade.commit()
+
+    context.args = [f"{trade1.id}", "missing_key"]
+    await telegram._list_custom_data(update=update, context=context)
+    assert msg_mock.call_count == 1
+    assert msg_mock.call_args_list[0][0][0] == (
+        f"Didn't find any custom-data entries for Trade ID: `{trade1.id}` and Key: `missing_key`."
+    )
+    msg_mock.reset_mock()
+
     context.args = [f"{trade1.id}"]
     await telegram._list_custom_data(update=update, context=context)
     assert msg_mock.call_count == 3

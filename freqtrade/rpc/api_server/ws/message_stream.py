@@ -18,8 +18,23 @@ class MessageStream:
 
         :param message: The message to publish
         """
+        try:
+            running_loop = asyncio.get_running_loop()
+        except RuntimeError:
+            running_loop = None
+        if running_loop is self._loop:
+            self._publish(message)
+        elif not self._loop.is_closed():
+            # Futures are not thread-safe - hand over to the stream's event loop.
+            try:
+                self._loop.call_soon_threadsafe(self._publish, message, time.time())
+            except RuntimeError:
+                # drop the message
+                pass
+
+    def _publish(self, message, ts: float | None = None):
         waiter, self._waiter = self._waiter, self._loop.create_future()
-        waiter.set_result((message, time.time(), self._waiter))
+        waiter.set_result((message, ts or time.time(), self._waiter))
 
     async def __aiter__(self):
         """

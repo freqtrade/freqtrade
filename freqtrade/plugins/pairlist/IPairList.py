@@ -38,7 +38,7 @@ class __OptionPairlistParameter(__PairlistParameterBase):
     options: list[str]
 
 
-class __ListPairListParamenter(__PairlistParameterBase):
+class __ListPairListParameter(__PairlistParameterBase):
     type: Literal["list"]
     default: list[str] | None
 
@@ -53,7 +53,7 @@ PairlistParameter = (
     | __StringPairlistParameter
     | __OptionPairlistParameter
     | __BoolPairlistParameter
-    | __ListPairListParamenter
+    | __ListPairListParameter
 )
 
 

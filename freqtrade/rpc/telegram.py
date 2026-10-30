@@ -40,6 +40,7 @@ from freqtrade.enums import MarketDirection, RPCMessageType, SignalDirection, Tr
 from freqtrade.exceptions import OperationalException
 from freqtrade.misc import chunks, plural
 from freqtrade.persistence import Trade
+from freqtrade.persistence.custom_data import _CustomData
 from freqtrade.rpc import RPC, RPCException, RPCHandler
 from freqtrade.rpc.rpc_types import (
     RPCEntryMsg,
@@ -82,6 +83,7 @@ def safe_async_db(func: Callable[..., Any]):
             return func(*args, **kwargs)
         finally:
             Trade.session.remove()
+            _CustomData.session.remove()
 
     return wrapper
 
@@ -133,6 +135,7 @@ def authorized_only(command_handler: Callable[..., Coroutine[Any, Any, None]]):
             return None
         # Rollback session to avoid getting data stored in a transaction.
         Trade.rollback()
+        _CustomData.session.rollback()
         logger.debug("Executing handler: %s for chat_id: %s", command_handler.__name__, chat_id)
         try:
             return await command_handler(self, *args, **kwargs)
@@ -142,6 +145,7 @@ def authorized_only(command_handler: Callable[..., Coroutine[Any, Any, None]]):
             logger.exception("Exception occurred within Telegram module")
         finally:
             Trade.session.remove()
+            _CustomData.session.remove()
 
     return wrapper
 
@@ -1495,6 +1499,7 @@ class Telegram(RPCHandler):
             except RPCException as e:
                 await self._send_msg(str(e))
 
+    @authorized_only
     async def _force_exit_inline(self, update: Update, _: CallbackContext) -> None:
         if update.callback_query:
             query = update.callback_query
@@ -1534,6 +1539,7 @@ class Telegram(RPCHandler):
                 logger.exception("Forcebuy error!")
                 await self._send_msg(str(e), ParseMode.HTML)
 
+    @authorized_only
     async def _force_enter_inline(self, update: Update, _: CallbackContext) -> None:
         if update.callback_query:
             query = update.callback_query

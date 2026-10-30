@@ -25,7 +25,7 @@ Command settings:
 In addition to the recursive formula check, this command also carries out a simple lookahead bias check on the indicator values only. For a full lookahead check, use [Lookahead-analysis](lookahead-analysis.md).
 
 !!! Tip "Running recursive-analysis via freqUI"
-    `recursive-analysis` can also be ran through freqUI when running freqtrade in [webserver mode](utils.md#webserver-mode).
+    `recursive-analysis` can also be run through freqUI when running freqtrade in [webserver mode](utils.md#webserver-mode).
     As the analysis can run for a while, it is executed as a background task.
 
 ## Recursive-analysis command reference

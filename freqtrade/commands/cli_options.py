@@ -195,6 +195,19 @@ AVAILABLE_CLI_OPTIONS = {
         action="store_true",
         default=False,
     ),
+    "backtest_show_params": Arg(
+        "--show-params",
+        help="Show the parameters stored in the backtest result.",
+        action="store_true",
+        default=False,
+    ),
+    "backtest_export_params": Arg(
+        "--export-params",
+        help="Export the parameters stored in the backtest result to the strategy's "
+        "parameter file.",
+        action="store_true",
+        default=False,
+    ),
     "enable_protections": Arg(
         "--enable-protections",
         "--enableprotections",

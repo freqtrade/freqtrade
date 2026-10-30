@@ -20,8 +20,31 @@ _SENSITIVE_KEYS = [
     "telegram.chat_id",
     "discord.webhook_url",
     "api_server.password",
+    "api_server.jwt_secret_key",
+    "api_server.ws_token",
     "webhook.url",
     "coingecko.api_key",
+    # ccxt credentials (requiredCredentials) - ccxt also accepts snake_case variants
+    *[
+        f"exchange.{ccxt_section}.{key}"
+        for ccxt_section in ("ccxt_config", "ccxt_sync_config", "ccxt_async_config")
+        for key in (
+            "apiKey",
+            "api_key",
+            "secret",
+            "uid",
+            "accountId",
+            "account_id",
+            "login",
+            "password",
+            "twofa",
+            "privateKey",
+            "private_key",
+            "walletAddress",
+            "wallet_address",
+            "token",
+        )
+    ],
 ]
 
 
@@ -41,11 +64,18 @@ def sanitize_config(config: Config, *, show_sensitive: bool = False) -> Config:
             nested_config = config
             for nested_key in nested_keys[:-1]:
                 nested_config = nested_config.get(nested_key, {})
-            if nested_keys[-1] in nested_config:
+            if nested_config.get(nested_keys[-1]):
                 nested_config[nested_keys[-1]] = "REDACTED"
         else:
-            if key in config:
+            if config.get(key):
                 config[key] = "REDACTED"
+
+    for producer in config.get("external_message_consumer", {}).get("producers", []):
+        if producer.get("ws_token"):
+            producer["ws_token"] = "REDACTED"  # noqa: S105
+    for pairlist in config.get("pairlists", []):
+        if pairlist.get("bearer_token"):
+            pairlist["bearer_token"] = "REDACTED"  # noqa: S105
 
     return config
 
@@ -62,7 +92,9 @@ def remove_exchange_credentials(exchange_config: ExchangeConfig, dry_run: bool) 
         return
 
     for key in [k for k in _SENSITIVE_KEYS if k.startswith("exchange.")]:
-        if "." in key:
-            key1 = key.removeprefix("exchange.")
-            if key1 in exchange_config:
-                exchange_config[key1] = None
+        nested_keys = key.removeprefix("exchange.").split(".")
+        nested_config = exchange_config
+        for nested_key in nested_keys[:-1]:
+            nested_config = nested_config.get(nested_key, {})
+        if nested_keys[-1] in nested_config:
+            nested_config[nested_keys[-1]] = None

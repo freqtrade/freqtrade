@@ -415,7 +415,7 @@ This file should then be contributed upstream, so others can benefit from this, 
 
 ## Updating example notebooks
 
-To keep the jupyter notebooks aligned with the documentation, the following should be ran after updating a example notebook.
+To keep the jupyter notebooks aligned with the documentation, the following should be run after updating an example notebook.
 
 ``` bash
 jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace freqtrade/templates/strategy_analysis_example.ipynb

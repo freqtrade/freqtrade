@@ -2,15 +2,12 @@ import logging
 from collections.abc import Callable
 from copy import deepcopy
 from functools import wraps
-from typing import Any, TypeVar, cast
+from typing import Any, cast
 
 from freqtrade.exceptions import StrategyError
 
 
 logger = logging.getLogger(__name__)
-
-
-F = TypeVar("F", bound=Callable[..., Any])
 
 
 def __format_traceback(error: Exception) -> str:
@@ -28,7 +25,9 @@ def __format_traceback(error: Exception) -> str:
     return ""
 
 
-def strategy_safe_wrapper(f: F, message: str = "", default_retval=None, supress_error=False) -> F:
+def strategy_safe_wrapper[F: Callable[..., Any]](
+    f: F, message: str = "", default_retval=None, supress_error=False
+) -> F:
     """
     Wrapper around user-provided methods and functions.
     Caches all exceptions and returns either the default_retval (if it's not None) or raises

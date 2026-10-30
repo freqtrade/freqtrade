@@ -73,10 +73,10 @@ def validate_config_schema(conf: dict[str, Any], preliminary: bool = False) -> d
 def validate_config_consistency(conf: dict[str, Any], *, preliminary: bool = False) -> None:
     """
     Validate the configuration consistency.
-    Should be ran after loading both configuration and strategy,
+    Should be run after loading both configuration and strategy,
     since strategies can set certain configuration settings too.
     :param conf: Config in JSON format
-    :return: Returns None if everything is ok, otherwise throw an ConfigurationError
+    :return: Returns None if everything is ok, otherwise throw a ConfigurationError
     """
 
     # validating trailing stoploss

@@ -21,7 +21,7 @@ from ccxt import TICK_SIZE
 from dateutil import parser
 from pandas import DataFrame, Timestamp, concat
 
-from freqtrade.configuration import remove_exchange_credentials
+from freqtrade.configuration import remove_exchange_credentials, sanitize_config
 from freqtrade.constants import (
     DEFAULT_AMOUNT_RESERVE_PERCENT,
     DEFAULT_TRADES_COLUMNS,
@@ -92,6 +92,7 @@ from freqtrade.exchange.exchange_utils import (
     is_exchange_known_ccxt,
     market_is_active,
     price_to_precision,
+    resolve_ws_enabled,
 )
 from freqtrade.exchange.exchange_utils_timeframe import (
     timeframe_to_minutes,
@@ -109,6 +110,7 @@ from freqtrade.misc import (
     safe_value_fallback,
     safe_value_nested,
 )
+from freqtrade.mixins import LoggingMixin
 from freqtrade.util import FtTTLCache, PeriodicCache, dt_from_ts, dt_now
 from freqtrade.util.datetime_helpers import dt_humanize_delta, dt_ts, format_ms_time
 
@@ -118,7 +120,7 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T")
 
 
-class Exchange:
+class Exchange(LoggingMixin):
     # Parameters to add directly to buy/sell calls (like agreeing to trading agreement)
     _params: dict = {}
 
@@ -149,6 +151,7 @@ class Exchange:
         "always_require_api_keys": False,  # purge API keys for Dry-run. Must default to false.
         # Check https://github.com/ccxt/ccxt/issues/10767 for removal of ohlcv_volume_currency
         "ohlcv_volume_currency": "base",  # "base" or "quote"
+        "ohlcv_volume_in_contracts": False,  # candle volume in contracts instead of base
         "tickers_have_quoteVolume": True,
         "tickers_have_percentage": True,
         "tickers_have_bid_ask": True,  # bid / ask empty for fetch_tickers
@@ -160,9 +163,12 @@ class Exchange:
         "l2_limit_range": None,
         "l2_limit_range_required": True,  # Allow Empty L2 limit (kucoin)
         "l2_limit_upper": None,  # Upper limit for L2 limit
+        "orderbook_max_age": 5,
+        "ws_orderbook_depth": None,
         "mark_ohlcv_price": "mark",
         "mark_ohlcv_timeframe": "1h",
         "funding_fee_timeframe": "1h",
+        "funding_history_limit": None,  # Page size for fetch_funding_history
         "ccxt_futures_name": "swap",
         "needs_trading_fees": False,  # use fetch_trading_fees to cache fees
         "balance_includes_unrealized_pnl": False,  # ccxt "total" is plain wallet balance
@@ -173,7 +179,8 @@ class Exchange:
         "exchange_has_overrides": {},  # Dictionary overriding ccxt's "has".
         "proxy_coin_mapping": {},  # Mapping for proxy coins
         # Expected to be in the format {"fetchOHLCV": True} or {"fetchOHLCV": False}
-        "ws_enabled": False,  # Set to true for exchanges with tested websocket support
+        # Set to true per-stream for exchanges with tested websocket support
+        "ws_enabled": {"ohlcv": False, "orderbook": False},
         "has_delisting": False,  # Set to true for exchanges that have delisting pair checks
     }
     _ft_has: FtHas = {}
@@ -197,6 +204,8 @@ class Exchange:
         it does basic validation whether the specified exchange and pairs are valid.
         :return: None
         """
+        # Throttle repeated warnings (e.g. a stale websocket orderbook) to once per period.
+        LoggingMixin.__init__(self, logger, refresh_period=300)
         self._api: ccxt.Exchange
         self._api_async: ccxt_pro.Exchange
         self._ws_async: ccxt_pro.Exchange = None
@@ -290,17 +299,29 @@ class Exchange:
             exchange_conf.get("ccxt_async_config", {}), ccxt_async_config
         )
         self._api_async = self._init_ccxt(exchange_conf, False, ccxt_async_config)
-        _has_watch_ohlcv = self.exchange_has("watchOHLCV") and self._ft_has["ws_enabled"]
-        if (
-            self._config["runmode"] in TRADE_MODES
-            and exchange_conf.get("enable_ws", True)
-            and _has_watch_ohlcv
+        # User preference (config), merged per-stream with the exchange's tested capability.
+        enable_ws_user_config = resolve_ws_enabled(exchange_conf.get("enable_ws", True))
+        self._has_watch_ohlcv = (
+            self.exchange_has("watchOHLCV")
+            and self._ft_has["ws_enabled"]["ohlcv"]
+            and enable_ws_user_config["ohlcv"]
+        )
+        self._has_watch_orderbook = (
+            self.exchange_has("watchOrderBook")
+            and self._ft_has["ws_enabled"]["orderbook"]
+            and enable_ws_user_config["orderbook"]
+        )
+        if self._config["runmode"] in TRADE_MODES and (
+            self._has_watch_ohlcv or self._has_watch_orderbook
         ):
             self._ws_async = self._init_ccxt(exchange_conf, False, ccxt_async_config)
-            self._exchange_ws = ExchangeWS(self._config, self._ws_async)
+            self._exchange_ws = ExchangeWS(
+                self._config, self._ws_async, self._ft_has["ws_orderbook_depth"]
+            )
 
         logger.info(f'Using Exchange "{self.name}"')
         self.required_candle_call_count = 1
+        self._startup_candle_count: int = 0
         # Converts the interval provided in minutes in config to seconds
         self.markets_refresh_interval: int = (
             exchange_conf.get("markets_refresh_interval", 60) * 60 * 1000
@@ -367,7 +388,7 @@ class Exchange:
         return loop
 
     def _set_startup_candle_count(self, config: Config) -> None:
-        self._startup_candle_count: int = config.get("startup_candle_count", 0)
+        self._startup_candle_count = config.get("startup_candle_count", 0)
         self.required_candle_call_count = self.validate_required_startup_candles(
             self._startup_candle_count, config.get("timeframe", "")
         )
@@ -425,7 +446,8 @@ class Exchange:
             "privateKey": exchange_config.get("private_key", exchange_config.get("privateKey")),
         }
         if ccxt_kwargs:
-            logger.info("Applying additional ccxt config: %s", ccxt_kwargs)
+            sanitized = sanitize_config({"exchange": {"ccxt_config": ccxt_kwargs}})
+            logger.info("Applying additional ccxt config: %s", sanitized["exchange"]["ccxt_config"])
         if self._ccxt_params:
             # Inject static options after the above output to not confuse users.
             ccxt_kwargs = deep_merge_dicts(self._ccxt_params, deepcopy(ccxt_kwargs))
@@ -553,7 +575,7 @@ class Exchange:
         """
         Exchange ohlcv candle limit
         Uses ohlcv_candle_limit_per_timeframe if the exchange has different limits
-        per timeframe (e.g. bittrex), otherwise falls back to ohlcv_candle_limit
+        per timeframe (e.g. htx), otherwise falls back to ohlcv_candle_limit
         :param timeframe: Timeframe to check
         :param candle_type: Candle type to use (spot, futures, funding_rate, ...)
         :param since_ms: Starting timestamp
@@ -1032,6 +1054,8 @@ class Exchange:
 
         if exchange_conf.get("_ft_has_params"):
             self._ft_has = deep_merge_dicts(exchange_conf.get("_ft_has_params"), self._ft_has)
+            # A plain boolean override replaces the per-stream dict - normalize it.
+            self._ft_has["ws_enabled"] = resolve_ws_enabled(self._ft_has["ws_enabled"])
             logger.info("Overriding exchange._ft_has with config params, result: %s", self._ft_has)
 
     def get_option(self, param: str, default: Any | None = None) -> Any:
@@ -1272,7 +1296,7 @@ class Exchange:
                     "cost": (_amount * average),
                 }
             )
-            # market orders will always incurr taker fees
+            # market orders will always incur taker fees
             dry_order = self.add_dry_order_fee(pair, dry_order, "taker")
 
         dry_order = self.check_dry_limit_order_filled(
@@ -2286,6 +2310,47 @@ class Exchange:
             self._ft_has["l2_limit_range_required"],
             self._ft_has["l2_limit_upper"],
         )
+
+        # Effective limit or 100 (limit could be None from a user call).
+        limit_eff = limit1 or limit or 100
+        # The stream only carries "ws_orderbook_depth" levels. Asking it for more would
+        # fall back to REST on every single call while still paying for the subscription.
+        ws_depth = self._ft_has["ws_orderbook_depth"]
+
+        if (
+            self._has_watch_orderbook
+            and self._exchange_ws
+            and (ws_depth is None or limit_eff <= ws_depth)
+        ):
+            self._exchange_ws.schedule_orderbook(pair)
+
+            ob = self._exchange_ws.get_orderbook(pair, limit_eff)
+            # ccxt.pro creates the orderbook object as soon as watching starts, but it's
+            # empty until the initial snapshot is applied or if getting it fails.
+            # fall back to REST until then.
+            ob_max_age = self._ft_has["orderbook_max_age"]
+            if ob.get("bids") and ob.get("asks"):
+                if not self._exchange_ws.orderbook_is_fresh(pair, ob_max_age):
+                    # Throttled - a stuck feed would otherwise warn on every single call.
+                    self.log_once(
+                        f"Websocket orderbook for {pair} is stale (no update within "
+                        f"{ob_max_age}s) - falling back to REST.",
+                        logger.info,
+                    )
+                elif len(ob["bids"]) < limit_eff or len(ob["asks"]) < limit_eff:
+                    # The websocket book isn't as deep as the REST response would be.
+                    # Returning it anyway would silently change the result of depth-based
+                    # calculations (e.g. check_depth_of_market) - use REST instead.
+                    logger.debug(
+                        "Websocket orderbook for %s only has %s/%s entries - falling back to REST.",
+                        pair,
+                        min(len(ob["bids"]), len(ob["asks"])),
+                        limit_eff,
+                    )
+                else:
+                    logger.debug("Using websocket orderbook for %s", pair)
+                    return ob
+
         try:
             return self._api.fetch_l2_order_book(pair, limit1)
         except ccxt.NotSupported as e:
@@ -2788,9 +2853,14 @@ class Exchange:
     ) -> TypeGuard[ExchangeWS]:
         """
         Check if we can use websocket for this pair.
-        Acts as typeguard for exchangeWs
+        Acts as typeguard for exchange_ws.
+        :returns: True if the websocket can be used for the given pair, timeframe, and candle type.
         """
-        return bool(exchange_ws and candle_type in (CandleType.SPOT, CandleType.FUTURES))
+        return bool(
+            exchange_ws
+            and self._has_watch_ohlcv
+            and candle_type in (CandleType.SPOT, CandleType.FUTURES)
+        )
 
     def _build_coroutine(
         self,
@@ -2932,19 +3002,6 @@ class Exchange:
             and bool(ticks)
             and (ticks[-1][0] >= curr_candle_date or not candles_final)
         )
-        if cache:
-            # Remember when this pair was last queried
-            self._pairs_last_poll_time[(pair, timeframe, c_type)] = fetch_start_ms
-            # keeping last candle time as last refreshed time of the pair
-            kept_ticks = ticks[:-1] if drop_incomplete_ else ticks
-            if kept_ticks:
-                # The newest candle we hold - a provisional last candle was dropped above.
-                self._pairs_last_refresh_time[(pair, timeframe, c_type)] = kept_ticks[-1][0]
-            elif ticks:
-                # The response held nothing but a dropped candle - remember the candle before
-                # it, so the pair is re-checked at candle cadence instead of on every iteration.
-                last_refresh = ticks[-1][0] - timeframe_to_msecs(timeframe)
-                self._pairs_last_refresh_time[(pair, timeframe, c_type)] = last_refresh
         has_cache = cache and (pair, timeframe, c_type) in self._klines
         # in case of existing cache, fill_missing happens after concatenation
         ohlcv_df = ohlcv_to_dataframe(
@@ -2957,6 +3014,18 @@ class Exchange:
         )
         # keeping parsed dataframe in cache
         if cache:
+            # Remember when this pair was last queried
+            self._pairs_last_poll_time[(pair, timeframe, c_type)] = fetch_start_ms
+            # Taken from this response, before it is merged with the cached frame.
+            if not ohlcv_df.empty:
+                self._pairs_last_refresh_time[(pair, timeframe, c_type)] = dt_ts(
+                    ohlcv_df["date"].iloc[-1].to_pydatetime()
+                )
+            elif ticks:
+                # The response held nothing but a dropped candle - remember the candle before
+                # it, so the pair is re-checked at candle cadence instead of on every iteration.
+                last_refresh = ticks[-1][0] - timeframe_to_msecs(timeframe)
+                self._pairs_last_refresh_time[(pair, timeframe, c_type)] = last_refresh
             if (pair, timeframe, c_type) in self._klines:
                 old = self._klines[(pair, timeframe, c_type)]
                 # Reassign so we return the updated, combined df
@@ -3712,12 +3781,29 @@ class Exchange:
         if type(since) is datetime:
             since = dt_ts(since)
 
+        limit = self._ft_has["funding_history_limit"]
         try:
-            funding_history = self._api.fetch_funding_history(symbol=pair, since=since)
-            self._log_exchange_response(
-                "funding_history", funding_history, add_info=f"pair: {pair}, since: {since}"
-            )
-            return sum(fee["amount"] for fee in funding_history)
+            # One funding payment per timestamp - not all exchanges provide an id.
+            funding_history: dict[int, float] = {}
+            while True:
+                page = self._api.fetch_funding_history(symbol=pair, since=since, limit=limit)
+                self._log_exchange_response(
+                    "funding_history", page, add_info=f"pair: {pair}, since: {since}"
+                )
+                new_entries = {
+                    fee["timestamp"]: fee["amount"]
+                    for fee in page
+                    if fee["timestamp"] not in funding_history
+                }
+                if not new_entries:
+                    # Empty page, or the exchange ignored since and repeated known entries
+                    break
+                funding_history.update(new_entries)
+                if limit and len(page) < limit:
+                    break
+                # Responses are capped in size - continue after the newest entry received.
+                since = max(new_entries) + 1
+            return sum(funding_history.values())
         except ccxt.DDoSProtection as e:
             raise DDosProtection(e) from e
         except (ccxt.OperationFailed, ccxt.ExchangeError) as e:
@@ -3764,15 +3850,13 @@ class Exchange:
             elif self.exchange_has("fetchMarketLeverageTiers"):
                 # Must fetch the leverage tiers for each market separately
                 # * This is slow(~45s) on Okx, makes ~90 api calls to load all linear swap markets
-                markets = self.markets
-
                 symbols = [
                     symbol
-                    for symbol, market in markets.items()
-                    if (
-                        self.market_is_future(market)
-                        and market["quote"] == self._config["stake_currency"]
-                    )
+                    for symbol, _ in self.get_markets(
+                        quote_currencies=[self._config["stake_currency"]],
+                        futures_only=True,
+                        active_only=True,
+                    ).items()
                 ]
 
                 tiers: dict[str, list[dict]] = {}

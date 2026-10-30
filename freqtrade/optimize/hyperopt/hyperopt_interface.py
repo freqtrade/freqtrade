@@ -6,7 +6,6 @@ This module defines the interface to apply for hyperopt
 import logging
 import math
 from abc import ABC
-from typing import TypeAlias
 
 from optuna.samplers import BaseSampler
 
@@ -19,7 +18,7 @@ from freqtrade.strategy import IStrategy
 
 logger = logging.getLogger(__name__)
 
-EstimatorType: TypeAlias = BaseSampler | str
+type EstimatorType = BaseSampler | str
 
 
 class IHyperOpt(ABC):

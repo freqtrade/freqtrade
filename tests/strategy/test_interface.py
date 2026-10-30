@@ -1,8 +1,10 @@
 # pragma pylint: disable=missing-docstring, C0103
 import logging
 import math
+import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from textwrap import dedent
 from unittest.mock import MagicMock
 
 import pytest
@@ -13,7 +15,12 @@ from freqtrade.constants import CUSTOM_TAG_MAX_LENGTH
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.data.history import load_data
 from freqtrade.enums import ExitCheckTuple, ExitType, SignalDirection
-from freqtrade.exceptions import DependencyException, OperationalException, StrategyError
+from freqtrade.exceptions import (
+    ConfigurationError,
+    DependencyException,
+    OperationalException,
+    StrategyError,
+)
 from freqtrade.persistence import PairLocks, Trade
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.strategy.hyper import detect_all_parameters
@@ -1103,7 +1110,7 @@ def test_auto_hyperopt_interface(default_conf):
 
     spaces = detect_all_parameters(strategy.__class__)
     assert "buy" in spaces
-    assert spaces["buy"]["sell_rsi"] == strategy.sell_rsi
+    assert spaces["buy"]["sell_rsi"] == strategy.__class__.sell_rsi
     del strategy.__class__.sell_rsi
 
     strategy.__class__.exit22_rsi = IntParameter([0, 10], default=5)
@@ -1136,6 +1143,92 @@ def test_auto_hyperopt_interface(default_conf):
     assert "enter" in spaces
     del strategy.__class__.exit_rsi
     del strategy.__class__.enter_rsi
+
+
+def test_ft_set_api_params(default_conf, caplog):
+    default_conf.update({"strategy": "HyperoptableStrategy"})
+    strategy = StrategyResolver.load_strategy(default_conf)
+
+    strategy.ft_set_api_params(
+        [{"name": "sell_rsi", "space": "sell", "param_type": "IntParameter", "value": 60}]
+    )
+    assert strategy.ft_used_params == {"sell": {"sell_rsi": 60}}
+    strategy.ft_load_hyper_params(False)
+    assert strategy.sell_rsi.value == 60
+
+    strategy.ft_set_api_params(None)
+    assert strategy.ft_used_params == {}
+    strategy.ft_load_hyper_params(False)
+    assert strategy.sell_rsi.value == strategy.sell_params["sell_rsi"]
+
+    base = "Invalid strategy parameter override: "
+    invalid = [
+        ({"param_type": "IntParameter", "value": 1}, "missing name or param_type"),
+        ({"name": "sell_rsi", "value": 1}, "missing name or param_type"),
+        (
+            {"name": "sell_rsii", "param_type": "IntParameter", "value": 1},
+            "'sell_rsii' is not a strategy parameter",
+        ),
+        (
+            {"name": "sell_rsi", "param_type": "RealParameter", "value": 1},
+            "'sell_rsi' is a IntParameter, not a RealParameter",
+        ),
+        (
+            {"name": "sell_minusdi", "param_type": "DecimalParameter", "value": 0.7},
+            r"'sell_minusdi' is not loaded \(load=False\)",
+        ),
+        (
+            {"name": "protection_enabled", "param_type": "BooleanParameter", "value": "yes"},
+            r"'protection_enabled' must be one of \[True, False\]",
+        ),
+        (
+            {"name": "protection_enabled", "param_type": "BooleanParameter", "value": None},
+            r"'protection_enabled' must be one of \[True, False\]",
+        ),
+    ]
+    for param, message in invalid:
+        with pytest.raises(ConfigurationError, match=base + message):
+            strategy.ft_set_api_params([param])
+        # Nothing is kept from a rejected call
+        assert strategy.ft_used_params == {}
+
+    strategy.ft_set_api_params(
+        [
+            {
+                "name": "protection_enabled",
+                "space": "protection",
+                "param_type": "BooleanParameter",
+                "value": False,
+            }
+        ]
+    )
+    assert strategy.ft_used_params == {"protection": {"protection_enabled": False}}
+
+    # Values outside of the parameter range are applied, but warned about
+    strategy.ft_set_api_params(
+        [{"name": "sell_rsi", "space": "sell", "param_type": "IntParameter", "value": 10000}]
+    )
+    assert strategy.ft_used_params == {"sell": {"sell_rsi": 10000}}
+    assert log_has(
+        "Strategy parameter override 'sell_rsi' (10000) is outside of its range (50 - 100).",
+        caplog,
+    )
+
+    # Decimal values are stored as used by the parameter
+    strategy.sell_minusdi.load = True
+    strategy.ft_set_api_params(
+        [
+            {
+                "name": "sell_minusdi",
+                "space": "sell",
+                "param_type": "DecimalParameter",
+                "value": 0.12345,
+            }
+        ]
+    )
+    assert strategy.ft_used_params == {"sell": {"sell_minusdi": 0.123}}
+    strategy.ft_load_hyper_params(False)
+    assert strategy.sell_minusdi.value == 0.123
 
 
 def test_auto_hyperopt_interface_loadparams(default_conf, mocker, caplog):
@@ -1184,6 +1277,50 @@ def test_auto_hyperopt_interface_loadparams(default_conf, mocker, caplog):
 
     StrategyResolver.load_strategy(default_conf)
     assert log_has("Invalid parameter file format.", caplog)
+
+
+def test_auto_hyperopt_params_shared_base_class(default_conf, tmp_path):
+    # Parameters defined on a base class in a separate module must not leak between strategies.
+    # The base module is imported via sys.modules - so its class is not re-created per load.
+    (tmp_path / "ft_shared_base.py").write_text(
+        dedent("""
+    from freqtrade.strategy import IStrategy, IntParameter
+    class SharedBase(IStrategy):
+        buy_params = {}
+        buy_rsi = IntParameter(10, 50, default=30, space='buy')
+        def populate_indicators(self, dataframe, metadata): return dataframe
+        def populate_entry_trend(self, dataframe, metadata): return dataframe
+        def populate_exit_trend(self, dataframe, metadata): return dataframe
+    """)
+    )
+    for name in ("ChildWithParams", "ChildNoParams"):
+        (tmp_path / f"{name.lower()}.py").write_text(
+            dedent(f"""
+        from ft_shared_base import SharedBase
+        class {name}(SharedBase):
+            pass
+        """)
+        )
+    (tmp_path / "childwithparams.json").write_text(
+        '{"strategy_name": "ChildWithParams", "params": {"buy": {"buy_rsi": 40}}}'
+    )
+    default_conf["strategy_path"] = str(tmp_path)
+    try:
+        default_conf["strategy"] = "ChildWithParams"
+        strategy = StrategyResolver.load_strategy(default_conf)
+        strategy.ft_load_hyper_params()
+        assert strategy.buy_rsi.value == 40
+
+        default_conf["strategy"] = "ChildNoParams"
+        strategy = StrategyResolver.load_strategy(default_conf)
+        strategy.ft_load_hyper_params()
+        assert strategy.buy_rsi.value == 30
+
+        base_class = type(strategy).__mro__[1]
+        assert base_class.buy_rsi.value == 30
+        assert base_class.buy_params == {}
+    finally:
+        sys.modules.pop("ft_shared_base", None)
 
 
 @pytest.mark.parametrize(

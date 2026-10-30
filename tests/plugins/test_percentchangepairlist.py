@@ -1,3 +1,4 @@
+import re
 from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
@@ -64,7 +65,7 @@ def test_volume_change_pair_list_init_wrong_refresh_period(mocker, rpl_config):
 
     with pytest.raises(
         OperationalException,
-        match=r"Refresh period of 1800 seconds is smaller than one "
+        match=r"^PercentChangePairList: Refresh period of 1800 seconds is smaller than one "
         r"timeframe of 1d. Please adjust refresh_period "
         r"to at least 86400 and restart the bot.",
     ):
@@ -143,10 +144,46 @@ def test_volume_change_pair_list_init_wrong_config(mocker, rpl_config):
 
     with pytest.raises(
         OperationalException,
-        match=r"`number_assets` not specified. Please check your configuration "
+        match=r"^PercentChangePairList: `number_assets` not specified\. "
+        r"Please check your configuration "
         r'for "pairlist.config.number_assets"',
     ):
         get_patched_freqtradebot(mocker, rpl_config)
+
+
+@pytest.mark.parametrize(
+    "sort_direction",
+    [
+        pytest.param("descending", id="invalid-string"),
+        pytest.param("DESC", id="wrong-case"),
+        pytest.param("", id="empty-string"),
+        pytest.param(None, id="null"),
+        pytest.param(True, id="true"),
+        pytest.param(False, id="false"),
+        pytest.param(1, id="integer"),
+        pytest.param(1.5, id="float"),
+        pytest.param([], id="list"),
+        pytest.param({}, id="dict"),
+    ],
+)
+def test_volume_change_pair_list_init_invalid_sort_direction(mocker, rpl_config, sort_direction):
+    rpl_config["pairlists"] = [
+        {
+            "method": "PercentChangePairList",
+            "number_assets": 2,
+            "sort_direction": sort_direction,
+        }
+    ]
+    mocker.patch(f"{EXMS}.exchange_has", return_value=True)
+    exchange = get_patched_exchange(mocker, rpl_config)
+
+    with pytest.raises(
+        OperationalException,
+        match=r"^PercentChangePairList: `sort_direction` not configured correctly "
+        rf"\(got `{re.escape(str(sort_direction))}`\)\. "
+        r"Supported values are `asc` and `desc`\.",
+    ):
+        PairListManager(exchange, rpl_config)
 
 
 def test_gen_pairlist_with_valid_change_pair_list_config(mocker, rpl_config, tickers, time_machine):

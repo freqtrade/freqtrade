@@ -2761,6 +2761,32 @@ def test_get_strategy_run_id(default_conf_usdt):
     assert isinstance(x, str)
 
 
+def test_get_strategy_run_id_api_params(default_conf_usdt):
+    default_conf_usdt.update({"strategy": "HyperoptableStrategy"})
+    strategy = StrategyResolver.load_strategy(default_conf_usdt)
+    base = get_strategy_run_id(strategy)
+
+    # Identical strategy - identical hash
+    assert get_strategy_run_id(strategy) == base
+
+    # API parameter overrides must evict the backtest cache
+    strategy.ft_set_api_params(
+        [{"name": "sell_rsi", "space": "sell", "param_type": "IntParameter", "value": 60}]
+    )
+    overridden = get_strategy_run_id(strategy)
+    assert overridden != base
+
+    # A different value must hash differently again
+    strategy.ft_set_api_params(
+        [{"name": "sell_rsi", "space": "sell", "param_type": "IntParameter", "value": 65}]
+    )
+    assert get_strategy_run_id(strategy) not in (base, overridden)
+
+    # Clearing the overrides restores the original hash
+    strategy.ft_set_api_params(None)
+    assert get_strategy_run_id(strategy) == base
+
+
 def test_get_backtest_metadata_filename():
     # Test with a file path
     filename = Path("backtest_results.json")

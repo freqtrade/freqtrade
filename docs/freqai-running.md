@@ -45,7 +45,7 @@ FreqAI stores new model files after each successful training. These files become
     }
 ```
 
-This will automatically purge all models older than the four most recently trained ones to save disk space. Inputing "0" will never purge any models.
+This will automatically purge all models older than the four most recently trained ones to save disk space. Inputting "0" will never purge any models.
 
 ## Backtesting
 

@@ -7,17 +7,21 @@
         }' %}
 {
     "$schema": "https://schema.freqtrade.io/schema.json",
-    "max_open_trades": {{ max_open_trades }},
-    "stake_currency": "{{ stake_currency }}",
-    "stake_amount": {{ stake_amount }},
+    "max_open_trades": {{ max_open_trades | tojson }},
+    "stake_currency": {{ stake_currency | tojson }},
+    "stake_amount": {{ stake_amount | tojson }},
     "tradable_balance_ratio": 0.99,
-{{- ('\n    "fiat_display_currency": "' + fiat_display_currency + '",') if fiat_display_currency else ''}}
-{{- ('\n    "timeframe": "' + timeframe + '",') if timeframe else '' }}
+{%- if fiat_display_currency %}
+    "fiat_display_currency": {{ fiat_display_currency | tojson }},
+{%- endif %}
+{%- if timeframe %}
+    "timeframe": {{ timeframe | tojson }},
+{%- endif %}
     "dry_run": {{ dry_run | lower }},
     "dry_run_wallet": 1000,
     "cancel_open_orders_on_exit": false,
-    "trading_mode": "{{ trading_mode }}",
-    "margin_mode": "{{ margin_mode }}",
+    "trading_mode": {{ trading_mode | tojson }},
+    "margin_mode": {{ margin_mode | tojson }},
     "unfilledtimeout": {
         "entry": 10,
         "exit": 10,
@@ -45,20 +49,20 @@
     ],
     "telegram": {
         "enabled": {{ telegram | lower }},
-        "token": "{{ telegram_token }}",
-        "chat_id": "{{ telegram_chat_id }}"
+        "token": {{ telegram_token | default("") | tojson }},
+        "chat_id": {{ telegram_chat_id | default("") | tojson }}
     },
     "api_server": {
         "enabled": {{ api_server | lower }},
-        "listen_ip_address": "{{ api_server_listen_addr | default("127.0.0.1", true) }}",
+        "listen_ip_address": {{ api_server_listen_addr | default("127.0.0.1", true) | tojson }},
         "listen_port": 8080,
         "verbosity": "error",
         "enable_openapi": false,
-        "jwt_secret_key": "{{ api_server_jwt_key }}",
-        "ws_token": "{{ api_server_ws_token }}",
+        "jwt_secret_key": {{ api_server_jwt_key | default("") | tojson }},
+        "ws_token": {{ api_server_ws_token | default("") | tojson }},
         "CORS_origins": [],
-        "username": "{{ api_server_username }}",
-        "password": "{{ api_server_password }}"
+        "username": {{ api_server_username | default("") | tojson }},
+        "password": {{ api_server_password | default("") | tojson }}
     },
     "bot_name": "freqtrade",
     "initial_state": "running",

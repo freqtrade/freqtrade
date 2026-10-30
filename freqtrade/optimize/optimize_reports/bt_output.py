@@ -589,6 +589,27 @@ def show_backtest_result(
     print()
 
 
+def show_backtest_params(strategy: str, params: dict[str, dict[str, Any]]) -> None:
+    """
+    Print the parameters a stored backtest was run with.
+    :param strategy: Name of the strategy the parameters belong to
+    :param params: Parameters, grouped by space
+    """
+    if not params:
+        return
+    output = [
+        (space, name, str(value))
+        for space, space_params in params.items()
+        for name, value in space_params.items()
+    ]
+    print_rich_table(
+        output,
+        ["Space", "Parameter", "Value"],
+        summary=f"STRATEGY PARAMETERS FOR {strategy}",
+        justify="left",
+    )
+
+
 def show_backtest_results(config: Config, backtest_stats: BacktestResultType):
     stake_currency = config["stake_currency"]
 

@@ -18,7 +18,7 @@ from freqtrade.persistence import LocalTrade, Trade
 from freqtrade.plugins.pairlist.pairlist_helpers import dynamic_expand_pairlist, expand_pairlist
 from freqtrade.plugins.pairlistmanager import PairListManager
 from freqtrade.resolvers import PairListResolver
-from freqtrade.util import dt_now, dt_utc
+from freqtrade.util import dt_floor_day, dt_now, dt_ts, dt_utc
 from tests.conftest import (
     EXMS,
     create_mock_trades_usdt,
@@ -96,6 +96,15 @@ def whitelist_conf_2(default_conf):
     return default_conf
 
 
+def as_daily_candles(candles: pd.DataFrame) -> pd.DataFrame:
+    """Re-date candles as completed daily candles, the last one ending today (UTC)"""
+    candles = candles.copy().reset_index(drop=True)
+    candles["date"] = pd.date_range(
+        end=dt_floor_day(dt_now()) - timedelta(days=1), periods=len(candles), freq="1D"
+    )
+    return candles
+
+
 @pytest.fixture(scope="function")
 def whitelist_conf_agefilter(default_conf):
     default_conf["runmode"] = "dry_run"
@@ -119,6 +128,16 @@ def whitelist_conf_agefilter(default_conf):
             "refresh_period": -1,
         },
         {"method": "AgeFilter", "min_days_listed": 2, "max_days_listed": 100},
+    ]
+    return default_conf
+
+
+@pytest.fixture
+def agefilter_config(default_conf):
+    default_conf["exchange"]["pair_whitelist"] = ["ETH/BTC"]
+    default_conf["pairlists"] = [
+        {"method": "StaticPairList"},
+        {"method": "AgeFilter", "min_days_listed": 2, "max_days_listed": 3},
     ]
     return default_conf
 
@@ -310,7 +329,7 @@ def test_refresh_pairlist_dynamic(mocker, shitcoinmarkets, tickers, whitelist_co
     whitelist_conf["pairlists"] = [{"method": "VolumePairList"}]
     with pytest.raises(
         OperationalException,
-        match=r"`number_assets` not specified. Please check your configuration "
+        match=r"^VolumePairList: `number_assets` not specified\. Please check your configuration "
         r'for "pairlist.config.number_assets"',
     ):
         PairListManager(freqtrade.exchange, whitelist_conf, MagicMock())
@@ -777,18 +796,23 @@ def test_VolumePairList_whitelist_gen(
     base_currency,
     whitelist_result,
     caplog,
+    time_machine,
 ) -> None:
+    time_machine.move_to("2021-09-01 05:00:00 +00:00", tick=False)
     whitelist_conf["runmode"] = "util_exchange"
     whitelist_conf["pairlists"] = pairlists
     whitelist_conf["stake_currency"] = base_currency
 
+    ohlcv_history = as_daily_candles(ohlcv_history)
     ohlcv_history_high_vola = ohlcv_history.copy()
     ohlcv_history_high_vola.loc[ohlcv_history_high_vola.index == 1, "close"] = 0.00090
 
     ohlcv_data = {
         ("ETH/BTC", "1d", CandleType.SPOT): ohlcv_history,
         ("TKN/BTC", "1d", CandleType.SPOT): ohlcv_history,
-        ("LTC/BTC", "1d", CandleType.SPOT): pd.concat([ohlcv_history, ohlcv_history]),
+        ("LTC/BTC", "1d", CandleType.SPOT): as_daily_candles(
+            pd.concat([ohlcv_history, ohlcv_history])
+        ),
         ("XRP/BTC", "1d", CandleType.SPOT): ohlcv_history,
         ("HOT/BTC", "1d", CandleType.SPOT): ohlcv_history_high_vola,
     }
@@ -844,8 +868,7 @@ def test_VolumePairList_whitelist_gen(
                 and len(ohlcv_history) > pairlist["max_days_listed"]
             ):
                 assert log_has_re(
-                    r"^Removed .* from whitelist, because age .* is less than "
-                    r".* day.* or more than .* day",
+                    r"^Removed .* from whitelist, because it has been listed for more than .* day",
                     caplog,
                 )
             if pairlist["method"] == "PrecisionFilter" and whitelist_result:
@@ -931,7 +954,7 @@ def test_VolumePairList_whitelist_gen(
             "binance",
             "lookback_period_negative",
         ),  # OperationalException expected
-        # lookback range exceedes exchange limit
+        # lookback range exceeds exchange limit
         (
             [
                 {
@@ -1064,8 +1087,8 @@ def test_VolumePairList_range(
     if volumefilter_result == "default_refresh_too_short":
         with pytest.raises(
             OperationalException,
-            match=r"Refresh period of [0-9]+ seconds is smaller than one timeframe "
-            r"of [0-9]+.*\. Please adjust refresh_period to at least [0-9]+ "
+            match=r"^VolumePairList: Refresh period of [0-9]+ seconds is smaller than one "
+            r"timeframe of [0-9]+.*\. Please adjust refresh_period to at least [0-9]+ "
             r"and restart the bot\.",
         ):
             freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
@@ -1096,7 +1119,7 @@ def test_VolumePairList_range(
         )
         start_dt = dt_now()
         time_machine.move_to(start_dt)
-        # remove ohlcv when looback_timeframe != 1d
+        # remove ohlcv when lookback_timeframe != 1d
         # to enforce fallback to ticker data
         if "lookback_timeframe" in pairlists[0] and pairlists[0]["lookback_timeframe"] != "1d":
             ohlcv_data = {}
@@ -1123,6 +1146,75 @@ def test_VolumePairList_range(
         assert ohclv_mock.call_count == 1
         whitelist = freqtrade.pairlists.whitelist
         assert whitelist == volumefilter_result
+
+
+@pytest.mark.parametrize(
+    "exchange_name,expected_whitelist",
+    [
+        # Candle volume in base currency - contractSize is ignored
+        ("okx", ["ETH/USDT:USDT", "ADA/USDT:USDT"]),
+        # Candle volume in contracts - contractSize is applied
+        ("gate", ["ADA/USDT:USDT", "ETH/USDT:USDT"]),
+    ],
+    # Relies on ohlcv_volume_in_contracts being set.
+)
+def test_VolumePairList_range_contract_size(
+    mocker,
+    default_conf_usdt,
+    ohlcv_history,
+    exchange_name,
+    expected_whitelist,
+) -> None:
+    default_conf_usdt["trading_mode"] = "futures"
+    default_conf_usdt["margin_mode"] = "isolated"
+    default_conf_usdt["pairlists"] = [
+        {
+            "method": "VolumePairList",
+            "number_assets": 2,
+            "sort_key": "quoteVolume",
+            "lookback_days": 1,
+            "refresh_period": 86400,
+        }
+    ]
+
+    pair_small_contract = "ETH/USDT:USDT"
+    pair_large_contract = "ADA/USDT:USDT"
+
+    df_small_contract = ohlcv_history.copy()
+    df_small_contract["volume"] = 10.0
+    df_small_contract["open"] = 100.0
+    df_small_contract["high"] = 100.0
+    df_small_contract["low"] = 100.0
+    df_small_contract["close"] = 100.0
+
+    df_large_contract = ohlcv_history.copy()
+    df_large_contract["volume"] = 500.0
+    df_large_contract["open"] = 1.0
+    df_large_contract["high"] = 1.0
+    df_large_contract["low"] = 1.0
+    df_large_contract["close"] = 1.0
+
+    ohlcv_data = {
+        (pair_small_contract, "1d", CandleType.FUTURES): df_small_contract,
+        (pair_large_contract, "1d", CandleType.FUTURES): df_large_contract,
+    }
+
+    default_conf_usdt["exchange"]["pair_whitelist"] = [
+        pair_small_contract,
+        pair_large_contract,
+    ]
+
+    mocker.patch(f"{EXMS}.exchange_has", MagicMock(return_value=True))
+    mocker.patch(f"{EXMS}.refresh_ohlcv_with_cache", MagicMock(return_value=ohlcv_data))
+
+    exchange = get_patched_exchange(mocker, default_conf_usdt, exchange=exchange_name)
+    exchange.markets[pair_small_contract]["contractSize"] = "0.01"
+    exchange.markets[pair_large_contract]["contractSize"] = "1000.0"
+
+    pm = PairListManager(exchange, default_conf_usdt)
+    pm.refresh_pairlist()
+
+    assert pm.whitelist == expected_whitelist
 
 
 def test_PrecisionFilter_error(mocker, whitelist_conf) -> None:
@@ -1364,6 +1456,23 @@ def test_ShuffleFilter_init(mocker, whitelist_conf, caplog) -> None:
         plm.refresh_pairlist()
         assert shuffle_mock.call_count == 1
         assert set(plm.whitelist) == set(pl1)
+
+
+@pytest.mark.parametrize("shuffle_frequency", ["candles", "Iteration"])
+def test_ShuffleFilter_invalid_shuffle_frequency(mocker, whitelist_conf, shuffle_frequency) -> None:
+    whitelist_conf["pairlists"] = [
+        {"method": "StaticPairList"},
+        {"method": "ShuffleFilter", "shuffle_frequency": shuffle_frequency},
+    ]
+    exchange = get_patched_exchange(mocker, whitelist_conf)
+
+    with pytest.raises(
+        OperationalException,
+        match=r"^ShuffleFilter: `shuffle_frequency` not configured correctly "
+        rf"\(got `{shuffle_frequency}`\)\. "
+        r"Supported values are `candle` and `iteration`\.",
+    ):
+        PairListManager(exchange, whitelist_conf)
 
 
 @pytest.mark.usefixtures("init_persistence")
@@ -1687,6 +1796,7 @@ def test_agefilter_min_days_listed_too_large(mocker, default_conf, markets, tick
 
 def test_agefilter_caching(mocker, markets, whitelist_conf_agefilter, tickers, ohlcv_history):
     with time_machine.travel("2021-09-01 05:00:00 +00:00") as t:
+        ohlcv_history = as_daily_candles(ohlcv_history)
         ohlcv_data = {
             ("ETH/BTC", "1d", CandleType.SPOT): ohlcv_history,
             ("TKN/BTC", "1d", CandleType.SPOT): ohlcv_history,
@@ -1715,34 +1825,113 @@ def test_agefilter_caching(mocker, markets, whitelist_conf_agefilter, tickers, o
             ("ETH/BTC", "1d", CandleType.SPOT): ohlcv_history,
             ("TKN/BTC", "1d", CandleType.SPOT): ohlcv_history,
             ("LTC/BTC", "1d", CandleType.SPOT): ohlcv_history,
-            ("XRP/BTC", "1d", CandleType.SPOT): ohlcv_history.iloc[[0]],
+            ("XRP/BTC", "1d", CandleType.SPOT): ohlcv_history.iloc[[-1]],
         }
         mocker.patch(f"{EXMS}.refresh_latest_ohlcv", return_value=ohlcv_data)
         freqtrade.pairlists.refresh_pairlist()
         assert len(freqtrade.pairlists.whitelist) == 3
-        assert freqtrade.exchange.refresh_latest_ohlcv.call_count == 1
+        # Only XRP/BTC is fetched, the other pairs have a known listing date
+        freqtrade.exchange.refresh_latest_ohlcv.assert_called_once()
+        assert freqtrade.exchange.refresh_latest_ohlcv.call_args[0][0] == [
+            ("XRP/BTC", "1d", CandleType.SPOT)
+        ]
 
-        # Move to next day
+        # Move to next day - XRP/BTC is now old enough, without refetching
         t.move_to("2021-09-02 01:00:00 +00:00")
         mocker.patch(f"{EXMS}.refresh_latest_ohlcv", return_value=ohlcv_data)
         freqtrade.pairlists.refresh_pairlist()
-        assert len(freqtrade.pairlists.whitelist) == 3
-        assert freqtrade.exchange.refresh_latest_ohlcv.call_count == 1
+        assert len(freqtrade.pairlists.whitelist) == 4
+        assert freqtrade.exchange.refresh_latest_ohlcv.call_count == 0
 
-        # Move another day with fresh mocks (now the pair is old enough)
         t.move_to("2021-09-03 01:00:00 +00:00")
-        # Called once for XRP/BTC
-        ohlcv_data = {
-            ("ETH/BTC", "1d", CandleType.SPOT): ohlcv_history,
-            ("TKN/BTC", "1d", CandleType.SPOT): ohlcv_history,
-            ("LTC/BTC", "1d", CandleType.SPOT): ohlcv_history,
-            ("XRP/BTC", "1d", CandleType.SPOT): ohlcv_history,
-        }
-        mocker.patch(f"{EXMS}.refresh_latest_ohlcv", return_value=ohlcv_data)
         freqtrade.pairlists.refresh_pairlist()
         assert len(freqtrade.pairlists.whitelist) == 4
-        # Called once (only for XRP/BTC)
-        assert freqtrade.exchange.refresh_latest_ohlcv.call_count == 1
+        assert freqtrade.exchange.refresh_latest_ohlcv.call_count == 0
+
+
+def test_agefilter_tracks_age_without_refetching(mocker, agefilter_config, time_machine):
+    time_machine.move_to("2026-09-01 23:58:00+00:00", tick=False)
+    agefilter_config["exchange"]["pair_whitelist"] = ["ETH/BTC", "TKN/BTC"]
+    exchange = get_patched_exchange(mocker, agefilter_config)
+    pairlist_manager = PairListManager(exchange, agefilter_config)
+    eth_key = ("ETH/BTC", "1d", CandleType.SPOT)
+    tkn_key = ("TKN/BTC", "1d", CandleType.SPOT)
+    candles = generate_test_data("1d", 4, "2026-08-29 00:00:00+00:00")
+    refresh = mocker.patch.object(
+        exchange,
+        "refresh_latest_ohlcv",
+        # ETH/BTC listed 2 days ago (old enough), TKN/BTC 1 day ago (too young)
+        return_value={
+            eth_key: candles.iloc[1:3],
+            tkn_key: candles.iloc[2:3],
+        },
+    )
+
+    pairlist_manager.refresh_pairlist()
+    assert pairlist_manager.whitelist == ["ETH/BTC"]
+    refresh.assert_called_once_with(
+        [eth_key, tkn_key], since_ms=dt_ts(dt_utc(2026, 8, 26)), cache=False
+    )
+
+    time_machine.move_to("2026-09-01 23:59:59+00:00", tick=False)
+    pairlist_manager.refresh_pairlist()
+    assert pairlist_manager.whitelist == ["ETH/BTC"]
+    assert refresh.call_count == 1
+
+    # Ages follow the UTC day - TKN/BTC becomes old enough, ETH/BTC is at max age
+    time_machine.move_to("2026-09-02 00:00:00+00:00", tick=False)
+    pairlist_manager.refresh_pairlist()
+    assert pairlist_manager.whitelist == ["ETH/BTC", "TKN/BTC"]
+    assert refresh.call_count == 1
+
+    # ETH/BTC exceeds max_days_listed
+    time_machine.move_to("2026-09-03 00:00:00+00:00", tick=False)
+    pairlist_manager.refresh_pairlist()
+    assert pairlist_manager.whitelist == ["TKN/BTC"]
+    assert refresh.call_count == 1
+
+    # A restart produces the same result from freshly fetched candles.
+    refresh.return_value = {
+        eth_key: generate_test_data("1d", 4, "2026-08-30 00:00:00+00:00"),
+        tkn_key: generate_test_data("1d", 3, "2026-08-31 00:00:00+00:00"),
+    }
+    restarted_manager = PairListManager(exchange, agefilter_config)
+    restarted_manager.refresh_pairlist()
+    assert restarted_manager.whitelist == ["TKN/BTC"]
+    assert refresh.call_count == 2
+    refresh.assert_called_with([eth_key, tkn_key], since_ms=dt_ts(dt_utc(2026, 8, 28)), cache=False)
+
+
+def test_agefilter_retries_missing_data(mocker, agefilter_config, time_machine, caplog):
+    time_machine.move_to("2026-09-01 12:00:00+00:00", tick=False)
+    exchange = get_patched_exchange(mocker, agefilter_config)
+    pairlist_manager = PairListManager(exchange, agefilter_config)
+    candle_key = ("ETH/BTC", "1d", CandleType.SPOT)
+    # Failed fetch - retried on the next iteration
+    refresh = mocker.patch.object(exchange, "refresh_latest_ohlcv", return_value={})
+
+    pairlist_manager.refresh_pairlist()
+    assert pairlist_manager.whitelist == []
+    pairlist_manager.refresh_pairlist()
+    assert pairlist_manager.whitelist == []
+    assert refresh.call_count == 2
+    assert not log_has_re(r"Removed ETH/BTC from whitelist", caplog)
+    refresh.reset_mock()
+
+    # No completed candle yet - retried on the next UTC day
+    refresh.return_value = {candle_key: generate_test_data("1d", 0, "2026-09-01 00:00:00+00:00")}
+    pairlist_manager.refresh_pairlist()
+    pairlist_manager.refresh_pairlist()
+    assert pairlist_manager.whitelist == []
+    assert refresh.call_count == 1
+    assert log_has_re(r"Removed ETH/BTC from whitelist, because no daily candles", caplog)
+    refresh.reset_mock()
+
+    time_machine.move_to("2026-09-03 00:00:00+00:00", tick=False)
+    refresh.return_value = {candle_key: generate_test_data("1d", 2, "2026-09-01 00:00:00+00:00")}
+    pairlist_manager.refresh_pairlist()
+    assert pairlist_manager.whitelist == ["ETH/BTC"]
+    assert refresh.call_count == 1
 
 
 def test_OffsetFilter_error(mocker, whitelist_conf) -> None:
@@ -2792,10 +2981,53 @@ def test_MarketCapPairList_filter_special_no_pair_from_coingecko(
     assert pm.whitelist == []
 
 
+@pytest.mark.parametrize(
+    "mode",
+    [
+        pytest.param("whitelits", id="typo"),
+        pytest.param("WHITELIST", id="uppercase"),
+        pytest.param("", id="empty"),
+        pytest.param(None, id="null"),
+        pytest.param(True, id="true"),
+        pytest.param(False, id="false"),
+        pytest.param(0, id="integer"),
+        pytest.param(1.5, id="float"),
+        pytest.param([], id="list"),
+        pytest.param({}, id="object"),
+    ],
+)
+def test_MarketCapPairList_invalid_mode(mocker, default_conf_usdt, mode):
+    default_conf_usdt["pairlists"] = [
+        {
+            "method": "MarketCapPairList",
+            "number_assets": 2,
+            "mode": mode,
+            "categories": ["layer-1"],
+        }
+    ]
+    exchange = get_patched_exchange(mocker, default_conf_usdt)
+    categories_mock = mocker.patch(
+        "freqtrade.plugins.pairlist.MarketCapPairList.FtCoinGeckoApi.get_coins_categories_list",
+        return_value=[{"category_id": "layer-1"}],
+    )
+
+    with pytest.raises(
+        OperationalException,
+        match=r"^MarketCapPairList: `mode` not configured correctly "
+        r"\(got `.*`\)\. "
+        r"Supported values are `whitelist` and `blacklist`\.",
+    ):
+        PairListManager(exchange, default_conf_usdt)
+
+    categories_mock.assert_not_called()
+
+
 def test_MarketCapPairList_exceptions(mocker, default_conf_usdt, caplog):
     exchange = get_patched_exchange(mocker, default_conf_usdt)
     default_conf_usdt["pairlists"] = [{"method": "MarketCapPairList"}]
-    with pytest.raises(OperationalException, match=r"`number_assets` not specified.*"):
+    with pytest.raises(
+        OperationalException, match=r"^MarketCapPairList: `number_assets` not specified.*"
+    ):
         # No number_assets
         PairListManager(exchange, default_conf_usdt)
 
@@ -2822,7 +3054,8 @@ def test_MarketCapPairList_exceptions(mocker, default_conf_usdt, caplog):
         }
     ]
     with pytest.raises(
-        OperationalException, match=r"Category layer250 not in coingecko category list\."
+        OperationalException,
+        match=r"^MarketCapPairList: Category layer250 not in coingecko category list\.",
     ):
         PairListManager(exchange, default_conf_usdt)
 
@@ -2926,6 +3159,36 @@ def test_CrossMarketPairlist_filter(
     pm.refresh_pairlist()
 
     assert pm.whitelist == result
+
+
+@pytest.mark.parametrize(
+    "pairs_exist_on",
+    [
+        pytest.param("both_market", id="typo"),
+        pytest.param("BOTH_MARKETS", id="uppercase"),
+        pytest.param("", id="empty"),
+        pytest.param(None, id="null"),
+        pytest.param(True, id="true"),
+        pytest.param(False, id="false"),
+        pytest.param(0, id="integer"),
+        pytest.param(1.5, id="float"),
+        pytest.param([], id="list"),
+        pytest.param({}, id="object"),
+    ],
+)
+def test_CrossMarketPairList_invalid_pairs_exist_on(mocker, default_conf_usdt, pairs_exist_on):
+    default_conf_usdt["pairlists"] = [
+        {"method": "CrossMarketPairList", "pairs_exist_on": pairs_exist_on}
+    ]
+    exchange = get_patched_exchange(mocker, default_conf_usdt)
+
+    with pytest.raises(
+        OperationalException,
+        match=r"^CrossMarketPairList: `pairs_exist_on` not configured correctly "
+        r"\(got `.*`\)\. "
+        r"Supported values are `current_market_only` and `both_markets`\.",
+    ):
+        PairListManager(exchange, default_conf_usdt)
 
 
 def test_CrossMarketPairlist_gen_pairlist_uses_cache(mocker, default_conf_usdt, markets):

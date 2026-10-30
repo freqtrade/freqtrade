@@ -187,7 +187,7 @@ def _load_cached_data_for_updating(
 ) -> tuple[DataFrame, int | None, int | None]:
     """
     Load cached data to download more data.
-    If timerange is passed in, checks whether data from an before the stored data will be
+    If timerange is passed in, checks whether data from before the stored data will be
     downloaded.
     If that's the case then what's available should be completely overwritten.
     Otherwise downloads always start at the end of the available data to avoid data gaps.

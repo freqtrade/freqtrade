@@ -26,11 +26,12 @@ def get_strategy_run_id(strategy) -> str:
     digest.update(
         rapidjson.dumps(config, default=str, number_mode=rapidjson.NM_NAN).encode("utf-8")
     )
-    # Include _ft_params_from_file - so changing parameter files cause cache eviction
+    # Include the used parameters (parameter file and API overrides)
+    # so changed parameters cause cache eviction
     digest.update(
-        rapidjson.dumps(
-            strategy._ft_params_from_file, default=str, number_mode=rapidjson.NM_NAN
-        ).encode("utf-8")
+        rapidjson.dumps(strategy.ft_used_params, default=str, number_mode=rapidjson.NM_NAN).encode(
+            "utf-8"
+        )
     )
     with Path(strategy.__file__).open("rb") as fp:
         digest.update(fp.read())

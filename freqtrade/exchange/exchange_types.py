@@ -6,6 +6,11 @@ from ccxt.base.types import FundingRate  # noqa: F401
 from freqtrade.enums import CandleType
 
 
+class FtWsEnabled(TypedDict):
+    ohlcv: bool
+    orderbook: bool
+
+
 class FtHas(TypedDict, total=False):
     order_time_in_force: list[str]
     exchange_has_overrides: dict[str, bool]
@@ -32,6 +37,7 @@ class FtHas(TypedDict, total=False):
     # Maximum seconds a pair with missing candles may go unqueried
     ohlcv_max_poll_interval_secs: int
     ohlcv_volume_currency: str
+    ohlcv_volume_in_contracts: bool
     ohlcv_candle_limit_per_timeframe: dict[str, int]
     always_require_api_keys: bool
     # allow disabling of parallel download-data for specific exchanges
@@ -51,6 +57,11 @@ class FtHas(TypedDict, total=False):
     l2_limit_range: list[int] | None
     l2_limit_range_required: bool
     l2_limit_upper: int | None
+    # Max age (seconds) of a websocket-cached orderbook before it's considered stale
+    orderbook_max_age: int
+    # Depth the websocket orderbook is subscribed at, which is also the highest "limit"
+    # it may answer.
+    ws_orderbook_depth: int | None
     # fetch_orders
     fetch_orders_limit_minutes: int | None
     # Futures
@@ -59,6 +70,7 @@ class FtHas(TypedDict, total=False):
     mark_ohlcv_timeframe: str
     funding_fee_timeframe: str
     funding_fee_candle_limit: int
+    funding_history_limit: int | None
     open_interest_candle_limit: int
     floor_leverage: bool
     uses_leverage_tiers: bool
@@ -72,7 +84,7 @@ class FtHas(TypedDict, total=False):
     proxy_coin_mapping: dict[str, str]
 
     # Websocket control
-    ws_enabled: bool
+    ws_enabled: FtWsEnabled
 
     # Delisting check
     has_delisting: bool

@@ -13,13 +13,12 @@ authors = [
 
 description = "Freqtrade - Crypto Trading Bot"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 license = {text = "GPLv3"}
 classifiers = [
     "Environment :: Console",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
@@ -178,9 +177,6 @@ exclude = [
     '^build_helpers\.py$',
     '^ft_client/build/.*$',
 ]
-plugins = [
-  "sqlalchemy.ext.mypy.plugin"
-]
 
 [[tool.mypy.overrides]]
 module = "tests.*"
@@ -204,7 +200,7 @@ exclude = [
 ]
 ignore = ["freqtrade/vendor/**"]
 pythonPlatform = "All"
-pythonVersion = "3.11"
+pythonVersion = "3.12"
 
 typeCheckingMode = "off"
 # analyzeUnannotatedFunctions = false
@@ -232,7 +228,6 @@ exclude-newer = "1 week"
 
 [tool.uv.exclude-newer-package]
 ccxt = false
-virtualenv = "5 days"
 
 [tool.ruff]
 line-length = 100
@@ -260,6 +255,7 @@ extend-select = [
   "RUF",    # ruff
   "ASYNC",  # flake8-async
   "NPY",    # numpy
+  "DTZ",    # flake8-datetimez
 ]
 
 extend-ignore = [

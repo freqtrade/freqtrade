@@ -28,14 +28,17 @@ class Okx(Exchange):
 
     _ft_has: FtHas = {
         "ohlcv_candle_limit": 100,  # Warning, special case with data prior to X months
+        "l2_limit_upper": 5000,
         "stoploss_order_types": {"limit": "limit", "market": "market"},
         "stoploss_on_exchange": True,
         "stoploss_query_requires_stop_flag": True,
         "trades_has_history": False,  # Endpoint doesn't have a "since" parameter
-        "ws_enabled": True,
+        "ws_orderbook_depth": 400,
+        "ws_enabled": {"ohlcv": True, "orderbook": True},
     }
     _ft_has_futures: FtHas = {
         "tickers_have_quoteVolume": False,
+        "funding_history_limit": 100,
         "stop_price_type_field": "slTriggerPxType",
         "stop_price_type_value_mapping": {
             PriceType.LAST: "last",
@@ -43,7 +46,7 @@ class Okx(Exchange):
             PriceType.INDEX: "index",
         },
         "stoploss_blocks_assets": False,
-        "ws_enabled": True,
+        "ws_enabled": {"ohlcv": True, "orderbook": True},
         # ccxt maps "total" to the currency's "eq" (equity), which includes unrealized PnL
         "balance_includes_unrealized_pnl": True,
     }
@@ -176,6 +179,32 @@ class Okx(Exchange):
             except ccxt.BaseError as e:
                 raise OperationalException(e) from e
 
+    def fill_leverage_tiers(self) -> None:
+        """
+        Okx tiers are in contracts (minSz / maxSz), not in quote currency.
+        Convert them to quote notional using contractSize and the current price.
+        Pairs without price or contractSize get no tiers.
+        Current price is taken from the last ticker price for the pair.
+        This also works for backtesting because also leverage-tiers are not historic.
+        """
+        leverage_tiers = self.load_leverage_tiers()
+        tickers = self.get_tickers(market_type=TradingMode.FUTURES)
+        for pair, tiers in leverage_tiers.items():
+            price = tickers[pair]["last"] if pair in tickers else None
+            contract_size = self.markets.get(pair, {}).get("contractSize")
+            if not price or not contract_size:
+                logger.warning(f"Could not convert leverage tiers for {pair}, skipping.")
+                continue
+            pair_tiers = []
+            for tier in tiers:
+                parsed = self.parse_leverage_tier(tier)
+                # Use Info field for now.
+                # Can be removed once https://github.com/ccxt/ccxt/issues/30864 is resolved.
+                parsed["minNotional"] = float(tier["info"]["minSz"]) * contract_size * price
+                parsed["maxNotional"] = float(tier["info"]["maxSz"]) * contract_size * price
+                pair_tiers.append(parsed)
+            self._leverage_tiers[pair] = pair_tiers
+
     def get_max_pair_stake_amount(self, pair: str, price: float, leverage: float = 1.0) -> float:
         if self.trading_mode == TradingMode.SPOT:
             return float("inf")  # Not actually inf, but this probably won't matter for SPOT
@@ -203,7 +232,7 @@ class Okx(Exchange):
             order.get("status", "open") == "closed"
             and (real_order_id := order.get("info", {}).get("ordId")) is not None
         ):
-            # Once a order triggered, we fetch the regular followup order.
+            # Once an order triggered, we fetch the regular followup order.
             order_reg = self.fetch_order(real_order_id, pair)
             self._log_exchange_response("fetch_stoploss_order1", order_reg)
             order_reg["id_stop"] = order_reg["id"]

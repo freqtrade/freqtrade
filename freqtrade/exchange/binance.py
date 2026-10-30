@@ -44,7 +44,8 @@ class Binance(Exchange):
         "trades_has_history": True,
         "fetch_orders_limit_minutes": None,
         "l2_limit_range": [5, 10, 20, 50, 100, 500, 1000],
-        "ws_enabled": True,
+        "ws_orderbook_depth": 100,
+        "ws_enabled": {"ohlcv": True, "orderbook": True},
         "has_delisting": True,
         # Demo trading
         # https://www.binance.com/en/support/faq/detail/9be58f73e5e14338809e3b705b9687dd
@@ -54,6 +55,7 @@ class Binance(Exchange):
     _ft_has_futures: FtHas = {
         "ohlcv_candle_limit": 499,
         "funding_fee_candle_limit": 1000,
+        "funding_history_limit": 1000,
         "open_interest_candle_limit": 500,
         "stoploss_order_types": {"limit": "stop", "market": "stop_market"},
         "stoploss_blocks_assets": False,  # Stoploss orders do not block assets
@@ -68,7 +70,7 @@ class Binance(Exchange):
             PriceType.LAST: "CONTRACT_PRICE",
             PriceType.MARK: "MARK_PRICE",
         },
-        "ws_enabled": False,
+        "ws_enabled": {"ohlcv": False, "orderbook": True},
         # ccxt maps "total" to assets[].marginBalance (= walletBalance + unrealizedProfit)
         "balance_includes_unrealized_pnl": True,
         "proxy_coin_mapping": {
@@ -419,16 +421,21 @@ class Binance(Exchange):
             not self._config["exchange"].get("only_from_ccxt", False)
             and self._can_use_data_download_fast
         ):
-            if from_id is None or not since:
-                trades = await self._api_async.fetch_trades(
-                    pair,
-                    params={
-                        self._ft_has["trades_pagination_arg"]: "0",
-                    },
-                    limit=5,
-                )
-                listing_date: int = trades[0]["timestamp"]
-                since = max(since, listing_date)
+            # Binance futures only allows fromId within the last 2 days
+            if (from_id is None or not since) and self.trading_mode == TradingMode.SPOT:
+                try:
+                    trades = await self._api_async.fetch_trades(
+                        pair,
+                        params={
+                            self._ft_has["trades_pagination_arg"]: "0",
+                        },
+                        limit=5,
+                    )
+                    if trades:
+                        listing_date: int = trades[0]["timestamp"]
+                        since = max(since, listing_date)
+                except ccxt.ExchangeError as e:
+                    logger.warning(f"Could not determine listing date for {pair}: {e}")
 
             _, res = await download_archive_trades(
                 CandleType.FUTURES if self.trading_mode == "futures" else CandleType.SPOT,

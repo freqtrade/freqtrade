@@ -101,6 +101,11 @@ def dt_humanize_delta(dt: datetime):
     """
     Return a humanized string for the given timedelta.
     """
+    if isinstance(dt, datetime) and dt.tzinfo is not None:
+        # humanize converts aware datetimes to naive local time, which is off by an hour
+        # across DST switches. Calculate the delta in UTC instead.
+        # TODO: can be removed once https://github.com/python-humanize/humanize/pull/425 lands.
+        return humanize.naturaltime(dt_now() - dt)
     return humanize.naturaltime(dt)
 
 

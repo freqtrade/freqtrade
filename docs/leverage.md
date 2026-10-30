@@ -35,9 +35,9 @@ Regular trading mode (low risk)
 
 ### Leverage trading modes
 
-With leverage, a trader borrows capital from the exchange. The capital must be re-payed fully to the exchange (potentially with interest), and the trader keeps any profits, or pays any losses, from any trades made using the borrowed capital.
+With leverage, a trader borrows capital from the exchange. The capital must be repaid fully to the exchange (potentially with interest), and the trader keeps any profits, or pays any losses, from any trades made using the borrowed capital.
 
-Because the capital must always be re-payed, exchanges will **liquidate** (forcefully sell the traders assets) a trade made using borrowed capital when the total value of assets in the leverage account drops to a certain point (a point where the total value of losses is less than the value of the collateral that the trader actually owns in the leverage account), in order to ensure that the trader has enough capital to pay the borrowed assets back to the exchange. The exchange will also charge a **liquidation fee**, adding to the traders losses.
+Because the capital must always be repaid, exchanges will **liquidate** (forcefully sell the traders assets) a trade made using borrowed capital when the total value of assets in the leverage account drops to a certain point (a point where the total value of losses is less than the value of the collateral that the trader actually owns in the leverage account), in order to ensure that the trader has enough capital to pay the borrowed assets back to the exchange. The exchange will also charge a **liquidation fee**, adding to the traders losses.
 
 For this reason, **DO NOT TRADE WITH LEVERAGE IF YOU DON'T KNOW EXACTLY WHAT YOUR DOING. LEVERAGE TRADING IS HIGH RISK, AND CAN RESULT IN THE VALUE OF YOUR ASSETS DROPPING TO 0 VERY QUICKLY, WITH NO CHANCE OF INCREASING IN VALUE AGAIN.**
 

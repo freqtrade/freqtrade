@@ -20,7 +20,7 @@ Some exchanges require special configuration, which can be found below.
 
 ### Sample exchange configuration
 
-A exchange configuration for "binance" would look as follows:
+An exchange configuration for "binance" would look as follows:
 
 ```json
 "exchange": {
@@ -459,7 +459,7 @@ Hyperliquid allows you to create vaults. To use vaults with Freqtrade, you will 
     "privateKey": "your_api_private_key", // API wallet private key (see https://app.hyperliquid.xyz/API). You'll only need the private key.
     "ccxt_config": {
         "options": {
-            "vaultAddress": "your_vault_address", // Optional, only if you want to use a vault ... (vault address must also be added to walletAdress)
+            "vaultAddress": "your_vault_address", // Optional, only if you want to use a vault ... (vault address must also be added to walletAddress)
         }
     },
     // ...

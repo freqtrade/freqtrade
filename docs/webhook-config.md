@@ -217,7 +217,7 @@ Possible parameters are:
 
 ### Exit cancel
 
-The fields in `webhook.exit_cancel` are filled when the bot cancels a exit order. Parameters are filled using string.format.
+The fields in `webhook.exit_cancel` are filled when the bot cancels an exit order. Parameters are filled using string.format.
 Possible parameters are:
 
 * `trade_id`

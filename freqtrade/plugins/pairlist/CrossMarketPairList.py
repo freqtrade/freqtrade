@@ -3,6 +3,7 @@
 import logging
 
 from freqtrade.constants import PairPrefixes
+from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.exchange_types import Tickers
 from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter, SupportsBacktesting
 from freqtrade.util import FtTTLCache
@@ -19,6 +20,12 @@ class CrossMarketPairList(IPairList):
         super().__init__(*args, **kwargs)
 
         self._pairs_exist_on: str = self._pairlistconfig.get("pairs_exist_on", "both_markets")
+        if self._pairs_exist_on not in ("current_market_only", "both_markets"):
+            raise OperationalException(
+                f"{self.name}: `pairs_exist_on` not configured correctly "
+                f"(got `{self._pairs_exist_on}`). "
+                "Supported values are `current_market_only` and `both_markets`."
+            )
         self._stake_currency: str = self._config["stake_currency"]
         self._target_mode = "spot" if self._config["trading_mode"] == "futures" else "futures"
         self._refresh_period = self._pairlistconfig.get("refresh_period", 1800)

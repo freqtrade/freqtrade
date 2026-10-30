@@ -811,7 +811,7 @@ def get_exchange(exchange_name, exchange_conf, class_mocker):
     return exchange, exchange_name, exchange_params
 
 
-def get_futures_exchange(exchange_name, exchange_conf, class_mocker):
+def get_futures_exchange(exchange_name, exchange_conf, class_mocker, load_leverage_tiers=True):
     exchange_params = EXCHANGES[exchange_name]
 
     if exchange_params.get("futures") is not True:
@@ -830,7 +830,7 @@ def get_futures_exchange(exchange_name, exchange_conf, class_mocker):
     class_mocker.patch(f"{EXMS}.cache_leverage_tiers")
 
     exchange = ExchangeResolver.load_exchange(
-        exchange_conf, validate=True, load_leverage_tiers=True
+        exchange_conf, validate=True, load_leverage_tiers=load_leverage_tiers
     )
     return exchange, exchange_name, exchange_params
 
@@ -866,14 +866,15 @@ def exchange_ws(request, exchange_conf, exchange_mode, class_mocker):
         exchange, name, _ = get_exchange(request.param, exchange_conf, class_mocker)
         pair = exchange_param["pair"]
     elif exchange_param.get("futures"):
+        # Leverage tiers are not needed for websocket tests, and are slow to load.
         exchange, name, _ = get_futures_exchange(
-            request.param, exchange_conf, class_mocker=class_mocker
+            request.param, exchange_conf, class_mocker=class_mocker, load_leverage_tiers=False
         )
         pair = exchange_param["futures_pair"]
     else:
         pytest.skip("Exchange does not support futures.")
 
     if not exchange._exchange_ws:
-        pytest.skip("Exchange does not support watch_ohlcv.")
+        pytest.skip("Exchange does not have websocket support enabled.")
     yield exchange, name, pair
     exchange.close()

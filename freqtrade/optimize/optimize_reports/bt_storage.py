@@ -12,6 +12,7 @@ from freqtrade.enums.runmode import RunMode
 from freqtrade.ft_types import BacktestResultType
 from freqtrade.misc import dump_json_to_file, file_dump_json
 from freqtrade.optimize.backtest_caching import get_backtest_metadata_filename
+from freqtrade.util import dt_now
 
 
 logger = logging.getLogger(__name__)
@@ -55,6 +56,7 @@ def store_backtest_results(
     wallet_summary: dict[str, DataFrame] | None = None,
     analysis_results: dict[str, dict[str, DataFrame]] | None = None,
     strategy_files: dict[str, str] | None = None,
+    strategy_params: dict[str, dict[str, Any]] | None = None,
 ) -> Path:
     """
     Stores backtest results and analysis data in a zip file, with metadata stored separately
@@ -64,6 +66,9 @@ def store_backtest_results(
     :param dtappendix: Datetime to use for the filename
     :param market_change_data: Dataframe containing market change data
     :param analysis_results: Dictionary containing analysis results
+    :param strategy_files: Dictionary mapping strategy names to the corresponding file path
+    :param strategy_params: Dictionary mapping strategy names to the parameters used for this
+             run. Stored in place of the strategy's parameter file - which may not exist.
     """
     recordfilename: Path = config["exportdirectory"]
     zip_filename = _generate_filename(recordfilename, dtappendix, ".zip")
@@ -103,15 +108,29 @@ def store_backtest_results(
                 strategy_buf.write(strategy_file_obj.read())
             strategy_buf.seek(0)
             zipf.writestr(f"{base_filename.stem}_{strategy_name}.py", strategy_buf.getvalue())
-            strategy_params = strategy_path.with_suffix(".json")
-            if strategy_params.is_file():
-                strategy_params_buf = BytesIO()
-                with strategy_params.open("rb") as strategy_params_obj:
-                    strategy_params_buf.write(strategy_params_obj.read())
-                strategy_params_buf.seek(0)
+            strategy_param_file = strategy_path.with_suffix(".json")
+            used_params = (strategy_params or {}).get(strategy_name)
+            if used_params:
+                # Parameters used for this run - which may deviate from the parameter file.
+                from freqtrade.optimize.hyperopt_tools import HyperoptTools
+
+                strategy_params_buf = StringIO()
+                HyperoptTools.serialize_params(
+                    {
+                        "strategy_name": strategy_name,
+                        "params": used_params,
+                        "ft_stratparam_v": 1,
+                        "export_time": dt_now(),
+                    },
+                    strategy_params_buf,
+                )
+                zipf.writestr(
+                    f"{base_filename.stem}_{strategy_name}.json", strategy_params_buf.getvalue()
+                )
+            elif strategy_param_file.is_file():
                 zipf.writestr(
                     f"{base_filename.stem}_{strategy_name}.json",
-                    strategy_params_buf.getvalue(),
+                    strategy_param_file.read_bytes(),
                 )
 
         # Add market change data if present

@@ -1,7 +1,7 @@
 from copy import deepcopy
 from datetime import datetime, timedelta
 from random import randint
-from unittest.mock import MagicMock, PropertyMock
+from unittest.mock import AsyncMock, MagicMock, PropertyMock
 
 import ccxt
 import pandas as pd
@@ -13,7 +13,7 @@ from freqtrade.exceptions import DependencyException, InvalidOrderException, Ope
 from freqtrade.exchange.exchange_utils_timeframe import timeframe_to_seconds
 from freqtrade.persistence import Trade
 from freqtrade.util.datetime_helpers import dt_from_ts, dt_ts, dt_utc
-from tests.conftest import EXMS, get_patched_exchange
+from tests.conftest import EXMS, get_patched_exchange, log_has_re
 from tests.exchange.test_exchange import ccxt_exceptionhandlers
 
 
@@ -1119,6 +1119,56 @@ async def test__async_get_trade_history_id_binance_fast(
 
     assert ret[0] == pair
     assert isinstance(ret[1], list)
+
+    # Clean up event loop to avoid warnings
+    exchange.close()
+
+
+@pytest.mark.parametrize(
+    "trading_mode,error,expected_calls,expect_listing_date",
+    [
+        (TradingMode.SPOT, None, 1, True),
+        (TradingMode.SPOT, ccxt.ExchangeError("binance -4166"), 1, False),
+        (TradingMode.FUTURES, None, 0, False),
+    ],
+)
+async def test__async_get_trade_history_id_binance_fast_listing_probe(
+    default_conf_usdt,
+    mocker,
+    fetch_trades_result,
+    caplog,
+    trading_mode,
+    error,
+    expected_calls,
+    expect_listing_date,
+):
+    default_conf_usdt["exchange"]["only_from_ccxt"] = False
+    default_conf_usdt["trading_mode"] = trading_mode
+    default_conf_usdt["margin_mode"] = MarginMode.ISOLATED
+    exchange = get_patched_exchange(mocker, default_conf_usdt, exchange="binance")
+    pair = "ETH/USDT:USDT" if trading_mode == TradingMode.FUTURES else "ETH/BTC"
+
+    listing_trades = fetch_trades_result[1:3]
+    exchange._api_async.fetch_trades = AsyncMock(return_value=listing_trades, side_effect=error)
+    dl_mock = mocker.patch(
+        "freqtrade.exchange.binance.download_archive_trades",
+        return_value=(pair, trades_dict_to_list(fetch_trades_result[-2:])),
+    )
+
+    since = fetch_trades_result[0]["timestamp"]
+    ret = await exchange._async_get_trade_history_id(
+        pair, since=since, until=fetch_trades_result[-1]["timestamp"] - 1
+    )
+
+    assert ret[0] == pair
+    assert len(ret[1]) == 2
+    assert exchange._api_async.fetch_trades.call_count == expected_calls
+    if expected_calls:
+        call = exchange._api_async.fetch_trades.call_args_list[0]
+        assert call[1]["params"] == {"fromId": "0"}
+    expected_since = listing_trades[0]["timestamp"] if expect_listing_date else since
+    assert dl_mock.call_args[1]["since_ms"] == expected_since
+    assert log_has_re(r"Could not determine listing date for .*", caplog) == bool(error)
 
     # Clean up event loop to avoid warnings
     exchange.close()

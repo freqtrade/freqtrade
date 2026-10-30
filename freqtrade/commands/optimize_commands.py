@@ -2,6 +2,7 @@ import logging
 from typing import Any
 
 from freqtrade import constants
+from freqtrade.constants import Config
 from freqtrade.enums import RunMode
 from freqtrade.exceptions import ConfigurationError, OperationalException
 
@@ -69,13 +70,51 @@ def start_backtesting_show(args: dict[str, Any]) -> None:
 
     config = setup_utils_configuration(args, RunMode.UTIL_NO_EXCHANGE)
 
-    from freqtrade.data.btanalysis import load_backtest_stats
-    from freqtrade.optimize.optimize_reports import show_backtest_results, show_sorted_pairlist
+    from freqtrade.data.btanalysis import (
+        get_backtest_filename,
+        get_backtest_strategy_params,
+        load_backtest_stats,
+    )
+    from freqtrade.optimize.optimize_reports import (
+        show_backtest_params,
+        show_backtest_results,
+        show_sorted_pairlist,
+    )
 
-    results = load_backtest_stats(config["exportdirectory"], config["exportfilename"])
+    filename = get_backtest_filename(config["exportdirectory"], config["exportfilename"])
+    results = load_backtest_stats(filename)
 
     show_backtest_results(config, results)
     show_sorted_pairlist(config, results)
+
+    show_params = config.get("backtest_show_params", False)
+    export_params = config.get("backtest_export_params", False)
+    if show_params or export_params:
+        for strategy_name in results["strategy"]:
+            params = get_backtest_strategy_params(filename, strategy_name)
+            if not params:
+                logger.warning(f"No parameters stored for {strategy_name}.")
+                continue
+            if show_params:
+                show_backtest_params(strategy_name, params.get("params", {}))
+            if export_params:
+                _export_backtest_params(config, strategy_name, params)
+
+
+def _export_backtest_params(config: Config, strategy_name: str, params: dict[str, Any]) -> None:
+    """
+    Write the parameters of a stored backtest to the strategy's parameter file.
+    """
+    from freqtrade.optimize.hyperopt_tools import HyperoptTools
+
+    fn = HyperoptTools.get_strategy_filename(config, strategy_name)
+    if not fn:
+        logger.warning(f"Strategy {strategy_name} not found, not exporting parameter file.")
+        return
+    filename = fn.with_suffix(".json")
+    logger.info(f"Dumping parameters to {filename}")
+    with filename.open("w") as f:
+        HyperoptTools.serialize_params(params, f)
 
 
 def start_hyperopt(args: dict[str, Any]) -> None:
