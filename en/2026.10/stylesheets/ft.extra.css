@@ -1,0 +1,54 @@
+.rst-versions  {
+    font-size: .7rem;
+    color: white;
+}
+
+.rst-versions.rst-badge .rst-current-version {
+    font-size: .7rem;
+    color: white;
+}
+
+.rst-versions .rst-other-versions {
+    color: white;
+}
+
+.md-version__list {
+    font-weight: 500 !important;
+}
+
+#available-endpoints ~ .md-typeset__scrollwrap .md-typeset__table th:first-of-type {
+    width: 35% !important;
+}
+
+
+.md-typeset .md-button--sm {
+    padding: 0.2em 1em;
+    font-size: 12px;
+    font-weight: 600;
+    background-color: #f6f8fa;
+    color: #24292f;
+    border: 1px solid #d0d7de;
+    border-radius: 0.25em;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.md-typeset .md-button--sm:hover {
+    background-color: #e5eaee;
+    border-color: #d1d9e0;
+    text-decoration: none;
+    color: #24292f;
+}
+
+.md-typeset .md-button--sm:active {
+    background-color: #ebecf0;
+    border-color: #afb8c1;
+    box-shadow: inset 0 1px 0 rgba(175, 184, 193, 0.2);
+}
+
+.md-grid {
+    /* default is max-width: 61rem; */
+    max-width: 75rem;
+}
