@@ -74,6 +74,7 @@ class Webhook(RPCHandler):
             RPCMessageType.LIQUIDATION_WARNING,
             RPCMessageType.WHITELIST,
             RPCMessageType.ANALYZED_DF,
+            RPCMessageType.FULL_ANALYZED_DF,
             RPCMessageType.NEW_CANDLE,
             RPCMessageType.STRATEGY_MSG,
         ):
