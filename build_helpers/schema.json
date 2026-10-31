@@ -962,6 +962,9 @@
         "analyzed_df": {
           "type": "object"
         },
+        "full_analyzed_df": {
+          "type": "object"
+        },
         "new_candle": {
           "type": "object"
         }
@@ -1487,6 +1490,11 @@
               "ws_token": {
                 "description": "WebSocket token for the producer.",
                 "type": "string"
+              },
+              "request_full_dataframe": {
+                "description": "Receive the full analyzed dataframe from this producer on every update instead of only the latest candle.",
+                "type": "boolean",
+                "default": false
               }
             },
             "required": [
