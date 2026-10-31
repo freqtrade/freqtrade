@@ -19,6 +19,7 @@ from sqlalchemy import (
     Select,
     String,
     UniqueConstraint,
+    and_,
     case,
     desc,
     func,
@@ -2004,14 +2005,14 @@ class Trade(ModelBase, LocalTrade):
                 Order.ft_order_side == case((Trade.is_short.is_(True), "sell"), else_="buy"),
                 Order.filled > 0,
             )
-            .group_by(*columns)
+            .group_by(*columns_coal)
             .cte("pair_costs")
         )
         trades_grouped = (
             select(
                 *columns_coal,
                 func.sum(Trade.close_profit_abs).label("profit_sum_abs"),
-                func.count(*columns_coal).label("count"),
+                func.count(Trade.id).label("count"),
             )
             .filter(*filters)
             .group_by(*columns_coal)
@@ -2026,7 +2027,10 @@ class Trade(ModelBase, LocalTrade):
                 trades_grouped.c.profit_sum_abs,
                 trades_grouped.c.count,
             )
-            .join(pair_costs, *[trades_grouped.c[x.name] == pair_costs.c[x.name] for x in columns])
+            .join(
+                pair_costs,
+                and_(*[trades_grouped.c[x.name] == pair_costs.c[x.name] for x in columns]),
+            )
             .order_by(desc("profit_sum_abs"))
         )
         return q
