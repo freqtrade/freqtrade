@@ -1806,7 +1806,7 @@ async def test_telegram_mix_tag_performance_handle(
     await telegram._mix_tag_performance(update=update, context=context)
     assert msg_mock.call_count == 1
     assert "Mix Tag Performance" in msg_mock.call_args_list[0][0][0]
-    assert "`TEST3 roi\t2.842 USDT (10.00%) (1)`" in msg_mock.call_args_list[0][0][0]
+    assert "`TEST3 roi\t2.842 USDT (9.47%) (1)`" in msg_mock.call_args_list[0][0][0]
 
     context.args = ["XRP/USDT"]
     await telegram._mix_tag_performance(update=update, context=context)
