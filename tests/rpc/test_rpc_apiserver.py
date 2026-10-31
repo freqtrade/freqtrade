@@ -10,7 +10,7 @@ from datetime import UTC, datetime, timedelta
 from io import BytesIO
 from pathlib import Path
 from typing import get_args
-from unittest.mock import ANY, MagicMock, PropertyMock, patch
+from unittest.mock import ANY, AsyncMock, MagicMock, PropertyMock, patch
 from zipfile import ZipFile
 
 import pandas as pd
@@ -39,8 +39,10 @@ from freqtrade.rpc import RPC
 from freqtrade.rpc.api_server import ApiServer
 from freqtrade.rpc.api_server.api_auth import create_token, get_user_from_token
 from freqtrade.rpc.api_server.api_schemas import StrategyName
+from freqtrade.rpc.api_server.api_ws import channel_broadcaster
 from freqtrade.rpc.api_server.uvicorn_threaded import UvicornServer
 from freqtrade.rpc.api_server.webserver_bgwork import ApiBG
+from freqtrade.rpc.api_server.ws.channel import WebSocketChannel
 from freqtrade.strategy.hyper import HyperStrategyMixin
 from freqtrade.util.datetime_helpers import format_date
 from tests.conftest import (
@@ -3813,6 +3815,74 @@ def test_api_ws_requests(botclient, caplog):
 
     assert log_has_re(r"Request of type analyzed_df from.+", caplog)
     assert response["type"] == "analyzed_df"
+
+
+@pytest.mark.parametrize(
+    "subscriptions,expected_len",
+    [
+        (["analyzed_df"], 1),
+        (["full_analyzed_df"], 50),
+        (["analyzed_df", "full_analyzed_df"], 50),
+        (["whitelist"], None),
+    ],
+)
+def test_channel_broadcaster_full_analyzed_df(subscriptions, expected_len):
+    full_df = generate_test_data("5m", 50)
+    key = ("ETH/BTC", "5m", CandleType.SPOT)
+    la = datetime.now(UTC)
+    rpc = MagicMock()
+    rpc._ws_request_analyzed_df.side_effect = lambda limit, pair: iter(
+        [{"key": key, "df": full_df, "la": la}]
+    )
+
+    channel = WebSocketChannel(MagicMock())
+    channel.set_subscriptions(subscriptions)
+    channel.send = AsyncMock()
+
+    async def stream():
+        yield (
+            {"type": "analyzed_df", "data": {"key": key, "df": full_df.tail(1), "la": la}},
+            (time.time()),
+        )
+
+    asyncio.run(channel_broadcaster(channel, stream(), rpc))
+
+    if expected_len is None:
+        assert channel.send.call_count == 0
+        return
+    assert channel.send.call_count == 1
+    sent = channel.send.call_args[0][0]
+    assert sent["type"] == "analyzed_df"
+    assert len(sent["data"]["df"]) == expected_len
+    if "full_analyzed_df" in subscriptions:
+        rpc._ws_request_analyzed_df.assert_called_once_with(1500, "ETH/BTC")
+    else:
+        assert rpc._ws_request_analyzed_df.call_count == 0
+
+
+def test_channel_broadcaster_full_analyzed_df_error(caplog):
+    df = generate_test_data("5m", 50).tail(1)
+    message = {
+        "type": "analyzed_df",
+        "data": {"key": ("ETH/BTC", "5m", CandleType.SPOT), "df": df, "la": datetime.now(UTC)},
+    }
+    rpc = MagicMock()
+    rpc._ws_request_analyzed_df.side_effect = ValueError("boom")
+
+    channel = WebSocketChannel(MagicMock())
+    channel.set_subscriptions(["full_analyzed_df"])
+    channel.send = AsyncMock()
+
+    async def stream():
+        yield message, time.time()
+        yield message, time.time()
+
+    asyncio.run(channel_broadcaster(channel, stream(), rpc))
+
+    # Falls back to the incremental message and keeps broadcasting
+    assert channel.send.call_count == 2
+    assert channel.send.call_args[0][0] is message
+    assert log_has_re(r"Error building full analyzed dataframe for .*", caplog)
 
 
 def test_channel_reader_handles_freqtrade_exception(botclient):
