@@ -10,6 +10,7 @@ from unittest.mock import MagicMock
 import pytest
 import websockets
 
+from freqtrade.constants import FULL_DATAFRAME_THRESHOLD
 from freqtrade.data.dataprovider import DataProvider
 from freqtrade.enums import CandleType
 from freqtrade.rpc.external_message_consumer import ExternalMessageConsumer
@@ -207,6 +208,84 @@ def test_emc_handle_producer_message(patched_emc, caplog, ohlcv_history):
     patched_emc.handle_producer_message(test_producer, malformed_message)
 
     assert log_has_re(r"Empty message .+", caplog)
+
+
+def test_emc_handle_producer_message_cache_disabled(patched_emc, caplog, ohlcv_history):
+    # Test handle single candle message when cache_enabled=True:
+    # a single-candle message is rejected
+    # a full dataframe is requested; the candle is not cached
+    # a full dataframe is received; the old one is replaced
+
+    test_producer = {"name": "test", "url": "ws://test", "ws_token": "test"}
+    producer_name = test_producer["name"]
+
+    caplog.set_level(logging.DEBUG)
+    patched_emc.initial_candle_limit = 500
+    patched_emc._emc_config["cache_enabled"] = False
+    channel_stream = MagicMock()
+    patched_emc._channel_streams[producer_name] = channel_stream
+
+    assert FULL_DATAFRAME_THRESHOLD < patched_emc.initial_candle_limit
+
+    # Test handle initial analyzed_df full dataframe message
+    full_df = generate_test_data("5m", patched_emc.initial_candle_limit)
+    df_message = {
+        "type": "analyzed_df",
+        "data": {
+            "key": ("BTC/USDT", "5m", "spot"),
+            "df": full_df,
+            "la": datetime.now(UTC),
+        },
+    }
+
+    patched_emc.handle_producer_message(test_producer, df_message)
+    assert log_has(f"Received message of type `analyzed_df` from `{producer_name}`", caplog)
+    assert log_has_re(
+        rf"Consumed message from `{producer_name}` of type `RPCMessageType.ANALYZED_DF`.*",
+        caplog,
+    )
+    channel_stream.publish.assert_not_called()
+    initial_stored_df, _ = patched_emc._dp.get_producer_df(
+        "BTC/USDT", "5m", CandleType.SPOT, producer_name=producer_name
+    )
+    assert len(initial_stored_df) == patched_emc.initial_candle_limit
+
+    caplog.clear()
+    channel_stream.reset_mock()
+
+    df_message["data"]["df"] = ohlcv_history.tail(1)
+    df_message["data"]["la"] = datetime.now(UTC)
+    patched_emc.handle_producer_message(test_producer, df_message)
+
+    assert log_has(f"Received message of type `analyzed_df` from `{producer_name}`", caplog)
+    assert log_has_re(
+        rf"The Producer cache is disabled, requesting "
+        f"{patched_emc.initial_candle_limit} candles for .+",
+        caplog,
+    )
+    channel_stream.publish.assert_called_once()
+    request = channel_stream.publish.call_args[0][0]
+    assert request["type"] == "analyzed_df"
+    assert request["data"] == {"limit": patched_emc.initial_candle_limit, "pair": "BTC/USDT"}
+
+    current_stored_df, _ = patched_emc._dp.get_producer_df(
+        "BTC/USDT", "5m", CandleType.SPOT, producer_name=producer_name
+    )
+    assert len(current_stored_df) == len(initial_stored_df)
+
+    caplog.clear()
+    channel_stream.reset_mock()
+
+    df_message["data"]["df"] = full_df
+    df_message["data"]["la"] = datetime.now(UTC)
+
+    patched_emc.handle_producer_message(test_producer, df_message)
+    assert log_has(f"Received message of type `analyzed_df` from `{producer_name}`", caplog)
+    assert log_has_re(
+        rf"Consumed message from `{producer_name}` of type `RPCMessageType.ANALYZED_DF`.*",
+        caplog,
+    )
+    channel_stream.publish.assert_not_called()
 
 
 async def test_emc_create_connection_success(default_conf, caplog, mocker):

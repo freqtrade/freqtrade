@@ -1114,6 +1114,11 @@ CONF_SCHEMA = {
                     "type": "boolean",
                     "default": False,
                 },
+                "cache_enabled": {
+                    "description": "Whether the external producer cache is enabled.",
+                    "type": "boolean",
+                    "default": True,
+                },
                 "producers": {
                     "description": "List of producers for the external message consumer.",
                     "type": "array",
