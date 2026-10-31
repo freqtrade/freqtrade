@@ -93,7 +93,25 @@ def test_emc_initial_candle_limit(default_conf, mocker, limit):
 
     expected = limit if limit is not None else 1500
     assert emc.initial_candle_limit == expected
-    assert emc._initial_requests[2].data["limit"] == expected
+    assert emc._get_initial_requests(emc.producers[0])[2].data["limit"] == expected
+
+
+@pytest.mark.parametrize(
+    "full_df,expected_topic",
+    [(None, "analyzed_df"), (False, "analyzed_df"), (True, "full_analyzed_df")],
+)
+def test_emc_initial_requests_subscription(default_conf, mocker, full_df, expected_topic):
+    mocker.patch.object(ExternalMessageConsumer, "start")
+    producer = {"name": "default", "host": "null", "port": 9891, "ws_token": "x"}
+    if full_df is not None:
+        producer["request_full_dataframe"] = full_df
+    default_conf["external_message_consumer"] = {"enabled": True, "producers": [producer]}
+
+    emc = ExternalMessageConsumer(default_conf, DataProvider(default_conf, None, None, None))
+
+    subscribe = emc._get_initial_requests(emc.producers[0])[0]
+    assert subscribe.type == "subscribe"
+    assert subscribe.data == ["whitelist", expected_topic]
 
 
 # Parametrize this?
