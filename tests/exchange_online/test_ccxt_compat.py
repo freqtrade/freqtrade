@@ -542,8 +542,7 @@ class TestCCXTExchange:
             trades_orig = nvspy.call_args_list[2][0][0]
             assert len(trades_orig[-1].get("info")) > len(trades_orig[-2].get("info"))
 
-    def _ccxt_get_fee(self, exch: Exchange, pair: str):
-        threshold = 0.01
+    def _ccxt_get_fee(self, exch: Exchange, pair: str, threshold: float = 0.01):
         assert 0 < exch.get_fee(pair, "limit", "buy") < threshold
         assert 0 < exch.get_fee(pair, "limit", "sell") < threshold
         assert 0 < exch.get_fee(pair, "market", "buy") < threshold
@@ -552,7 +551,7 @@ class TestCCXTExchange:
     def test_ccxt_get_fee_spot(self, exchange: EXCHANGE_FIXTURE_TYPE):
         exch, _, exchange_params = exchange
         pair = exchange_params["pair"]
-        self._ccxt_get_fee(exch, pair)
+        self._ccxt_get_fee(exch, pair, exchange_params.get("max_fee") or 0.01)
 
     def test_ccxt_get_fee_futures(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
         exch, _, exchange_params = exchange_futures
