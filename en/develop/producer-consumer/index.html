@@ -2026,6 +2026,10 @@
 <td><strong>Required.</strong>  <code>ws_token</code> as configured on the producer.<br> <strong>Datatype:</strong> string</td>
 </tr>
 <tr>
+<td><code>producers.request_full_dataframe</code></td>
+<td><strong>Optional.</strong> Receive the full analyzed dataframe (up to 1500 candles) from this producer on every update, instead of only the latest candle. Useful if the producer's strategy updates past candles (e.g. data that becomes available with a delay). Increases bandwidth and producer load. Requires the producer to run 2026.11 or above.<br><em>Defaults to <code>false</code>.</em><br> <strong>Datatype:</strong> Boolean</td>
+</tr>
+<tr>
 <td></td>
 <td><strong>Optional settings</strong></td>
 </tr>
