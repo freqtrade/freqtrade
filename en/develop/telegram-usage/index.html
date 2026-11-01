@@ -2776,6 +2776,10 @@ official commands. You can ask at any moment for help with <code>/help</code>.</
 <td>Show version</td>
 </tr>
 <tr>
+<td><code>/health</code></td>
+<td>Show latest process timestamp</td>
+</tr>
+<tr>
 <td><strong>Status</strong></td>
 <td></td>
 </tr>
@@ -2896,12 +2900,16 @@ official commands. You can ask at any moment for help with <code>/help</code>.</
 <td>Shows Wins / losses by Exit reason as well as Avg. holding durations for buys and sells</td>
 </tr>
 <tr>
-<td><code>/exits</code></td>
-<td>Shows Wins / losses by Exit reason as well as Avg. holding durations for buys and sells</td>
+<td><code>/entries [pair]</code></td>
+<td>Shows the enter_tag performance, optionally for a single pair</td>
 </tr>
 <tr>
-<td><code>/entries</code></td>
-<td>Shows Wins / losses by Exit reason as well as Avg. holding durations for buys and sells</td>
+<td><code>/exits [pair]</code></td>
+<td>Shows the exit reason performance, optionally for a single pair</td>
+</tr>
+<tr>
+<td><code>/mix_tags [pair]</code></td>
+<td>Shows combined entry tag + exit reason performance, optionally for a single pair</td>
 </tr>
 <tr>
 <td><code>/whitelist [sorted] [baseonly]</code></td>
@@ -2910,6 +2918,10 @@ official commands. You can ask at any moment for help with <code>/help</code>.</
 <tr>
 <td><code>/blacklist [pair]</code></td>
 <td>Show the current blacklist, or adds a pair to the blacklist.</td>
+</tr>
+<tr>
+<td><code>/blacklist_delete [pairs] | /bl_delete [pairs]</code></td>
+<td>Delete pair / pattern from blacklist. Will reset on reload_conf.</td>
 </tr>
 </tbody>
 </table>
