@@ -209,6 +209,7 @@ official commands. You can ask at any moment for help with `/help`.
 | `/logs [limit]` | Show last log messages.
 | `/help` | Show help message
 | `/version` | Show version
+| `/health` | Show latest process timestamp
 | **Status** |
 | `/status` | Lists all open trades
 | `/status <trade_id>` | Lists one or more specific trade. Separate multiple <trade_id> with a blank space.
@@ -239,10 +240,12 @@ official commands. You can ask at any moment for help with `/help`.
 | `/weekly <n>` | Shows profit or loss per week, over the last n weeks (n defaults to 8)
 | `/monthly <n>` | Shows profit or loss per month, over the last n months (n defaults to 6)
 | `/stats` | Shows Wins / losses by Exit reason as well as Avg. holding durations for buys and sells
-| `/exits` | Shows Wins / losses by Exit reason as well as Avg. holding durations for buys and sells
-| `/entries` | Shows Wins / losses by Exit reason as well as Avg. holding durations for buys and sells
+| `/entries [pair]` | Shows the enter_tag performance, optionally for a single pair
+| `/exits [pair]` | Shows the exit reason performance, optionally for a single pair
+| `/mix_tags [pair]` | Shows combined entry tag + exit reason performance, optionally for a single pair
 | `/whitelist [sorted] [baseonly]` | Show the current whitelist. Optionally display in alphabetical order and/or with just the base currency of each pairing.
 | `/blacklist [pair]` | Show the current blacklist, or adds a pair to the blacklist.
+| `/blacklist_delete [pairs] | /bl_delete [pairs]` | Delete pair / pattern from blacklist. Will reset on reload_conf.
 
 ## Telegram commands in action
 

@@ -1691,7 +1691,8 @@ def test_api_mix_tag(botclient, fee):
     resp = response[0]
     assert resp["mix_tag"] == "TEST1 sell_signal"
     assert resp["count"] == 1
-    assert resp["profit_pct"] == 0.5
+    assert resp["profit_pct"] == 0.0
+    assert pytest.approx(resp["profit_ratio"]) == 0.000038609756
 
 
 @pytest.mark.parametrize(
