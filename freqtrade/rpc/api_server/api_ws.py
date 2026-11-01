@@ -42,23 +42,46 @@ async def channel_reader(channel: WebSocketChannel, rpc: RPC):
             await channel.send(response.model_dump(exclude_none=True))
 
 
-async def channel_broadcaster(channel: WebSocketChannel, message_stream: MessageStream):
+def _full_analyzed_df_message(message: dict[str, Any], rpc: RPC) -> dict[str, Any]:
+    """
+    Build an ANALYZED_DF message containing the full analyzed dataframe
+    for the pair of the given (single candle) ANALYZED_DF message.
+    """
+    pair = message["data"]["key"][0]
+    data = next(rpc._ws_request_analyzed_df(1500, pair))
+    return WSAnalyzedDFMessage(data=data).model_dump(exclude_none=True)
+
+
+async def channel_broadcaster(channel: WebSocketChannel, message_stream: MessageStream, rpc: RPC):
     """
     Iterate over messages in the message stream and send them
     """
     async for message, ts in message_stream:
-        if channel.subscribed_to(message.get("type")):
-            # Log a warning if this channel is behind
-            # on the message stream by a lot
-            if (time.time() - ts) > 60:
-                logger.warning(
-                    f"Channel {channel} is behind MessageStream by 1 minute,"
-                    " this can cause a memory leak if you see this message"
-                    " often, consider reducing pair list size or amount of"
-                    " consumers."
-                )
+        msg_type = message.get("type")
+        if msg_type == RPCMessageType.ANALYZED_DF and channel.subscribed_to(
+            RPCMessageType.FULL_ANALYZED_DF
+        ):
+            # Special handling for FULL_ANALYZED_DF subscription
+            # RPC Message is always for ANALYZED_DF - but the subscription is for FULL_ANALYZED_DF
+            try:
+                message = _full_analyzed_df_message(message, rpc)
+            except Exception:
+                # Fall back to the incremental message rather than killing the channel
+                logger.exception(f"Error building full analyzed dataframe for {channel}")
+        elif not channel.subscribed_to(msg_type):
+            continue
 
-            await channel.send(message, use_timeout=True)
+        # Log a warning if this channel is behind
+        # on the message stream by a lot
+        if (time.time() - ts) > 60:
+            logger.warning(
+                f"Channel {channel} is behind MessageStream by 1 minute,"
+                " this can cause a memory leak if you see this message"
+                " often, consider reducing pair list size or amount of"
+                " consumers."
+            )
+
+        await channel.send(message, use_timeout=True)
 
 
 async def _process_consumer_request(request: dict[str, Any], channel: WebSocketChannel, rpc: RPC):
@@ -123,5 +146,5 @@ async def message_endpoint(
     if token:
         async with create_channel(websocket) as channel:
             await channel.run_channel_tasks(
-                channel_reader(channel, rpc), channel_broadcaster(channel, message_stream)
+                channel_reader(channel, rpc), channel_broadcaster(channel, message_stream, rpc)
             )

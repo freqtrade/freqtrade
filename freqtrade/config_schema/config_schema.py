@@ -1144,6 +1144,14 @@ CONF_SCHEMA = {
                                 "description": "WebSocket token for the producer.",
                                 "type": "string",
                             },
+                            "request_full_dataframe": {
+                                "description": (
+                                    "Receive the full analyzed dataframe from this producer "
+                                    "on every update instead of only the latest candle."
+                                ),
+                                "type": "boolean",
+                                "default": False,
+                            },
                         },
                         "required": ["name", "host", "ws_token"],
                     },

@@ -38,6 +38,7 @@ class Producer(TypedDict):
     port: int
     secure: bool
     ws_token: str
+    request_full_dataframe: bool
 
 
 logger = logging.getLogger(__name__)
@@ -78,18 +79,6 @@ class ExternalMessageConsumer:
         # Message size limit, in megabytes. Default 8mb, Use bitwise operator << 20 to convert
         # as the websockets client expects bytes.
         self.message_size_limit = self._emc_config.get("message_size_limit", 8) << 20
-
-        # Setting these explicitly as they probably shouldn't be changed by a user
-        # Unless we somehow integrate this with the strategy to allow creating
-        # callbacks for the messages
-        self.topics = [RPCMessageType.WHITELIST, RPCMessageType.ANALYZED_DF]
-
-        # Allow setting data for each initial request
-        self._initial_requests: list[WSRequestSchema] = [
-            WSSubscribeRequest(data=self.topics),
-            WSWhitelistRequest(),
-            WSAnalyzedDFRequest(data={"limit": self.initial_candle_limit, "pair": None}),
-        ]
 
         # Specify which function to use for which RPCMessageType
         self._message_handlers: dict[str, Callable[[str, WSMessageSchema], None]] = {
@@ -207,7 +196,7 @@ class ExternalMessageConsumer:
                         # Run the channel tasks while connected
                         await channel.run_channel_tasks(
                             self._receive_messages(channel, producer, lock),
-                            self._send_requests(channel, self._channel_streams[name]),
+                            self._send_requests(channel, self._channel_streams[name], producer),
                         )
 
             except (websockets.exceptions.InvalidURI, ValueError) as e:
@@ -238,9 +227,28 @@ class ExternalMessageConsumer:
                 await asyncio.sleep(self.sleep_time)
                 continue
 
-    async def _send_requests(self, channel: WebSocketChannel, channel_stream: MessageStream):
+    def _get_initial_requests(self, producer: Producer) -> list[WSRequestSchema]:
+        """
+        Build the initial requests sent to a producer after connecting.
+        Producers with `request_full_dataframe` set send the full analyzed dataframe
+        on every update instead of incremental (single candle) updates.
+        """
+        df_topic = (
+            RPCMessageType.FULL_ANALYZED_DF
+            if producer.get("request_full_dataframe", False)
+            else RPCMessageType.ANALYZED_DF
+        )
+        return [
+            WSSubscribeRequest(data=[RPCMessageType.WHITELIST, df_topic]),
+            WSWhitelistRequest(),
+            WSAnalyzedDFRequest(data={"limit": self.initial_candle_limit, "pair": None}),
+        ]
+
+    async def _send_requests(
+        self, channel: WebSocketChannel, channel_stream: MessageStream, producer: Producer
+    ):
         # Send the initial requests
-        for init_request in self._initial_requests:
+        for init_request in self._get_initial_requests(producer):
             await channel.send(schema_to_dict(init_request))
 
         # Now send any subsequent requests published to

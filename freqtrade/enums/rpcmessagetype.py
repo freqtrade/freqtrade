@@ -24,6 +24,8 @@ class RPCMessageType(StrEnum):
 
     WHITELIST = "whitelist"
     ANALYZED_DF = "analyzed_df"
+    # full dataframe (instead of only the latest candle) on every ANALYZED_DF update.
+    FULL_ANALYZED_DF = "full_analyzed_df"
     NEW_CANDLE = "new_candle"
 
     def __repr__(self):
