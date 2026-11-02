@@ -273,7 +273,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         )
 
         pred_df = self.rl_model_predict(dk.data_dictionary["prediction_features"], dk, self.model)
-        pred_df.fillna(0, inplace=True)
+        pred_df = pred_df.fillna(0)
 
         return (pred_df, dk.do_predict)
 
@@ -349,12 +349,10 @@ class BaseReinforcementLearningModel(IFreqaiModel):
                 "No prices found, please follow log warning instructions to correct the strategy."
             )
 
-        prices_train.rename(columns=rename_dict, inplace=True)
-        prices_train.reset_index(drop=True)
+        prices_train = prices_train.rename(columns=rename_dict)
 
         prices_test = test_df.filter(rename_dict.keys(), axis=1)
-        prices_test.rename(columns=rename_dict, inplace=True)
-        prices_test.reset_index(drop=True)
+        prices_test = prices_test.rename(columns=rename_dict)
 
         train_df = self.drop_ohlc_from_df(train_df, dk)
         test_df = self.drop_ohlc_from_df(test_df, dk)
@@ -368,7 +366,7 @@ class BaseReinforcementLearningModel(IFreqaiModel):
         drop_list = ["%-raw_open", "%-raw_low", "%-raw_high", "%-raw_close"]
 
         if self.rl_config["drop_ohlc_from_features"]:
-            df.drop(drop_list, axis=1, inplace=True)
+            df = df.drop(drop_list, axis=1)
             feature_list = dk.training_features_list
             dk.training_features_list = [e for e in feature_list if e not in drop_list]
 

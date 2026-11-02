@@ -285,6 +285,6 @@ def append_candles_to_dataframe(left: pd.DataFrame, right: pd.DataFrame) -> pd.D
 
     # Only keep the last 1500 candles in memory
     left = left[-1500:] if len(left) > 1500 else left
-    left.reset_index(drop=True, inplace=True)
+    left = left.reset_index(drop=True)
 
     return left
