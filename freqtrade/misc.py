@@ -251,7 +251,7 @@ def json_to_dataframe(data: str) -> pd.DataFrame:
     """
     dataframe = pd.read_json(StringIO(data), orient="split")
     if "date" in dataframe.columns:
-        dataframe["date"] = pd.to_datetime(dataframe["date"], unit="ms", utc=True)
+        dataframe["date"] = pd.to_datetime(dataframe["date"], unit="ms", utc=True).dt.as_unit("ms")
 
     return dataframe
 

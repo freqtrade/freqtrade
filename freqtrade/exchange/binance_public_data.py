@@ -287,7 +287,7 @@ async def get_daily_ohlcv(
                                 np.where(df["date"] > 1e13, df["date"] // 1000, df["date"]),
                                 unit="ms",
                                 utc=True,
-                            )
+                            ).as_unit("ms")
                             return df
                 elif resp.status == 404:
                     logger.debug(f"Failed to download {url}")

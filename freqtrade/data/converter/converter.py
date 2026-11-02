@@ -67,7 +67,9 @@ def ohlcv_to_dataframe(
 
     resample_interval = timeframe_to_floor_freq(timeframe)
 
-    df["date"] = to_datetime(df["date"], unit="ms", utc=True).dt.floor(resample_interval)
+    df["date"] = (
+        to_datetime(df["date"], unit="ms", utc=True).dt.as_unit("ms").dt.floor(resample_interval)
+    )
 
     # Some exchanges return int values for Volume and even for OHLC.
     # Convert them since TA-LIB indicators used in the strategy assume floats
