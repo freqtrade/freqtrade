@@ -56,7 +56,7 @@ jobs:
           persist-credentials: false
 
       - name: Install uv and Python 🐍
-        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
           activate-environment: true
           enable-cache: true # zizmor: ignore[cache-poisoning] - this job is not used for release builds
@@ -199,7 +199,7 @@ jobs:
           persist-credentials: false
 
       - name: Install uv and Python 🐍
-        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
           activate-environment: true
           python-version: "3.13"
@@ -219,7 +219,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Python 🐍
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.14"
 
@@ -238,7 +238,7 @@ jobs:
           ./tests/test_docs.sh
 
       - name: Install uv and Python 🐍
-        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
           activate-environment: true
           python-version: "3.13"
@@ -270,7 +270,7 @@ jobs:
           persist-credentials: false
 
       - name: Install uv and Python 🐍
-        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
           activate-environment: true
           enable-cache: true # zizmor: ignore[cache-poisoning] - this job is not used for release builds
@@ -327,7 +327,7 @@ jobs:
           persist-credentials: false
 
       - name: Install uv and Python 🐍
-        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
           activate-environment: true
           python-version: "${{ matrix.python-version }}"
@@ -383,7 +383,7 @@ jobs:
           merge-multiple: true
 
       - name: Publish to PyPI (Test)
-        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           repository-url: https://test.pypi.org/legacy/
 
@@ -411,7 +411,7 @@ jobs:
           merge-multiple: true
 
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
 
   docker-build:
     name: "Docker Build and Deploy"

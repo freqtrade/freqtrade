@@ -40,7 +40,7 @@ jobs:
           ref: ${{ github.head_ref || github.ref }}
 
       - name: Install uv and Python 🐍
-        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
           activate-environment: true
           python-version: "3.13"
@@ -53,7 +53,7 @@ jobs:
           uv pip install $(grep -E "^pyyaml==" requirements-dev.txt)
           python build_helpers/pre_commit_update.py --update
 
-      - uses: stefanzweifel/git-auto-commit-action@4a55954c782fc1ea30b9056cd3e7a2b40ca8887d # v7.2.0
+      - uses: stefanzweifel/git-auto-commit-action@d0b01107b5db882071f96de5dd4b54961ea93f4c # v7.2.1
         with:
           commit_message: "chore(deps): Apply pre-commit types update"
           commit_user_name: Freqtrade Bot
