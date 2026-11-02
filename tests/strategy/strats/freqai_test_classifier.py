@@ -73,7 +73,7 @@ class freqai_test_classifier(IStrategy):
         return dataframe
 
     def feature_engineering_standard(self, dataframe: DataFrame, metadata: dict, **kwargs):
-        dataframe["%-day_of_week"] = dataframe["date"].dt.dayofweek
+        dataframe["%-day_of_week"] = dataframe["date"].dt.day_of_week
         dataframe["%-hour_of_day"] = dataframe["date"].dt.hour
 
         return dataframe

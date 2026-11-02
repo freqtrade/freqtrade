@@ -384,7 +384,7 @@ def generate_periodic_breakdown_stats(
 
     if period == "weekday":
         day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-        results["weekday"] = results["close_date"].dt.dayofweek
+        results["weekday"] = results["close_date"].dt.day_of_week
 
         stats = []
         for day_num in range(7):

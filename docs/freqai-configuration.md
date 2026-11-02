@@ -119,9 +119,9 @@ The FreqAI strategy requires including the following lines of code in the standa
         All features must be prepended with `%` to be recognized by FreqAI internals.
 
         :param df: strategy dataframe which will receive the features
-        usage example: dataframe["%-day_of_week"] = (dataframe["date"].dt.dayofweek + 1) / 7
+        usage example: dataframe["%-day_of_week"] = (dataframe["date"].dt.day_of_week + 1) / 7
         """
-        dataframe["%-day_of_week"] = (dataframe["date"].dt.dayofweek + 1) / 7
+        dataframe["%-day_of_week"] = (dataframe["date"].dt.day_of_week + 1) / 7
         dataframe["%-hour_of_day"] = (dataframe["date"].dt.hour + 1) / 25
         return dataframe
 
