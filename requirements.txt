@@ -50,7 +50,7 @@ psutil==7.2.2
 questionary==2.1.1
 prompt-toolkit==3.0.53
 # Extensions to datetime library
-python-dateutil==2.9.0.post0
+python-dateutil==3.0.0
 pytz==2026.5
 
 #Futures
