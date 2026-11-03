@@ -32,12 +32,6 @@ outputs:
   TAG_FREQAI_RL_ARM:
     description: 'The Docker tag for the freqai_rl arm'
     value: ${{ steps.tags.outputs.TAG_FREQAI_RL_ARM }}
-  TAG_PI:
-    description: 'The Docker tag for the pi'
-    value: ${{ steps.tags.outputs.TAG_PI }}
-  CACHE_TAG_PI:
-    description: 'The Docker cache tag for the pi'
-    value: ${{ steps.tags.outputs.CACHE_TAG_PI }}
 runs:
   using: "composite"
   steps:
@@ -66,10 +60,6 @@ runs:
         TAG_FREQAI_ARM=${TAG_FREQAI}_arm
         TAG_FREQAI_RL_ARM=${TAG_FREQAI_RL}_arm
 
-        TAG_PI="${TAG}_pi"
-
-        CACHE_TAG_PI=${CACHE_IMAGE}:${TAG_PI}_cache
-
         echo "BRANCH_NAME=${BRANCH_NAME}" >> "$GITHUB_OUTPUT"
         echo "TAG=${TAG}" >> "$GITHUB_OUTPUT"
         echo "TAG_PLOT=${TAG_PLOT}" >> "$GITHUB_OUTPUT"
@@ -80,9 +70,6 @@ runs:
         echo "TAG_PLOT_ARM=${TAG_PLOT_ARM}" >> "$GITHUB_OUTPUT"
         echo "TAG_FREQAI_ARM=${TAG_FREQAI_ARM}" >> "$GITHUB_OUTPUT"
         echo "TAG_FREQAI_RL_ARM=${TAG_FREQAI_RL_ARM}" >> "$GITHUB_OUTPUT"
-        echo "TAG_PI=${TAG_PI}" >> "$GITHUB_OUTPUT"
-
-        echo "CACHE_TAG_PI=${CACHE_TAG_PI}" >> "$GITHUB_OUTPUT"
 
         cat "$GITHUB_OUTPUT"
 
