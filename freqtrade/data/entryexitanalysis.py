@@ -54,14 +54,14 @@ def _analyze_candles_and_indicators(
                 if allinds.shape[0] > 0:
                     tmp_inds = allinds.iloc[[-1]]
 
-                    trades_red.loc[t, "signal_date"] = tmp_inds["date"].values[0]
+                    trades_red.loc[t, "signal_date"] = tmp_inds["date"].iloc[0]
                     trades_red.loc[t, "enter_reason"] = trades_red.loc[t, "enter_tag"]
-                    tmp_inds.index.rename("signal_date", inplace=True)
+                    tmp_inds = tmp_inds.rename_axis("signal_date")
                     trades_inds = pd.concat([trades_inds, tmp_inds])
 
             if "signal_date" in trades_red:
                 trades_red["signal_date"] = pd.to_datetime(trades_red["signal_date"], utc=True)
-                trades_red.set_index("signal_date", inplace=True)
+                trades_red = trades_red.set_index("signal_date")
 
                 trades_red = pd.merge(trades_red, trades_inds, on="signal_date", how="outer")
         return trades_red
@@ -210,7 +210,7 @@ def prepare_results(
     res_df = pd.DataFrame()
     for trades in analysed_trades[stratname].values():
         if trades.shape[0] > 0:
-            trades.dropna(subset=["close_date"], inplace=True)
+            trades = trades.dropna(subset=["close_date"])
             res_df = pd.concat([res_df, trades], ignore_index=True)
 
     res_df = _select_rows_within_dates(res_df, timerange)

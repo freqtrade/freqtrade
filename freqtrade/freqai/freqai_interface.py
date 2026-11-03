@@ -29,7 +29,6 @@ from freqtrade.freqai.utils import get_tb_logger, plot_feature_importance, recor
 from freqtrade.strategy.interface import IStrategy
 
 
-pd.options.mode.chained_assignment = None
 logger = logging.getLogger(__name__)
 
 

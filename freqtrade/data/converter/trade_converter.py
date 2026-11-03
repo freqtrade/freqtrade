@@ -47,7 +47,7 @@ def trades_convert_types(trades: DataFrame) -> DataFrame:
     Convert Trades dtypes and add 'date' column
     """
     trades = trades.astype(TRADES_DTYPES)
-    trades["date"] = to_datetime(trades["timestamp"], unit="ms", utc=True)
+    trades["date"] = to_datetime(trades["timestamp"], unit="ms", utc=True).dt.as_unit("ms")
     return trades
 
 

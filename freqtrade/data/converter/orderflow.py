@@ -69,11 +69,11 @@ def _calculate_ohlcv_candle_start_and_end(df: pd.DataFrame, timeframe: str):
         timeframe_frequency = timeframe_to_resample_freq(timeframe)
         dofs = timeframe_to_DateOffset(timeframe)
         # calculate ohlcv candle start and end
-        df["datetime"] = pd.to_datetime(df["date"], unit="ms")
+        df["datetime"] = pd.to_datetime(df["date"], unit="ms").dt.as_unit("ms")
         df["candle_start"] = df["datetime"].dt.floor(timeframe_frequency)
         # used in _now_is_time_to_refresh_trades
         df["candle_end"] = df["candle_start"] + dofs
-        df.drop(columns=["datetime"], inplace=True)
+        del df["datetime"]
 
 
 def populate_dataframe_with_trades(
@@ -107,7 +107,7 @@ def populate_dataframe_with_trades(
         start_date = dataframe.tail(max_candles).date.iat[0]
         # slice of trades that are before current ohlcv candles to make groupby faster
         trades = trades.loc[trades["candle_start"] >= start_date]
-        trades.reset_index(inplace=True, drop=True)
+        trades = trades.reset_index(drop=True)
 
         # group trades by candle start
         trades_grouped_by_candle_start = trades.groupby("candle_start", group_keys=False)

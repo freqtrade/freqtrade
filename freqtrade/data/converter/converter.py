@@ -67,7 +67,9 @@ def ohlcv_to_dataframe(
 
     resample_interval = timeframe_to_floor_freq(timeframe)
 
-    df["date"] = to_datetime(df["date"], unit="ms", utc=True).dt.floor(resample_interval)
+    df["date"] = (
+        to_datetime(df["date"], unit="ms", utc=True).dt.as_unit("ms").dt.floor(resample_interval)
+    )
 
     # Some exchanges return int values for Volume and even for OHLC.
     # Convert them since TA-LIB indicators used in the strategy assume floats
@@ -113,7 +115,7 @@ def clean_ohlcv_dataframe(
     )
     # eliminate partial candle
     if drop_incomplete:
-        dataframe.drop(dataframe.tail(1).index, inplace=True)
+        dataframe = dataframe.drop(dataframe.tail(1).index)
         logger.debug("Dropping last candle")
 
     if fill_missing:
@@ -157,7 +159,7 @@ def ohlcv_fill_up_missing_data(
             "low": df["close"],
         }
     )
-    df.reset_index(inplace=True)
+    df = df.reset_index()
     len_before = len(dataframe)
     len_after = len(df)
     pct_missing = (len_after - len_before) / len_before if len_before > 0 else 0

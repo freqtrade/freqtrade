@@ -995,7 +995,8 @@ def hyperopt_test_result():
     ]
 
     for res in hyperopt_res:
-        res["results_metrics"]["holding_avg_s"] = res["results_metrics"][
-            "holding_avg"
-        ].total_seconds()
+        holding_avg = res["results_metrics"]["holding_avg"]
+        res["results_metrics"]["holding_avg_s"] = holding_avg.total_seconds()
+        # Mirror the stored results file - hyperopt_serializer writes timedeltas as str()
+        res["results_metrics"]["holding_avg"] = str(holding_avg)
     return hyperopt_res

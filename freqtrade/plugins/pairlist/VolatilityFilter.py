@@ -134,7 +134,7 @@ class VolatilityFilter(IPairList):
 
         if pair_candles is not None and not pair_candles.empty:
             returns = np.log(pair_candles["close"].shift(1) / pair_candles["close"])
-            returns.fillna(0, inplace=True)
+            returns = returns.fillna(0)
 
             volatility_series = returns.rolling(window=self._lookback_period).std() * np.sqrt(
                 self._lookback_period

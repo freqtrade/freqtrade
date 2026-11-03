@@ -40,7 +40,7 @@ def analyze_trade_parallelism(trades: pd.DataFrame, timeframe: str) -> pd.DataFr
         for row in trades[["open_date", "close_date"]].iterrows()
     ]
     deltas = [len(x) for x in dates]
-    dates = pd.Series(pd.concat(dates).values, name="date")
+    dates = pd.concat(dates, ignore_index=True).rename("date")
     df2 = pd.DataFrame(np.repeat(trades.values, deltas, axis=0), columns=trades.columns)
 
     df2 = pd.concat([dates, df2], axis=1)

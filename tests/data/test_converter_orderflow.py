@@ -221,7 +221,7 @@ def test_public_trades_trades_mock_populate_dataframe_with_trades__check_trades(
 
     # Filter trades to those occurring after or at the same time as the first DataFrame date
     trades = trades.loc[trades.date >= dataframe.date[0]]
-    trades.reset_index(inplace=True, drop=True)  # Reset index for clarity
+    trades = trades.reset_index(drop=True)  # Reset index for clarity
 
     # Assert the first trade ID to ensure filtering worked correctly
     assert trades["id"][0] == "313881442"

@@ -595,8 +595,10 @@ def trade_list_to_dataframe(
     """
     df = pd.DataFrame.from_records([t.to_json(minified) for t in trades], columns=BT_DATA_COLUMNS)
     if len(df) > 0:
-        df["close_date"] = pd.to_datetime(df["close_timestamp"], unit="ms", utc=True)
-        df["open_date"] = pd.to_datetime(df["open_timestamp"], unit="ms", utc=True)
+        df["close_date"] = pd.to_datetime(df["close_timestamp"], unit="ms", utc=True).dt.as_unit(
+            "ms"
+        )
+        df["open_date"] = pd.to_datetime(df["open_timestamp"], unit="ms", utc=True).dt.as_unit("ms")
         df["close_rate"] = df["close_rate"].astype("float64")
     return df
 

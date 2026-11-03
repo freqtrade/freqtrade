@@ -1678,11 +1678,8 @@ def test_hyperopt_list(mocker, capsys, caplog, tmp_path):
     assert csv_file.is_file()
     line = csv_file.read_text()
     assert (
-        'Best,1,2,-1.25%,-1.2222,-0.00125625,BTC,-2.51,"3,930.0 m",-0.00125625,23.00%,0.43662'
-        in line
-        or "Best,1,2,-1.25%,-1.2222,-0.00125625,BTC,-2.51,2 days 17:30:00,2,0,-0.00125625,23.00%,"
-        "0.43662"
-        in line
+        'Best,1,2,-1.25%,-1.2222,-0.00125625,BTC,-2.51,"2 days, 17:30:00",2,0,-0.00125625,23.00%,'
+        "0.43662" in line
     )
     csv_file.unlink()
 

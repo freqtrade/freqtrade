@@ -165,9 +165,9 @@ class FreqaiExampleStrategy(IStrategy):
 
         :param dataframe: strategy dataframe which will receive the features
         :param metadata: metadata of current pair
-        usage example: dataframe["%-day_of_week"] = (dataframe["date"].dt.dayofweek + 1) / 7
+        usage example: dataframe["%-day_of_week"] = (dataframe["date"].dt.day_of_week + 1) / 7
         """
-        dataframe["%-day_of_week"] = dataframe["date"].dt.dayofweek
+        dataframe["%-day_of_week"] = dataframe["date"].dt.day_of_week
         dataframe["%-hour_of_day"] = dataframe["date"].dt.hour
         return dataframe
 

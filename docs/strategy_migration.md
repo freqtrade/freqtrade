@@ -552,7 +552,7 @@ def populate_any_indicators(
         # function to populate indicators during training). Notice how we ensure not to
         # add them multiple times
         if set_generalized_indicators:
-            df["%-day_of_week"] = (df["date"].dt.dayofweek + 1) / 7
+            df["%-day_of_week"] = (df["date"].dt.day_of_week + 1) / 7
             df["%-hour_of_day"] = (df["date"].dt.hour + 1) / 25
             # (3)
 
@@ -693,9 +693,9 @@ Basic features. Make sure to remove the `{pair}` part from your features.
         https://www.freqtrade.io/en/stable/freqai-feature-engineering
 
         :param df: strategy dataframe which will receive the features
-        usage example: dataframe["%-day_of_week"] = (dataframe["date"].dt.dayofweek + 1) / 7
+        usage example: dataframe["%-day_of_week"] = (dataframe["date"].dt.day_of_week + 1) / 7
         """
-        dataframe["%-day_of_week"] = dataframe["date"].dt.dayofweek
+        dataframe["%-day_of_week"] = dataframe["date"].dt.day_of_week
         dataframe["%-hour_of_day"] = dataframe["date"].dt.hour
         return dataframe
 ```
