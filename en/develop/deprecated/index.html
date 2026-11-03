@@ -2034,6 +2034,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#armhf-32bit-raspberry-pi-docker-images" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        armhf (32bit Raspberry Pi) docker images
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#funding-rate-data-storage-format" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2391,6 +2402,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#armhf-32bit-raspberry-pi-docker-images" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        armhf (32bit Raspberry Pi) docker images
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#funding-rate-data-storage-format" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2538,6 +2560,11 @@ We do however recommend switching to other supported model libraries like LightG
 <li><a href="https://github.com/freqtrade/freqtrade/blob/c6f3b0081927e161a16b116cc47fb663f7831d30/freqtrade/freqai/prediction_models/CatboostClassifier.py">CatboostClassifier</a></li>
 <li><a href="https://github.com/freqtrade/freqtrade/blob/c6f3b0081927e161a16b116cc47fb663f7831d30/freqtrade/freqai/prediction_models/CatboostClassifierMultiTarget.py">CatboostClassifierMultiTarget</a></li>
 </ul>
+<h2 id="armhf-32bit-raspberry-pi-docker-images">armhf (32bit Raspberry Pi) docker images<a class="headerlink" href="#armhf-32bit-raspberry-pi-docker-images" title="Permanent link">&para;</a></h2>
+<p>Pre-built armhf (32bit / <code>linux/arm/v7</code>) docker images have been deprecated with version 2025.9, and are no longer built or published past 2026.10.
+This only impacts older Raspberry Pi's with 32bit operating system.
+Users on these systems will have to install freqtrade natively, as described in the <a href="../installation/">installation documentation</a>.
+We recommend switching to a 64bit (arm64) operating system where possible, for which multi-arch docker images remain available.</p>
 <h2 id="funding-rate-data-storage-format">Funding rate data storage format<a class="headerlink" href="#funding-rate-data-storage-format" title="Permanent link">&para;</a></h2>
 <p>With version 2026.8, funding rate data is stored with the columns it actually has - <code>date</code> and <code>funding_rate</code>.
 Previously it was stored as a regular candle, with the rate in <code>open</code> and <code>high</code>, <code>low</code>, <code>close</code> and <code>volume</code> all set to 0.</p>
