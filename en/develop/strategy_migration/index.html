@@ -2958,7 +2958,7 @@ As such, the definition of features becomes much simpler with the new logic.</p>
         <span class="c1"># function to populate indicators during training). Notice how we ensure not to</span>
         <span class="c1"># add them multiple times</span>
         <span class="k">if</span> <span class="n">set_generalized_indicators</span><span class="p">:</span>
-<span class="hll">            <span class="n">df</span><span class="p">[</span><span class="s2">"</span><span class="si">%-d</span><span class="s2">ay_of_week"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">"date"</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">dayofweek</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">7</span>
+<span class="hll">            <span class="n">df</span><span class="p">[</span><span class="s2">"</span><span class="si">%-d</span><span class="s2">ay_of_week"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">"date"</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">day_of_week</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">7</span>
 </span><span class="hll">            <span class="n">df</span><span class="p">[</span><span class="s2">"</span><span class="si">%-ho</span><span class="s2">ur_of_day"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">"date"</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">hour</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">25</span>
 </span><span class="hll">            <span class="c1"># (3)</span>
 </span>
@@ -3191,9 +3191,9 @@ As such, the definition of features becomes much simpler with the new logic.</p>
 <span class="sd">        https://www.freqtrade.io/en/stable/freqai-feature-engineering</span>
 
 <span class="sd">        :param df: strategy dataframe which will receive the features</span>
-<span class="sd">        usage example: dataframe["%-day_of_week"] = (dataframe["date"].dt.dayofweek + 1) / 7</span>
+<span class="sd">        usage example: dataframe["%-day_of_week"] = (dataframe["date"].dt.day_of_week + 1) / 7</span>
 <span class="sd">        """</span>
-        <span class="n">dataframe</span><span class="p">[</span><span class="s2">"</span><span class="si">%-d</span><span class="s2">ay_of_week"</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">"date"</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">dayofweek</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="s2">"</span><span class="si">%-d</span><span class="s2">ay_of_week"</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">"date"</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">day_of_week</span>
         <span class="n">dataframe</span><span class="p">[</span><span class="s2">"</span><span class="si">%-ho</span><span class="s2">ur_of_day"</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">"date"</span><span class="p">]</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">hour</span>
         <span class="k">return</span> <span class="n">dataframe</span>
 </code></pre></div></td></tr></table></div>
