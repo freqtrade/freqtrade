@@ -69,6 +69,7 @@ def main(sysargv: list[str] | None = None) -> None:
             f"Configuration error: {e}\n"
             f"Please make sure to review the documentation at {DOCS_LINK}."
         )
+        return_code = 2
     except FreqtradeException as e:
         logger.error(str(e))
         return_code = 2
