@@ -111,7 +111,8 @@ OS Specific steps are listed first, the common section below is necessary for al
 
     !!! Note "Installation duration"
         Depending on your internet speed and the Raspberry Pi version, installation can take multiple hours to complete.
-        Due to this, we recommend to use the pre-build docker-image for Raspberry, by following the [Docker quickstart documentation](docker_quickstart.md)
+        Due to this, we recommend to use the pre-build docker-image for Raspberry, by following the [Docker quickstart documentation](docker_quickstart.md).
+        Pre-built docker images are only available for 64bit (arm64) operating systems - 32bit (armhf) images are no longer provided.
 
     !!! Note
         The above does not install hyperopt dependencies. To install these, please use `python3 -m pip install -e .[hyperopt]`.

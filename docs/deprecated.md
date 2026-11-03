@@ -146,6 +146,13 @@ We do however recommend switching to other supported model libraries like LightG
 * [CatboostClassifier](https://github.com/freqtrade/freqtrade/blob/c6f3b0081927e161a16b116cc47fb663f7831d30/freqtrade/freqai/prediction_models/CatboostClassifier.py)
 * [CatboostClassifierMultiTarget](https://github.com/freqtrade/freqtrade/blob/c6f3b0081927e161a16b116cc47fb663f7831d30/freqtrade/freqai/prediction_models/CatboostClassifierMultiTarget.py)
 
+## armhf (32bit Raspberry Pi) docker images
+
+Pre-built armhf (32bit / `linux/arm/v7`) docker images have been deprecated with version 2025.9, and are no longer built or published past 2026.10.
+This only impacts older Raspberry Pi's with 32bit operating system.
+Users on these systems will have to install freqtrade natively, as described in the [installation documentation](installation.md).
+We recommend switching to a 64bit (arm64) operating system where possible, for which multi-arch docker images remain available.
+
 ## Funding rate data storage format
 
 With version 2026.8, funding rate data is stored with the columns it actually has - `date` and `funding_rate`.
