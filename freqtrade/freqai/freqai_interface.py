@@ -912,6 +912,13 @@ class IFreqaiModel(ABC):
                 )
             ]
 
+            def set_value(index: int, col: str, value: Any) -> None:
+                # .at is faster, but can't create new columns
+                if col in dk.full_df.columns:
+                    dk.full_df.at[index, col] = value
+                else:
+                    dk.full_df.loc[index, col] = value
+
             for index in range(len(dk.full_df)):
                 if index >= fit_live_predictions_candles:
                     self.dd.historic_predictions[self.dk.pair] = dk.full_df.iloc[
@@ -922,16 +929,16 @@ class IFreqaiModel(ABC):
                         if pd.api.types.is_string_dtype(dk.full_df[label].dtype):
                             continue
                         if "labels_mean" in self.dk.data:
-                            dk.full_df.at[index, f"{label}_mean"] = self.dk.data["labels_mean"][
-                                label
-                            ]
+                            set_value(index, f"{label}_mean", self.dk.data["labels_mean"][label])
                         if "labels_std" in self.dk.data:
-                            dk.full_df.at[index, f"{label}_std"] = self.dk.data["labels_std"][label]
+                            set_value(index, f"{label}_std", self.dk.data["labels_std"][label])
 
                     for extra_col in self.dk.data["extra_returns_per_train"]:
-                        dk.full_df.at[index, f"{extra_col}"] = self.dk.data[
-                            "extra_returns_per_train"
-                        ][extra_col]
+                        set_value(
+                            index,
+                            f"{extra_col}",
+                            self.dk.data["extra_returns_per_train"][extra_col],
+                        )
 
     def update_metadata(self, metadata: dict[str, Any]):
         """
