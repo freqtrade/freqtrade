@@ -54,7 +54,7 @@ def _analyze_candles_and_indicators(
                 if allinds.shape[0] > 0:
                     tmp_inds = allinds.iloc[[-1]]
 
-                    trades_red.loc[t, "signal_date"] = tmp_inds["date"].values[0]
+                    trades_red.loc[t, "signal_date"] = tmp_inds["date"].iloc[0]
                     trades_red.loc[t, "enter_reason"] = trades_red.loc[t, "enter_tag"]
                     tmp_inds = tmp_inds.rename_axis("signal_date")
                     trades_inds = pd.concat([trades_inds, tmp_inds])
