@@ -164,8 +164,9 @@ def test_main_ConfigurationError(mocker, default_conf, caplog) -> None:
     args = ["list-exchanges"]
 
     # Test Main + the KeyboardInterrupt exception
-    with pytest.raises(SystemExit):
+    with pytest.raises(SystemExit) as ex:
         main(args)
+    assert ex.value.code == 2
     assert log_has_re("Configuration error: Oh snap!", caplog)
 
 
