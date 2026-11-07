@@ -292,12 +292,17 @@ class ExchangeWS:
             # Unsubscribing from a connection that's going away is pointless.
             logger.debug("Shutting down - skipping orderbook unwatch for %s", pair)
             return
+        # Unsubscribe from the same depth we subscribed to - otherwise ccxt may build the
+        # unsubscribe topic from its own default depth (e.g. bybit: "orderbook.500.X" while
+        # subscribed to "orderbook.50.X"). The exchange keeps the real subscription,
+        # and every following subscribe fails with "already subscribed".
+        params = {"limit": self._orderbook_depth} if self._orderbook_depth else {}
         try:
             async with asyncio.timeout(3):
                 if self.exchange_has("unWatchOrderBookForSymbols"):
-                    await self._ccxt_object.un_watch_order_book_for_symbols([pair])
+                    await self._ccxt_object.un_watch_order_book_for_symbols([pair], params)
                 elif self.exchange_has("unWatchOrderBook"):
-                    await self._ccxt_object.un_watch_order_book(pair)
+                    await self._ccxt_object.un_watch_order_book(pair, params)
                 else:
                     logger.debug("un_watch_order_book not supported for %s", pair)
 
