@@ -1,7 +1,7 @@
 import logging
 from typing import Any
 
-from xgboost import XGBRFRegressor
+from xgboost import XGBRegressor
 
 from freqtrade.freqai.base_models.BaseRegressionModel import BaseRegressionModel
 from freqtrade.freqai.data_kitchen import FreqaiDataKitchen
@@ -42,9 +42,20 @@ class XGBoostRFRegressor(BaseRegressionModel):
 
         xgb_model = self.get_init_model(dk.pair)
 
-        model = XGBRFRegressor(**self.model_training_parameters)
+        # Random forest via the plain boosting estimator (XGBRFRegressor is deprecated).
+        # Same defaults as XGBRFRegressor: one boosting round, n_estimators parallel trees.
+        params = {
+            "learning_rate": 1.0,
+            "subsample": 0.8,
+            "colsample_bynode": 0.8,
+            "reg_lambda": 1e-5,
+            **self.model_training_parameters,
+        }
+        params["num_parallel_tree"] = params.pop("n_estimators", None) or 100
+        params["n_estimators"] = 1
+        model = XGBRegressor(**params)
 
-        # Callbacks are not supported for XGBRFRegressor, and version 2.1.x started to throw
+        # Callbacks are not supported for random forests, and version 2.1.x started to throw
         # the following error:
         # NotImplementedError: `early_stopping_rounds` and `callbacks` are not implemented
         # for random forest.
