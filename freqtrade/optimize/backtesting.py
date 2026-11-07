@@ -627,9 +627,11 @@ class Backtesting:
                 and self.strategy.trailing_stop_positive
             ):
                 # Worst case: price reaches stop_positive_offset and dives down.
+                # Both offsets are stake-relative profit ratios - convert to price
+                # moves by dividing by leverage.
                 stop_rate = row[OPEN_IDX] * (
                     1
-                    + side_1 * abs(self.strategy.trailing_stop_positive_offset)
+                    + side_1 * abs(self.strategy.trailing_stop_positive_offset / leverage)
                     - side_1 * abs(self.strategy.trailing_stop_positive / leverage)
                 )
             else:

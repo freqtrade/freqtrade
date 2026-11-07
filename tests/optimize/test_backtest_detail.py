@@ -1257,6 +1257,54 @@ tc59 = BTContainer(
     trades=[BTrade(exit_reason=ExitType.EXIT_SIGNAL, open_tick=1, close_tick=4, is_short=False)],
 )
 
+# Test 60: copy of test 35 with leverage - trailing triggers and stops within the open candle.
+# offset and trailing_stop_positive are stake-relative profit ratios - the resulting price
+# move is divided by leverage: 5000 * (1 + (0.02 - 0.01) / 5) = 5010.
+# profit = (5010 / 5000 - 1) * 5 = 0.01
+tc60 = BTContainer(
+    data=[
+        # D   O     H     L     C    V    EL XL ES Xs  BT
+        [0, 5000, 5050, 4950, 5000, 6172, 1, 0],
+        [1, 5000, 5500, 4950, 4950, 6172, 0, 0],  # enter trade (signal on last candle) and stop
+        [2, 4900, 5250, 4500, 5100, 6172, 0, 0],
+        [3, 5100, 5100, 4650, 4750, 6172, 0, 0],
+        [4, 4750, 4950, 4350, 4750, 6172, 0, 0],
+    ],
+    stop_loss=-0.10,
+    roi={"0": 1},
+    profit_perc=0.01,
+    trailing_stop=True,
+    trailing_only_offset_is_reached=True,
+    trailing_stop_positive_offset=0.02,
+    trailing_stop_positive=0.01,
+    leverage=5.0,
+    trades=[BTrade(exit_reason=ExitType.TRAILING_STOP_LOSS, open_tick=1, close_tick=1)],
+)
+
+# Test 61: copy of test 60 as short
+# stop-rate = 5000 * (1 - (0.02 - 0.01) / 5) = 4990, profit = (1 - 4990 / 5000) * 5 = 0.01
+tc61 = BTContainer(
+    data=[
+        # D   O     H     L     C    V    EL XL ES Xs  BT
+        [0, 5000, 5050, 4950, 5000, 6172, 0, 0, 1, 0],
+        [1, 5000, 5090, 4500, 5090, 6172, 0, 0, 0, 0],  # enter and stop
+        [2, 5100, 5250, 4500, 5100, 6172, 0, 0, 0, 0],
+        [3, 5100, 5100, 4650, 4750, 6172, 0, 0, 0, 0],
+        [4, 4750, 4950, 4350, 4750, 6172, 0, 0, 0, 0],
+    ],
+    stop_loss=-0.10,
+    roi={"0": 1},
+    profit_perc=0.01,
+    trailing_stop=True,
+    trailing_only_offset_is_reached=True,
+    trailing_stop_positive_offset=0.02,
+    trailing_stop_positive=0.01,
+    leverage=5.0,
+    trades=[
+        BTrade(exit_reason=ExitType.TRAILING_STOP_LOSS, open_tick=1, close_tick=1, is_short=True)
+    ],
+)
+
 
 TESTS = [
     tc0,
@@ -1319,6 +1367,8 @@ TESTS = [
     tc57,
     tc58,
     tc59,
+    tc60,
+    tc61,
 ]
 
 
