@@ -100,6 +100,31 @@ def test_hyperopt_decimal_parameter():
     assert decimalpar.param_type == "DecimalParameter"
 
 
+@pytest.mark.parametrize(
+    "low,high,decimals",
+    [
+        (0.29, 0.58, 2),
+        (0.01, 0.03, 3),
+        (0.0, 0.5, 1),
+        # high/low isn't aligned to the decimal precision
+        (0.015, 0.035, 2),
+        (0.025, 0.045, 2),
+        (0.0105, 0.0125, 3),
+        (1.005, 1.015, 2),
+        (-0.58, -0.29, 2),
+    ],
+)
+def test_decimal_parameter_range_matches_space(low, high, decimals):
+    HyperoptStateContainer.set_state(HyperoptState.INDICATORS)
+    par = DecimalParameter(low=low, high=high, decimals=decimals, default=low, space="buy")
+    par.in_space = True
+    space = par.get_space("")
+    # space is SKDecimal - which must align with the parameter's range rounding.
+    steps = round((space.high - space.low) / space.step)
+    expected = [round(space.low + i * space.step, decimals) for i in range(steps + 1)]
+    assert par.range == expected
+
+
 def test_hyperopt_categorical_parameter():
     HyperoptStateContainer.set_state(HyperoptState.INDICATORS)
     from optuna.distributions import CategoricalDistribution

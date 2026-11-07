@@ -325,9 +325,11 @@ class DecimalParameter(NumericParameter):
         calculating 100ds of indicators.
         """
         if self.can_optimize():
-            low = int(self.low * pow(10, self.decimals))
-            high = int(self.high * pow(10, self.decimals)) + 1
-            return [round(n * pow(0.1, self.decimals), self.decimals) for n in range(low, high)]
+            # Rounding must align to SKDecimal's precision
+            factor = 10**self.decimals
+            low = round(round(self.low, self.decimals) * factor)
+            high = round(round(self.high, self.decimals) * factor)
+            return [round(n / factor, self.decimals) for n in range(low, high + 1)]
         else:
             return [self.value]
 
