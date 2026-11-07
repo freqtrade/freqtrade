@@ -523,6 +523,26 @@ If your account is required to use an operatorId, you can set it in the configur
 
 Bitvavo expects the `operatorId` to be an integer.
 
+## Coinbase
+
+Coinbase (exchange id: `coinbase`) uses the Advanced Trade API.
+Create an API key on the [Coinbase Developer Platform](https://portal.cdp.coinbase.com/) with the `View` and `Trade` permissions.
+Both Ed25519 and ECDSA keys are supported.
+
+Use the key id (Ed25519) or the key name (ECDSA, starting with `organizations/`) as `api_key`, and the private key as `secret`.
+ECDSA private keys span multiple lines - replace each line break with `\n` so the key fits in one JSON string.
+
+```json
+"exchange": {
+    "name": "coinbase",
+    "api_key": "organizations/<org_id>/apiKeys/<key_id>",
+    "secret": "-----BEGIN EC PRIVATE KEY-----\n<private key>\n-----END EC PRIVATE KEY-----\n",
+    // ...
+}
+```
+
+Coinbase returns at most 300 candles per call, and does not offer `4h` candles.
+
 ## All exchanges
 
 Should you experience constant errors with Nonce (like `InvalidNonce`), it is best to regenerate the API keys. Resetting Nonce is difficult and it's usually easier to regenerate the API keys.

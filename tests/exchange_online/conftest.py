@@ -31,6 +31,7 @@ class TestExchangeOnlineSetup(TypedDict):
     sample_order_futures: list[dict[str, Any]] | None
     sample_my_trades: list[dict[str, Any]] | None
     skip_ws_tests: bool | None
+    max_fee: float | None
 
 
 EXCHANGE_FIXTURE_TYPE = tuple[Exchange, str, TestExchangeOnlineSetup]
@@ -554,6 +555,19 @@ EXCHANGES: dict[str, TestExchangeOnlineSetup] = {
         "candle_count": 1440,
         "leverage_tiers_public": False,
         "leverage_in_spot_market": False,
+    },
+    "coinbase": {
+        "pair": "BTC/USDC",
+        "stake_currency": "USDC",
+        # fetch_ticker has no volume - fetch_tickers does
+        "hasQuoteVolume": False,
+        "timeframe": "1h",
+        "candle_count": 300,
+        # Taker fee for the lowest volume tier is 1.2%
+        "max_fee": 0.013,
+        "leverage_tiers_public": False,
+        "leverage_in_spot_market": False,
+        "skip_ws_tests": True,
     },
     "bingx": {
         "pair": "BTC/USDT",
