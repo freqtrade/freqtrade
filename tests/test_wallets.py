@@ -1,5 +1,6 @@
 # pragma pylint: disable=missing-docstring
 from copy import deepcopy
+from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock
 
 import pytest
@@ -537,6 +538,39 @@ def test_sync_wallet_dry(mocker, default_conf_usdt, fee):
     used = freqtrade.wallets.get_used("LTC")
     assert used != 0
     assert free + used == total
+
+
+def test_sync_wallet_dry_same_base_currency(mocker, default_conf_usdt, fee):
+    # Multiple trades on pairs sharing the same base currency must accumulate, not overwrite.
+    default_conf_usdt["dry_run"] = True
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+
+    for pair, amount, open_rate in (("ETH/USDT", 1.0, 60.0), ("ETH/BTC", 2.0, 0.02)):
+        trade = Trade(
+            pair=pair,
+            stake_amount=amount * open_rate,
+            amount=amount,
+            amount_requested=amount,
+            fee_open=fee.return_value,
+            fee_close=fee.return_value,
+            open_date=datetime.now(tz=UTC) - timedelta(minutes=14),
+            is_open=True,
+            open_rate=open_rate,
+            exchange="binance",
+            strategy="StrategyTestV2",
+            timeframe=5,
+            is_short=False,
+        )
+        Trade.session.add(trade)
+    Trade.commit()
+
+    freqtrade.wallets.update()
+
+    eth_wallet = freqtrade.wallets._wallets["ETH"]
+    assert eth_wallet.total == 3.0
+    assert eth_wallet.free == 3.0
+    assert eth_wallet.used == 0.0
+    assert freqtrade.wallets.get_total("ETH") == 3.0
 
 
 def test_sync_wallet_futures_dry(mocker, default_conf, fee):

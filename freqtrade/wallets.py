@@ -126,6 +126,10 @@ class Wallets:
         used_stake = 0.0
 
         if self._config.get("trading_mode", "spot") != TradingMode.FUTURES:
+            # Multiple trades can be open on pairs sharing the same base currency -
+            # accumulate amounts per currency so wallets don't overwrite each other.
+            trade_amounts: dict[str, float] = {}
+            pending_exits: dict[str, float] = {}
             for trade in open_trades:
                 curr = self._exchange.get_pair_base_currency(trade.pair)
                 used_stake += sum(
@@ -136,13 +140,17 @@ class Wallets:
                     for o in trade.open_orders
                     if o.amount and o.ft_order_side == trade.exit_side
                 )
-                curr_wallet_bal = self._start_cap.get(curr, 0)
+                trade_amounts[curr] = trade_amounts.get(curr, 0) + trade.amount
+                pending_exits[curr] = pending_exits.get(curr, 0) + pending
 
+            for curr, amount in trade_amounts.items():
+                curr_wallet_bal = self._start_cap.get(curr, 0)
+                pending = pending_exits[curr]
                 _wallets[curr] = Wallet(
                     curr,
-                    curr_wallet_bal + trade.amount - pending,
+                    curr_wallet_bal + amount - pending,
                     pending,
-                    trade.amount + curr_wallet_bal,
+                    amount + curr_wallet_bal,
                 )
         else:
             for position in open_trades:
