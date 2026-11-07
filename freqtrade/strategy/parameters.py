@@ -325,8 +325,10 @@ class DecimalParameter(NumericParameter):
         calculating 100ds of indicators.
         """
         if self.can_optimize():
-            low = int(self.low * pow(10, self.decimals))
-            high = int(self.high * pow(10, self.decimals)) + 1
+            # round() to avoid binary floating point truncation - e.g.
+            # int(0.58 * 100) is 57, dropping the upper bound from the range.
+            low = round(self.low * pow(10, self.decimals))
+            high = round(self.high * pow(10, self.decimals)) + 1
             return [round(n * pow(0.1, self.decimals), self.decimals) for n in range(low, high)]
         else:
             return [self.value]

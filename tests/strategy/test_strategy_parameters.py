@@ -95,6 +95,15 @@ def test_hyperopt_decimal_parameter():
     decimalpar2.value = 0.022222
     assert decimalpar2.value == 0.022
 
+    # Bounds whose representation truncates downward must not be lost (0.58 * 100 == 57.999...)
+    decimalpar3 = DecimalParameter(low=0.29, high=0.58, decimals=2, default=0.5, space="buy")
+    decimalpar3.in_space = True
+    rng = decimalpar3.range
+    assert rng[0] == 0.29
+    assert rng[-1] == 0.58
+    assert len(rng) == 30
+    assert all(0.29 <= x <= 0.58 for x in rng)
+
     HyperoptStateContainer.set_state(HyperoptState.OPTIMIZE)
     assert len(list(decimalpar.range)) == 1
     assert decimalpar.param_type == "DecimalParameter"
