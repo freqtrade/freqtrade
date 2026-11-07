@@ -1111,6 +1111,75 @@ def test_rpc_force_exit(default_conf, ticker, fee, mocker) -> None:
     assert pytest.approx(trade.amount) == amount
 
 
+def test_rpc_force_exit_cancelled_dca_entry(default_conf, ticker, fee, mocker) -> None:
+    """Force-exit must proceed when an open DCA entry order is cancelled successfully."""
+    mocker.patch("freqtrade.rpc.telegram.Telegram", MagicMock())
+    mocker.patch.multiple(
+        EXMS,
+        fetch_ticker=ticker,
+        _dry_is_price_crossed=MagicMock(return_value=True),
+        get_fee=fee,
+    )
+    mocker.patch("freqtrade.wallets.Wallets.get_free", return_value=1000)
+
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    patch_get_signal(freqtradebot)
+    rpc = RPC(freqtradebot)
+    freqtradebot.state = State.RUNNING
+    freqtradebot.enter_positions(1)
+
+    trade = Trade.session.scalars(select(Trade).filter(Trade.is_open.is_(True))).first()
+    assert trade.nr_of_successful_entries == 1
+
+    # Simulate an open (unfilled) DCA entry order
+    o = Order(
+        ft_order_side=trade.entry_side,
+        ft_pair=trade.pair,
+        ft_amount=trade.amount,
+        ft_price=trade.open_rate,
+        order_id="dca_order_1",
+        ft_is_open=True,
+        status="open",
+        symbol=trade.pair,
+        order_type="limit",
+        side=trade.entry_side,
+        price=trade.open_rate,
+        amount=trade.amount,
+        filled=0.0,
+        remaining=trade.amount,
+    )
+    trade.orders.append(o)
+    Trade.commit()
+
+    mocker.patch(
+        f"{EXMS}.fetch_order",
+        return_value={
+            "id": "dca_order_1",
+            "status": "open",
+            "type": "limit",
+            "side": "buy",
+            "amount": o.amount,
+            "filled": 0.0,
+        },
+    )
+    mocker.patch(
+        f"{EXMS}.cancel_order_with_result",
+        return_value={
+            "id": "dca_order_1",
+            "status": "canceled",
+            "type": "limit",
+            "side": "buy",
+            "amount": o.amount,
+            "filled": 0.0,
+        },
+    )
+    exit_mock = mocker.patch("freqtrade.freqtradebot.FreqtradeBot.execute_trade_exit")
+
+    msg = rpc._rpc_force_exit(str(trade.id))
+    assert msg == {"result": f"Created exit order for trade {trade.id}."}
+    assert exit_mock.call_count == 1
+
+
 def test_performance_handle(default_conf_usdt, ticker, fee, mocker) -> None:
     mocker.patch("freqtrade.rpc.telegram.Telegram", MagicMock())
     mocker.patch.multiple(

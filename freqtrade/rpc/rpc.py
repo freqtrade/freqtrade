@@ -1051,45 +1051,52 @@ class RPC:
                 # Cancel order - so it is placed anew with a fresh price.
                 self._freqtrade.handle_cancel_exit(trade, order, oo, CANCEL_REASON["FORCE_EXIT"])
 
-        if all(tocr["cancel_state"] is False for tocr in trade_entry_cancelation_registry):
-            if trade.has_open_orders:
-                # Order cancellation failed, so we can't exit.
-                return False
-            # Get current rate and execute sell
+        if (
+            trade_entry_cancelation_registry
+            and all(tocr["cancel_state"] is True for tocr in trade_entry_cancelation_registry)
+            and trade.nr_of_successful_entries == 0
+        ):
+            # All entry orders were fully cancelled and the trade has no filled
+            # entries - it was removed from the database, so there's nothing to exit.
+            return False
 
-            current_rate = (
-                self._freqtrade.exchange.get_rate(
-                    trade.pair, side="exit", is_short=trade.is_short, refresh=True
-                )
-                if ordertype == "market" or price is None
-                else price
-            )
-            exit_check = ExitCheckTuple(exit_type=ExitType.FORCE_EXIT)
-            order_type = ordertype or self._freqtrade.strategy.order_types.get(
-                "force_exit", self._freqtrade.strategy.order_types["exit"]
-            )
-            sub_amount: float | None = None
-            if amount and amount < trade.amount:
-                # Partial exit ...
-                min_exit_stake = self._freqtrade.exchange.get_min_pair_stake_amount(
-                    trade.pair, current_rate, trade.stop_loss_pct or 0.0
-                )
-                remaining = (trade.amount - amount) * current_rate
-                if min_exit_stake and remaining < min_exit_stake:
-                    raise RPCException(f"Remaining amount of {remaining} would be too small.")
-                sub_amount = amount
+        if trade.has_open_orders:
+            # Order cancellation failed, so we can't exit.
+            return False
+        # Get current rate and execute sell
 
-            self._freqtrade.execute_trade_exit(
-                trade,
-                current_rate,
-                exit_check,
-                ordertype=order_type,
-                sub_trade_amt=sub_amount,
-                skip_custom_exit_price=price is not None and ordertype == "limit",
+        current_rate = (
+            self._freqtrade.exchange.get_rate(
+                trade.pair, side="exit", is_short=trade.is_short, refresh=True
             )
+            if ordertype == "market" or price is None
+            else price
+        )
+        exit_check = ExitCheckTuple(exit_type=ExitType.FORCE_EXIT)
+        order_type = ordertype or self._freqtrade.strategy.order_types.get(
+            "force_exit", self._freqtrade.strategy.order_types["exit"]
+        )
+        sub_amount: float | None = None
+        if amount and amount < trade.amount:
+            # Partial exit ...
+            min_exit_stake = self._freqtrade.exchange.get_min_pair_stake_amount(
+                trade.pair, current_rate, trade.stop_loss_pct or 0.0
+            )
+            remaining = (trade.amount - amount) * current_rate
+            if min_exit_stake and remaining < min_exit_stake:
+                raise RPCException(f"Remaining amount of {remaining} would be too small.")
+            sub_amount = amount
 
-            return True
-        return False
+        self._freqtrade.execute_trade_exit(
+            trade,
+            current_rate,
+            exit_check,
+            ordertype=order_type,
+            sub_trade_amt=sub_amount,
+            skip_custom_exit_price=price is not None and ordertype == "limit",
+        )
+
+        return True
 
     def _rpc_force_exit(
         self,
