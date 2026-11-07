@@ -1035,61 +1035,54 @@ class RPC:
         price: float | None = None,
     ) -> bool:
         # Check if there is there are open orders
-        trade_entry_cancelation_registry = []
         for oo in trade.open_orders:
-            trade_entry_cancelation_res = {"order_id": oo.order_id, "cancel_state": False}
             order = self._freqtrade.exchange.fetch_order(oo.order_id, trade.pair)
 
             if order["side"] == trade.entry_side:
-                fully_canceled = self._freqtrade.handle_cancel_enter(
-                    trade, order, oo, CANCEL_REASON["FORCE_EXIT"]
-                )
-                trade_entry_cancelation_res["cancel_state"] = fully_canceled
-                trade_entry_cancelation_registry.append(trade_entry_cancelation_res)
+                self._freqtrade.handle_cancel_enter(trade, order, oo, CANCEL_REASON["FORCE_EXIT"])
 
             if order["side"] == trade.exit_side:
                 # Cancel order - so it is placed anew with a fresh price.
                 self._freqtrade.handle_cancel_exit(trade, order, oo, CANCEL_REASON["FORCE_EXIT"])
 
-        if all(tocr["cancel_state"] is False for tocr in trade_entry_cancelation_registry):
-            if trade.has_open_orders:
-                # Order cancellation failed, so we can't exit.
-                return False
-            # Get current rate and execute sell
+        if trade.nr_of_successful_entries == 0 or trade.has_open_orders:
+            # Nothing filled (trade was deleted while cancelling the entry order),
+            # or order cancellation failed - so we can't exit.
+            return False
+        # Get current rate and execute sell
 
-            current_rate = (
-                self._freqtrade.exchange.get_rate(
-                    trade.pair, side="exit", is_short=trade.is_short, refresh=True
-                )
-                if ordertype == "market" or price is None
-                else price
+        current_rate = (
+            self._freqtrade.exchange.get_rate(
+                trade.pair, side="exit", is_short=trade.is_short, refresh=True
             )
-            exit_check = ExitCheckTuple(exit_type=ExitType.FORCE_EXIT)
-            order_type = ordertype or self._freqtrade.strategy.order_types.get(
-                "force_exit", self._freqtrade.strategy.order_types["exit"]
+            if ordertype == "market" or price is None
+            else price
+        )
+        exit_check = ExitCheckTuple(exit_type=ExitType.FORCE_EXIT)
+        order_type = ordertype or self._freqtrade.strategy.order_types.get(
+            "force_exit", self._freqtrade.strategy.order_types["exit"]
+        )
+        sub_amount: float | None = None
+        if amount and amount < trade.amount:
+            # Partial exit ...
+            min_exit_stake = self._freqtrade.exchange.get_min_pair_stake_amount(
+                trade.pair, current_rate, trade.stop_loss_pct or 0.0
             )
-            sub_amount: float | None = None
-            if amount and amount < trade.amount:
-                # Partial exit ...
-                min_exit_stake = self._freqtrade.exchange.get_min_pair_stake_amount(
-                    trade.pair, current_rate, trade.stop_loss_pct or 0.0
-                )
-                remaining = (trade.amount - amount) * current_rate
-                if min_exit_stake and remaining < min_exit_stake:
-                    raise RPCException(f"Remaining amount of {remaining} would be too small.")
-                sub_amount = amount
+            remaining = (trade.amount - amount) * current_rate
+            if min_exit_stake and remaining < min_exit_stake:
+                raise RPCException(f"Remaining amount of {remaining} would be too small.")
+            sub_amount = amount
 
-            self._freqtrade.execute_trade_exit(
-                trade,
-                current_rate,
-                exit_check,
-                ordertype=order_type,
-                sub_trade_amt=sub_amount,
-                skip_custom_exit_price=price is not None and ordertype == "limit",
-            )
+        self._freqtrade.execute_trade_exit(
+            trade,
+            current_rate,
+            exit_check,
+            ordertype=order_type,
+            sub_trade_amt=sub_amount,
+            skip_custom_exit_price=price is not None and ordertype == "limit",
+        )
 
-            return True
-        return False
+        return True
 
     def _rpc_force_exit(
         self,
