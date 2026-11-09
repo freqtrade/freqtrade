@@ -9,8 +9,8 @@
 ruff==0.17.3
 mypy==2.4.0
 pre-commit==4.7.0
-pytest==9.1.1
-pytest-asyncio==1.4.1
+pytest==9.2.0
+pytest-asyncio==1.4.1.post1
 pytest-cov==7.1.0
 pytest-mock==3.17.0
 pytest-random-order==1.2.0
@@ -27,9 +27,9 @@ nbconvert==7.17.2
 scipy-stubs==1.18.1.1  # keep in sync with `scipy` in `requirements.txt`
 types-cachetools==7.0.0.20260713
 types-filelock==3.2.7
-types-requests==2.33.0.20261006
+types-requests==2.33.0.20261030
 types-tabulate==0.10.0.20261006
-types-python-dateutil==2.9.0.20261021
+types-python-dateutil==2.9.0.20261029
 pip-audit==2.10.1
 # For build step in CI
 build==1.6.1
