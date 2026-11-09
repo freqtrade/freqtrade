@@ -623,29 +623,6 @@ def test_exchangews_orderbook_stopped_no_unwatch_while_stopping(mocker):
 
 
 @pytest.mark.parametrize(
-    "has,method",
-    [
-        ({"unWatchOrderBookForSymbols": True}, "un_watch_order_book_for_symbols"),
-        ({"unWatchOrderBook": True}, "un_watch_order_book"),
-    ],
-)
-async def test_exchangews_unwatch_orderbook_uses_subscribed_depth(mocker, has, method):
-    # bybit subscribes to "orderbook.50.X" - the unsubscribe must target the same depth,
-    # otherwise the subscription stays alive and resubscribing fails with "already subscribed".
-    ccxt_object = MagicMock()
-    ccxt_object.has = has
-    setattr(ccxt_object, method, AsyncMock())
-    mocker.patch("freqtrade.exchange.exchange_ws.ExchangeWS._start_forever")
-
-    exchange_ws = ExchangeWS(MagicMock(), ccxt_object, orderbook_depth=50)
-    await exchange_ws._unwatch_orderbook("ETH/USDT:USDT")
-
-    call = getattr(ccxt_object, method)
-    call.assert_awaited_once()
-    assert call.call_args.args[-1] == {"limit": 50}
-
-
-@pytest.mark.parametrize(
     "has,expected_call",
     [
         ({"unWatchOrderBookForSymbols": True}, "un_watch_order_book_for_symbols"),
@@ -662,14 +639,16 @@ async def test_exchangews_unwatch_orderbook(mocker, has, expected_call, caplog):
     mocker.patch("freqtrade.exchange.exchange_ws.ExchangeWS._start_forever")
     caplog.set_level(logging.DEBUG)
 
-    exchange_ws = ExchangeWS(config, ccxt_object)
+    exchange_ws = ExchangeWS(config, ccxt_object, orderbook_depth=50)
     await exchange_ws._unwatch_orderbook("ETH/BTC")
 
     if expected_call == "un_watch_order_book_for_symbols":
-        ccxt_object.un_watch_order_book_for_symbols.assert_awaited_once_with(["ETH/BTC"], {})
+        ccxt_object.un_watch_order_book_for_symbols.assert_awaited_once_with(
+            ["ETH/BTC"], {"limit": 50}
+        )
         assert ccxt_object.un_watch_order_book.call_count == 0
     elif expected_call == "un_watch_order_book":
-        ccxt_object.un_watch_order_book.assert_awaited_once_with("ETH/BTC", {})
+        ccxt_object.un_watch_order_book.assert_awaited_once_with("ETH/BTC", {"limit": 50})
         assert ccxt_object.un_watch_order_book_for_symbols.call_count == 0
     else:
         assert ccxt_object.un_watch_order_book.call_count == 0
