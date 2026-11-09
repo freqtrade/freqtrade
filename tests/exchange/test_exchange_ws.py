@@ -630,7 +630,16 @@ def test_exchangews_orderbook_stopped_no_unwatch_while_stopping(mocker):
         ({}, None),
     ],
 )
-async def test_exchangews_unwatch_orderbook(mocker, has, expected_call, caplog):
+@pytest.mark.parametrize(
+    "orderbook_depth,expected_params",
+    [
+        (None, {}),
+        (50, {"limit": 50}),
+    ],
+)
+async def test_exchangews_unwatch_orderbook(
+    mocker, has, expected_call, orderbook_depth, expected_params, caplog
+):
     config = MagicMock()
     ccxt_object = MagicMock()
     ccxt_object.has = has
@@ -639,16 +648,16 @@ async def test_exchangews_unwatch_orderbook(mocker, has, expected_call, caplog):
     mocker.patch("freqtrade.exchange.exchange_ws.ExchangeWS._start_forever")
     caplog.set_level(logging.DEBUG)
 
-    exchange_ws = ExchangeWS(config, ccxt_object, orderbook_depth=50)
+    exchange_ws = ExchangeWS(config, ccxt_object, orderbook_depth=orderbook_depth)
     await exchange_ws._unwatch_orderbook("ETH/BTC")
 
     if expected_call == "un_watch_order_book_for_symbols":
         ccxt_object.un_watch_order_book_for_symbols.assert_awaited_once_with(
-            ["ETH/BTC"], {"limit": 50}
+            ["ETH/BTC"], expected_params
         )
         assert ccxt_object.un_watch_order_book.call_count == 0
     elif expected_call == "un_watch_order_book":
-        ccxt_object.un_watch_order_book.assert_awaited_once_with("ETH/BTC", {"limit": 50})
+        ccxt_object.un_watch_order_book.assert_awaited_once_with("ETH/BTC", expected_params)
         assert ccxt_object.un_watch_order_book_for_symbols.call_count == 0
     else:
         assert ccxt_object.un_watch_order_book.call_count == 0
