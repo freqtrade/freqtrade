@@ -1256,6 +1256,39 @@ def test_enter_positions(
     assert mock_ct.call_count == len(default_conf_usdt["exchange"]["pair_whitelist"])
 
 
+def test_enter_positions_entry_priority(mocker, default_conf_usdt) -> None:
+    freqtrade = get_patched_freqtradebot(mocker, default_conf_usdt)
+    mock_ct = mocker.patch(
+        "freqtrade.freqtradebot.FreqtradeBot.create_trade",
+        MagicMock(return_value=False),
+    )
+    whitelist = default_conf_usdt["exchange"]["pair_whitelist"]
+
+    freqtrade.enter_positions(len(whitelist))
+    assert [call.args[0] for call in mock_ct.call_args_list] == whitelist
+
+    mock_ct.reset_mock()
+
+    def priority(pair, current_time, **kwargs):
+        return {"NEO/USDT": 5, "ETH/USDT": 1}.get(pair, 0)
+
+    freqtrade.strategy.custom_entry_priority = priority
+    freqtrade.enter_positions(len(whitelist))
+    called = [call.args[0] for call in mock_ct.call_args_list]
+    assert called == ["NEO/USDT", "ETH/USDT", "LTC/USDT", "XRP/USDT", "TKN/USDT"]
+
+    mock_ct.reset_mock()
+    mock_ct.return_value = True
+    assert freqtrade.enter_positions(1) == 1
+    assert [call.args[0] for call in mock_ct.call_args_list] == ["NEO/USDT"]
+
+    freqtrade.strategy.custom_entry_priority = MagicMock(side_effect=ValueError("bad priority"))
+    mock_ct.reset_mock()
+    mock_ct.return_value = False
+    freqtrade.enter_positions(len(whitelist))
+    assert [call.args[0] for call in mock_ct.call_args_list] == whitelist
+
+
 @pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize("is_short", [False, True])
 def test_exit_positions(mocker, default_conf_usdt, limit_order, is_short, caplog) -> None:

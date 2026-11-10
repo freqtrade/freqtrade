@@ -6,7 +6,7 @@ import logging
 import traceback
 from copy import deepcopy
 from datetime import UTC, datetime, time, timedelta
-from math import isclose
+from math import isclose, isfinite
 from threading import Lock
 from time import sleep
 from typing import Any, NamedTuple
@@ -835,6 +835,8 @@ class FreqtradeBot(LoggingMixin):
                 self.log_once("Global pairlock active. Not creating new trades.", logger.info)
             return trades_created
 
+        whitelist = self._sort_pairs_by_entry_priority(whitelist)
+
         # Create entity and execute trade for each pair from whitelist
         for pair in whitelist:
             if free_trade_slots <= 0:
@@ -851,6 +853,30 @@ class FreqtradeBot(LoggingMixin):
             logger.debug("Found no enter signals for whitelisted currencies. Trying again...")
 
         return trades_created
+
+    def _entry_priority(self, pair: str, current_time: datetime) -> float:
+        """Higher numbers are tried first. A missing or invalid value sorts as 0."""
+        raw = strategy_safe_wrapper(self.strategy.custom_entry_priority, default_retval=0.0)(
+            pair=pair, current_time=current_time
+        )
+        try:
+            priority = float(raw)
+        except (TypeError, ValueError):
+            return 0.0
+        if not isfinite(priority):
+            return 0.0
+        return priority
+
+    def _sort_pairs_by_entry_priority(self, pairs: list[str]) -> list[str]:
+        """
+        Stable sort. Equal priorities, including the default 0, keep the incoming order.
+        """
+        current_time = datetime.now(UTC)
+        ranked = sorted(
+            enumerate(pairs),
+            key=lambda item: (-self._entry_priority(item[1], current_time), item[0]),
+        )
+        return [pair for _, pair in ranked]
 
     def create_trade(self, pair: str) -> bool:
         """

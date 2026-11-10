@@ -64,6 +64,7 @@ By default, the bot loop runs every few seconds (`internals.process_throttle_sec
 * Check position adjustments for open trades if enabled by calling `adjust_trade_position()` and place additional order if required.
 * Check if trade-slots are still available (if `max_open_trades` is reached).
 * Verifies entry signal trying to enter new positions.
+  * Pairs are tried in whitelist order, unless `custom_entry_priority()` returns a higher number for some of them.
   * Determine entry-price based on `entry_pricing` configuration setting, or by using the `custom_entry_price()` callback.
   * In Margin and Futures mode, `leverage()` strategy callback is called to determine the desired leverage.
   * Determine stake size by calling the `custom_stake_amount()` callback.

@@ -356,6 +356,26 @@ class IStrategy(ABC, HyperStrategyMixin):
             pair=pair, trade=trade, order=order, current_time=current_time
         )
 
+    def custom_entry_priority(
+        self,
+        pair: str,
+        current_time: datetime,
+        **kwargs,
+    ) -> float:
+        """
+        Sort key used before entry orders are attempted.
+        Higher values are tried first. The default is 0, which keeps the whitelist order.
+
+        Called after the analyzed dataframes for this loop already exist.
+        When not implemented by a strategy, returns 0.
+
+        :param pair: Pair that may be entered this loop.
+        :param current_time: datetime object, containing the current datetime
+        :param **kwargs: Ensure to keep this here so updates to this won't break your strategy.
+        :return float: Higher numbers are tried first. Equal numbers keep their whitelist order.
+        """
+        return 0.0
+
     def confirm_trade_entry(
         self,
         pair: str,

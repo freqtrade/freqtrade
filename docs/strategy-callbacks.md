@@ -15,6 +15,7 @@ Currently available callbacks:
 * [`custom_roi()`](#custom-roi)
 * [`custom_entry_price()` and `custom_exit_price()`](#custom-order-price-rules)
 * [`check_entry_timeout()` and `check_exit_timeout()`](#custom-order-timeout-rules)
+* [`custom_entry_priority()`](#custom-entry-priority)
 * [`confirm_trade_entry()`](#trade-entry-buy-order-confirmation)
 * [`confirm_trade_exit()`](#trade-exit-sell-order-confirmation)
 * [`adjust_trade_position()`](#adjust-trade-position)
@@ -783,6 +784,22 @@ class AwesomeStrategy(IStrategy):
 ```
 
 ---
+
+## Custom entry priority
+
+`custom_entry_priority()` decides which pair is tried first when several pairs can be entered in the same loop. A higher number is tried first. The default is `0`, and pairs with the same number keep their whitelist order.
+
+The callback runs after the dataframes for this loop have been analyzed. Read the priority from that dataframe. It does not place an order, and it does not change whether a pair has an entry signal. Backtesting still walks pairs in whitelist order, with pairs that already have an open trade processed first.
+
+``` python
+class AwesomeStrategy(IStrategy):
+
+    def custom_entry_priority(self, pair: str, current_time: datetime, **kwargs) -> float:
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+        if dataframe.empty:
+            return 0.0
+        return float(dataframe["entry_priority"].iloc[-1])
+```
 
 ## Bot order confirmation
 
