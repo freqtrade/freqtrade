@@ -6,7 +6,7 @@ In your configuration, you can use Static Pairlist (defined by the [`StaticPairL
 
 Additionally, [`AgeFilter`](#agefilter), [`DelistFilter`](#delistfilter), [`PrecisionFilter`](#precisionfilter), [`PriceFilter`](#pricefilter), [`ShuffleFilter`](#shufflefilter), [`SpreadFilter`](#spreadfilter) and [`VolatilityFilter`](#volatilityfilter) act as Pairlist Filters, removing certain pairs and/or moving their positions in the pairlist.
 
-If multiple Pairlist Handlers are used, they are chained and a combination of all Pairlist Handlers forms the resulting pairlist the bot uses for trading and backtesting. Pairlist Handlers are executed in the sequence they are configured. You can define either `StaticPairList`, `VolumePairList`, `ProducerPairList`, `RemotePairList`, `MarketCapPairList`, `PercentChangePairList` or `CrossMarketPairList` as the starting Pairlist Handler.
+If multiple Pairlist Handlers are used, they are chained and a combination of all Pairlist Handlers forms the resulting pairlist the bot uses for trading and backtesting. Pairlist Handlers are executed in the sequence they are configured. You can define either `StaticPairList`, `UserPairList`, `VolumePairList`, `ProducerPairList`, `RemotePairList`, `MarketCapPairList`, `PercentChangePairList` or `CrossMarketPairList` as the starting Pairlist Handler.
 
 Inactive markets are always removed from the resulting pairlist. Explicitly blacklisted pairs (those in the `pair_blacklist` configuration setting) are also always removed from the resulting pairlist.
 
@@ -21,6 +21,7 @@ You may also use something like `.*DOWN/BTC` or `.*UP/BTC` to exclude leveraged 
 ### Available Pairlist Handlers
 
 * [`StaticPairList`](#static-pair-list) (default, if not configured differently)
+* [`UserPairList`](#user-pair-list)
 * [`VolumePairList`](#volume-pair-list)
 * [`PercentChangePairList`](#percent-change-pair-list)
 * [`ProducerPairList`](#producerpairlist)
@@ -75,6 +76,22 @@ To skip pair validation against active markets, set `"allow_inactive": true` wit
 This can be useful for backtesting expired pairs (like quarterly spot-markets).
 
 When used in a "follow-up" position (e.g. after VolumePairlist), all pairs in `'pair_whitelist'` will be added to the end of the pairlist.
+
+#### User Pair List
+
+`UserPairList` reads pairs from the `user_pairs` database table. The table starts empty, and the rows stay in the database across restarts. Add and remove pairs with the REST endpoints `/api/v1/userpairlist`, or with the Telegram commands `/userpairlist` and `/userpairlist_delete`. The bot reads the table again on every pairlist refresh.
+
+It can lead the chain, in the same way `StaticPairList` can. Placed later in the chain, it appends its stored pairs to the list it receives. Pairs that are not active on the exchange are dropped. The pair blacklist still applies after the chain, so a blacklisted pair cannot be forced in.
+
+Backtesting and hyperopt reject `UserPairList`. The stored list is a live choice, and it is not historical data.
+
+```json
+"pairlists": [
+    {"method": "UserPairList"}
+],
+```
+
+Set `"allow_inactive": true` to keep pairs that are not currently active on the exchange.
 
 #### Volume Pair List
 

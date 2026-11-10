@@ -466,6 +466,16 @@ class BlacklistPayload(BaseModel):
     blacklist: list[str]
 
 
+class UserPairlistPayload(BaseModel):
+    pairs: list[str]
+
+
+class UserPairlistResponse(BaseModel):
+    pairs: list[str]
+    length: int
+    errors: dict
+
+
 class BlacklistResponse(BaseModel):
     blacklist: list[str]
     blacklist_expanded: list[str]

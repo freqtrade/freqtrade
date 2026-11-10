@@ -45,6 +45,7 @@ from freqtrade.ft_types import AnnotationType
 from freqtrade.loggers import bufferHandler
 from freqtrade.persistence import CustomDataWrapper, KeyValueStore, Order, PairLocks, Trade
 from freqtrade.persistence.models import PairLock, custom_data_rpc_wrapper
+from freqtrade.persistence.user_pair import UserPair, is_valid_user_pair
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.rpc.fiat_convert import CryptoToFiatConverter
 from freqtrade.rpc.rpc_types import RPCSendMsg
@@ -1471,6 +1472,41 @@ class RPC:
             "errors": errors,
         }
         return res
+
+    def _user_pairlist_response(self, errors: dict | None = None) -> dict:
+        """Stored user pairs. Refreshes the live whitelist when UserPairList is loaded."""
+        if "UserPairList" in self._freqtrade.pairlists.name_list:
+            self._freqtrade.pairlists.refresh_pairlist()
+        pairs = UserPair.list_pairs()
+        return {
+            "pairs": pairs,
+            "length": len(pairs),
+            "errors": errors or {},
+        }
+
+    def _rpc_userpairlist(self, add: list[str] | None = None) -> dict:
+        """Show the stored user pairlist, or add concrete pairs to it."""
+        errors = {}
+        if add:
+            for raw_pair in add:
+                pair = raw_pair.strip()
+                if not is_valid_user_pair(pair):
+                    errors[raw_pair] = {"error_msg": f"Pair {raw_pair} is not a valid pair."}
+                    continue
+                if not UserPair.add_pair(pair):
+                    errors[pair] = {"error_msg": f"Pair {pair} already in the user pairlist."}
+        return self._user_pairlist_response(errors)
+
+    def _rpc_userpairlist_delete(self, delete: list[str]) -> dict:
+        """Remove pairs from the stored user pairlist."""
+        errors = {}
+        for raw_pair in delete:
+            pair = raw_pair.strip()
+            if not UserPair.delete_pair(pair):
+                errors[raw_pair] = {
+                    "error_msg": f"Pair {raw_pair} is not in the user pairlist."
+                }
+        return self._user_pairlist_response(errors)
 
     @staticmethod
     def _rpc_get_logs(limit: int | None) -> dict[str, Any]:

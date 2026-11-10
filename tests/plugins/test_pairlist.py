@@ -3411,3 +3411,47 @@ def test_DelistFilter(mocker, default_conf_usdt, time_machine, caplog) -> None:
         "Removed NEO/USDT from whitelist, because it will be delisted on 2025-09-06 02:00:00.",
         caplog,
     )
+
+
+def test_userpairlist_generator_and_filter(mocker, whitelist_conf, markets, tickers):
+    from freqtrade.persistence.user_pair import UserPair
+
+    mocker.patch.multiple(
+        EXMS,
+        markets=PropertyMock(return_value=markets),
+        exchange_has=MagicMock(return_value=True),
+        get_tickers=tickers,
+    )
+    whitelist_conf["pairlists"] = [{"method": "UserPairList"}]
+    freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
+    freqtrade.pairlists.refresh_pairlist()
+    assert freqtrade.pairlists.whitelist == []
+
+    UserPair.add_pair("ETH/BTC")
+    UserPair.add_pair("BLK/BTC")
+    UserPair.add_pair("BTT/BTC")
+    UserPair.add_pair("NOPE/BTC")
+    freqtrade.pairlists.refresh_pairlist()
+    # BLK is blacklisted, BTT is inactive, NOPE is not a market.
+    assert freqtrade.pairlists.whitelist == ["ETH/BTC"]
+
+    whitelist_conf["pairlists"] = [{"method": "UserPairList", "allow_inactive": True}]
+    freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
+    UserPair.add_pair("ETH/BTC")
+    UserPair.add_pair("BTT/BTC")
+    freqtrade.pairlists.refresh_pairlist()
+    assert freqtrade.pairlists.whitelist == ["ETH/BTC", "BTT/BTC"]
+
+    whitelist_conf["pairlists"] = [
+        {"method": "StaticPairList"},
+        {"method": "UserPairList"},
+    ]
+    freqtrade = get_patched_freqtradebot(mocker, whitelist_conf)
+    UserPair.add_pair("ETH/BTC")
+    UserPair.add_pair("LTC/BTC")
+    UserPair.add_pair("BLK/BTC")
+    freqtrade.pairlists.refresh_pairlist()
+    assert "ETH/BTC" in freqtrade.pairlists.whitelist
+    assert freqtrade.pairlists.whitelist.count("ETH/BTC") == 1
+    assert freqtrade.pairlists.whitelist[-1] == "LTC/BTC"
+    assert "BLK/BTC" not in freqtrade.pairlists.whitelist
