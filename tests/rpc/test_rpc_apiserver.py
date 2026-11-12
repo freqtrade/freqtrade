@@ -1887,6 +1887,36 @@ def test_api_blacklist(botclient, mocker):
     }
 
 
+def test_api_userpairlist(botclient):
+    _ftbot, client = botclient
+
+    rc = client_get(client, f"{BASE_URI}/userpairlist")
+    assert_response(rc)
+    assert rc.json() == {"pairs": [], "length": 0, "errors": {}}
+
+    rc = client_post(client, f"{BASE_URI}/userpairlist", data={"pairs": ["ETH/BTC", "BTCUSDT"]})
+    assert_response(rc)
+    assert rc.json()["pairs"] == ["ETH/BTC"]
+    assert rc.json()["length"] == 1
+    assert rc.json()["errors"]["BTCUSDT"]["error_msg"] == "Pair BTCUSDT is not a valid pair."
+
+    rc = client_post(client, f"{BASE_URI}/userpairlist", data={"pairs": ["ETH/BTC"]})
+    assert_response(rc)
+    assert (
+        rc.json()["errors"]["ETH/BTC"]["error_msg"] == "Pair ETH/BTC already in the user pairlist."
+    )
+
+    rc = client_delete(client, f"{BASE_URI}/userpairlist?pairs_to_delete=ETH/BTC")
+    assert_response(rc)
+    assert rc.json() == {"pairs": [], "length": 0, "errors": {}}
+
+    rc = client_delete(client, f"{BASE_URI}/userpairlist?pairs_to_delete=LTC/BTC")
+    assert_response(rc)
+    assert (
+        rc.json()["errors"]["LTC/BTC"]["error_msg"] == "Pair LTC/BTC is not in the user pairlist."
+    )
+
+
 def test_api_whitelist(botclient):
     _ftbot, client = botclient
 

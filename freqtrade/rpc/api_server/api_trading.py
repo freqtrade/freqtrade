@@ -31,6 +31,8 @@ from freqtrade.rpc.api_server.api_schemas import (
     ResultMsg,
     Stats,
     StatusMsg,
+    UserPairlistPayload,
+    UserPairlistResponse,
     WalletHistoryResponse,
     WhitelistResponse,
 )
@@ -290,6 +292,24 @@ def blacklist_delete(pairs_to_delete: list[str] = Query([]), rpc: RPC = Depends(
     """Provide a list of pairs to delete from the blacklist"""
 
     return rpc._rpc_blacklist_delete(pairs_to_delete)
+
+
+@router.get(
+    "/userpairlist", response_model=UserPairlistResponse, tags=["Trading-info", "Pairlist"]
+)
+def userpairlist(rpc: RPC = Depends(get_rpc)):
+    return rpc._rpc_userpairlist()
+
+
+@router.post("/userpairlist", response_model=UserPairlistResponse, tags=["Pairlist"])
+def userpairlist_post(payload: UserPairlistPayload, rpc: RPC = Depends(get_rpc)):
+    return rpc._rpc_userpairlist(payload.pairs)
+
+
+@router.delete("/userpairlist", response_model=UserPairlistResponse, tags=["Pairlist"])
+def userpairlist_delete(pairs_to_delete: list[str] = Query([]), rpc: RPC = Depends(get_rpc)):
+    """Provide a list of pairs to delete from the stored user pairlist."""
+    return rpc._rpc_userpairlist_delete(pairs_to_delete)
 
 
 @router.get("/whitelist", response_model=WhitelistResponse, tags=["Trading-info", "Pairlist"])
