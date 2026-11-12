@@ -6,6 +6,7 @@ import pytest
 
 from freqtrade.commands.analyze_commands import start_analysis_entries_exits
 from freqtrade.commands.optimize_commands import start_backtesting
+from freqtrade.data.entryexitanalysis import _analyze_candles_and_indicators
 from freqtrade.enums import ExitType
 from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.backtesting import Backtesting
@@ -560,3 +561,104 @@ def test_backtest_analysis_on_entry_and_rejected_signals_only_entry_signals(
     assert "rsi (exit)" not in captured.out
     assert "52.829" in captured.out
     assert "profit_abs" in captured.out
+
+
+def _signal_candles(start="2024-01-01", periods=10, tz="UTC"):
+    dates = pd.date_range(start, periods=periods, freq="5min", tz="UTC").tz_convert(tz)
+    return pd.DataFrame(
+        {
+            "date": dates,
+            "close": [float(i) for i in range(periods)],
+            "rsi": [10.0 + i for i in range(periods)],
+        }
+    )
+
+
+def _unsorted(candles):
+    # Swap the last two candles (after all test trades) to take the unsorted code path
+    return candles.iloc[[*range(len(candles) - 2), len(candles) - 1, len(candles) - 2]]
+
+
+def _signal_trades(open_dates, pair="ETH/BTC", enter_tags=None):
+    return pd.DataFrame(
+        {
+            "pair": [pair] * len(open_dates),
+            "open_date": pd.to_datetime(open_dates, utc=True),
+            "enter_tag": enter_tags or [f"tag_{i}" for i in range(len(open_dates))],
+            "profit_abs": [float(i) for i in range(len(open_dates))],
+        }
+    )
+
+
+def test_analyze_candles_and_indicators():
+    candles = _signal_candles()
+    trades = _signal_trades(
+        [
+            "2023-12-31 23:00:00",  # before the first candle - no signal candle
+            "2024-01-01 00:11:00",  # signal candle 00:10
+            "2024-01-01 00:12:00",  # same signal candle as the previous trade
+            "2024-01-01 00:25:00",  # exactly on a candle - uses the candle before (00:20)
+        ]
+    )
+    res = _analyze_candles_and_indicators("ETH/BTC", trades, candles)
+
+    # Outer merge on the shared signal candle duplicates both of its trades.
+    assert len(res) == 6
+    assert res.index.name == "signal_date"
+    # The trade without a signal candle is kept, with a NaT signal_date.
+    assert pd.isna(res.index[0])
+    assert res["enter_tag"].tolist() == ["tag_0", "tag_1", "tag_1", "tag_2", "tag_2", "tag_3"]
+    assert pd.isna(res["enter_reason"].iloc[0])
+    assert res["enter_reason"].tolist()[1:] == ["tag_1", "tag_1", "tag_2", "tag_2", "tag_3"]
+    assert pd.isna(res["close"].iloc[0])
+    assert res["close"].tolist()[1:] == [2.0, 2.0, 2.0, 2.0, 4.0]
+    assert str(res.index.tz) == "UTC"
+
+    # Unsorted candles take the per-trade fallback - result must be the same.
+    res_unsorted = _analyze_candles_and_indicators("ETH/BTC", trades, _unsorted(candles))
+    pd.testing.assert_frame_equal(res, res_unsorted)
+
+
+def test_analyze_candles_and_indicators_no_signals():
+    candles = _signal_candles()
+    trades = _signal_trades(["2024-01-01 00:11:00"])
+
+    # Pair without trades
+    res = _analyze_candles_and_indicators("LTC/BTC", trades, candles)
+    assert res.empty
+    assert "signal_date" not in res
+
+    # Pair without signal candles
+    res = _analyze_candles_and_indicators("ETH/BTC", trades, candles.iloc[0:0])
+    assert res.empty
+
+    # All trades before the first candle - trades are returned unchanged
+    trades = _signal_trades(["2023-12-31 23:00:00", "2024-01-01 00:00:00"])
+    for signals in (candles, candles.iloc[::-1]):
+        res = _analyze_candles_and_indicators("ETH/BTC", trades, signals)
+        pd.testing.assert_frame_equal(res, trades)
+
+
+def test_analyze_candles_and_indicators_tz_and_close_date():
+    candles = _signal_candles(tz="Asia/Tokyo")
+    trades = _signal_trades(["2024-01-01 00:11:00", "2024-01-01 00:21:00"])
+    trades["open_date"] = trades["open_date"].dt.tz_convert("US/Eastern")
+    trades["close_date"] = pd.to_datetime(["2024-01-01 00:31:00", None], utc=True)
+
+    res = _analyze_candles_and_indicators("ETH/BTC", trades, candles)
+    assert str(res.index.tz) == "UTC"
+    assert (
+        res.index.tolist()
+        == pd.to_datetime(["2024-01-01 00:10:00", "2024-01-01 00:20:00"], utc=True).tolist()
+    )
+
+    # Exit analysis: trades without a close_date get no signal candle.
+    res = _analyze_candles_and_indicators("ETH/BTC", trades, candles, "close_date")
+    assert len(res) == 2
+    assert pd.isna(res.index[0])
+    assert res.index[1] == pd.Timestamp("2024-01-01 00:30:00", tz="UTC")
+    assert res["close"].iloc[1] == 6.0
+    res_unsorted = _analyze_candles_and_indicators(
+        "ETH/BTC", trades, _unsorted(candles), "close_date"
+    )
+    pd.testing.assert_frame_equal(res, res_unsorted)
