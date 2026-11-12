@@ -49,15 +49,29 @@ def _analyze_candles_and_indicators(
         trades_inds = pd.DataFrame()
 
         if trades_red.shape[0] > 0 and buyf.shape[0] > 0:
-            for t, v in trades_red.iterrows():
-                allinds = buyf.loc[(buyf["date"] < v[date_col])]
-                if allinds.shape[0] > 0:
-                    tmp_inds = allinds.iloc[[-1]]
+            if buyf["date"].is_monotonic_increasing:
+                # Last candle with date strictly before the trade date, for each trade.
+                candle_count = buyf["date"].searchsorted(trades_red[date_col], side="left")
+                # NaT trade dates sort last - but have no candle before them.
+                has_signal = (candle_count > 0) & trades_red[date_col].notna().to_numpy()
+                if has_signal.any():
+                    signals = buyf.iloc[candle_count[has_signal] - 1]
 
-                    trades_red.loc[t, "signal_date"] = tmp_inds["date"].iloc[0]
-                    trades_red.loc[t, "enter_reason"] = trades_red.loc[t, "enter_tag"]
-                    tmp_inds = tmp_inds.rename_axis("signal_date")
-                    trades_inds = pd.concat([trades_inds, tmp_inds])
+                    trades_red.loc[has_signal, "signal_date"] = signals["date"].array
+                    trades_red.loc[has_signal, "enter_reason"] = trades_red.loc[
+                        has_signal, "enter_tag"
+                    ]
+                    trades_inds = signals.rename_axis("signal_date")
+            else:
+                for t, v in trades_red.iterrows():
+                    allinds = buyf.loc[(buyf["date"] < v[date_col])]
+                    if allinds.shape[0] > 0:
+                        tmp_inds = allinds.iloc[[-1]]
+
+                        trades_red.loc[t, "signal_date"] = tmp_inds["date"].iloc[0]
+                        trades_red.loc[t, "enter_reason"] = trades_red.loc[t, "enter_tag"]
+                        tmp_inds = tmp_inds.rename_axis("signal_date")
+                        trades_inds = pd.concat([trades_inds, tmp_inds])
 
             if "signal_date" in trades_red:
                 trades_red["signal_date"] = pd.to_datetime(trades_red["signal_date"], utc=True)
