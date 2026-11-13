@@ -5,6 +5,7 @@ However, these tests should give a good idea to determine if a new exchange is
 suitable to run with freqtrade.
 """
 
+import logging
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -18,6 +19,7 @@ from freqtrade.exchange import (
 )
 from freqtrade.exchange.exchange import Exchange, timeframe_to_msecs
 from freqtrade.util import dt_floor_day, dt_now, dt_ts
+from tests.conftest import log_has_re
 from tests.exchange_online.conftest import EXCHANGE_FIXTURE_TYPE
 
 
@@ -542,22 +544,27 @@ class TestCCXTExchange:
             trades_orig = nvspy.call_args_list[2][0][0]
             assert len(trades_orig[-1].get("info")) > len(trades_orig[-2].get("info"))
 
-    def _ccxt_get_fee(self, exch: Exchange, pair: str):
+    def _ccxt_get_fee(self, exch: Exchange, pair: str, caplog):
         threshold = 0.01
-        assert 0 < exch.get_fee(pair, "limit", "buy") < threshold
-        assert 0 < exch.get_fee(pair, "limit", "sell") < threshold
-        assert 0 < exch.get_fee(pair, "market", "buy") < threshold
-        assert 0 < exch.get_fee(pair, "market", "sell") < threshold
+        with caplog.at_level(logging.DEBUG, logger=Exchange.__module__):
+            assert 0 <= exch.get_fee(pair, "limit", "buy") < threshold
+            assert 0 <= exch.get_fee(pair, "limit", "sell") < threshold
+            assert 0 <= exch.get_fee(pair, "market", "buy") < threshold
+            assert 0 <= exch.get_fee(pair, "market", "sell") < threshold
+        # A missing fee also returns zero, but logs that the rate could not be determined.
+        assert not log_has_re(
+            r"Could not determine (maker|taker) fee for .* - assuming 0\.", caplog
+        ), f"Missing fee data for {pair}"
 
-    def test_ccxt_get_fee_spot(self, exchange: EXCHANGE_FIXTURE_TYPE):
+    def test_ccxt_get_fee_spot(self, exchange: EXCHANGE_FIXTURE_TYPE, caplog):
         exch, _, exchange_params = exchange
         pair = exchange_params["pair"]
-        self._ccxt_get_fee(exch, pair)
+        self._ccxt_get_fee(exch, pair, caplog)
 
-    def test_ccxt_get_fee_futures(self, exchange_futures: EXCHANGE_FIXTURE_TYPE):
+    def test_ccxt_get_fee_futures(self, exchange_futures: EXCHANGE_FIXTURE_TYPE, caplog):
         exch, _, exchange_params = exchange_futures
         pair = exchange_params.get("futures_pair", exchange_params["pair"])
-        self._ccxt_get_fee(exch, pair)
+        self._ccxt_get_fee(exch, pair, caplog)
 
     def test_ccxt_get_max_leverage_spot(self, exchange: EXCHANGE_FIXTURE_TYPE):
         spot, _, exchange_params = exchange
