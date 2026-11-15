@@ -312,8 +312,10 @@ In "filter" mode, the retrieved pairlist is used as a filter. Only the pairs pre
 In "append" mode, the retrieved pairlist is added to the original pairlist. All pairs from both lists are included in the final pairlist without any filtering.
 
 The `pairlist_url` option specifies the URL of the remote server where the pairlist is located, or the path to a local file (if file:/// is prepended). This allows the user to use either a remote server or a local file as the source for the pairlist.
+Local files must be located within the `user_data` directory - relative paths are resolved from the current working directory.
 
 The `save_to_file` option, when provided with a valid filename, saves the processed pairlist to that file in JSON format. This option is optional, and by default, the pairlist is not saved to a file.
+The file must be located within the `user_data` directory.
 
 ??? Example "Multi bot with shared pairlist example"
 
