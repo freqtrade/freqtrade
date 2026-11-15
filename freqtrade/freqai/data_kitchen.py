@@ -958,16 +958,18 @@ class FreqaiDataKitchen:
             logger.info(f"Could not find backtesting prediction file at {path_to_predictionfile}")
             return False
 
-    def get_full_models_path(self, config: Config) -> Path:
+    @staticmethod
+    def get_full_models_path(config: Config) -> Path:
         """
         Returns default FreqAI model path
         :param config: Configuration dictionary
+        :raises: OperationalException if the identifier resolves outside of the models directory
         """
         freqai_config: dict[str, Any] = config["freqai"]
         identifier = str(freqai_config.get("identifier"))
         models_dir = Path(config["user_data_dir"] / "models")
         full_path = models_dir / identifier
-        if not is_path_in_dir(full_path, models_dir):
+        if not is_path_in_dir(full_path, models_dir) or full_path.resolve() == models_dir.resolve():
             raise OperationalException(
                 f"Invalid freqai identifier '{identifier}' - it must stay within {models_dir}."
             )

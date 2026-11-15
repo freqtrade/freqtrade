@@ -614,7 +614,7 @@ class IFreqaiModel(ABC):
         """
         Creates and sets the full path for the identifier
         """
-        self.full_path = Path(self.config["user_data_dir"] / "models" / f"{self.identifier}")
+        self.full_path = FreqaiDataKitchen.get_full_models_path(self.config)
         self.full_path.mkdir(parents=True, exist_ok=True)
 
     def extract_data_and_train_model(
