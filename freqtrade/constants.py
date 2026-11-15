@@ -38,6 +38,7 @@ HYPEROPT_LOSS_BUILTIN = [
     "SortinoHyperOptLoss",
     "SortinoHyperOptLossDaily",
     "CalmarHyperOptLoss",
+    "OmegaHyperOptLoss",
     "MaxDrawDownHyperOptLoss",
     "MaxDrawDownRelativeHyperOptLoss",
     "MaxDrawDownPerPairHyperOptLoss",
