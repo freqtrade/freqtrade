@@ -62,6 +62,9 @@ def _analyze_candles_and_indicators(
             if "signal_date" in trades_red:
                 trades_red["signal_date"] = pd.to_datetime(trades_red["signal_date"], utc=True)
                 trades_red = trades_red.set_index("signal_date")
+                # Trades sharing a signal candle add it once each - keep one copy,
+                # otherwise the merge duplicates these trades.
+                trades_inds = trades_inds[~trades_inds.index.duplicated()]
 
                 trades_red = pd.merge(trades_red, trades_inds, on="signal_date", how="outer")
         return trades_red

@@ -6,6 +6,7 @@ import pytest
 
 from freqtrade.commands.analyze_commands import start_analysis_entries_exits
 from freqtrade.commands.optimize_commands import start_backtesting
+from freqtrade.data.entryexitanalysis import _analyze_candles_and_indicators
 from freqtrade.enums import ExitType
 from freqtrade.exceptions import OperationalException
 from freqtrade.optimize.backtesting import Backtesting
@@ -560,3 +561,35 @@ def test_backtest_analysis_on_entry_and_rejected_signals_only_entry_signals(
     assert "rsi (exit)" not in captured.out
     assert "52.829" in captured.out
     assert "profit_abs" in captured.out
+
+
+def test_analyze_candles_and_indicators_shared_signal_candle():
+    dates = pd.date_range("2024-01-01", periods=5, freq="5min", tz="UTC")
+    # Signal export holds one row per trade - parallel trades repeat their candle
+    candles = pd.DataFrame({"date": dates, "close": [float(i) for i in range(5)]})
+    candles = candles.iloc[[0, 1, 2, 2, 3, 4]]
+    trades = pd.DataFrame(
+        {
+            "pair": "ETH/BTC",
+            "open_date": pd.to_datetime(
+                [
+                    "2023-12-31 23:00:00",  # before the first candle - no signal candle
+                    "2024-01-01 00:11:00",  # signal candle 00:10
+                    "2024-01-01 00:12:00",  # same signal candle as the previous trade
+                    "2024-01-01 00:12:00",  # parallel trade, same open date
+                    "2024-01-01 00:20:00",  # exactly on a candle - uses 00:15
+                ],
+                utc=True,
+            ),
+            "enter_tag": [f"tag_{i}" for i in range(5)],
+            "profit_abs": [1.0, 2.0, 3.0, 4.0, 5.0],
+        }
+    )
+    res = _analyze_candles_and_indicators("ETH/BTC", trades, candles)
+
+    assert len(res) == 5
+    assert res["enter_tag"].tolist() == ["tag_0", "tag_1", "tag_2", "tag_3", "tag_4"]
+    assert res["profit_abs"].sum() == trades["profit_abs"].sum()
+    assert pd.isna(res.index[0])
+    assert pd.isna(res["close"].iloc[0])
+    assert res["close"].tolist()[1:] == [2.0, 2.0, 2.0, 3.0]
