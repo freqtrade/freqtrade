@@ -15,6 +15,7 @@ from freqtrade import __version__
 from freqtrade.configuration.load_config import CONFIG_PARSE_MODE
 from freqtrade.exceptions import OperationalException
 from freqtrade.exchange.exchange_types import Tickers
+from freqtrade.misc import is_path_in_dir
 from freqtrade.plugins.pairlist.IPairList import IPairList, PairlistParameter, SupportsBacktesting
 from freqtrade.plugins.pairlist.pairlist_helpers import expand_pairlist
 from freqtrade.util import FtTTLCache
@@ -50,6 +51,14 @@ class RemotePairList(IPairList):
         self._save_to_file = self._pairlistconfig.get("save_to_file", None)
         self._last_pairlist: list[Any] = []
 
+        self._pairlist_file: Path | None = None
+        if self._pairlist_url.startswith("file:///"):
+            self._pairlist_file = self._validate_file_location(
+                self._pairlist_url.split("file:///", 1)[1], "pairlist_url"
+            )
+        if self._save_to_file:
+            self._validate_file_location(self._save_to_file, "save_to_file")
+
         if self._mode not in ["whitelist", "blacklist"]:
             raise OperationalException(
                 f"{self.name}: `mode` not configured correctly (got `{self._mode}`). "
@@ -68,6 +77,20 @@ class RemotePairList(IPairList):
                 f"{self.name}: A `blacklist` mode RemotePairList can not be on the first "
                 "position of your pairlist."
             )
+
+    def _validate_file_location(self, filename: str, option: str) -> Path:
+        """
+        Ensure local files are within the user_data directory.
+        Prevents reading or writing arbitrary files - the pairlist configuration can
+        be supplied via the API.
+        """
+        file_path = Path(filename)
+        if not is_path_in_dir(file_path, Path(self._config["user_data_dir"])):
+            raise OperationalException(
+                f"{self.name}: `{option}` must point to a file within the user_data directory "
+                f"(got `{filename}`)."
+            )
+        return file_path
 
     def short_desc(self) -> str:
         """
@@ -222,10 +245,7 @@ class RemotePairList(IPairList):
             # Item found - no refresh necessary
             return pairlist.copy()
         else:
-            if self._pairlist_url.startswith("file:///"):
-                filename = self._pairlist_url.split("file:///", 1)[1]
-                file_path = Path(filename)
-
+            if file_path := self._pairlist_file:
                 if file_path.exists():
                     with file_path.open() as json_file:
                         try:
