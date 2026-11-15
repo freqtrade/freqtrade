@@ -24,6 +24,7 @@ from tests.conftest import (
 )
 from tests.freqai.conftest import (
     get_patched_freqai_strategy,
+    get_patched_freqaimodel,
     make_rl_config,
     mock_pytorch_mlp_model_training_parameters,
 )
@@ -639,3 +640,13 @@ def test_get_state_info(mocker, freqai_conf, dp_exists, caplog, tickers):
             "No exchange available",
             caplog,
         )
+
+
+def test_freqai_model_rejects_identifier_outside_models_dir(mocker, freqai_conf, tmp_path):
+    freqai_conf["user_data_dir"] = tmp_path / "user_data"
+    freqai_conf["freqai"]["identifier"] = "../../escaped"
+
+    with pytest.raises(OperationalException, match="Invalid freqai identifier"):
+        get_patched_freqaimodel(mocker, freqai_conf)
+
+    assert not (tmp_path / "escaped").exists()

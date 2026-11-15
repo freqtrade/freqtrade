@@ -148,6 +148,9 @@ def test_get_full_model_path(mocker, freqai_conf, model):
         ("../../../tmp/escaped", False),
         ("..", False),
         ("/etc/passwd", False),
+        (".", False),
+        ("", False),
+        ("sub/..", False),
     ],
 )
 def test_get_full_models_path_stays_within_user_data(freqai_conf, identifier, valid):
@@ -155,11 +158,11 @@ def test_get_full_models_path_stays_within_user_data(freqai_conf, identifier, va
     models_dir = Path(freqai_conf["user_data_dir"]) / "models"
 
     if valid:
-        path = FreqaiDataKitchen.get_full_models_path(None, freqai_conf)
+        path = FreqaiDataKitchen.get_full_models_path(freqai_conf)
         assert path.resolve().is_relative_to(models_dir.resolve())
     else:
         with pytest.raises(OperationalException, match="Invalid freqai identifier"):
-            FreqaiDataKitchen.get_full_models_path(None, freqai_conf)
+            FreqaiDataKitchen.get_full_models_path(freqai_conf)
 
 
 def test_get_pair_data_for_features_with_prealoaded_data(mocker, freqai_conf):
