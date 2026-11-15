@@ -23,16 +23,11 @@ def rpl_config(default_conf):
     return default_conf
 
 
-def test_gen_pairlist_with_local_file(mocker, rpl_config):
-    mock_file = MagicMock()
-    mock_file.read.return_value = '{"pairs": ["TKN/USDT","ETH/USDT","NANO/USDT"]}'
-    mocker.patch("freqtrade.plugins.pairlist.RemotePairList.open", return_value=mock_file)
-
-    mock_file_path = mocker.patch("freqtrade.plugins.pairlist.RemotePairList.Path")
-    mock_file_path.exists.return_value = True
-
-    jsonparse = json.loads(mock_file.read.return_value)
-    mocker.patch("freqtrade.plugins.pairlist.RemotePairList.rapidjson.load", return_value=jsonparse)
+def test_gen_pairlist_with_local_file(mocker, rpl_config, tmp_path):
+    rpl_config["user_data_dir"] = tmp_path
+    pairlist_file = tmp_path / "pairlist.json"
+    pairlist_file.write_text('{"pairs": ["TKN/USDT","ETH/USDT","NANO/USDT"]}')
+    saved_file = tmp_path / "saved_pairlist.json"
 
     rpl_config["pairlists"] = [
         {
@@ -40,9 +35,10 @@ def test_gen_pairlist_with_local_file(mocker, rpl_config):
             "number_assets": 2,
             "refresh_period": 1800,
             "keep_pairlist_on_failure": True,
-            "pairlist_url": "file:///pairlist.json",
+            "pairlist_url": f"file:///{pairlist_file}",
             "bearer_token": "",
             "read_timeout": 60,
+            "save_to_file": str(saved_file),
         }
     ]
 
@@ -56,6 +52,38 @@ def test_gen_pairlist_with_local_file(mocker, rpl_config):
     result = remote_pairlist.gen_pairlist([])
 
     assert result == ["TKN/USDT", "ETH/USDT"]
+    assert json.loads(saved_file.read_text()) == {"pairs": ["TKN/USDT", "ETH/USDT"]}
+
+
+@pytest.mark.parametrize(
+    "option,value",
+    [
+        ("pairlist_url", "file:///{outside}/pairlist.json"),
+        ("pairlist_url", "file:///{user_data}/../pairlist.json"),
+        ("pairlist_url", "file:///{user_data}/sub/../../etc/passwd"),
+        ("save_to_file", "{outside}/pairlist.json"),
+        ("save_to_file", "{user_data}/../pairlist.json"),
+    ],
+)
+def test_remote_pairlist_files_outside_user_data(mocker, rpl_config, tmp_path, option, value):
+    user_data = tmp_path / "user_data"
+    user_data.mkdir()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "pairlist.json").write_text('{"pairs": ["TKN/USDT"]}')
+    rpl_config["user_data_dir"] = user_data
+
+    pairlist_config = {
+        "method": "RemotePairList",
+        "pairlist_url": "http://example.com/pairlist",
+        option: value.format(outside=outside, user_data=user_data),
+    }
+    rpl_config["pairlists"] = [pairlist_config]
+
+    exchange = get_patched_exchange(mocker, rpl_config)
+
+    with pytest.raises(OperationalException, match=f"`{option}` must point to a file within"):
+        PairListManager(exchange, rpl_config)
 
 
 def test_fetch_pairlist_mock_response_html(mocker, rpl_config):
