@@ -2877,8 +2877,10 @@ Obviously in complex such configurations, the Producer may not provide data for 
 <p>The optional <code>number_assets</code> option in the RemotePairList configuration determines how many pairs will be returned if used in whitelist <code>mode</code>. By default, all pairs will be returned. In blacklist <code>mode</code>, this option will be ignored.</p>
 <p>In "filter" mode, the retrieved pairlist is used as a filter. Only the pairs present in both the original pairlist and the retrieved pairlist are included in the final pairlist. Other pairs are filtered out.</p>
 <p>In "append" mode, the retrieved pairlist is added to the original pairlist. All pairs from both lists are included in the final pairlist without any filtering.</p>
-<p>The <code>pairlist_url</code> option specifies the URL of the remote server where the pairlist is located, or the path to a local file (if file:/// is prepended). This allows the user to use either a remote server or a local file as the source for the pairlist.</p>
-<p>The <code>save_to_file</code> option, when provided with a valid filename, saves the processed pairlist to that file in JSON format. This option is optional, and by default, the pairlist is not saved to a file.</p>
+<p>The <code>pairlist_url</code> option specifies the URL of the remote server where the pairlist is located, or the path to a local file (if file:/// is prepended). This allows the user to use either a remote server or a local file as the source for the pairlist.
+Local files must be located within the <code>user_data</code> directory - relative paths are resolved from the current working directory.</p>
+<p>The <code>save_to_file</code> option, when provided with a valid filename, saves the processed pairlist to that file in JSON format. This option is optional, and by default, the pairlist is not saved to a file.
+The file must be located within the <code>user_data</code> directory.</p>
 <details class="example">
 <summary>Multi bot with shared pairlist example</summary>
 <p><code>save_to_file</code> can be used to save the pairlist to a file with Bot1:</p>
