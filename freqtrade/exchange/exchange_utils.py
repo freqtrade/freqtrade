@@ -376,11 +376,10 @@ def price_to_precision(
                 return floor(ticks) / (10**ndigits)
 
             raise ValueError(f"Unknown rounding_mode {rounding_mode}")
-        elif precisionMode == SIGNIFICANT_DIGITS:
-            if rounding_mode in (ROUND_UP, ROUND_DOWN):
-                return __price_to_precision_significant_digits(
-                    price, price_precision, rounding_mode=rounding_mode
-                )
+        elif precisionMode == SIGNIFICANT_DIGITS and rounding_mode in (ROUND_UP, ROUND_DOWN):
+            return __price_to_precision_significant_digits(
+                price, price_precision, rounding_mode=rounding_mode
+            )
 
         raise ValueError(f"Unknown precisionMode {precisionMode}")
     return price
