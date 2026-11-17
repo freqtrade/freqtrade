@@ -41,7 +41,7 @@ jobs:
           FREQTRADE__EXCHANGE__SECRET: ${{ secrets.BINANCE_EXCHANGE_SECRET }}
         run: python build_helpers/binance_update_lev_tiers.py
 
-      - uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+      - uses: peter-evans/create-pull-request@15733dbdfeedb4f7fdb73d13c6f5ac83b710fab8 # v8.1.2
         with:
           token: ${{ secrets.REPO_SCOPED_TOKEN }}
           add-paths: freqtrade/exchange/binance_leverage_tiers.json
