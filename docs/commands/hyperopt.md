@@ -85,7 +85,8 @@ options:
                         ShortTradeDurHyperOptLoss, OnlyProfitHyperOptLoss,
                         SharpeHyperOptLoss, SharpeHyperOptLossDaily,
                         SortinoHyperOptLoss, SortinoHyperOptLossDaily,
-                        CalmarHyperOptLoss, MaxDrawDownHyperOptLoss,
+                        CalmarHyperOptLoss, OmegaHyperOptLoss,
+                        MaxDrawDownHyperOptLoss,
                         MaxDrawDownRelativeHyperOptLoss,
                         MaxDrawDownPerPairHyperOptLoss,
                         ProfitDrawDownHyperOptLoss, MultiMetricHyperOptLoss

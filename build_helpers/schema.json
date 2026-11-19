@@ -355,7 +355,7 @@
       "minimum": 0
     },
     "hyperopt_loss": {
-      "description": "The class name of the hyperopt loss function class (IHyperOptLoss). Different functions can generate completely different results, since the target for optimization is different. Built-in Hyperopt-loss-functions are: ShortTradeDurHyperOptLoss, OnlyProfitHyperOptLoss, SharpeHyperOptLoss, SharpeHyperOptLossDaily, SortinoHyperOptLoss, SortinoHyperOptLossDaily, CalmarHyperOptLoss, MaxDrawDownHyperOptLoss, MaxDrawDownRelativeHyperOptLoss, MaxDrawDownPerPairHyperOptLoss, ProfitDrawDownHyperOptLoss, MultiMetricHyperOptLoss",
+      "description": "The class name of the hyperopt loss function class (IHyperOptLoss). Different functions can generate completely different results, since the target for optimization is different. Built-in Hyperopt-loss-functions are: ShortTradeDurHyperOptLoss, OnlyProfitHyperOptLoss, SharpeHyperOptLoss, SharpeHyperOptLossDaily, SortinoHyperOptLoss, SortinoHyperOptLossDaily, CalmarHyperOptLoss, OmegaHyperOptLoss, MaxDrawDownHyperOptLoss, MaxDrawDownRelativeHyperOptLoss, MaxDrawDownPerPairHyperOptLoss, ProfitDrawDownHyperOptLoss, MultiMetricHyperOptLoss",
       "type": "string"
     },
     "bot_name": {
