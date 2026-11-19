@@ -190,7 +190,7 @@ You can create your own keyboard in `config.json`:
 !!! Note "Supported Commands"
     Only the following commands are allowed. Command arguments are not supported!
 
-    `/start`, `/pause`, `/stop`, `/status`, `/status table`, `/trades`, `/profit`, `/performance`, `/daily`, `/stats`, `/count`, `/locks`, `/balance`, `/stopentry`, `/reload_config`, `/show_config`, `/logs`, `/whitelist`, `/blacklist`, `/help`, `/version`, `/marketdir`
+    `/start`, `/pause`, `/stop`, `/status`, `/status table`, `/trades`, `/profit`, `/performance`, `/daily`, `/stats`, `/count`, `/locks`, `/balance`, `/stopentry`, `/reload_config`, `/show_config`, `/logs`, `/whitelist`, `/blacklist`, `/userpairlist`, `/userpairlist_delete`, `/help`, `/version`, `/marketdir`
 
 ## Telegram commands
 
@@ -246,6 +246,8 @@ official commands. You can ask at any moment for help with `/help`.
 | `/whitelist [sorted] [baseonly]` | Show the current whitelist. Optionally display in alphabetical order and/or with just the base currency of each pairing.
 | `/blacklist [pair]` | Show the current blacklist, or adds a pair to the blacklist.
 | `/blacklist_delete [pairs] | /bl_delete [pairs]` | Delete pair / pattern from blacklist. Will reset on reload_conf.
+| `/userpairlist [pair]` | Show pairs stored for `UserPairList`, or add one or more pairs. Kept across restarts.
+| `/userpairlist_delete [pairs]` | Remove pairs from the stored `UserPairList`.
 
 ## Telegram commands in action
 
@@ -457,6 +459,16 @@ Use `/reload_config` to reset the blacklist.
 
 > Using blacklist `StaticPairList` with 2 pairs  
 >`DODGE/BTC`, `HOT/BTC`.  
+
+### /userpairlist [pair]
+
+Shows the pairs stored for `UserPairList`.
+If one or more pairs are set, they are added to that list. The list is stored in the database and is still there after a restart.
+The bot picks the change up on the next pairlist refresh. A blacklisted pair is still excluded from the whitelist.
+
+### /userpairlist_delete [pairs]
+
+Removes one or more pairs from the stored `UserPairList`.
 
 ### /version
 

@@ -1627,6 +1627,26 @@ def test_rpc_blacklist(mocker, default_conf) -> None:
     assert isinstance(ret["errors"], dict)
 
 
+def test_rpc_userpairlist(mocker, default_conf) -> None:
+    mocker.patch("freqtrade.rpc.telegram.Telegram", MagicMock())
+
+    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
+    rpc = RPC(freqtradebot)
+    ret = rpc._rpc_userpairlist()
+    assert ret == {"pairs": [], "length": 0, "errors": {}}
+
+    ret = rpc._rpc_userpairlist(["ETH/BTC", "BTCUSDT", "ETH/BTC"])
+    assert ret["pairs"] == ["ETH/BTC"]
+    assert ret["length"] == 1
+    assert ret["errors"]["BTCUSDT"]["error_msg"] == "Pair BTCUSDT is not a valid pair."
+    assert ret["errors"]["ETH/BTC"]["error_msg"] == "Pair ETH/BTC already in the user pairlist."
+
+    ret = rpc._rpc_userpairlist_delete(["ETH/BTC", "LTC/BTC"])
+    assert ret["pairs"] == []
+    assert ret["length"] == 0
+    assert ret["errors"]["LTC/BTC"]["error_msg"] == "Pair LTC/BTC is not in the user pairlist."
+
+
 def test_rpc_health(mocker, default_conf) -> None:
     mocker.patch("freqtrade.rpc.telegram.Telegram", MagicMock())
 

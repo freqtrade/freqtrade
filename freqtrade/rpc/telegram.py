@@ -218,6 +218,8 @@ class Telegram(RPCHandler):
             r"/whitelist(\ssorted|\sbaseonly)+$",
             r"/blacklist$",
             r"/bl_delete$",
+            r"/userpairlist$",
+            r"/userpairlist_delete$",
             r"/weekly$",
             r"/weekly \d+$",
             r"/monthly$",
@@ -309,6 +311,8 @@ class Telegram(RPCHandler):
             CommandHandler("whitelist", self._whitelist),
             CommandHandler("blacklist", self._blacklist),
             CommandHandler(["blacklist_delete", "bl_delete"], self._blacklist_delete),
+            CommandHandler("userpairlist", self._userpairlist),
+            CommandHandler("userpairlist_delete", self._userpairlist_delete),
             CommandHandler("logs", self._logs),
             CommandHandler("health", self._health),
             CommandHandler("help", self._help),
@@ -1928,6 +1932,32 @@ class Telegram(RPCHandler):
         await self.send_blacklist_msg(self._rpc._rpc_blacklist_delete(context.args or []))
 
     @authorized_only
+    async def _userpairlist(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /userpairlist
+        Shows the stored user pairlist, or adds pairs to it.
+        """
+        await self.send_userpairlist_msg(self._rpc._rpc_userpairlist(context.args))
+
+    async def send_userpairlist_msg(self, userpairlist: dict) -> None:
+        errmsgs = [f"Error: {error['error_msg']}" for error in userpairlist["errors"].values()]
+        if errmsgs:
+            await self._send_msg("\n".join(errmsgs))
+
+        message = f"User pairlist contains {userpairlist['length']} pairs\n"
+        message += f"`{', '.join(userpairlist['pairs'])}`"
+        logger.debug(message)
+        await self._send_msg(message)
+
+    @authorized_only
+    async def _userpairlist_delete(self, update: Update, context: CallbackContext) -> None:
+        """
+        Handler for /userpairlist_delete
+        Deletes pair(s) from the stored user pairlist.
+        """
+        await self.send_userpairlist_msg(self._rpc._rpc_userpairlist_delete(context.args or []))
+
+    @authorized_only
     async def _logs(self, update: Update, context: CallbackContext) -> None:
         """
         Handler for /logs
@@ -2000,6 +2030,10 @@ class Telegram(RPCHandler):
             "to the blacklist.` \n"
             "*/blacklist_delete [pairs]| /bl_delete [pairs]:* "
             "`Delete pair / pattern from blacklist. Will reset on reload_conf.` \n"
+            "*/userpairlist [pair]:* `Show pairs stored for UserPairList, "
+            "or add one or more pairs.` \n"
+            "*/userpairlist_delete [pairs]:* `Remove pairs from the stored UserPairList. "
+            "The change is kept across restarts.` \n"
             "*/reload_config:* `Reload configuration file` \n"
             "*/unlock <pair|id>:* `Unlock this Pair (or this lock id if it's numeric)`\n"
             "_Current state_\n"
