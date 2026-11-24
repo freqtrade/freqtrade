@@ -22,6 +22,44 @@ def test_analyze_trade_parallelism(testdatadir):
     assert res["open_trades"].min() == 0
 
 
+@pytest.mark.parametrize(
+    "timeframe,open_date,close_date,expected",
+    [
+        # Trade opens mid-week - must count for the week it opened in.
+        (
+            "1w",
+            "2024-01-02 10:00",
+            "2024-01-20 12:00",
+            {"2024-01-01": 1, "2024-01-08": 1, "2024-01-15": 1},
+        ),
+        # Trade opens mid-candle - must count for the candle it opened in.
+        (
+            "1h",
+            "2024-01-02 10:30",
+            "2024-01-02 12:15",
+            {"2024-01-02 10:00": 1, "2024-01-02 11:00": 1, "2024-01-02 12:00": 1},
+        ),
+        # Candle-aligned open and close - close candle is excluded.
+        (
+            "1h",
+            "2024-01-02 10:00",
+            "2024-01-02 12:00",
+            {"2024-01-02 10:00": 1, "2024-01-02 11:00": 1},
+        ),
+    ],
+)
+def test_analyze_trade_parallelism_candle_open(timeframe, open_date, close_date, expected):
+    trades = DataFrame(
+        {
+            "pair": ["BTC/USDT"],
+            "open_date": [Timestamp(open_date, tz="UTC")],
+            "close_date": [Timestamp(close_date, tz="UTC")],
+        }
+    )
+    res = analyze_trade_parallelism(trades, timeframe)
+    assert res["open_trades"].to_dict() == {Timestamp(k, tz="UTC"): v for k, v in expected.items()}
+
+
 @pytest.mark.parametrize("is_short", [False, True])
 def test_balance_distribution_over_time(is_short):
     """

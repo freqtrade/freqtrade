@@ -30,7 +30,9 @@ def analyze_trade_parallelism(trades: pd.DataFrame, timeframe: str) -> pd.DataFr
     dates = [
         pd.Series(
             pd.date_range(
-                row[1]["open_date"],
+                # Start at the open of the candle the trade opened in.
+                # date_range would otherwise start at the next anchored date (e.g. Monday for 1w).
+                timeframe_to_prev_date(timeframe, row[1]["open_date"]),
                 row[1]["close_date"],
                 freq=timeframe_freq,
                 # Exclude right boundary - the date is the candle open date.
@@ -45,7 +47,7 @@ def analyze_trade_parallelism(trades: pd.DataFrame, timeframe: str) -> pd.DataFr
 
     df2 = pd.concat([dates, df2], axis=1)
     df2 = df2.set_index("date")
-    df_final = df2.resample(timeframe_freq)[["pair"]].count()
+    df_final = df2.resample(timeframe_freq, label="left", closed="left")[["pair"]].count()
     df_final = df_final.rename({"pair": "open_trades"}, axis=1)
     return df_final
 
