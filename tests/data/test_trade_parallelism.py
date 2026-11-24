@@ -32,6 +32,13 @@ def test_analyze_trade_parallelism(testdatadir):
             "2024-01-20 12:00",
             {"2024-01-01": 1, "2024-01-08": 1, "2024-01-15": 1},
         ),
+        # 7d resamples to Monday weeks - ccxt rounds 7d to epoch-aligned Thursdays.
+        (
+            "7d",
+            "2024-01-05 10:00",
+            "2024-01-20 12:00",
+            {"2024-01-01": 1, "2024-01-08": 1, "2024-01-15": 1},
+        ),
         # Trade opens mid-candle - must count for the candle it opened in.
         (
             "1h",
