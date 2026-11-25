@@ -3,7 +3,6 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
-from pandas.tseries.frequencies import to_offset
 
 from freqtrade.constants import IntOrInf
 from freqtrade.exchange import (
@@ -25,13 +24,15 @@ def analyze_trade_parallelism(trades: pd.DataFrame, timeframe: str) -> pd.DataFr
     :param timeframe: Timeframe used for backtest
     :return: dataframe with open-counts per time-period in timeframe
     """
+    if timeframe == "7d":
+        # 7d resamples to Monday weeks - but ccxt rounds 7d to epoch-aligned Thursdays.
+        timeframe = "1w"
     timeframe_freq = timeframe_to_resample_freq(timeframe)
-    offset = to_offset(timeframe_freq)
     dates = [
         pd.Series(
             pd.date_range(
                 # Start at the open of the candle the trade opened in.
-                offset.rollback(timeframe_to_prev_date(timeframe, row[1]["open_date"])),
+                timeframe_to_prev_date(timeframe, row[1]["open_date"]),
                 row[1]["close_date"],
                 freq=timeframe_freq,
                 # Exclude right boundary - the date is the candle open date.

@@ -39,6 +39,20 @@ def test_analyze_trade_parallelism(testdatadir):
             "2024-01-20 12:00",
             {"2024-01-01": 1, "2024-01-08": 1, "2024-01-15": 1},
         ),
+        # 7d - opens Tuesday, before ccxt's Thursday boundary - must not count the prior week.
+        (
+            "7d",
+            "2024-01-09 10:00",
+            "2024-01-20 12:00",
+            {"2024-01-08": 1, "2024-01-15": 1},
+        ),
+        # 7d - opens Monday, closes within the same week.
+        (
+            "7d",
+            "2024-01-08 10:00",
+            "2024-01-10 12:00",
+            {"2024-01-08": 1},
+        ),
         # Trade opens mid-candle - must count for the candle it opened in.
         (
             "1h",
