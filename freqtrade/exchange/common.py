@@ -41,6 +41,10 @@ BAD_EXCHANGES = {
     "kucoinfutures": "Unsupported futures exchange",
     "poloniexfutures": "Unsupported futures exchange",
     "binancecoinm": "Unsupported futures exchange",
+    "interactivebrokers": (
+        "No proper API key support for retail traders, needs auth for every request "
+        "and a side-car java application with login every 24h"
+    ),
 }
 
 MAP_EXCHANGE_CHILDCLASS = {
