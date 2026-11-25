@@ -71,6 +71,7 @@ def __run_backtest_bg(
             lastconfig.get("timeframe") != strat.timeframe
             or lastconfig.get("timeframe_detail") != btconfig.get("timeframe_detail")
             or lastconfig.get("timerange") != btconfig["timerange"]
+            or lastconfig.get("startup_candle_count") != strat.startup_candle_count
         )
         from freqtrade.optimize.backtesting import Backtesting
 
@@ -100,6 +101,7 @@ def __run_backtest_bg(
         lastconfig["timerange"] = btconfig["timerange"]
         lastconfig["timeframe_detail"] = btconfig.get("timeframe_detail")
         lastconfig["timeframe"] = strat.timeframe
+        lastconfig["startup_candle_count"] = strat.startup_candle_count
         lastconfig["enable_protections"] = btconfig.get("enable_protections")
         lastconfig["dry_run_wallet"] = btconfig.get("dry_run_wallet")
 

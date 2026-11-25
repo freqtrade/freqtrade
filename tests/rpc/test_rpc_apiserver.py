@@ -3445,6 +3445,16 @@ def test_api_backtesting(botclient, mocker, fee, caplog, tmp_path):
         result = rc.json()
         assert log_has_re("Reusing result of previous backtest.*", caplog)
 
+        # Changed startup_candle_count must recreate the backtesting instance (and reload data)
+        bt_instance = ApiBG.bt["bt"]
+        assert bt_instance.required_startup == 20
+        ftbot.config["startup_candle_count"] = 30
+        rc = client_post(client, f"{BASE_URI}/backtest", data=data)
+        assert_response(rc)
+        assert ApiBG.bt["bt"] is not bt_instance
+        assert ApiBG.bt["bt"].required_startup == 30
+        del ftbot.config["startup_candle_count"]
+
         data["stake_amount"] = 101
 
         mocker.patch(
