@@ -134,6 +134,19 @@ def test_create_cum_profit1(testdatadir):
         )
 
 
+def test_create_cum_profit_weekly():
+    df = DataFrame(
+        index=to_datetime(["2024-01-01", "2024-01-08", "2024-01-15"], utc=True),
+        data={"close": [1.0, 2.0, 3.0]},
+    )
+    # Closes on Tuesday - belongs to the candle opened on Monday 2024-01-08
+    trades = DataFrame(
+        {"close_date": to_datetime(["2024-01-09 10:00"], utc=True), "profit_abs": [5.0]}
+    )
+    cum_profits = create_cum_profit(df, trades, "cum_profits", timeframe="1w")
+    assert cum_profits["cum_profits"].tolist() == [0.0, 5.0, 5.0]
+
+
 def test_calculate_max_drawdown(testdatadir):
     filename = testdatadir / "backtest_results/backtest-result.json"
     bt_data = load_backtest_data(filename)

@@ -30,7 +30,7 @@ from freqtrade.data.history import (
 )
 from freqtrade.data.history.datahandlers import IDataHandler
 from freqtrade.enums import CandleType
-from freqtrade.exchange import timeframe_to_minutes, timeframe_to_seconds
+from freqtrade.exchange import timeframe_to_minutes, timeframe_to_prev_date, timeframe_to_seconds
 from tests.conftest import generate_test_data, generate_trades_history, log_has, log_has_re
 from tests.data.test_history import _clean_test_file
 
@@ -92,8 +92,8 @@ def test_trades_to_ohlcv(trades_history_df, caplog):
         ("8h", 20_000, 5, 15, "2020-01-01 00:00:00", "2020-01-05 16:00:00", None),
         ("12h", 20_000, 5, 10, "2020-01-01 00:00:00", "2020-01-05 12:00:00", None),
         ("1d", 20_000, 5, 5, "2020-01-01 00:00:00", "2020-01-05 00:00:00", "Sunday"),
-        ("7d", 20_000, 37, 6, "2020-01-06 00:00:00", "2020-02-10 00:00:00", "Monday"),
-        ("1w", 20_000, 37, 6, "2020-01-06 00:00:00", "2020-02-10 00:00:00", "Monday"),
+        ("7d", 20_000, 37, 6, "2019-12-30 00:00:00", "2020-02-03 00:00:00", "Monday"),
+        ("1w", 20_000, 37, 6, "2019-12-30 00:00:00", "2020-02-03 00:00:00", "Monday"),
         ("1M", 20_000, 74, 3, "2020-01-01 00:00:00", "2020-03-01 00:00:00", None),
         ("3M", 20_000, 100, 2, "2020-01-01 00:00:00", "2020-04-01 00:00:00", None),
         ("1y", 20_000, 1000, 3, "2020-01-01 00:00:00", "2022-01-01 00:00:00", None),
@@ -109,6 +109,34 @@ def test_trades_to_ohlcv_multi(timeframe, rows, days, candles, start, end, weekd
     if weekday:
         # Weekday is only relevant for daily and weekly candles.
         assert df.iloc[-1, :]["date"].day_name() == weekday
+
+
+def test_trades_to_ohlcv_weekly_candle_open():
+    # Weekly candles must be labeled with their open date (Monday), like all other candles.
+    trades = pd.DataFrame(
+        {
+            "date": pd.to_datetime(
+                [
+                    "2024-01-02 10:00",  # Tuesday
+                    "2024-01-07 23:00",  # Sunday
+                    "2024-01-08 00:00",  # Monday - opens the next candle
+                    "2024-01-10 12:00",  # Wednesday
+                ],
+                utc=True,
+            ),
+            "price": [100.0, 110.0, 200.0, 210.0],
+            "amount": [1.0, 1.0, 1.0, 1.0],
+        }
+    )
+    df = trades_to_ohlcv(trades, "1w")
+    assert df["date"].tolist() == [
+        pd.Timestamp("2024-01-01 00:00:00+0000"),
+        pd.Timestamp("2024-01-08 00:00:00+0000"),
+    ]
+    assert df["date"].iloc[0] == timeframe_to_prev_date("1w", trades["date"].iloc[0])
+    assert df["open"].tolist() == [100.0, 200.0]
+    assert df["close"].tolist() == [110.0, 210.0]
+    assert df["volume"].tolist() == [2.0, 2.0]
 
 
 def test_ohlcv_fill_up_missing_data(testdatadir, caplog):

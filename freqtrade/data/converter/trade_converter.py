@@ -81,8 +81,9 @@ def trades_to_ohlcv(trades: DataFrame, timeframe: str) -> DataFrame:
         raise ValueError("Trade-list empty.")
     df = trades.set_index("date", drop=True)
     resample_interval = timeframe_to_resample_freq(timeframe)
-    df_new = df["price"].resample(resample_interval).ohlc()
-    df_new["volume"] = df["amount"].resample(resample_interval).sum()
+    # Label candles by their open date - weekly frequencies default to right-labeled bins.
+    df_new = df["price"].resample(resample_interval, label="left", closed="left").ohlc()
+    df_new["volume"] = df["amount"].resample(resample_interval, label="left", closed="left").sum()
     df_new["date"] = df_new.index
     # Drop 0 volume rows
     df_new = df_new.dropna()

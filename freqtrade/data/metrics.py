@@ -117,8 +117,10 @@ def create_cum_profit(
     from freqtrade.exchange import timeframe_to_resample_freq
 
     timeframe_freq = timeframe_to_resample_freq(timeframe)
-    # Resample to timeframe to make sure trades match candles
-    _trades_sum = trades.resample(timeframe_freq, on="close_date")[["profit_abs"]].sum()
+    # Resample to timeframe to make sure trades match candles (labeled by their open date)
+    _trades_sum = trades.resample(timeframe_freq, on="close_date", label="left", closed="left")[
+        ["profit_abs"]
+    ].sum()
     df.loc[:, col_name] = _trades_sum["profit_abs"].cumsum()
     # Set first value to 0
     df.loc[df.iloc[0].name, col_name] = 0
