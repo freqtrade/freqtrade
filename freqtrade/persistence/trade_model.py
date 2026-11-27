@@ -944,10 +944,11 @@ class LocalTrade:
                 logger.info(f"{order_type}_{payment} has been fulfilled for {self}.")
 
         elif order.ft_order_side == "stoploss" and order.status not in ("open",):
-            self.close_rate_requested = self.stop_loss
-            self.exit_reason = ExitType.STOPLOSS_ON_EXCHANGE.value
-            if self.is_open and order.safe_filled > 0:
-                logger.info(f"{order_type} is hit for {self}.")
+            if order.safe_filled > 0:
+                self.close_rate_requested = self.stop_loss
+                self.exit_reason = ExitType.STOPLOSS_ON_EXCHANGE.value
+                if self.is_open:
+                    logger.info(f"{order_type} is hit for {self}.")
         else:
             raise ValueError(f"Unknown order type: {order.order_type}")
 

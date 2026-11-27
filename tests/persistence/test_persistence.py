@@ -646,6 +646,26 @@ def test_calc_open_close_trade_price(
     assert trade.funding_fees == funding_fees
     assert pytest.approx(trade.close_profit_abs) == profit
 
+    # Reconciling a zero-filled canceled stoploss order must not overwrite the exit metadata.
+    trade.exit_reason = "exit_signal"
+    trade.close_rate_requested = 2.5
+    trade.stop_loss = 1.5
+    canceled_sl = Order(
+        ft_order_side="stoploss",
+        order_id="sl-canceled-0",
+        status="canceled",
+        order_type="stoploss",
+        price=1.5,
+        amount=trade.amount,
+        filled=0.0,
+        ft_pair=trade.pair,
+        ft_is_open=False,
+    )
+    trade.orders.append(canceled_sl)
+    trade.update_trade(canceled_sl, recalculating=True)
+    assert trade.exit_reason == "exit_signal"
+    assert trade.close_rate_requested == 2.5
+
 
 @pytest.mark.usefixtures("init_persistence")
 def test_trade_close(fee, time_machine):

@@ -1857,7 +1857,10 @@ class Exchange(LoggingMixin):
         :param order: Order dict as returned from fetch_order()
         :return: True if order has been cancelled without being filled, False otherwise.
         """
-        return order.get("status") in NON_OPEN_EXCHANGE_STATES and order.get("filled") == 0.0
+        return order.get("status") in NON_OPEN_EXCHANGE_STATES and (
+            order.get("filled") == 0.0
+            or (order.get("filled") is None and order.get("status") != "closed")
+        )
 
     @retrier
     def cancel_order(self, order_id: str, pair: str, params: dict | None = None) -> dict[str, Any]:
@@ -1951,7 +1954,15 @@ class Exchange(LoggingMixin):
             order = self.fetch_stoploss_order(order_id, pair)
         except InvalidOrderException:
             logger.warning(f"Could not fetch cancelled stoploss order {order_id}.")
-            order = {"id": order_id, "fee": {}, "status": "canceled", "amount": amount, "info": {}}
+            order = {
+                "id": order_id,
+                "type": "stoploss",
+                "fee": {},
+                "status": "canceled",
+                "amount": amount,
+                "filled": 0.0,
+                "info": {},
+            }
 
         return order
 
@@ -2575,7 +2586,7 @@ class Exchange(LoggingMixin):
         :return: correct order id
         """
         if self.get_option("stoploss_query_requires_stop_flag") and (
-            order["type"] in ("stoploss", "stop")
+            order.get("type") in ("stoploss", "stop")
         ):
             return safe_value_fallback(order, "id_stop", "id")
         return order["id"]

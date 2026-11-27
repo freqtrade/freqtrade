@@ -4800,7 +4800,10 @@ def test_cancel_order_dry_run(default_conf, mocker, exchange_name):
     [
         ({"status": "closed", "filled": 10}, False),
         ({"status": "closed", "filled": 0.0}, True),
+        ({"status": "closed", "filled": None}, False),
         ({"status": "canceled", "filled": 0.0}, True),
+        ({"status": "canceled", "filled": None}, True),
+        ({"status": "expired", "filled": None}, True),
         ({"status": "canceled", "filled": 10.0}, False),
         ({"status": "unknown", "filled": 10.0}, False),
         ({"result": "testest123"}, False),
@@ -4943,7 +4946,17 @@ def test_cancel_stoploss_order_with_result(default_conf, mocker, exchange_name):
     mocker.patch.object(exchange, "fetch_stoploss_order", side_effect=exc)
     co = exchange.cancel_stoploss_order_with_result(order_id="_", pair="TKN/BTC", amount=555)
     assert co["amount"] == 555
-    assert co == {"id": "_", "fee": {}, "status": "canceled", "amount": 555, "info": {}}
+    assert co == {
+        "id": "_",
+        "type": "stoploss",
+        "fee": {},
+        "status": "canceled",
+        "amount": 555,
+        "filled": 0.0,
+        "info": {},
+    }
+    assert exchange.check_order_canceled_empty(co) is True
+    assert exchange.get_order_id_conditional({"id": "_", "status": "canceled"}) == "_"
 
     with pytest.raises(InvalidOrderException):
         exc = InvalidOrderException("Did not find order")
