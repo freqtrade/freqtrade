@@ -25,6 +25,10 @@ from freqtrade.exchange import timeframe_to_next_date, timeframe_to_prev_date
 from freqtrade.exchange.exchange_utils import DECIMAL_PLACES, TICK_SIZE
 from freqtrade.optimize.backtest_caching import get_backtest_metadata_filename, get_strategy_run_id
 from freqtrade.optimize.backtesting import DATE_IDX, HEADERS, Backtesting
+from freqtrade.optimize.optimize_reports.optimize_reports import (
+    convert_bt_wallet_collection,
+    generate_wallet_stats,
+)
 from freqtrade.persistence import LocalTrade, Trade
 from freqtrade.resolvers import StrategyResolver
 from freqtrade.util import dt_now, dt_utc
@@ -1050,6 +1054,50 @@ def test_backtest_one_detail(default_conf_usdt, mocker, testdatadir, use_detail)
     unique_currencies = wallet_summary["currency"].value_counts()
     assert unique_currencies["USDT"] == 576
     assert unique_currencies["XRP"] == 15 if use_detail else 21
+
+
+@pytest.mark.parametrize("is_short,loss_rate", [(False, 1600), (True, 2400)])
+def test_backtest_capture_wallet_futures_upnl(
+    default_conf_usdt, mocker, is_short, loss_rate
+) -> None:
+    default_conf_usdt["runmode"] = RunMode.BACKTEST
+    default_conf_usdt["trading_mode"] = "futures"
+    default_conf_usdt["margin_mode"] = "isolated"
+    default_conf_usdt["dry_run_wallet"] = 10000
+    default_conf_usdt["exchange"]["pair_whitelist"] = [".*"]
+    patch_exchange(mocker)
+    backtesting = Backtesting(default_conf_usdt)
+    backtesting._set_strategy(backtesting.strategylist[0])
+    pair = "ETH/USDT:USDT"
+
+    trade = LocalTrade(
+        pair=pair,
+        open_rate=2000,
+        amount=1,
+        stake_amount=1000,
+        leverage=2,
+        is_short=is_short,
+        fee_open=0.0,
+        fee_close=0.0,
+        open_date=dt_utc(2025, 1, 1),
+        exchange="binance",
+        trading_mode="futures",
+        is_open=True,
+    )
+    LocalTrade.add_bt_trade(trade)
+    backtesting.wallets.update()
+
+    for current_time, rate in ((dt_utc(2025, 1, 1, 1), 2000), (dt_utc(2025, 1, 1, 2), loss_rate)):
+        backtesting._capture_wallet(current_time, "USDT", 1)
+        backtesting._capture_pair(current_time, pair, rate)
+
+    LocalTrade.reset_trades()
+
+    stats = generate_wallet_stats(convert_bt_wallet_collection(backtesting.wallet_captures), "USDT")
+    assert stats["high_balance"] == 10000
+    assert stats["low_balance"] == 9600
+    assert pytest.approx(stats["max_drawdown_abs"]) == 400
+    assert pytest.approx(stats["max_drawdown_account"]) == 0.04
 
 
 @pytest.mark.parametrize(

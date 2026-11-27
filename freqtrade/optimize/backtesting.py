@@ -1701,7 +1701,7 @@ class Backtesting:
                     )
                     trade_dir = self.check_for_trade_entry(row)
                     pair_tradedir_cache[pair] = trade_dir
-                    self._capture_wallet(current_time, pair.split("/")[0], row[OPEN_IDX])
+                    self._capture_pair(current_time, pair, row[OPEN_IDX])
 
                 else:
                     # Detail candle - from cache.
@@ -1763,6 +1763,21 @@ class Backtesting:
             return
         if total := self.wallets.get_total(currency):
             self.wallet_captures.append((current_time, currency, price, total))
+
+    def _capture_pair(self, current_time: datetime, pair: str, rate: float) -> None:
+        """
+        Capture the value held in this pair.
+        Spot: the base currency balance.
+        Futures: the unrealized profit of open positions. The stake currency capture only contains
+        the collateral at entry value, we need to capture the unrealized profit separately.
+        """
+        if not self._is_backtest_runmode:
+            return
+        if self.trading_mode != TradingMode.FUTURES:
+            self._capture_wallet(current_time, pair.split("/")[0], rate)
+            return
+        if upnl := sum(t.calc_profit(rate) for t in LocalTrade.bt_trades_open_pp[pair]):
+            self.wallet_captures.append((current_time, pair, 1, upnl))
 
     def backtest(
         self, processed: dict, start_date: datetime, end_date: datetime
