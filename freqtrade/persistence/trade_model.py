@@ -1591,6 +1591,22 @@ class LocalTrade:
             return LocalTrade.bt_open_open_trade_count
 
     @staticmethod
+    def get_trade_count() -> int:
+        """
+        Get total trade count (open and closed trades).
+
+        Unlike :meth:`get_trades_proxy`, this never materialises Trade
+        objects: it counts rows in the database, or the in-memory
+        backtesting collections when no database is in use.
+
+        :return: Total number of trades.
+        """
+        if Trade.use_db:
+            return Trade.session.execute(select(func.count(Trade.id))).scalar_one()
+        else:
+            return len(LocalTrade.bt_trades) + len(LocalTrade.bt_trades_open)
+
+    @staticmethod
     def stoploss_reinitialization(desired_stoploss: float):
         """
         Adjust initial Stoploss to desired stoploss for all open trades.

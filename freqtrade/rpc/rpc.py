@@ -952,7 +952,7 @@ class RPC:
             else 0
         )
 
-        trade_count = len(Trade.get_trades_proxy())
+        trade_count = Trade.get_trade_count()
         starting_capital_ratio = (total_bot / starting_capital) - 1 if starting_capital else 0.0
         starting_cap_fiat_ratio = (value_bot / starting_cap_fiat) - 1 if starting_cap_fiat else 0.0
 

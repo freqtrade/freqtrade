@@ -1375,6 +1375,124 @@ def test_get_open_lev(fee, use_db):
     Trade.use_db = True
 
 
+def _make_trade_with_order(pair: str, is_open: bool, fee) -> Trade:
+    """Build a Trade with one closed entry order (not yet persisted)."""
+    trade = Trade(
+        pair=pair,
+        stake_amount=60.0,
+        open_rate=2.0,
+        amount=30.0,
+        is_open=is_open,
+        fee_open=fee.return_value,
+        fee_close=fee.return_value,
+        open_date=dt_now() - timedelta(minutes=10),
+        exchange="binance",
+        trading_mode=spot,
+        leverage=1.0,
+    )
+    trade.orders.append(
+        Order(
+            ft_order_side="buy",
+            order_id=f"{pair}-entry-{trade.open_date}",
+            ft_is_open=False,
+            ft_pair=pair,
+            ft_amount=trade.amount,
+            ft_price=trade.open_rate,
+            amount=trade.amount,
+            filled=trade.amount,
+            remaining=0,
+            price=trade.open_rate,
+            average=trade.open_rate,
+            status="closed",
+            order_type="limit",
+            side="buy",
+            order_filled_date=trade.open_date,
+        )
+    )
+    return trade
+
+
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize("use_db", [True, False])
+def test_get_trade_count_empty(use_db):
+    Trade.use_db = use_db
+    Trade.reset_trades()
+
+    try:
+        assert Trade.get_trade_count() == 0
+        assert isinstance(Trade.get_trade_count(), int)
+    finally:
+        Trade.use_db = True
+
+
+@pytest.mark.usefixtures("init_persistence")
+@pytest.mark.parametrize("use_db", [True, False])
+def test_get_trade_count_mixed(fee, use_db):
+    Trade.use_db = use_db
+    Trade.reset_trades()
+
+    try:
+        trades = [
+            _make_trade_with_order("ADA/USDT", True, fee),
+            _make_trade_with_order("ETH/USDT", False, fee),
+            _make_trade_with_order("BTC/USDT", False, fee),
+        ]
+        for trade in trades:
+            if use_db:
+                Trade.session.add(trade)
+            else:
+                LocalTrade.add_bt_trade(trade)
+        if use_db:
+            Trade.commit()
+
+        assert Trade.get_trade_count() == 3
+        assert Trade.get_open_trade_count() == 1
+        # Orders do not change the count.
+        assert sum(len(trade.orders) for trade in trades) == 3
+    finally:
+        Trade.use_db = True
+
+
+@pytest.mark.usefixtures("init_persistence")
+def test_get_trade_count_no_db_session_untouched(fee):
+    Trade.use_db = False
+    Trade.reset_trades()
+
+    class _ExplodingSession:
+        """Any session access in no-DB mode is a bug."""
+
+        def __getattr__(self, name):
+            raise AssertionError(f"Database session must not be accessed (tried {name})")
+
+    original_session = Trade.session
+    Trade.session = _ExplodingSession()
+    try:
+        assert Trade.get_trade_count() == 0
+
+        trade = _make_trade_with_order("ADA/USDT", True, fee)
+        LocalTrade.add_bt_trade(trade)
+        assert Trade.get_trade_count() == 1
+        assert Trade.get_trade_count() == len(Trade.get_trades_proxy())
+
+        # Closing a trade moves it between the backtest collections;
+        # the total must not change and must not double-count.
+        # (close_profit_abs is what Trade.close() would have set.)
+        trade.is_open = False
+        trade.close_date = dt_now()
+        trade.close_profit_abs = 0.0
+        LocalTrade.close_bt_trade(trade)
+        assert Trade.get_trade_count() == 1
+        assert Trade.get_trade_count() == len(Trade.get_trades_proxy())
+
+        trade2 = _make_trade_with_order("ETH/USDT", True, fee)
+        LocalTrade.add_bt_trade(trade2)
+        assert Trade.get_trade_count() == 2
+        assert Trade.get_trade_count() == len(Trade.get_trades_proxy())
+    finally:
+        Trade.session = original_session
+        Trade.use_db = True
+
+
 @pytest.mark.parametrize("is_short", [True, False])
 @pytest.mark.parametrize("use_db", [True, False])
 @pytest.mark.usefixtures("init_persistence")
