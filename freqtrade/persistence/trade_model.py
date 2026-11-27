@@ -1592,15 +1592,6 @@ class LocalTrade:
 
     @staticmethod
     def get_trade_count() -> int:
-        """
-        Get total trade count (open and closed trades).
-
-        Unlike :meth:`get_trades_proxy`, this never materialises Trade
-        objects: it counts rows in the database, or the in-memory
-        backtesting collections when no database is in use.
-
-        :return: Total number of trades.
-        """
         if Trade.use_db:
             return Trade.session.execute(select(func.count(Trade.id))).scalar_one()
         else:

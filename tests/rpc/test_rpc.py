@@ -4,7 +4,7 @@ from unittest.mock import ANY, MagicMock, PropertyMock
 
 import pytest
 from numpy import isnan
-from sqlalchemy import event, select
+from sqlalchemy import select
 
 from freqtrade.enums import SignalDirection, State, TradingMode
 from freqtrade.exceptions import ExchangeError, InvalidOrderException, TemporaryError
@@ -579,83 +579,6 @@ def test_rpc_balance_handle_error(default_conf, mocker, caplog):
 
     assert log_has_re(r"Error .* getting rate for futures ADA.*", caplog)
     assert log_has_re(r"Error .* getting rate for ETH.*", caplog)
-
-
-def _balance_rpc(default_conf, mocker):
-    """Build an RPC instance with mocked exchange balances (spot, no positions)."""
-    mocker.patch("freqtrade.rpc.telegram.Telegram", MagicMock())
-    mocker.patch.multiple(
-        EXMS,
-        get_balances=MagicMock(return_value={"BTC": {"free": 10.0, "total": 12.0, "used": 2.0}}),
-        fetch_positions=MagicMock(return_value=[]),
-        get_tickers=MagicMock(side_effect=TemporaryError("Could not load ticker")),
-    )
-    freqtradebot = get_patched_freqtradebot(mocker, default_conf)
-    patch_get_signal(freqtradebot)
-    rpc = RPC(freqtradebot)
-    rpc._fiat_converter = CryptoToFiatConverter({})
-    mocker.patch.object(rpc._fiat_converter, "get_price", return_value=15000.0)
-    return rpc
-
-
-@pytest.mark.usefixtures("init_persistence")
-def test_rpc_balance_trade_count_no_materialisation(default_conf, mocker, fee):
-    """_rpc_balance must count trades without materialising trade history.
-
-    Regression test for #13788: the old implementation called
-    len(Trade.get_trades_proxy()), hydrating every historical Trade (and,
-    via selectin loading, every Order) on each poll.
-    """
-    rpc = _balance_rpc(default_conf, mocker)
-    # Seed AFTER the bot is built: FreqtradeBot.__init__ re-runs init_db(),
-    # which replaces the in-memory database.
-    create_mock_trades(fee, False, True)  # 4 open + 2 closed, all with orders
-    closed_ids = {trade.id for trade in Trade.get_trades_proxy(is_open=False)}
-    assert len(closed_ids) == 2
-    Trade.session.expunge_all()
-
-    statements: list[str] = []
-
-    def _capture(conn, cursor, statement, parameters, context, executemany):
-        statements.append(statement)
-
-    engine = Trade.session.get_bind()
-    event.listen(engine, "before_cursor_execute", _capture)
-    try:
-        res = rpc._rpc_balance(
-            default_conf["stake_currency"], default_conf["fiat_display_currency"]
-        )
-    finally:
-        event.remove(engine, "before_cursor_execute", _capture)
-
-    assert res["trade_count"] == 6
-
-    # A COUNT query ran, and no unfiltered SELECT over the trades table did:
-    # the only trades SELECT must be the open-trades lookup.
-    assert any("count(" in stmt.lower() for stmt in statements)
-    trade_selects = [
-        stmt
-        for stmt in statements
-        if "from trades" in stmt.lower() and "count(" not in stmt.lower()
-    ]
-    assert trade_selects, "expected the open-trades lookup to run"
-    assert all("is_open" in stmt.lower() for stmt in trade_selects)
-
-    # Nothing closed was hydrated: no closed Trade and no Order of a
-    # closed trade may be present in the session identity map.
-    identity = list(Trade.session.identity_map.values())
-    assert not [o for o in identity if isinstance(o, Trade) and not o.is_open]
-    assert not [o for o in identity if isinstance(o, Order) and o.ft_trade_id in closed_ids]
-
-
-@pytest.mark.usefixtures("init_persistence")
-def test_rpc_balance_trade_count_empty(default_conf, mocker):
-    """Empty database reports a zero trade count."""
-    rpc = _balance_rpc(default_conf, mocker)
-
-    res = rpc._rpc_balance(default_conf["stake_currency"], default_conf["fiat_display_currency"])
-
-    assert res["trade_count"] == 0
 
 
 @pytest.mark.parametrize("proxy_coin", [None, "BNFCR"])

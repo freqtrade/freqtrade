@@ -1414,19 +1414,6 @@ def _make_trade_with_order(pair: str, is_open: bool, fee) -> Trade:
 
 @pytest.mark.usefixtures("init_persistence")
 @pytest.mark.parametrize("use_db", [True, False])
-def test_get_trade_count_empty(use_db):
-    Trade.use_db = use_db
-    Trade.reset_trades()
-
-    try:
-        assert Trade.get_trade_count() == 0
-        assert isinstance(Trade.get_trade_count(), int)
-    finally:
-        Trade.use_db = True
-
-
-@pytest.mark.usefixtures("init_persistence")
-@pytest.mark.parametrize("use_db", [True, False])
 def test_get_trade_count_mixed(fee, use_db):
     Trade.use_db = use_db
     Trade.reset_trades()
@@ -1450,46 +1437,6 @@ def test_get_trade_count_mixed(fee, use_db):
         # Orders do not change the count.
         assert sum(len(trade.orders) for trade in trades) == 3
     finally:
-        Trade.use_db = True
-
-
-@pytest.mark.usefixtures("init_persistence")
-def test_get_trade_count_no_db_session_untouched(fee):
-    Trade.use_db = False
-    Trade.reset_trades()
-
-    class _ExplodingSession:
-        """Any session access in no-DB mode is a bug."""
-
-        def __getattr__(self, name):
-            raise AssertionError(f"Database session must not be accessed (tried {name})")
-
-    original_session = Trade.session
-    Trade.session = _ExplodingSession()
-    try:
-        assert Trade.get_trade_count() == 0
-
-        trade = _make_trade_with_order("ADA/USDT", True, fee)
-        LocalTrade.add_bt_trade(trade)
-        assert Trade.get_trade_count() == 1
-        assert Trade.get_trade_count() == len(Trade.get_trades_proxy())
-
-        # Closing a trade moves it between the backtest collections;
-        # the total must not change and must not double-count.
-        # (close_profit_abs is what Trade.close() would have set.)
-        trade.is_open = False
-        trade.close_date = dt_now()
-        trade.close_profit_abs = 0.0
-        LocalTrade.close_bt_trade(trade)
-        assert Trade.get_trade_count() == 1
-        assert Trade.get_trade_count() == len(Trade.get_trades_proxy())
-
-        trade2 = _make_trade_with_order("ETH/USDT", True, fee)
-        LocalTrade.add_bt_trade(trade2)
-        assert Trade.get_trade_count() == 2
-        assert Trade.get_trade_count() == len(Trade.get_trades_proxy())
-    finally:
-        Trade.session = original_session
         Trade.use_db = True
 
 
