@@ -3520,6 +3520,47 @@ def test_api_backtesting(botclient, mocker, fee, caplog, tmp_path):
         Backtesting.cleanup()
 
 
+def test_api_backtesting_config_per_strategy(botclient, mocker, fee, tmp_path):
+    # A later request reusing the backtesting instance must not alter prior results' config
+    try:
+        ftbot, client = botclient
+        mocker.patch(f"{EXMS}.get_fee", fee)
+        ftbot.config["runmode"] = RunMode.WEBSERVER
+        ftbot.config["user_data_dir"] = tmp_path
+        data = {
+            "strategy": CURRENT_TEST_STRATEGY,
+            "timeframe": "5m",
+            "timerange": "20180110-20180111",
+            "enable_protections": False,
+            "backtest_cache": "none",
+        }
+        rc = client_post(client, f"{BASE_URI}/backtest", data=data)
+        assert_response(rc)
+        bt_instance = ApiBG.bt["bt"]
+
+        ftbot.config["stoploss"] = -0.5
+        ftbot.config["minimal_roi"] = {"0": 0.1}
+        data["strategy"] = "StrategyTestV3CustomEntryPrice"
+        rc = client_post(client, f"{BASE_URI}/backtest", data=data)
+        assert_response(rc)
+        assert ApiBG.bt["bt"] is bt_instance
+        # Config of the retained instance must not contain leftovers from the first request
+        assert bt_instance.config["minimal_roi"] == {"0": 0.1}
+        assert bt_instance.config["dry_run"] is True
+
+        result = client_get(client, f"{BASE_URI}/backtest").json()["backtest_result"]
+        first = result["strategy"][CURRENT_TEST_STRATEGY]
+        assert first["stoploss"] == -0.10
+        assert first["minimal_roi"] == {"40": 0.0, "30": 0.01, "20": 0.02, "0": 0.04}
+        second = result["strategy"]["StrategyTestV3CustomEntryPrice"]
+        assert second["stoploss"] == -0.5
+        assert second["minimal_roi"] == {"0": 0.1}
+        # Reset backtesting to avoid leakage into other tests
+        assert_response(client_delete(client, f"{BASE_URI}/backtest"))
+    finally:
+        Backtesting.cleanup()
+
+
 def test_api_backtest_history(botclient, mocker, testdatadir):
     ftbot, client = botclient
     mocker.patch(

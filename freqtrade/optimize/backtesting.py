@@ -1865,6 +1865,7 @@ class Backtesting:
                 "run_id": self.run_ids.get(strategy_name, ""),
                 "backtest_start_time": int(backtest_start_time.timestamp()),
                 "backtest_end_time": int(backtest_end_time.timestamp()),
+                "config": deepcopy(results["config"]),
             }
         )
         self.all_bt_content[strategy_name] = results

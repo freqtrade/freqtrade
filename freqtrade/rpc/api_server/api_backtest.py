@@ -89,7 +89,10 @@ def __run_backtest_bg(
                 raise DependencyException("Backtesting instance not initialized.")
         else:
             ApiBG.bt["bt"]._progress_callback = ft_callback
-            ApiBG.bt["bt"].config = deep_merge_dicts(btconfig, ApiBG.bt["bt"].config)
+            # Replace the config in place, as other components (dataprovider, exchange, ...)
+            # hold a reference to it. Merging would keep stale keys from prior requests.
+            ApiBG.bt["bt"].config.clear()
+            ApiBG.bt["bt"].config.update(btconfig)
             ApiBG.bt["bt"].init_backtest()
         cachedBt: Backtesting = ApiBG.bt["bt"]
         # Only reload data if timerange is open or settings changed
