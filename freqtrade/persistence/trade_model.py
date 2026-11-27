@@ -1591,6 +1591,13 @@ class LocalTrade:
             return LocalTrade.bt_open_open_trade_count
 
     @staticmethod
+    def get_trade_count() -> int:
+        if Trade.use_db:
+            return Trade.session.execute(select(func.count(Trade.id))).scalar_one()
+        else:
+            return len(LocalTrade.bt_trades) + len(LocalTrade.bt_trades_open)
+
+    @staticmethod
     def stoploss_reinitialization(desired_stoploss: float):
         """
         Adjust initial Stoploss to desired stoploss for all open trades.
